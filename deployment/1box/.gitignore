@@ -1,0 +1,5 @@
+boxtemp/*
+packer
+packer.exe
+packer_cache/*
+output-*

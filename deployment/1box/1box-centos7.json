@@ -1,0 +1,90 @@
+{
+  "variables": {
+    "memory": "2048",
+    "host_switch": "{{env `HOST_SWITCH`}}",
+    "nic2_ipv4": "192.168.56.150"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-ovf",
+      "source_path": "boxtemp/7.2/box.ovf",
+      "ssh_password": "vagrant",
+      "ssh_username": "vagrant",
+      "shutdown_command": "echo 'vagrant' | sudo -S /sbin/halt -h -p",
+      "shutdown_timeout": "10s",
+      "headless": true,
+      "vm_name": "openvdc-1box",
+      "vboxmanage": [
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--memory",
+          "{{ user `memory` }}"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--nictype1",
+          "virtio"
+        ],
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--nictype2",
+          "virtio",
+          "--nic2",
+          "hostonly",
+          "--hostonlyadapter2",
+          "{{user `host_switch`}}"
+        ]
+      ],
+      "vboxmanage_post": [
+        [
+          "modifyvm",
+          "{{.Name}}",
+          "--description",
+          "CentOS7.2, openvdc-1box"
+        ]
+      ],
+      "export_opts": [
+        "--vsys",
+        "0",
+        "--description",
+        "CentOS7.2, openvdc-1box",
+        "--vendor",
+        "Axsh",
+        "--version",
+        "0.1"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "fastestmirror.conf",
+      "destination": "/tmp/fastestmirror.conf"
+    },
+    {
+      "type": "file",
+      "source": "boxtemp/{{user `jenkins_rpm`}}",
+      "destination": "/var/tmp/{{user `jenkins_rpm`}}"
+    },
+    {
+      "type": "shell",
+      "execute_command": "chmod +x {{ .Path }}; echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
+      "inline": [
+        "cp /tmp/fastestmirror.conf /etc/yum/pluginconf.d/fastestmirror.conf",
+        "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm",
+        "yum install -y docker mesosphere-zookeeper mesos",
+        "echo 'docker,mesos' > /etc/mesos-slave/containerizers",
+        "systemctl enable docker",
+        "systemctl enable zookeeper",
+        "systemctl enable mesos-master",
+        "systemctl enable mesos-slave",
+        "#firewall-cmd --permanent --zone=public --add-port=5050/tcp",
+        "#firewall-cmd --permanent --zone=public --add-port=5051/tcp",
+        "nmcli connection add type ethernet ifname eth1 save yes con-name eth1 ip4 {{user `nic2_ipv4`}}/24"
+      ]
+    }
+  ]
+}
