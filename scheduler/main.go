@@ -101,6 +101,7 @@ func main() {
 		Secret:    proto.String(""),
 	}
 	bindingAddr := net.ParseIP("127.0.0.1")
+	cred = nil
 	config := sched.DriverConfig{
 		Scheduler:      newVDCScheduler(),
 		Framework:      fwinfo,
