@@ -48,6 +48,7 @@ func newVDCScheduler() *VDCScheduler {
 	}
 	return &VDCScheduler{executor: exec}
 }
+
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
 	log.Println("Framework Registered with Master ", masterInfo)
 }
@@ -83,6 +84,7 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 func (sched *VDCScheduler) ExecutorLost(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, code int) {
 	log.Fatalf("executor %q lost on slave %q code %d", eid, sid, code)
 }
+
 func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
