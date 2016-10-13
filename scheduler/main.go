@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -84,6 +85,10 @@ func (sched *VDCScheduler) ExecutorLost(_ sched.SchedulerDriver, eid *mesos.Exec
 }
 func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
+}
+
+func init() {
+	flag.Parse()
 }
 
 func main() {
