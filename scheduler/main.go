@@ -119,6 +119,6 @@ func main() {
 		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
 	}
 	if stat, err := driver.Run(); err != nil {
-		log.Println("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
+		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
 	}
 }
