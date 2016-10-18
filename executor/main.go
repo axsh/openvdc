@@ -18,7 +18,7 @@ type VDCExecutor struct {
 }
 
 func newVDCExecutor() *VDCExecutor {
-        return &vdcExecutor{tasksLaunched: 0}
+        return &VDCExecutor{tasksLaunched: 0}
 }
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
