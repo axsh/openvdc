@@ -22,6 +22,11 @@ const (
 	MEM_PER_TASK      = 64
 )
 
+var (
+	bindingIPv4        = flag.String("listen", "localhost", "Bind address")
+	mesosMasterAddress = flag.String("master", "localhost:5050", "Mesos Master node")
+)
+
 type VDCScheduler struct {
 	executor *mesos.ExecutorInfo
 }
@@ -102,17 +107,20 @@ func main() {
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
 	}
-	bindingAddr := net.ParseIP("127.0.0.1")
 	cred = nil
+	bindingAddrs, err := net.LookupIP(*bindingIPv4)
+	if err != nil {
+		log.Fatalln("Invalid Address to -listen option: ", err)
+	}
 	config := sched.DriverConfig{
 		Scheduler:      newVDCScheduler(),
 		Framework:      fwinfo,
-		Master:         "127.0.0.1:5050",
+		Master:         *mesosMasterAddress,
 		Credential:     cred,
-		BindingAddress: bindingAddr,
+		BindingAddress: bindingAddrs[0],
 		WithAuthContext: func(ctx context.Context) context.Context {
 			ctx = auth.WithLoginProvider(ctx, sasl.ProviderName)
-			ctx = sasl.WithBindingAddress(ctx, bindingAddr)
+			ctx = sasl.WithBindingAddress(ctx, bindingAddrs[0])
 			return ctx
 		},
 	}
