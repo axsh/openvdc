@@ -7,6 +7,7 @@ import (
         "time"
         exec "github.com/mesos/mesos-go/executor"
         mesos "github.com/mesos/mesos-go/mesosproto"
+        "github.com/samuel/go-zookeeper/zk"
 )
 
 var (
@@ -48,7 +49,35 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
         exec.tasksLaunched++
         fmt.Println("Total tasks launched ", exec.tasksLaunched)
 
-	//perform task here
+
+         //Zookeeper connection test
+        c, _, err := zk.Connect([]string{"127.0.0.1"}, time.Second) 
+
+	defer c.Close()
+
+        flags := int32(0)
+        acl := zk.WorldACL(zk.PermAll)
+
+        path, err := c.Create("/01", []byte("data"), flags, acl)
+        must(err)
+        fmt.Printf("create: %+v\n", path)
+
+        data, stat, err := c.Get("/01")
+        must(err)
+        fmt.Printf("get:    %+v %+v\n", string(data), stat)
+
+        stat, err = c.Set("/01", []byte("newdata"), stat.Version)
+        must(err)
+        fmt.Printf("set:    %+v\n", stat)
+
+        err = c.Delete("/01", -1)
+        must(err)
+        fmt.Printf("delete: ok\n")
+
+        exists, stat, err := c.Exists("/01")
+        must(err)
+        fmt.Printf("exists: %+v %+v\n", exists, stat)
+
 
 	finishTask := func() {
                 fmt.Println("Finishing task", taskInfo.GetName())
@@ -97,6 +126,12 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 
 func init() {
 
+}
+
+func must(err error) {
+        if err != nil {
+                panic(err)
+        }
 }
 
 func main() {
