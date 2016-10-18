@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package openvdc;
+
+service Instance {
+	rpc Run (RunRequest) returns (RunReply){}
+}
+
+message RunRequest{
+}
+
+message RunReply {
+}
