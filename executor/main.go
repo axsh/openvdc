@@ -34,6 +34,20 @@ func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
         fmt.Println("Executor disconnected.")
 }
 
+func zkConnect(ip string) *zk.Conn{
+        c, _, err := zk.Connect([]string{ip}, time.Second)
+
+        if err != nil {
+                fmt.Println("VDCExecutor failed connecting to Zookeeper: ", err)
+        }
+
+        return c
+}
+
+
+
+
+
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
         fmt.Println("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
