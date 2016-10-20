@@ -5,13 +5,23 @@ import (
         "fmt"
         "math/rand"
         "time"
+	"gopkg.in/lxc/go-lxc.v2"
         exec "github.com/mesos/mesos-go/executor"
         mesos "github.com/mesos/mesos-go/mesosproto"
         "github.com/samuel/go-zookeeper/zk"
 )
 
 var (
-        slowTasks = flag.Bool("slow_tasks", false, "When true tasks will take several seconds before responding with TASK_FINISHED; useful for debugging failover")
+        slowTasks = flag.Bool("slow_tasks", false, "")
+	lxcpath    string
+        template   string
+        distro     string
+        release    string
+        arch       string
+        name       string
+        verbose    bool
+        flush      bool
+        validation bool
 )
 
 type VDCExecutor struct {
@@ -81,6 +91,34 @@ func testZkConnection(ip string){
         fmt.Println("========================================")
 }
 
+func newLxcContainer() *lxc.Container{
+
+        c, err := lxc.NewContainer(name, lxcpath)
+        if err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
+
+        fmt.Println("Creating lxc-container...\n")
+        if verbose {
+                c.SetVerbosity(lxc.Verbose)
+        }
+
+        options := lxc.TemplateOptions{
+                Template:             template,
+                Distro:               distro,
+                Release:              release,
+                Arch:                 arch,
+                FlushCache:           flush,
+                DisableGPGValidation: validation,
+        }
+
+        if err := c.Create(options); err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
+
+        return c
+}
+
 
 
 
@@ -103,6 +141,9 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	//Zookeeper connection test
         //testZkConnection("127.0.0.1")
+
+	//lxc test
+        lxc := newLxcContainer()
 
 
 
@@ -152,7 +193,16 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 }
 
 func init() {
-
+	flag.StringVar(&lxcpath, "lxcpath", lxc.DefaultConfigPath(), "Use specified container path")
+        flag.StringVar(&template, "template", "download", "Template to use")
+        flag.StringVar(&distro, "distro", "ubuntu", "Template to use")
+        flag.StringVar(&release, "release", "trusty", "Template to use")
+        flag.StringVar(&arch, "arch", "amd64", "Template to use")
+        flag.StringVar(&name, "name", "test", "Name of the container")
+        flag.BoolVar(&verbose, "verbose", false, "Verbose output")
+        flag.BoolVar(&flush, "flush", false, "Flush the cache")
+        flag.BoolVar(&validation, "validation", false, "GPG validation")
+        flag.Parse()
 }
 
 func must(err error) {
