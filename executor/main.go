@@ -44,6 +44,19 @@ func zkConnect(ip string) *zk.Conn{
         return c
 }
 
+func zkGetData(c *zk.Conn, dir string) []byte{
+        data, stat, err := c.Get(dir)
+
+        if err != nil {
+                fmt.Println("VDCExecutor failed getting data from Zookeeper: ", err)
+        }
+
+        fmt.Println(stat)
+
+        return data[:]
+}
+
+
 
 
 
