@@ -56,6 +56,20 @@ func zkGetData(c *zk.Conn, dir string) []byte{
         return data[:]
 }
 
+func zkSendData(c *zk.Conn, dir string, data string){
+        flags := int32(0)
+        acl := zk.WorldACL(zk.PermAll)
+
+        path, err := c.Create(dir, []byte(data), flags, acl)
+
+        if err != nil {
+                fmt.Println("VDCExecutor failed sending data to Zookeeper: ", err)
+        }
+
+        fmt.Println("Sent: ", data, "to ", dir)
+        fmt.Println(path)
+}
+
 
 
 
