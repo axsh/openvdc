@@ -119,9 +119,13 @@ func newLxcContainer() *lxc.Container{
         return c
 }
 
+func destroyLxcContainer(c *lxc.Container){
 
-
-
+        fmt.Println("Destroying lxc-container...\n")
+        if err := c.Destroy(); err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
+}
 
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
         fmt.Println("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
@@ -144,7 +148,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	//lxc test
         lxc := newLxcContainer()
-
+	destroyLxcContainer(lxc)
 
 
 	finishTask := func() {
