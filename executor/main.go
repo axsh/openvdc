@@ -70,6 +70,16 @@ func zkSendData(c *zk.Conn, dir string, data string){
         fmt.Println(path)
 }
 
+func testZkConnection(ip string){
+
+        c := zkConnect(ip)
+        zkSendData(c, "/02", "This is a test")
+        data := []byte(zkGetData(c, "/02"))
+
+        fmt.Println("========================================")
+                fmt.Println(string(data))
+        fmt.Println("========================================")
+}
 
 
 
@@ -91,7 +101,8 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
         fmt.Println("Total tasks launched ", exec.tasksLaunched)
 
 
-
+	//Zookeeper connection test
+        //testZkConnection("127.0.0.1")
 
 
 
