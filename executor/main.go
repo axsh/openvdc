@@ -127,6 +127,28 @@ func destroyLxcContainer(c *lxc.Container){
         }
 }
 
+func startLxcContainer(c *lxc.Container){
+
+        fmt.Println("Starting lxc-container...\n")
+        if err := c.Start(); err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
+
+        fmt.Println("Waiting for lxc-container to start networking\n")
+        if _, err := c.WaitIPAddresses(5 * time.Second); err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
+}
+
+func stopLxcContainer(c *lxc.Container){
+
+        fmt.Println("Stopping lxc-container...\n")
+        if err := c.Stop(); err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
+}
+
+
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
         fmt.Println("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
@@ -148,6 +170,8 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	//lxc test
         lxc := newLxcContainer()
+	startLxcContainer(lxc)
+        stopLxcContainer(lxc)
 	destroyLxcContainer(lxc)
 
 
