@@ -73,7 +73,75 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 }
 
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
-	log.Println("Framework Resource Offers from master", offers)
+	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
+                log.Println("All tasks are already launched: decline offer")
+                ids := make([]*mesos.OfferID, len(offers))
+                for i, offer := range offers {
+                        ids[i] = offer.Id
+                }
+                driver.LaunchTasks(ids, []*mesos.TaskInfo{}, &mesos.Filters{RefuseSeconds: proto.Float64(120)})
+                return
+        }
+
+        for _, offer := range offers {
+                cpuResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
+                        return res.GetName() == "cpus"
+                })
+                cpus := 0.0
+                for _, res := range cpuResources {
+                        cpus += res.GetScalar().GetValue()
+                }
+
+                memResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
+                        return res.GetName() == "mem"
+                })
+                mems := 0.0
+                for _, res := range memResources {
+                        mems += res.GetScalar().GetValue()
+                }
+
+                log.Println("Received Offer <", offer.Id.GetValue(), "> with cpus=", cpus, " mem=", mems)
+
+                remainingCpus := cpus
+                remainingMems := mems
+
+                if len(offer.ExecutorIds) == 0 {
+                        remainingCpus -= CPUS_PER_EXECUTOR
+                        remainingMems -= MEM_PER_EXECUTOR
+                }
+
+                var tasks []*mesos.TaskInfo
+
+		for (sched.tasksLaunched-sched.tasksErrored) < sched.totalTasks &&
+                        CPUS_PER_TASK <= remainingCpus &&
+                        MEM_PER_TASK <= remainingMems {
+
+                        sched.tasksLaunched++
+
+                        taskId := &mesos.TaskID{
+                                Value: proto.String(strconv.Itoa(sched.tasksLaunched)),
+                        }
+
+                        task := &mesos.TaskInfo{
+                                Name:     proto.String("go-task-" + taskId.GetValue()),
+                                TaskId:   taskId,
+                                SlaveId:  offer.SlaveId,
+                                Executor: sched.executor,
+                                Resources: []*mesos.Resource{
+                                        util.NewScalarResource("cpus", CPUS_PER_TASK),
+                                        util.NewScalarResource("mem", MEM_PER_TASK),
+                                },
+                        }
+                        log.Println("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
+
+                        tasks = append(tasks, task)
+                        remainingCpus -= CPUS_PER_TASK
+                        remainingMems -= MEM_PER_TASK
+                }
+
+                log.Println("Launching ", len(tasks), "tasks for offer", offer.Id.GetValue())
+                driver.LaunchTasks([]*mesos.OfferID{offer.Id}, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
+	}
 }
 
 func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *mesos.TaskStatus) {
