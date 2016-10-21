@@ -6,6 +6,10 @@ import (
 	"log"
 	"net"
 
+	"strconv"
+	"strings"
+	"net/http"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
 	"github.com/mesos/mesos-go/auth/sasl"
@@ -21,6 +25,7 @@ const (
 	MEM_PER_EXECUTOR  = 64
 	MEM_PER_TASK      = 64
 	numOfTasks = 1
+	defaultArtifactPort = 12345
 )
 
 var (
