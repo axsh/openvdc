@@ -38,11 +38,23 @@ type VDCScheduler struct {
 }
 
 func newVDCScheduler() *VDCScheduler {
-	executorCommand := fmt.Sprintf("./%s -logtostderr=true -v=%d -slow_tasks=%v", "./executor", 0, false)
-	uri := ""
-	executorUris := []*mesos.CommandInfo_URI{
-		&mesos.CommandInfo_URI{Value: &uri, Executable: proto.Bool(true)},
-	}
+	executorUris := []*mesos.CommandInfo_URI{}
+
+        uri, executorCmd := serveExecutorArtifact(*executorPath)
+        executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
+
+        //Pass flags to executor
+        v := 0
+        if f := flag.Lookup("v"); f != nil && f.Value != nil {
+                if vstr := f.Value.String(); vstr != "" {
+                        if vi, err := strconv.ParseInt(vstr, 10, 32); err == nil {
+                                v = int(vi)
+                        }
+                }
+        }
+
+	executorCommand := fmt.Sprintf("./%s -logtostderr=true -v=%d -slow_tasks=false", executorCmd, v)
+        go http.ListenAndServe(fmt.Sprintf("%s:%d", *bindingIPv4, *artifactPort), nil)
 
 	exec := &mesos.ExecutorInfo{
 		ExecutorId: util.NewExecutorID("default"),
@@ -57,7 +69,15 @@ func newVDCScheduler() *VDCScheduler {
 			util.NewScalarResource("mem", MEM_PER_EXECUTOR),
 		},
 	}
-	return &VDCScheduler{executor: exec}
+
+	total, err := strconv.Atoi(*taskCount)
+
+        if err != nil {
+                log.Println("ERROR: Taskcount not specified. Setting it to 4.")
+                total = 4
+        }
+
+        return &VDCScheduler{executor: exec, totalTasks: total}
 }
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
@@ -189,15 +209,39 @@ func init() {
 	flag.Parse()
 }
 
+func serveExecutorArtifact(path string) (*string, string) {
+        serveFile := func(pattern string, filename string) {
+                http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+                        http.ServeFile(w, r, filename)
+                })
+        }
+
+        pathSplit := strings.Split(path, "/")
+        var base string
+        if len(pathSplit) > 0 {
+                base = pathSplit[len(pathSplit)-1]
+        } else {
+                base = path
+        }
+        serveFile("/"+base, path)
+
+        hostURI := fmt.Sprintf("http://%s:%d/%s", *bindingIPv4, *artifactPort, base)
+        log.Println("Hosting artifact '%s' at '%s'", path, hostURI)
+
+        return &hostURI, base
+}
+
 func main() {
 	fwinfo := &mesos.FrameworkInfo{
 		User: proto.String(""), // Mesos-go will fill in user.
 		Name: proto.String("VDC Scheduler"),
 	}
+
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
 	}
+
 	cred = nil
 	bindingAddrs, err := net.LookupIP(*bindingIPv4)
 	if err != nil {
