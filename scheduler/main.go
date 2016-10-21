@@ -146,6 +146,23 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 
 func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *mesos.TaskStatus) {
 	log.Println("Framework Resource Offers from master", status)
+
+        if status.GetState() == mesos.TaskState_TASK_FINISHED {
+                sched.tasksFinished++
+                driver.ReviveOffers()
+        }
+
+        if sched.tasksFinished >= sched.totalTasks {
+                log.Println("Tasks completed, stopping framework.")
+                driver.Stop(false)
+        }
+
+        if status.GetState() == mesos.TaskState_TASK_LOST ||
+                status.GetState() == mesos.TaskState_TASK_ERROR ||
+                status.GetState() == mesos.TaskState_TASK_FAILED ||
+                status.GetState() == mesos.TaskState_TASK_KILLED {
+                sched.tasksErrored++
+        }
 }
 
 func (sched *VDCScheduler) OfferRescinded(_ sched.SchedulerDriver, oid *mesos.OfferID) {
