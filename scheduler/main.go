@@ -20,15 +20,21 @@ const (
 	CPUS_PER_TASK     = 1
 	MEM_PER_EXECUTOR  = 64
 	MEM_PER_TASK      = 64
+	numOfTasks = 1
 )
 
 var (
 	bindingIPv4        = flag.String("listen", "localhost", "Bind address")
 	mesosMasterAddress = flag.String("master", "localhost:5050", "Mesos Master node")
+	taskCount            =  flag.String("task-count", "numOfTasks", "Number of tasks to run")
 )
 
 type VDCScheduler struct {
 	executor *mesos.ExecutorInfo
+	tasksLaunched int
+        tasksFinished int
+        tasksErrored  int
+        totalTasks    int
 }
 
 func newVDCScheduler() *VDCScheduler {
