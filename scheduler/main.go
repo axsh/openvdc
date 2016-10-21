@@ -32,6 +32,8 @@ var (
 	bindingIPv4        = flag.String("listen", "localhost", "Bind address")
 	mesosMasterAddress = flag.String("master", "localhost:5050", "Mesos Master node")
 	taskCount            =  flag.String("task-count", "numOfTasks", "Number of tasks to run")
+	executorPath        = flag.String("executor", "./executor", "Path to VDCExecutor")
+	artifactPort = flag.Int("artifactPort", defaultArtifactPort, "Binding port for artifact server")
 )
 
 type VDCScheduler struct {
