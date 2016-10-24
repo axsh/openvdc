@@ -6,9 +6,9 @@ import (
 	"log"
 	"net"
 
+	"net/http"
 	"strconv"
 	"strings"
-	"net/http"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
@@ -20,48 +20,48 @@ import (
 )
 
 const (
-	CPUS_PER_EXECUTOR = 0.01
-	CPUS_PER_TASK     = 1
-	MEM_PER_EXECUTOR  = 64
-	MEM_PER_TASK      = 64
-	numOfTasks = 1
+	CPUS_PER_EXECUTOR   = 0.01
+	CPUS_PER_TASK       = 1
+	MEM_PER_EXECUTOR    = 64
+	MEM_PER_TASK        = 64
+	numOfTasks          = 1
 	defaultArtifactPort = 12345
 )
 
 var (
 	bindingIPv4        = flag.String("listen", "localhost", "Bind address")
 	mesosMasterAddress = flag.String("master", "localhost:5050", "Mesos Master node")
-	taskCount            =  flag.String("task-count", "numOfTasks", "Number of tasks to run")
-	executorPath        = flag.String("executor", "./executor", "Path to VDCExecutor")
-	artifactPort = flag.Int("artifactPort", defaultArtifactPort, "Binding port for artifact server")
+	taskCount          = flag.String("task-count", "numOfTasks", "Number of tasks to run")
+	executorPath       = flag.String("executor", "./executor", "Path to VDCExecutor")
+	artifactPort       = flag.Int("artifactPort", defaultArtifactPort, "Binding port for artifact server")
 )
 
 type VDCScheduler struct {
-	executor *mesos.ExecutorInfo
+	executor      *mesos.ExecutorInfo
 	tasksLaunched int
-        tasksFinished int
-        tasksErrored  int
-        totalTasks    int
+	tasksFinished int
+	tasksErrored  int
+	totalTasks    int
 }
 
 func newVDCScheduler() *VDCScheduler {
 	executorUris := []*mesos.CommandInfo_URI{}
 
-        uri, executorCmd := serveExecutorArtifact(*executorPath)
-        executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
+	uri, executorCmd := serveExecutorArtifact(*executorPath)
+	executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
 
-        //Pass flags to executor
-        v := 0
-        if f := flag.Lookup("v"); f != nil && f.Value != nil {
-                if vstr := f.Value.String(); vstr != "" {
-                        if vi, err := strconv.ParseInt(vstr, 10, 32); err == nil {
-                                v = int(vi)
-                        }
-                }
-        }
+	//Pass flags to executor
+	v := 0
+	if f := flag.Lookup("v"); f != nil && f.Value != nil {
+		if vstr := f.Value.String(); vstr != "" {
+			if vi, err := strconv.ParseInt(vstr, 10, 32); err == nil {
+				v = int(vi)
+			}
+		}
+	}
 
 	executorCommand := fmt.Sprintf("./%s -logtostderr=true -v=%d -slow_tasks=false", executorCmd, v)
-        go http.ListenAndServe(fmt.Sprintf("%s:%d", *bindingIPv4, *artifactPort), nil)
+	go http.ListenAndServe(fmt.Sprintf("%s:%d", *bindingIPv4, *artifactPort), nil)
 
 	exec := &mesos.ExecutorInfo{
 		ExecutorId: util.NewExecutorID("default"),
@@ -79,12 +79,12 @@ func newVDCScheduler() *VDCScheduler {
 
 	total, err := strconv.Atoi(*taskCount)
 
-        if err != nil {
-                log.Println("ERROR: Taskcount not specified. Setting it to 4.")
-                total = 4
-        }
+	if err != nil {
+		log.Println("ERROR: Taskcount not specified. Setting it to 4.")
+		total = 4
+	}
 
-        return &VDCScheduler{executor: exec, totalTasks: total}
+	return &VDCScheduler{executor: exec, totalTasks: total}
 }
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
@@ -101,95 +101,95 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
-                log.Println("All tasks are already launched: decline offer")
-                ids := make([]*mesos.OfferID, len(offers))
-                for i, offer := range offers {
-                        ids[i] = offer.Id
-                }
-                driver.LaunchTasks(ids, []*mesos.TaskInfo{}, &mesos.Filters{RefuseSeconds: proto.Float64(120)})
-                return
-        }
+		log.Println("All tasks are already launched: decline offer")
+		ids := make([]*mesos.OfferID, len(offers))
+		for i, offer := range offers {
+			ids[i] = offer.Id
+		}
+		driver.LaunchTasks(ids, []*mesos.TaskInfo{}, &mesos.Filters{RefuseSeconds: proto.Float64(120)})
+		return
+	}
 
-        for _, offer := range offers {
-                cpuResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
-                        return res.GetName() == "cpus"
-                })
-                cpus := 0.0
-                for _, res := range cpuResources {
-                        cpus += res.GetScalar().GetValue()
-                }
+	for _, offer := range offers {
+		cpuResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
+			return res.GetName() == "cpus"
+		})
+		cpus := 0.0
+		for _, res := range cpuResources {
+			cpus += res.GetScalar().GetValue()
+		}
 
-                memResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
-                        return res.GetName() == "mem"
-                })
-                mems := 0.0
-                for _, res := range memResources {
-                        mems += res.GetScalar().GetValue()
-                }
+		memResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
+			return res.GetName() == "mem"
+		})
+		mems := 0.0
+		for _, res := range memResources {
+			mems += res.GetScalar().GetValue()
+		}
 
-                log.Println("Received Offer <", offer.Id.GetValue(), "> with cpus=", cpus, " mem=", mems)
+		log.Println("Received Offer <", offer.Id.GetValue(), "> with cpus=", cpus, " mem=", mems)
 
-                remainingCpus := cpus
-                remainingMems := mems
+		remainingCpus := cpus
+		remainingMems := mems
 
-                if len(offer.ExecutorIds) == 0 {
-                        remainingCpus -= CPUS_PER_EXECUTOR
-                        remainingMems -= MEM_PER_EXECUTOR
-                }
+		if len(offer.ExecutorIds) == 0 {
+			remainingCpus -= CPUS_PER_EXECUTOR
+			remainingMems -= MEM_PER_EXECUTOR
+		}
 
-                var tasks []*mesos.TaskInfo
+		var tasks []*mesos.TaskInfo
 
 		for (sched.tasksLaunched-sched.tasksErrored) < sched.totalTasks &&
-                        CPUS_PER_TASK <= remainingCpus &&
-                        MEM_PER_TASK <= remainingMems {
+			CPUS_PER_TASK <= remainingCpus &&
+			MEM_PER_TASK <= remainingMems {
 
-                        sched.tasksLaunched++
+			sched.tasksLaunched++
 
-                        taskId := &mesos.TaskID{
-                                Value: proto.String(strconv.Itoa(sched.tasksLaunched)),
-                        }
+			taskId := &mesos.TaskID{
+				Value: proto.String(strconv.Itoa(sched.tasksLaunched)),
+			}
 
-                        task := &mesos.TaskInfo{
-                                Name:     proto.String("go-task-" + taskId.GetValue()),
-                                TaskId:   taskId,
-                                SlaveId:  offer.SlaveId,
-                                Executor: sched.executor,
-                                Resources: []*mesos.Resource{
-                                        util.NewScalarResource("cpus", CPUS_PER_TASK),
-                                        util.NewScalarResource("mem", MEM_PER_TASK),
-                                },
-                        }
-                        log.Println("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
+			task := &mesos.TaskInfo{
+				Name:     proto.String("go-task-" + taskId.GetValue()),
+				TaskId:   taskId,
+				SlaveId:  offer.SlaveId,
+				Executor: sched.executor,
+				Resources: []*mesos.Resource{
+					util.NewScalarResource("cpus", CPUS_PER_TASK),
+					util.NewScalarResource("mem", MEM_PER_TASK),
+				},
+			}
+			log.Println("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
 
-                        tasks = append(tasks, task)
-                        remainingCpus -= CPUS_PER_TASK
-                        remainingMems -= MEM_PER_TASK
-                }
+			tasks = append(tasks, task)
+			remainingCpus -= CPUS_PER_TASK
+			remainingMems -= MEM_PER_TASK
+		}
 
-                log.Println("Launching ", len(tasks), "tasks for offer", offer.Id.GetValue())
-                driver.LaunchTasks([]*mesos.OfferID{offer.Id}, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
+		log.Println("Launching ", len(tasks), "tasks for offer", offer.Id.GetValue())
+		driver.LaunchTasks([]*mesos.OfferID{offer.Id}, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	}
 }
 
 func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *mesos.TaskStatus) {
 	log.Println("Framework Resource Offers from master", status)
 
-        if status.GetState() == mesos.TaskState_TASK_FINISHED {
-                sched.tasksFinished++
-                driver.ReviveOffers()
-        }
+	if status.GetState() == mesos.TaskState_TASK_FINISHED {
+		sched.tasksFinished++
+		driver.ReviveOffers()
+	}
 
-        if sched.tasksFinished >= sched.totalTasks {
-                log.Println("Tasks completed, stopping framework.")
-                driver.Stop(false)
-        }
+	if sched.tasksFinished >= sched.totalTasks {
+		log.Println("Tasks completed, stopping framework.")
+		driver.Stop(false)
+	}
 
-        if status.GetState() == mesos.TaskState_TASK_LOST ||
-                status.GetState() == mesos.TaskState_TASK_ERROR ||
-                status.GetState() == mesos.TaskState_TASK_FAILED ||
-                status.GetState() == mesos.TaskState_TASK_KILLED {
-                sched.tasksErrored++
-        }
+	if status.GetState() == mesos.TaskState_TASK_LOST ||
+		status.GetState() == mesos.TaskState_TASK_ERROR ||
+		status.GetState() == mesos.TaskState_TASK_FAILED ||
+		status.GetState() == mesos.TaskState_TASK_KILLED {
+		sched.tasksErrored++
+	}
 }
 
 func (sched *VDCScheduler) OfferRescinded(_ sched.SchedulerDriver, oid *mesos.OfferID) {
@@ -217,25 +217,25 @@ func init() {
 }
 
 func serveExecutorArtifact(path string) (*string, string) {
-        serveFile := func(pattern string, filename string) {
-                http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-                        http.ServeFile(w, r, filename)
-                })
-        }
+	serveFile := func(pattern string, filename string) {
+		http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, filename)
+		})
+	}
 
-        pathSplit := strings.Split(path, "/")
-        var base string
-        if len(pathSplit) > 0 {
-                base = pathSplit[len(pathSplit)-1]
-        } else {
-                base = path
-        }
-        serveFile("/"+base, path)
+	pathSplit := strings.Split(path, "/")
+	var base string
+	if len(pathSplit) > 0 {
+		base = pathSplit[len(pathSplit)-1]
+	} else {
+		base = path
+	}
+	serveFile("/"+base, path)
 
-        hostURI := fmt.Sprintf("http://%s:%d/%s", *bindingIPv4, *artifactPort, base)
-        log.Println("Hosting artifact '%s' at '%s'", path, hostURI)
+	hostURI := fmt.Sprintf("http://%s:%d/%s", *bindingIPv4, *artifactPort, base)
+	log.Println("Hosting artifact '%s' at '%s'", path, hostURI)
 
-        return &hostURI, base
+	return &hostURI, base
 }
 
 func main() {
