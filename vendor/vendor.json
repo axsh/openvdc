@@ -223,6 +223,12 @@
 			"path": "google.golang.org/grpc/transport",
 			"revision": "b7f1379d3cbbbeb2ca3405852012e237aa05459e",
 			"revisionTime": "2016-10-17T23:02:05Z"
+		},
+		{
+			"checksumSHA1": "SGjhf2K0padqdDBlpnmxQK84NaY=",
+			"path": "gopkg.in/lxc/go-lxc.v2",
+			"revision": "c4f2de4edf482ad2846c200752c6e4bac7fc3a74",
+			"revisionTime": "2016-10-12T16:41:23Z"
 		}
 	],
 	"rootPath": "github.com/axsh/openvdc"
