@@ -151,6 +151,23 @@ func stopLxcContainer(c *lxc.Container) {
 	}
 }
 
+func newTask(taskName string) {
+
+        switch taskName {
+                case "lxc-create":
+                        //lxc := newLxcContainer()
+                case "lxc-start":
+                        //startLxcContainer(lxc)
+                case "lxc-stop":
+                        //stopLxcContainer(lxc)
+                case "lxc-destroy":
+                        //destroyLxcContainer(lxc)
+                default:
+                        fmt.Println("ERROR: Taskname unrecognized")
+        }
+}
+
+
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	fmt.Println("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
@@ -169,11 +186,8 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	//Zookeeper connection test
 	//testZkConnection("127.0.0.1")
 
-	//lxc test
-	lxc := newLxcContainer()
-	startLxcContainer(lxc)
-	stopLxcContainer(lxc)
-	destroyLxcContainer(lxc)
+	newTask(taskInfo.GetName())
+
 
 	finishTask := func() {
 		fmt.Println("Finishing task", taskInfo.GetName())
