@@ -193,11 +193,6 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 		driver.ReviveOffers()
 	}
 
-	if sched.tasksFinished >= sched.totalTasks {
-		log.Println("Tasks completed, stopping framework.")
-		driver.Stop(false)
-	}
-
 	if status.GetState() == mesos.TaskState_TASK_LOST ||
 		status.GetState() == mesos.TaskState_TASK_ERROR ||
 		status.GetState() == mesos.TaskState_TASK_FAILED ||
