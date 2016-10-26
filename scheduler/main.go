@@ -25,7 +25,6 @@ const (
 	CPUS_PER_TASK       = 1
 	MEM_PER_EXECUTOR    = 64
 	MEM_PER_TASK        = 64
-	numOfTasks          = 1
 	defaultArtifactPort = 12345
 )
 
