@@ -121,11 +121,9 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, taskName string) {
 	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
 		log.Println("All tasks are already launched: decline offer")
-		ids := make([]*mesos.OfferID, len(offers))
-		for i, offer := range offers {
-			ids[i] = offer.Id
+		for _, offer := range offers {
+			driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(120)})
 		}
-		driver.LaunchTasks(ids, []*mesos.TaskInfo{}, &mesos.Filters{RefuseSeconds: proto.Float64(120)})
 		return
 	}
 
@@ -186,6 +184,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		}
 
 		log.Println("Launching ", len(tasks), "tasks for offer", offer.Id.GetValue())
+		// TODO: Replace with AcceptOffers(). https://issues.apache.org/jira/browse/MESOS-2955
 		driver.LaunchTasks([]*mesos.OfferID{offer.Id}, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	}
 }
