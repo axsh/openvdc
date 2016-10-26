@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/axsh/openvdc/api"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
 	"github.com/mesos/mesos-go/auth/sasl"
@@ -34,6 +35,7 @@ var (
 	taskCount          = flag.Int("task-count", 4, "Number of tasks to run")
 	executorPath       = flag.String("executor", "./executor", "Path to VDCExecutor")
 	artifactPort       = flag.Int("artifactPort", defaultArtifactPort, "Binding port for artifact server")
+	apiAddr            = flag.String("api", ":5000", "gRPC API bind address: host:port")
 )
 
 type VDCScheduler struct {
@@ -42,9 +44,10 @@ type VDCScheduler struct {
 	tasksFinished int
 	tasksErrored  int
 	totalTasks    int
+	offerChan     api.APIOffer
 }
 
-func newVDCScheduler() *VDCScheduler {
+func newVDCScheduler(ch api.APIOffer) *VDCScheduler {
 	executorUris := []*mesos.CommandInfo_URI{}
 
 	uri, executorCmd := serveExecutorArtifact(*executorPath)
@@ -77,7 +80,7 @@ func newVDCScheduler() *VDCScheduler {
 		},
 	}
 
-	return &VDCScheduler{executor: exec, totalTasks: *taskCount}
+	return &VDCScheduler{executor: exec, totalTasks: *taskCount, offerChan: ch}
 }
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
@@ -93,6 +96,24 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 }
 
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
+	select {
+	case _, ok := <-sched.offerChan:
+		if ok {
+			sched.processOffers(driver, offers)
+		}
+	default:
+		log.Println("Skip offer since no allocation requests.", offers)
+		for _, offer := range offers {
+			stat, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(1)})
+			if err != nil {
+				log.Println(err)
+			}
+			log.Println(stat)
+		}
+	}
+}
+
+func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
 		log.Println("All tasks are already launched: decline offer")
 		ids := make([]*mesos.OfferID, len(offers))
@@ -231,7 +252,23 @@ func serveExecutorArtifact(path string) (*string, string) {
 	return &hostURI, base
 }
 
+func startAPIServer(laddr string, ch api.APIOffer) *api.APIServer {
+	lis, err := net.Listen("tcp", laddr)
+	if err != nil {
+		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
+	}
+	log.Println("Listening gRPC API on: ", laddr)
+	s := api.NewAPIServer(ch)
+	go s.Serve(lis)
+	return s
+}
+
 func main() {
+	ch := make(api.APIOffer)
+	apiServer := startAPIServer(*apiAddr, ch)
+	defer func() {
+		apiServer.GracefulStop()
+	}()
 	fwinfo := &mesos.FrameworkInfo{
 		User: proto.String(""), // Mesos-go will fill in user.
 		Name: proto.String("VDC Scheduler"),
@@ -248,7 +285,7 @@ func main() {
 		log.Fatalln("Invalid Address to -listen option: ", err)
 	}
 	config := sched.DriverConfig{
-		Scheduler:      newVDCScheduler(),
+		Scheduler:      newVDCScheduler(ch),
 		Framework:      fwinfo,
 		Master:         *mesosMasterAddress,
 		Credential:     cred,

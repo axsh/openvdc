@@ -7,7 +7,8 @@ import (
 )
 
 func TestNewAPIServer(t *testing.T) {
-	s := NewAPIServer()
+	c := make(APIOffer)
+	s := NewAPIServer(c)
 	if s == nil {
 		t.Error("NewAPIServer() returned nil")
 	}
@@ -18,7 +19,8 @@ func TestAPIServerRun(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s := NewAPIServer()
+	c := make(APIOffer)
+	s := NewAPIServer(c)
 	go func() {
 		time.Sleep(2 * time.Second)
 		s.Stop()
