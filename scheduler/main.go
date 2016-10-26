@@ -94,10 +94,15 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 	log.Println("disconnected from master")
 }
 
+func handleParams() {
+        //TODO: Handle params sent by API.
+}
+
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	select {
 	case _, ok := <-sched.offerChan:
 		if ok {
+			handleParams()
 			taskName := "lxc-create"
 			sched.processOffers(driver, offers, taskName)
 		}
