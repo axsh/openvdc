@@ -88,10 +88,6 @@ func testZkConnection(ip string) {
 	c := zkConnect(ip)
 	zkSendData(c, "/02", "This is a test")
 	data := []byte(zkGetData(c, "/02"))
-
-	fmt.Println("========================================")
-	fmt.Println(string(data))
-	fmt.Println("========================================")
 }
 
 func newLxcContainer() *lxc.Container {
@@ -159,9 +155,9 @@ func trimName(untrimmedName string) string {
 }
 
 func newTask(taskName string) {
-	
+
 	trimmedTaskName := trimName(taskName)
-	
+
         switch trimmedTaskName {
                 case "lxc-create":
                         //lxc := newLxcContainer()
@@ -191,9 +187,6 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	exec.tasksLaunched++
 	fmt.Println("Total tasks launched ", exec.tasksLaunched)
-
-	//Zookeeper connection test
-	//testZkConnection("127.0.0.1")
 
 	newTask(taskInfo.GetName())
 
