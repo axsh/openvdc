@@ -99,7 +99,8 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	select {
 	case _, ok := <-sched.offerChan:
 		if ok {
-			sched.processOffers(driver, offers)
+			taskName := "lxc-create"
+			sched.processOffers(driver, offers, taskName)
 		}
 	default:
 		log.Println("Skip offer since no allocation requests.", offers)
@@ -113,7 +114,7 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
+func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, taskName string) {
 	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
 		log.Println("All tasks are already launched: decline offer")
 		ids := make([]*mesos.OfferID, len(offers))
@@ -164,7 +165,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			}
 
 			task := &mesos.TaskInfo{
-				Name:     proto.String("go-task-" + taskId.GetValue()),
+				Name:     proto.String(taskName + "-" + taskId.GetValue()),
 				TaskId:   taskId,
 				SlaveId:  offer.SlaveId,
 				Executor: sched.executor,
