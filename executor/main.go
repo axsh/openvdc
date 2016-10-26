@@ -83,11 +83,12 @@ func zkSendData(c *zk.Conn, dir string, data string) {
 	fmt.Println(path)
 }
 
-func testZkConnection(ip string) {
+func testZkConnection(ip string, dir string, msg string) {
 
 	c := zkConnect(ip)
-	zkSendData(c, "/02", "This is a test")
-	data := []byte(zkGetData(c, "/02"))
+	zkSendData(c, dir, msg)
+	data := []byte(zkGetData(c, dir))
+	fmt.Println(data)
 }
 
 func newLxcContainer() *lxc.Container {
