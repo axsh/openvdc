@@ -85,7 +85,7 @@
         "#firewall-cmd --permanent --zone=public --add-port=5050/tcp",
         "#firewall-cmd --permanent --zone=public --add-port=5051/tcp",
         "nmcli connection add type ethernet ifname eth1 save yes con-name eth1 ip4 {{user `nic2_ipv4`}}/24",
-        "echo 'openvdc-1box {{user `nic2_ipv4`}}' >> /etc/hosts",
+        "echo '{{user `nic2_ipv4`}} openvdc-1box' >> /etc/hosts",
         "echo 'openvdc-1box' > /etc/hostname"
       ]
     }
