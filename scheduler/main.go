@@ -31,7 +31,7 @@ const (
 var (
 	bindingIPv4        = flag.String("listen", "localhost", "Bind address")
 	mesosMasterAddress = flag.String("master", "localhost:5050", "Mesos Master node")
-	taskCount          = flag.String("task-count", "numOfTasks", "Number of tasks to run")
+	taskCount          = flag.Int("task-count", 4, "Number of tasks to run")
 	executorPath       = flag.String("executor", "./executor", "Path to VDCExecutor")
 	artifactPort       = flag.Int("artifactPort", defaultArtifactPort, "Binding port for artifact server")
 )
@@ -77,14 +77,7 @@ func newVDCScheduler() *VDCScheduler {
 		},
 	}
 
-	total, err := strconv.Atoi(*taskCount)
-
-	if err != nil {
-		log.Println("ERROR: Taskcount not specified. Setting it to 4.")
-		total = 4
-	}
-
-	return &VDCScheduler{executor: exec, totalTasks: total}
+	return &VDCScheduler{executor: exec, totalTasks: *taskCount}
 }
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
