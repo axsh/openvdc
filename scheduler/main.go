@@ -165,7 +165,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			}
 
 			task := &mesos.TaskInfo{
-				Name:     proto.String(taskName + "-" + taskId.GetValue()),
+				Name:     proto.String(taskName + "_" + taskId.GetValue()),
 				TaskId:   taskId,
 				SlaveId:  offer.SlaveId,
 				Executor: sched.executor,

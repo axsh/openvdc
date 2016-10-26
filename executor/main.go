@@ -151,9 +151,18 @@ func stopLxcContainer(c *lxc.Container) {
 	}
 }
 
-func newTask(taskName string) {
+func trimName(untrimmedName string) string {
+        limit := "_"
+        trimmedName := strings.Split(untrimmedName, limit)[0]
 
-        switch taskName {
+        return trimmedName
+}
+
+func newTask(taskName string) {
+	
+	trimmedTaskName := trimName(taskName)
+	
+        switch trimmedTaskName {
                 case "lxc-create":
                         //lxc := newLxcContainer()
                 case "lxc-start":
