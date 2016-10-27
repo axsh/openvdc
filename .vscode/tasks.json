@@ -2,13 +2,15 @@
   "version": "0.1.0",
   "command": "go",
   "isShellCommand": true,
-  "showOutput": "silent",
+  "echoCommand": true,
   "tasks": [
     {
-      "taskName": "build",
+      "taskName": "Build",
       "args": [
-        "-o", "scheduler/scheduler", "scheduler/main.go"
+        "build", "-v", "./cmd/openvdc"
       ],
+      "suppressTaskName": true,
+      "problemMatcher": ["$go"],
       "isBuildCommand": true
     }
   ]

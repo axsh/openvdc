@@ -21,6 +21,12 @@
 			"revisionTime": "2016-10-12T20:53:35Z"
 		},
 		{
+			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
+			"path": "github.com/inconshreveable/mousetrap",
+			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"revisionTime": "2014-10-17T20:07:13Z"
+		},
+		{
 			"checksumSHA1": "AwL6gGPNrpKip+E2J1RUtOQRqMc=",
 			"path": "github.com/mesos/mesos-go/auth",
 			"revision": "7228b13084ce3ea645dbf7c8ecb5704301a6eadf",
@@ -127,6 +133,18 @@
 			"path": "github.com/samuel/go-zookeeper/zk",
 			"revision": "87e1bca4477a3cc767ca71be023ced183d74e538",
 			"revisionTime": "2016-09-02T21:22:55Z"
+		},
+		{
+			"checksumSHA1": "FZ0r4TzEy9UxXLkFVXFygApni4M=",
+			"path": "github.com/spf13/cobra",
+			"revision": "6e91dded25d73176bf7f60b40dd7aa1f0bf9be8d",
+			"revisionTime": "2016-10-26T01:28:26Z"
+		},
+		{
+			"checksumSHA1": "GxPD7A0NjMDom1xte0mghkpzr0E=",
+			"path": "github.com/spf13/pflag",
+			"revision": "5ccb023bc27df288a957c5e994cd44fd19619465",
+			"revisionTime": "2016-10-24T13:13:51Z"
 		},
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
