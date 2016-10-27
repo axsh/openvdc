@@ -1,20 +1,24 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 
 	pb "github.com/axsh/openvdc/proto"
+	fp "gopkg.in/alecthomas/kingpin.v2"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 var (
-	addrFlag = flag.String("addr", "localhost:5000", "server address host:post")
+	addrFlag = fp.Flag("addr", "server address host:post").Default("localhost:5000").String()
+        task = fp.Flag("task", "Call task: lxc-create, lxc-destroy").String()
 )
 
 func main() {
+
+	fp.Parse()
+
 	conn, err := grpc.Dial(*addrFlag, grpc.WithInsecure())
 
 	if err != nil {
