@@ -6,11 +6,11 @@
 Package openvdc is a generated protocol buffer package.
 
 It is generated from these files:
-	v1.proto
+        v1.proto
 
 It has these top-level messages:
-	RunRequest
-	RunReply
+        RunRequest
+        RunReply
 */
 package openvdc
 
@@ -19,8 +19,8 @@ import fmt "fmt"
 import math "math"
 
 import (
-	context "golang.org/x/net/context"
-	grpc "google.golang.org/grpc"
+        context "golang.org/x/net/context"
+        grpc "google.golang.org/grpc"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -32,9 +32,10 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+//const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type RunRequest struct {
+        Test string `protobuf:"bytes,1,opt,name=test" json:"test,omitempty"`
 }
 
 func (m *RunRequest) Reset()                    { *m = RunRequest{} }
@@ -51,8 +52,8 @@ func (*RunReply) ProtoMessage()               {}
 func (*RunReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func init() {
-	proto.RegisterType((*RunRequest)(nil), "openvdc.RunRequest")
-	proto.RegisterType((*RunReply)(nil), "openvdc.RunReply")
+        proto.RegisterType((*RunRequest)(nil), "openvdc.RunRequest")
+        proto.RegisterType((*RunReply)(nil), "openvdc.RunReply")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -66,76 +67,77 @@ const _ = grpc.SupportPackageIsVersion3
 // Client API for Instance service
 
 type InstanceClient interface {
-	Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunReply, error)
+        Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunReply, error)
 }
 
 type instanceClient struct {
-	cc *grpc.ClientConn
+        cc *grpc.ClientConn
 }
 
 func NewInstanceClient(cc *grpc.ClientConn) InstanceClient {
-	return &instanceClient{cc}
+        return &instanceClient{cc}
 }
 
 func (c *instanceClient) Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunReply, error) {
-	out := new(RunReply)
-	err := grpc.Invoke(ctx, "/openvdc.Instance/Run", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+        out := new(RunReply)
+        err := grpc.Invoke(ctx, "/openvdc.Instance/Run", in, out, c.cc, opts...)
+        if err != nil {
+                return nil, err
+        }
+        return out, nil
 }
 
 // Server API for Instance service
 
 type InstanceServer interface {
-	Run(context.Context, *RunRequest) (*RunReply, error)
+        Run(context.Context, *RunRequest) (*RunReply, error)
 }
 
 func RegisterInstanceServer(s *grpc.Server, srv InstanceServer) {
-	s.RegisterService(&_Instance_serviceDesc, srv)
+        s.RegisterService(&_Instance_serviceDesc, srv)
 }
 
 func _Instance_Run_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RunRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceServer).Run(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/openvdc.Instance/Run",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).Run(ctx, req.(*RunRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+        in := new(RunRequest)
+        if err := dec(in); err != nil {
+                return nil, err
+        }
+        if interceptor == nil {
+                return srv.(InstanceServer).Run(ctx, in)
+        }
+        info := &grpc.UnaryServerInfo{
+                Server:     srv,
+                FullMethod: "/openvdc.Instance/Run",
+        }
+        handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+                return srv.(InstanceServer).Run(ctx, req.(*RunRequest))
+        }
+        return interceptor(ctx, in, info, handler)
 }
 
 var _Instance_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "openvdc.Instance",
-	HandlerType: (*InstanceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Run",
-			Handler:    _Instance_Run_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: fileDescriptor0,
+        ServiceName: "openvdc.Instance",
+        HandlerType: (*InstanceServer)(nil),
+        Methods: []grpc.MethodDesc{
+                {
+                        MethodName: "Run",
+                        Handler:    _Instance_Run_Handler,
+                },
+        },
+        Streams:  []grpc.StreamDesc{},
+        Metadata: fileDescriptor0,
 }
 
 func init() { proto.RegisterFile("v1.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 107 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x28, 0x33, 0xd4, 0x2b,
-	0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xcf, 0x2f, 0x48, 0xcd, 0x2b, 0x4b, 0x49, 0x56, 0xe2, 0xe1,
-	0xe2, 0x0a, 0x2a, 0xcd, 0x0b, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x51, 0xe2, 0xe2, 0xe2, 0x00,
-	0xf3, 0x0a, 0x72, 0x2a, 0x8d, 0xac, 0xb9, 0x38, 0x3c, 0xf3, 0x8a, 0x4b, 0x12, 0xf3, 0x92, 0x53,
-	0x85, 0xf4, 0xb9, 0x98, 0x83, 0x4a, 0xf3, 0x84, 0x84, 0xf5, 0xa0, 0xda, 0xf4, 0x10, 0x7a, 0xa4,
-	0x04, 0x51, 0x05, 0x0b, 0x72, 0x2a, 0x95, 0x18, 0x92, 0xd8, 0xc0, 0xd6, 0x18, 0x03, 0x02, 0x00,
-	0x00, 0xff, 0xff, 0x90, 0xea, 0xea, 0x4a, 0x72, 0x00, 0x00, 0x00,
+        // 121 bytes of a gzipped FileDescriptorProto
+        0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x28, 0x33, 0xd4, 0x2b,
+        0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0xcf, 0x2f, 0x48, 0xcd, 0x2b, 0x4b, 0x49, 0x56, 0x52, 0xe0,
+        0xe2, 0x0a, 0x2a, 0xcd, 0x0b, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x11, 0x12, 0xe2, 0x62, 0x29,
+        0x01, 0xd2, 0x12, 0x8c, 0x0a, 0x8c, 0x1a, 0x9c, 0x41, 0x60, 0xb6, 0x12, 0x17, 0x17, 0x07, 0x58,
+        0x45, 0x41, 0x4e, 0xa5, 0x91, 0x35, 0x17, 0x87, 0x67, 0x5e, 0x71, 0x49, 0x62, 0x5e, 0x72, 0xaa,
+        0x90, 0x3e, 0x17, 0x33, 0x50, 0x5c, 0x48, 0x58, 0x0f, 0x6a, 0x94, 0x1e, 0xc2, 0x1c, 0x29, 0x41,
+        0x54, 0x41, 0xa0, 0x56, 0x25, 0x86, 0x24, 0x36, 0xb0, 0xd5, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff,
+        0xff, 0x9f, 0x9a, 0xe9, 0xe8, 0x86, 0x00, 0x00, 0x00,
 }

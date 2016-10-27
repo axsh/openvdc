@@ -7,6 +7,7 @@ service Instance {
 }
 
 message RunRequest{
+	string test = 1;
 }
 
 message RunReply {
