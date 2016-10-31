@@ -91,7 +91,7 @@ func testZkConnection(ip string, dir string, msg string) {
 	fmt.Println(data)
 }
 
-func newLxcContainer() *lxc.Container {
+func newLxcContainer() {
 
 	c, err := lxc.NewContainer(name, lxcpath)
 	if err != nil {
@@ -115,11 +115,14 @@ func newLxcContainer() *lxc.Container {
 	if err := c.Create(options); err != nil {
 		fmt.Println("ERROR: %s\n", err.Error())
 	}
-
-	return c
 }
 
-func destroyLxcContainer(c *lxc.Container) {
+func destroyLxcContainer() {
+
+	c, err := lxc.NewContainer(name, lxcpath)
+        if err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
 
 	fmt.Println("Destroying lxc-container...\n")
 	if err := c.Destroy(); err != nil {
@@ -127,7 +130,12 @@ func destroyLxcContainer(c *lxc.Container) {
 	}
 }
 
-func startLxcContainer(c *lxc.Container) {
+func startLxcContainer() {
+
+	c, err := lxc.NewContainer(name, lxcpath)
+        if err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
 
 	fmt.Println("Starting lxc-container...\n")
 	if err := c.Start(); err != nil {
@@ -140,7 +148,12 @@ func startLxcContainer(c *lxc.Container) {
 	}
 }
 
-func stopLxcContainer(c *lxc.Container) {
+func stopLxcContainer() {
+
+	c, err := lxc.NewContainer(name, lxcpath)
+        if err != nil {
+                fmt.Println("ERROR: %s\n", err.Error())
+        }
 
 	fmt.Println("Stopping lxc-container...\n")
 	if err := c.Stop(); err != nil {
@@ -162,7 +175,7 @@ func newTask(taskName string) {
         switch trimmedTaskName {
                 case "lxc-create":
 			fmt.Println("---Launching task: lxc-create---")
-                        lxc := newLxcContainer()
+                        newLxcContainer()
                 case "lxc-start":
 			fmt.Println("---Launching task: lxc-start---")
                         startLxcContainer(lxc)
