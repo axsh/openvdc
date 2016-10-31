@@ -103,8 +103,9 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	case _, ok := <-sched.offerChan:
 		if ok {
 			handleParams()
-			taskName := "lxc-create"
-			sched.processOffers(driver, offers, taskName)
+			s := <-sched.offerChan
+                        taskName := s.Test
+                        sched.processOffers(driver, offers, taskName)
 		}
 	default:
 		log.Println("Skip offer since no allocation requests.", offers)
