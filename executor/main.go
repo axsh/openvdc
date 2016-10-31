@@ -161,13 +161,17 @@ func newTask(taskName string) {
 
         switch trimmedTaskName {
                 case "lxc-create":
-                        //lxc := newLxcContainer()
+			fmt.Println("---Launching task: lxc-create---")
+                        lxc := newLxcContainer()
                 case "lxc-start":
-                        //startLxcContainer(lxc)
+			fmt.Println("---Launching task: lxc-start---")
+                        startLxcContainer(lxc)
                 case "lxc-stop":
-                        //stopLxcContainer(lxc)
+			fmt.Println("---Launching task: lxc-stop---")
+                        stopLxcContainer(lxc)
                 case "lxc-destroy":
-                        //destroyLxcContainer(lxc)
+			fmt.Println("---Launching task: lxc-destroy---")
+                        destroyLxcContainer(lxc)
                 default:
                         fmt.Println("ERROR: Taskname unrecognized")
         }
@@ -188,6 +192,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	exec.tasksLaunched++
 	fmt.Println("Total tasks launched ", exec.tasksLaunched)
+
 
 	newTask(taskInfo.GetName())
 
