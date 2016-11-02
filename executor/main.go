@@ -180,13 +180,13 @@ func newTask(taskName string) {
                         newLxcContainer()
                 case "lxc-start":
 			log.Println("---Launching task: lxc-start---")
-                        startLxcContainer(lxc)
+                        startLxcContainer()
                 case "lxc-stop":
 			log.Println("---Launching task: lxc-stop---")
-                        stopLxcContainer(lxc)
+                        stopLxcContainer()
                 case "lxc-destroy":
 			log.Println("---Launching task: lxc-destroy---")
-                        destroyLxcContainer(lxc)
+                        destroyLxcContainer()
                 default:
                         log.Println("ERROR: Taskname unrecognized")
         }
