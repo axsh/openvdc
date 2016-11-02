@@ -4,9 +4,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"math/rand"
 	"time"
+	"log"
+	"os"
 
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
@@ -272,6 +273,30 @@ func must(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func setupLog(logpath string, filename string, prefix string){
+
+        //TODO: Move this to separate file
+
+        if _, err := os.Stat(logpath); os.IsNotExist(err){
+                os.Mkdir(logpath, os.ModePerm)
+        }
+
+        if _, err := os.Stat(logpath + filename); os.IsNotExist(err){
+                _, err := os.Create(logpath + filename)
+                if err != nil{
+                        log.Println("Error creating log file: ", err)
+                }
+        }
+
+        vdclog, err := os.OpenFile(logpath + filename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+        if err != nil {
+           log.Println("Error opening log file", err)
+        }
+
+        log.SetOutput(vdclog)
+        log.SetPrefix(prefix)
 }
 
 func main() {
