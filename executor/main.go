@@ -8,12 +8,12 @@ import (
 	"time"
 	"strings"
 	"log"
-	"os"
 
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	"github.com/samuel/go-zookeeper/zk"
 	lxc "gopkg.in/lxc/go-lxc.v2"
+	vdc_utils "github.com/axsh/openvdc/util"
 )
 
 var (
@@ -276,33 +276,9 @@ func must(err error) {
 	}
 }
 
-func setupLog(logpath string, filename string, prefix string){
-
-        //TODO: Move this to separate file
-
-        if _, err := os.Stat(logpath); os.IsNotExist(err){
-                os.Mkdir(logpath, os.ModePerm)
-        }
-
-        if _, err := os.Stat(logpath + filename); os.IsNotExist(err){
-                _, err := os.Create(logpath + filename)
-                if err != nil{
-                        log.Println("Error creating log file: ", err)
-                }
-        }
-
-        vdclog, err := os.OpenFile(logpath + filename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
-        if err != nil {
-           log.Println("Error opening log file", err)
-        }
-
-        log.SetOutput(vdclog)
-        log.SetPrefix(prefix)
-}
-
 func main() {
 
-	setupLog("/var/log/axsh/", "vdc-executor.log", "VDC-EXECUTOR: ")
+	vdc_utils.SetupLog("/var/log/axsh/", "vdc-executor.log", "VDC-EXECUTOR: ")
 
 	log.Println("Initializing executor")
 
