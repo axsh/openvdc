@@ -53,7 +53,7 @@ func zkConnect(ip string) *zk.Conn {
 	c, _, err := zk.Connect([]string{ip}, time.Second)
 
 	if err != nil {
-		log.Println("VDCExecutor failed connecting to Zookeeper: ", err)
+		log.Println("ERROR: failed connecting to Zookeeper: ", err)
 	}
 
 	return c
@@ -63,7 +63,7 @@ func zkGetData(c *zk.Conn, dir string) []byte {
 	data, stat, err := c.Get(dir)
 
 	if err != nil {
-		log.Println("VDCExecutor failed getting data from Zookeeper: ", err)
+		log.Println("ERROR: failed getting data from Zookeeper: ", err)
 	}
 
 	log.Println(stat)
@@ -78,7 +78,7 @@ func zkSendData(c *zk.Conn, dir string, data string) {
 	path, err := c.Create(dir, []byte(data), flags, acl)
 
 	if err != nil {
-		log.Println("VDCExecutor failed sending data to Zookeeper: ", err)
+		log.Println("ERROR: failed sending data to Zookeeper: ", err)
 	}
 
 	log.Println("Sent: ", data, "to ", dir)
@@ -97,7 +97,7 @@ func newLxcContainer() {
 
 	c, err := lxc.NewContainer(name, lxcpath)
 	if err != nil {
-		log.Println("ERROR: %s\n", err.Error())
+		log.Println("ERROR: %s\n", err)
 	}
 
 	log.Println("Creating lxc-container...\n")
@@ -115,7 +115,7 @@ func newLxcContainer() {
 	}
 
 	if err := c.Create(options); err != nil {
-		log.Println("ERROR: %s\n", err.Error())
+		log.Println("ERROR: %s\n", err)
 	}
 }
 
@@ -123,12 +123,12 @@ func destroyLxcContainer() {
 
 	c, err := lxc.NewContainer(name, lxcpath)
         if err != nil {
-                log.Println("ERROR: %s\n", err.Error())
+                log.Println("ERROR: %s\n", err)
         }
 
-	log.Println("Destroying lxc-container...\n")
+	log.Println("Destroying lxc-container..\n")
 	if err := c.Destroy(); err != nil {
-		log.Println("ERROR: %s\n", err.Error())
+		log.Println("ERROR: %s\n", err)
 	}
 }
 
@@ -136,12 +136,12 @@ func startLxcContainer() {
 
 	c, err := lxc.NewContainer(name, lxcpath)
         if err != nil {
-                log.Println("ERROR: %s\n", err.Error())
+                log.Println("ERROR: %s\n", err)
         }
 
 	log.Println("Starting lxc-container...\n")
 	if err := c.Start(); err != nil {
-		log.Println("ERROR: %s\n", err.Error())
+		log.Println("ERROR: %s\n", err)
 	}
 
 	log.Println("Waiting for lxc-container to start networking\n")
@@ -157,7 +157,7 @@ func stopLxcContainer() {
                 log.Println("ERROR: %s\n", err.Error())
         }
 
-	log.Println("Stopping lxc-container...\n")
+	log.Println("Stopping lxc-container..\n")
 	if err := c.Stop(); err != nil {
 		log.Println("ERROR: %s\n", err.Error())
 	}
@@ -202,11 +202,11 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 	_, err := driver.SendStatusUpdate(runStatus)
 	if err != nil {
-		log.Println("Got error", err)
+		log.Println("ERROR: Couldn't send status update", err)
 	}
 
 	exec.tasksLaunched++
-	log.Println("Total tasks launched ", exec.tasksLaunched)
+	log.Println("Tasks launched ", exec.tasksLaunched)
 
 
 	newTask(taskInfo.GetName())
@@ -219,7 +219,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			State:  mesos.TaskState_TASK_FINISHED.Enum(),
 		}
 		if _, err := driver.SendStatusUpdate(finStatus); err != nil {
-			log.Println("error sending FINISHED", err)
+			log.Println("ERROR: Couldn't send status update", err)
 		}
 		log.Println("Task finished", taskInfo.GetName())
 	}
@@ -229,7 +229,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			State:  mesos.TaskState_TASK_STARTING.Enum(),
 		}
 		if _, err := driver.SendStatusUpdate(starting); err != nil {
-			log.Println("error sending STARTING", err)
+			log.Println("ERROR: Couldn't send status update", err)
 		}
 		delay := time.Duration(rand.Intn(90)+10) * time.Second
 		go func() {
@@ -304,7 +304,7 @@ func main() {
 
 	setupLog("/var/log/axsh/", "vdc-executor.log", "VDC-EXECUTOR: ")
 
-	log.Println("Starting VDC Executor (Go)")
+	log.Println("Initializing executor")
 
 	dconfig := exec.DriverConfig{
 		Executor: newVDCExecutor(),
@@ -312,19 +312,19 @@ func main() {
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 
 	if err != nil {
-		log.Println("Unable to create a ExecutorDriver ", err.Error())
+		log.Println("ERROR: Couldn't create ExecutorDriver ", err.Error())
 	}
 
 	_, err = driver.Start()
 	if err != nil {
-		log.Println("Got error:", err)
+		log.Println("ERROR: ExecutorDriver wasn't able to start: ", err)
 		return
 	}
-	log.Println("Executor process has started and running.")
+	log.Println("Process running")
 
 	_, err = driver.Join()
 	if err != nil {
-		log.Println("driver failed:", err)
+		log.Println("ERROR: Something went wrong with the driver: ", err)
 	}
-	log.Println("executor terminating")
+	log.Println("Executor shutting down")
 }
