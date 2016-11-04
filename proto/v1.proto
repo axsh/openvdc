@@ -7,8 +7,9 @@ service Instance {
 }
 
 message RunRequest{
-	string test = 1;
+	string imageName = 1;
+	string hostName = 2;
 }
-
 message RunReply {
 }
+
