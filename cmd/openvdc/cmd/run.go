@@ -33,7 +33,7 @@ var runCmd = &cobra.Command{
                 }
 
                 viper.SetConfigType("json")
-                viper.ReadInConfig(r.Body)
+                viper.ReadConfig(r.Body)
 
                 result := viper.GetString("variables.memory")
 
