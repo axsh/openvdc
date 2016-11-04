@@ -43,7 +43,7 @@ var runCmd = &cobra.Command{
 
 		c := pb.NewInstanceClient(conn)
 
-		resp, err := c.Run(context.Background(), &pb.RunRequest{})
+		resp, err := c.Run(context.Background(), &pb.RunRequest{imageName,hostName})
 		if err != nil {
 			log.Fatalf("RPC error: %v", err)
 		}

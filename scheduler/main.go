@@ -99,7 +99,13 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	case _, ok := <-sched.offerChan:
 		if ok {
 			s := <-sched.offerChan
-                        taskName := s.Test
+                        taskName := "OpenVDC Run"
+			imageName := s.ImageName
+                        hostName := s.HostName
+
+			fmt.Println("Scheduler, ImageName: ", imageName)
+			fmt.Println("Scheduler, HostName: ", hostName)
+
                         sched.processOffers(driver, offers, taskName)
 		}
 	default:
