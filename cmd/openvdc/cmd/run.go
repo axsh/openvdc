@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/axsh/openvdc/proto"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 )
 
@@ -21,6 +22,19 @@ var runCmd = &cobra.Command{
 	Short: "Run an instance",
 	Long:  `Register and start new instance.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		// Todo: fetch remote json
+                viper.SetConfigType("json")
+                viper.SetConfigName("1box-centos7")
+                viper.AddConfigPath("../../deployment/1box")
+                err := viper.ReadInConfig()
+
+                if err != nil {
+                        log.Fatalf("Error reading config file: ", err)
+                }
+
+                result := viper.GetString("variables.memory")
+
 		conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 		if err != nil {
 			log.Fatalf("Connection error: %v", err)
@@ -30,7 +44,7 @@ var runCmd = &cobra.Command{
 
 		c := pb.NewInstanceClient(conn)
 
-		resp, err := c.Run(context.Background(), &pb.RunRequest{})
+		resp, err := c.Run(context.Background(), &pb.RunRequest{result})
 		if err != nil {
 			log.Fatalf("RPC error: %v", err)
 		}
