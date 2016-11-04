@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"net/http"
 )
 
 var serverAddr string
@@ -23,15 +24,16 @@ var runCmd = &cobra.Command{
 	Long:  `Register and start new instance.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		// Todo: fetch remote json
-                viper.SetConfigType("json")
-                viper.SetConfigName("1box-centos7")
-                viper.AddConfigPath("../../deployment/1box")
-                err := viper.ReadInConfig()
+		r, err := http.Get("https://raw.githubusercontent.com/axsh/openvdc/master/deployment/1box/1box-centos7.json")
 
                 if err != nil {
-                        log.Fatalf("Error reading config file: ", err)
+                        log.Fatal("Couldn't fetch remote JSON: ", err)
+                } else {
+                        defer r.Body.Close()
                 }
+
+                viper.SetConfigType("json")
+                viper.ReadInConfig(r.Body)
 
                 result := viper.GetString("variables.memory")
 
