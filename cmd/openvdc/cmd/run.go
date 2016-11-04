@@ -5,10 +5,9 @@ import (
 	"log"
 
 	pb "github.com/axsh/openvdc/proto"
+	util "github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"net/http"
 )
 
 var serverAddr string
@@ -24,18 +23,7 @@ var runCmd = &cobra.Command{
 	Long:  `Register and start new instance.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		r, err := http.Get("https://raw.githubusercontent.com/axsh/openvdc/master/deployment/1box/1box-centos7.json")
-
-                if err != nil {
-                        log.Fatal("Couldn't fetch remote JSON: ", err)
-                } else {
-                        defer r.Body.Close()
-                }
-
-                viper.SetConfigType("json")
-                viper.ReadConfig(r.Body)
-
-                result := viper.GetString("variables.memory")
+		result := util.GetRemoteJsonField("variables.memory", "https://raw.githubusercontent.com/axsh/openvdc/master/deployment/1box/1box-centos7.json")
 
 		conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 		if err != nil {
