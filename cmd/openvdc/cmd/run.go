@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"log"
+	"fmt"
 
 	pb "github.com/axsh/openvdc/proto"
 	util "github.com/axsh/openvdc/util"
@@ -11,9 +12,13 @@ import (
 )
 
 var serverAddr string
+var imageName string
+var hostName string
 
 func init() {
 	runCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
+	runCmd.PersistentFlags().StringVarP(&imageName,"image", "i", "centos7", "Name of image file")
+        runCmd.PersistentFlags().StringVarP(&hostName,"name", "n", "", "Existing host name")
 	runCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
 
@@ -25,6 +30,10 @@ var runCmd = &cobra.Command{
 
 		result := util.GetRemoteJsonField("variables.memory", "https://raw.githubusercontent.com/axsh/openvdc/master/deployment/1box/1box-centos7.json")
 
+		fmt.Println("Json: ", result)
+                fmt.Println("Image name: ", imageName)
+                fmt.Println("Host name: ", hostName)
+
 		conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 		if err != nil {
 			log.Fatalf("Connection error: %v", err)
@@ -34,7 +43,7 @@ var runCmd = &cobra.Command{
 
 		c := pb.NewInstanceClient(conn)
 
-		resp, err := c.Run(context.Background(), &pb.RunRequest{result})
+		resp, err := c.Run(context.Background(), &pb.RunRequest{})
 		if err != nil {
 			log.Fatalf("RPC error: %v", err)
 		}
