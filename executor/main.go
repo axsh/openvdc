@@ -18,6 +18,8 @@ import (
 
 var (
 	slowTasks  = flag.Bool("slow_tasks", false, "")
+	imageName  = flag.String("imageName", "", "")
+        hostName   = flag.String("hostName", "", "")
 	lxcpath    string
 	template   string
 	distro     string
