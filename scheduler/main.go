@@ -36,7 +36,7 @@ const (
 var (
 	bindingIPv4        = flag.String("listen", "localhost", "Bind address")
 	mesosMasterAddress = flag.String("master", "localhost:5050", "Mesos Master node")
-	taskCount          = flag.Int("task-count", 4, "Number of tasks to run")
+	taskCount          = flag.Int("task-count", 10, "Number of tasks to run")
 	executorPath       = flag.String("executor", "./executor", "Path to VDCExecutor")
 	artifactPort       = flag.Int("artifactPort", defaultArtifactPort, "Binding port for artifact server")
 	apiAddr            = flag.String("api", ":5000", "gRPC API bind address: host:port")
@@ -57,7 +57,7 @@ func newVDCScheduler(ch api.APIOffer) *VDCScheduler {
 
 	exec := &mesos.ExecutorInfo{
 		ExecutorId: util.NewExecutorID("default"),
-		Name:       proto.String("Test Executor (Go)"),
+		Name:       proto.String("VDC Executor"),
 		Source:     proto.String("go_test"),
 		Command: &mesos.CommandInfo{
 
@@ -109,7 +109,7 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	default:
 		log.Println("Skip offer since no allocation requests.", offers)
 		for _, offer := range offers {
-			stat, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(1)})
+			stat, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 			if err != nil {
 				log.Println(err)
 			}
@@ -184,7 +184,6 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
                                 Uris:  executorUris,
 
                         }
-
 
                         fmt.Println("----------------------------------")
                         fmt.Printf("%+v", sched.executor.Command)

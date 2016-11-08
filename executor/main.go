@@ -4,7 +4,6 @@ package main
 
 import (
 	"flag"
-	"math/rand"
 	"time"
 	"strings"
 	"log"
@@ -172,8 +171,8 @@ func trimName(untrimmedName string) string {
         return trimmedName
 }
 
-func newTask(taskName string) {
-
+func newTask(imageName string) {
+	/*
 	trimmedTaskName := trimName(taskName)
 
         switch trimmedTaskName {
@@ -192,6 +191,8 @@ func newTask(taskName string) {
                 default:
                         log.Println("ERROR: Taskname unrecognized")
         }
+	*/
+	log.Println(imageName)
 }
 
 
@@ -211,7 +212,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	log.Println("Tasks launched ", exec.tasksLaunched)
 
 
-	newTask(taskInfo.GetName())
+	newTask(*imageName)
 
 
 	finishTask := func() {
@@ -225,22 +226,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		}
 		log.Println("Task finished", taskInfo.GetName())
 	}
-	if *slowTasks {
-		starting := &mesos.TaskStatus{
-			TaskId: taskInfo.GetTaskId(),
-			State:  mesos.TaskState_TASK_STARTING.Enum(),
-		}
-		if _, err := driver.SendStatusUpdate(starting); err != nil {
-			log.Println("ERROR: Couldn't send status update", err)
-		}
-		delay := time.Duration(rand.Intn(90)+10) * time.Second
-		go func() {
-			time.Sleep(delay)
-			finishTask()
-		}()
-	} else {
-		finishTask()
-	}
+	finishTask()
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
