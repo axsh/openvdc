@@ -23,6 +23,7 @@ import (
 var running bool = false
 var executorCmd string
 var executorUris []*mesos.CommandInfo_URI
+var executorCount int = 1
 
 const (
 	CPUS_PER_EXECUTOR   = 0.01
@@ -167,12 +168,15 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 			var uri *string
 
-                        if(running == false){
+                        //Don't re-delcare these if the scheduler is arleady up and running.
+			if(running == false){
                                 uri, executorCmd = serveExecutorArtifact(*executorPath)
                                 executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
                                 running = true
                         }
 
+			sched.executor.ExecutorId = util.NewExecutorID(strconv.Itoa(executorCount))
+                        executorCount += 1
                         executorCommand := fmt.Sprintf("./%s -logtostderr=true -slow_tasks=false" + clientCommands, executorCmd)
 
                         sched.executor.Command = &mesos.CommandInfo{
