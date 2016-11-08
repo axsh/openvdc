@@ -20,6 +20,10 @@ import (
 	"golang.org/x/net/context"
 )
 
+var running bool = false
+var executorCmd string
+var executorUris []*mesos.CommandInfo_URI
+
 const (
 	CPUS_PER_EXECUTOR   = 0.01
 	CPUS_PER_TASK       = 1
@@ -47,22 +51,7 @@ type VDCScheduler struct {
 }
 
 func newVDCScheduler(ch api.APIOffer) *VDCScheduler {
-	executorUris := []*mesos.CommandInfo_URI{}
 
-	uri, executorCmd := serveExecutorArtifact(*executorPath)
-	executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
-
-	//Pass flags to executor
-	v := 0
-	if f := flag.Lookup("v"); f != nil && f.Value != nil {
-		if vstr := f.Value.String(); vstr != "" {
-			if vi, err := strconv.ParseInt(vstr, 10, 32); err == nil {
-				v = int(vi)
-			}
-		}
-	}
-
-	executorCommand := fmt.Sprintf("./%s -logtostderr=true -v=%d -slow_tasks=false", executorCmd, v)
 	go http.ListenAndServe(fmt.Sprintf("%s:%d", *bindingIPv4, *artifactPort), nil)
 
 	exec := &mesos.ExecutorInfo{
@@ -70,8 +59,7 @@ func newVDCScheduler(ch api.APIOffer) *VDCScheduler {
 		Name:       proto.String("Test Executor (Go)"),
 		Source:     proto.String("go_test"),
 		Command: &mesos.CommandInfo{
-			Value: proto.String(executorCommand),
-			Uris:  executorUris,
+
 		},
 		Resources: []*mesos.Resource{
 			util.NewScalarResource("cpus", CPUS_PER_EXECUTOR),
@@ -99,14 +87,23 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	case _, ok := <-sched.offerChan:
 		if ok {
 			s := <-sched.offerChan
-                        taskName := "OpenVDC Run"
+
 			imageName := s.ImageName
                         hostName := s.HostName
 
 			fmt.Println("Scheduler, ImageName: ", imageName)
 			fmt.Println("Scheduler, HostName: ", hostName)
 
-                        sched.processOffers(driver, offers, taskName)
+			var clientCommands string
+                        if imageName != ""{
+                                clientCommands = " -imageName=" + imageName
+                        }
+
+                        if hostName != ""{
+                                clientCommands = clientCommands + " -hostName=" + hostName
+                        }
+
+                        sched.processOffers(driver, offers, clientCommands)
 		}
 	default:
 		log.Println("Skip offer since no allocation requests.", offers)
@@ -120,7 +117,7 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, taskName string) {
+func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, clientCommands string) {
 	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
 		log.Println("All tasks are already launched: decline offer")
 		for _, offer := range offers {
@@ -168,8 +165,29 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 				Value: proto.String(strconv.Itoa(sched.tasksLaunched)),
 			}
 
+			var uri *string
+
+                        if(running == false){
+                                uri, executorCmd = serveExecutorArtifact(*executorPath)
+                                executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
+                                running = true
+                        }
+
+                        executorCommand := fmt.Sprintf("./%s -logtostderr=true -slow_tasks=false" + clientCommands, executorCmd)
+
+                        sched.executor.Command = &mesos.CommandInfo{
+                                Value: proto.String(executorCommand),
+                                Uris:  executorUris,
+
+                        }
+
+
+                        fmt.Println("----------------------------------")
+                        fmt.Printf("%+v", sched.executor.Command)
+                        fmt.Println("----------------------------------")
+
 			task := &mesos.TaskInfo{
-				Name:     proto.String(taskName + "_" + taskId.GetValue()),
+				Name:     proto.String("VDC" + "_" + taskId.GetValue()),
 				TaskId:   taskId,
 				SlaveId:  offer.SlaveId,
 				Executor: sched.executor,
