@@ -1,5 +1,3 @@
-// +build linux
-
 package main
 
 import (
@@ -11,8 +9,11 @@ import (
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	"github.com/samuel/go-zookeeper/zk"
-	lxc "gopkg.in/lxc/go-lxc.v2"
 	vdc_utils "github.com/axsh/openvdc/util"
+
+	// Trying to use the imported hypervisor crashes the executor.
+        // Probably due to the executor not finding it.
+        //hypervisor "github.com/axsh/openvdc/hypervisor"
 )
 
 var (
@@ -92,76 +93,6 @@ func testZkConnection(ip string, dir string, msg string) {
 	zkSendData(c, dir, msg)
 	data := []byte(zkGetData(c, dir))
 	log.Println(data)
-}
-
-func newLxcContainer() {
-
-	c, err := lxc.NewContainer(name, lxcpath)
-	if err != nil {
-		log.Println("ERROR: %s\n", err)
-	}
-
-	log.Println("Creating lxc-container...\n")
-	if verbose {
-		c.SetVerbosity(lxc.Verbose)
-	}
-
-	options := lxc.TemplateOptions{
-		Template:             template,
-		Distro:               distro,
-		Release:              release,
-		Arch:                 arch,
-		FlushCache:           flush,
-		DisableGPGValidation: validation,
-	}
-
-	if err := c.Create(options); err != nil {
-		log.Println("ERROR: %s\n", err)
-	}
-}
-
-func destroyLxcContainer() {
-
-	c, err := lxc.NewContainer(name, lxcpath)
-        if err != nil {
-                log.Println("ERROR: %s\n", err)
-        }
-
-	log.Println("Destroying lxc-container..\n")
-	if err := c.Destroy(); err != nil {
-		log.Println("ERROR: %s\n", err)
-	}
-}
-
-func startLxcContainer() {
-
-	c, err := lxc.NewContainer(name, lxcpath)
-        if err != nil {
-                log.Println("ERROR: %s\n", err)
-        }
-
-	log.Println("Starting lxc-container...\n")
-	if err := c.Start(); err != nil {
-		log.Println("ERROR: %s\n", err)
-	}
-
-	log.Println("Waiting for lxc-container to start networking\n")
-	if _, err := c.WaitIPAddresses(5 * time.Second); err != nil {
-		log.Println("ERROR: %s\n", err.Error())
-	}
-}
-
-func stopLxcContainer() {
-
-	c, err := lxc.NewContainer(name, lxcpath)
-        if err != nil {
-                log.Println("ERROR: %s\n", err.Error())
-        }
-
-	log.Println("Stopping lxc-container..\n")
-	if err := c.Stop(); err != nil {
-		log.Println("ERROR: %s\n", err.Error())
-	}
 }
 
 func trimName(untrimmedName string) string {
@@ -246,7 +177,6 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 }
 
 func init() {
-	flag.StringVar(&lxcpath, "lxcpath", lxc.DefaultConfigPath(), "Use specified container path")
 	flag.StringVar(&template, "template", "download", "Template to use")
 	flag.StringVar(&distro, "distro", "ubuntu", "Template to use")
 	flag.StringVar(&release, "release", "trusty", "Template to use")
