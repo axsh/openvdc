@@ -6,7 +6,7 @@ import (
 	"flag"
 	"time"
 	"strings"
-	"log"
+	log "github.com/Sirupsen/logrus"
 
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
@@ -266,7 +266,7 @@ func must(err error) {
 
 func main() {
 
-	vdc_utils.SetupLog("/var/log/openvdc/", "OpenVDC-executor.log", "VDC-EXECUTOR: ")
+	vdc_utils.SetupLog("/var/log/openvdc/", "OpenVDC-executor.log")
 
 	log.Println("Initializing executor")
 

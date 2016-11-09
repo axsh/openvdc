@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"context"
-	"log"
+	log "github.com/Sirupsen/logrus"
 	"strings"
 
 	pb "github.com/axsh/openvdc/proto"

@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	log "github.com/Sirupsen/logrus"
+g "github.com/Sirupsen/logrus"
 	"net"
 
 	"net/http"

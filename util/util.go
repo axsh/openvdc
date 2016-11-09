@@ -1,7 +1,7 @@
 package util
 
 import (
-        "log"
+        log "github.com/Sirupsen/logrus"
         "os"
 	"net/http"
         "github.com/spf13/viper"
@@ -24,7 +24,7 @@ func GetRemoteJsonField(field string, url string) string{
         return result
 }
 
-func SetupLog(logpath string, filename string, prefix string){
+func SetupLog(logpath string, filename string){
 
         if _, err := os.Stat(logpath); os.IsNotExist(err){
                 os.Mkdir(logpath, os.ModePerm)
@@ -43,5 +43,4 @@ func SetupLog(logpath string, filename string, prefix string){
         }
 
         log.SetOutput(vdclog)
-        log.SetPrefix(prefix)
 }
