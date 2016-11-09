@@ -28,7 +28,6 @@ var runCmd = &cobra.Command{
         RunE: func(cmd *cobra.Command, args []string) error {
 
                 imageTitle := strings.ToLower(util.GetRemoteJsonField("title", "https://raw.githubusercontent.com/openvdc/images/master/centos-7.json"))
-                imageUrl := util.GetRemoteJsonField("images.download_url", "https://raw.githubusercontent.com/openvdc/images/master/centos-7.json")
 
                 if(len(args) > 0 ){
                         inputImageTitle := args[0]
@@ -36,12 +35,6 @@ var runCmd = &cobra.Command{
                         if inputImageTitle  ==  imageTitle {
 
                                 log.Println("Found image: ", imageTitle)
-                                log.Println("ImageUrl: ", imageUrl)
-
-                                //Viper isn't able to fetch the field "images.download_url" right now. Probably due to square brackets in the Json-file.
-                                imageUrl = "https://images.linuxcontainers.org/1.0/images/d767cfe9a0df0b2213e28b39b61e8f79cb9b1e745eeed98c22bc5236f277309a/export"
-
-                                log.Println(imageUrl)
 
                                 conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
                                 if err != nil {
@@ -52,7 +45,7 @@ var runCmd = &cobra.Command{
 
                                 c := pb.NewInstanceClient(conn)
 
-                                resp, err := c.Run(context.Background(), &pb.RunRequest{imageTitle,imageUrl,hostName})
+                                resp, err := c.Run(context.Background(), &pb.RunRequest{imageTitle,hostName})
 
                                 if err != nil {
                                         log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
