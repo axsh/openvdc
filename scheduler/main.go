@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-g "github.com/Sirupsen/logrus"
 	"net"
 
 	"net/http"
