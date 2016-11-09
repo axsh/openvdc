@@ -266,7 +266,7 @@ func must(err error) {
 
 func main() {
 
-	vdc_utils.SetupLog("/var/log/axsh/", "vdc-executor.log", "VDC-EXECUTOR: ")
+	vdc_utils.SetupLog("/var/log/openvdc/", "OpenVDC-executor.log", "VDC-EXECUTOR: ")
 
 	log.Println("Initializing executor")
 
