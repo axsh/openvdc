@@ -30,7 +30,7 @@ abdcefg12345678
 % openvdc ssh abdcefg12345678
 % openvdc list
 
-% openvdc rm abdcefg12345678
+% openvdc destroy abdcefg12345678
 ```
 
 ```
@@ -39,7 +39,7 @@ abdcefg12345678
 % openvdc ssh myhost1
 % openvdc list
 
-% openvdc rm myhost1
+% openvdc destroy myhost1
 ```
 
 ## Start an instance with local bridge
@@ -48,5 +48,45 @@ abdcefg12345678
 % openvdc run centos/7 --bridge[0]=localovs1 --interface[0]=10:54:ff:00:00:01 --ipv4[0]=10.100.0.10/24 --ipv4-gw[0]=10.100.0.1
 abdcefg12345678
 % openvdc ssh user@abdcefg12345678
-% openvdc rm abdcefg12345678
+% openvdc destroy abdcefg12345678
+```
+
+List all registered/running instances.
+
+```
+% openvdc list
+```
+
+Show detail information for the instance.
+
+```
+% openvdc info [instance ID]
+```
+
+Stop and start instance.
+
+```
+% openvdc start [instance ID]
+```
+
+```
+% openvdc stop [instance ID]
+```
+
+Configure user local configuration file. ($HOME/.openvdc/config)
+
+```
+% openvdc config
+```
+
+## Daemon processes
+
+```
+% openvdc-scheduler
+```
+
+## Mesos executor binary.
+
+```
+% openvdc-executor
 ```

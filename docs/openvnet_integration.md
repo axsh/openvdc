@@ -51,12 +51,12 @@ vnctl interfaces add \
 % openvdc run centos/7 --bridge[0]=localovs1 --interface[0]=10:54:ff:00:00:01 --ipv4[0]=10.100.0.10/24 --ipv4-gw[0]=10.100.0.1
 abdcefg12345678
 % openvdc ssh user@abdcefg12345678
-% openvdc rm abdcefg12345678
+% openvdc destroy abdcefg12345678
 ```
 
 ```
 % openvdc run centos/7 --networkmode=openvnet --bridge[0]=nw-test1 --interface[0]=if-inst1
 abdcefg12345678
 % openvdc ssh user@abdcefg12345678
-% openvdc rm abdcefg12345678
+% openvdc destroy abdcefg12345678
 ```
