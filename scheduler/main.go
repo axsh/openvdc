@@ -85,10 +85,7 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	select {
-	case _, ok := <-sched.offerChan:
-		if ok {
-			s := <-sched.offerChan
-
+	case s := <-sched.offerChan:
 			imageName := s.ImageName
                         hostName := s.HostName
 
@@ -105,7 +102,6 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
                         }
 
                         sched.processOffers(driver, offers, clientCommands)
-		}
 	default:
 		log.Println("Skip offer since no allocation requests.", offers)
 		for _, offer := range offers {
