@@ -1,16 +1,16 @@
 {
   "version": "0.1.0",
-  "command": "go",
+  "windows": {
+    "command": "powershell",
+    "args":["-ExecutionPolicy", "Bypass", "${workspaceRoot}\\build.ps1"]
+  },
   "isShellCommand": true,
   "echoCommand": true,
   "tasks": [
     {
       "taskName": "Build",
-      "args": [
-        "build", "-v", "./cmd/openvdc"
-      ],
       "suppressTaskName": true,
-      "problemMatcher": ["$go"],
+      "problemMatcher": "$go",
       "isBuildCommand": true
     }
   ]
