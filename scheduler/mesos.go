@@ -1,10 +1,10 @@
-package main
+package scheduler
 
 import (
-	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"net"
+
+	log "github.com/Sirupsen/logrus"
 
 	"net/http"
 	"strconv"
@@ -34,12 +34,7 @@ const (
 )
 
 var (
-	bindingIPv4        = flag.String("listen", "localhost", "Bind address")
-	mesosMasterAddress = flag.String("master", "localhost:5050", "Mesos Master node")
-	taskCount          = flag.Int("task-count", 10, "Number of tasks to run")
-	executorPath       = flag.String("executor", "./executor", "Path to VDCExecutor")
-	artifactPort       = flag.Int("artifactPort", defaultArtifactPort, "Binding port for artifact server")
-	apiAddr            = flag.String("api", ":5000", "gRPC API bind address: host:port")
+	taskCount = 10
 )
 
 type VDCScheduler struct {
@@ -49,26 +44,34 @@ type VDCScheduler struct {
 	tasksErrored  int
 	totalTasks    int
 	offerChan     api.APIOffer
+	listenAddr    string
+	artifactPort  uint16
+	executorPath  string
 }
 
-func newVDCScheduler(ch api.APIOffer) *VDCScheduler {
+func newVDCScheduler(ch api.APIOffer, listenAddr string) *VDCScheduler {
 
-	go http.ListenAndServe(fmt.Sprintf("%s:%d", *bindingIPv4, *artifactPort), nil)
+	go http.ListenAndServe(fmt.Sprintf("%s:%d", listenAddr, defaultArtifactPort), nil)
 
 	exec := &mesos.ExecutorInfo{
 		ExecutorId: util.NewExecutorID("default"),
 		Name:       proto.String("VDC Executor"),
 		Source:     proto.String("go_test"),
-		Command: &mesos.CommandInfo{
-
-		},
+		Command:    &mesos.CommandInfo{},
 		Resources: []*mesos.Resource{
 			util.NewScalarResource("cpus", CPUS_PER_EXECUTOR),
 			util.NewScalarResource("mem", MEM_PER_EXECUTOR),
 		},
 	}
 
-	return &VDCScheduler{executor: exec, totalTasks: *taskCount, offerChan: ch}
+	return &VDCScheduler{
+		executor:     exec,
+		totalTasks:   taskCount,
+		offerChan:    ch,
+		listenAddr:   listenAddr,
+		artifactPort: defaultArtifactPort,
+		executorPath: "executor",
+	}
 }
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
@@ -86,22 +89,23 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	select {
 	case s := <-sched.offerChan:
-			imageName := s.ImageName
-                        hostName := s.HostName
 
-			fmt.Println("Scheduler, ImageName: ", imageName)
-			fmt.Println("Scheduler, HostName: ", hostName)
+		imageName := s.ImageName
+		hostName := s.HostName
 
-			var clientCommands string
-                        if imageName != ""{
-                                clientCommands = " -imageName=" + imageName
-                        }
+		fmt.Println("Scheduler, ImageName: ", imageName)
+		fmt.Println("Scheduler, HostName: ", hostName)
 
-                        if hostName != ""{
-                                clientCommands = clientCommands + " -hostName=" + hostName
-                        }
+		var clientCommands string
+		if imageName != "" {
+			clientCommands = " -imageName=" + imageName
+		}
 
-                        sched.processOffers(driver, offers, clientCommands)
+		if hostName != "" {
+			clientCommands = clientCommands + " -hostName=" + hostName
+		}
+
+		sched.processOffers(driver, offers, clientCommands)
 	default:
 		log.Println("Skip offer since no allocation requests.", offers)
 		for _, offer := range offers {
@@ -164,26 +168,25 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 			var uri *string
 
-                        //Don't re-delcare these if the scheduler is arleady up and running.
-			if(running == false){
-                                uri, executorCmd = serveExecutorArtifact(*executorPath)
-                                executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
-                                running = true
-                        }
+			//Don't re-delcare these if the scheduler is arleady up and running.
+			if running == false {
+				uri, executorCmd = sched.serveExecutorArtifact()
+				executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
+				running = true
+			}
 
 			sched.executor.ExecutorId = util.NewExecutorID(strconv.Itoa(executorCount))
-                        executorCount += 1
-                        executorCommand := fmt.Sprintf("./%s -logtostderr=true -slow_tasks=false" + clientCommands, executorCmd)
+			executorCount += 1
+			executorCommand := fmt.Sprintf("./%s -logtostderr=true -slow_tasks=false"+clientCommands, executorCmd)
 
-                        sched.executor.Command = &mesos.CommandInfo{
-                                Value: proto.String(executorCommand),
-                                Uris:  executorUris,
+			sched.executor.Command = &mesos.CommandInfo{
+				Value: proto.String(executorCommand),
+				Uris:  executorUris,
+			}
 
-                        }
-
-                        fmt.Println("----------------------------------")
-                        fmt.Printf("%+v", sched.executor.Command)
-                        fmt.Println("----------------------------------")
+			fmt.Println("----------------------------------")
+			fmt.Printf("%+v", sched.executor.Command)
+			fmt.Println("----------------------------------")
 
 			task := &mesos.TaskInfo{
 				Name:     proto.String("VDC" + "_" + taskId.GetValue()),
@@ -244,28 +247,24 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func init() {
-	flag.Parse()
-}
-
-func serveExecutorArtifact(path string) (*string, string) {
+func (sched *VDCScheduler) serveExecutorArtifact() (*string, string) {
 	serveFile := func(pattern string, filename string) {
 		http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filename)
 		})
 	}
 
-	pathSplit := strings.Split(path, "/")
+	pathSplit := strings.Split(sched.executorPath, "/")
 	var base string
 	if len(pathSplit) > 0 {
 		base = pathSplit[len(pathSplit)-1]
 	} else {
-		base = path
+		base = sched.executorPath
 	}
-	serveFile("/"+base, path)
+	serveFile("/"+base, sched.executorPath)
 
-	hostURI := fmt.Sprintf("http://%s:%d/%s", *bindingIPv4, *artifactPort, base)
-	log.Println("Hosting artifact '%s' at '%s'", path, hostURI)
+	hostURI := fmt.Sprintf("http://%s:%d/%s", sched.listenAddr, sched.artifactPort, base)
+	log.Println("Hosting artifact '%s' at '%s'", sched.executorPath, hostURI)
 
 	return &hostURI, base
 }
@@ -281,9 +280,9 @@ func startAPIServer(laddr string, ch api.APIOffer) *api.APIServer {
 	return s
 }
 
-func main() {
+func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string) {
 	ch := make(api.APIOffer)
-	apiServer := startAPIServer(*apiAddr, ch)
+	apiServer := startAPIServer(apiListenAddr, ch)
 	defer func() {
 		apiServer.GracefulStop()
 	}()
@@ -298,14 +297,14 @@ func main() {
 	}
 
 	cred = nil
-	bindingAddrs, err := net.LookupIP(*bindingIPv4)
+	bindingAddrs, err := net.LookupIP(listenAddr)
 	if err != nil {
 		log.Fatalln("Invalid Address to -listen option: ", err)
 	}
 	config := sched.DriverConfig{
-		Scheduler:      newVDCScheduler(ch),
+		Scheduler:      newVDCScheduler(ch, listenAddr),
 		Framework:      fwinfo,
-		Master:         *mesosMasterAddress,
+		Master:         mesosMasterAddr,
 		Credential:     cred,
 		BindingAddress: bindingAddrs[0],
 		WithAuthContext: func(ctx context.Context) context.Context {
