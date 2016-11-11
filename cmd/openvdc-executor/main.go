@@ -14,7 +14,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
-	_ "github.com/axsh/openvdc/hypervisor/null"
 	"github.com/axsh/openvdc/util"
 )
 
