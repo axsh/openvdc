@@ -9,8 +9,9 @@ import (
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	"github.com/samuel/go-zookeeper/zk"
 	vdc_utils "github.com/axsh/openvdc/util"
+        "net/url"
 
-        //hypervisor "github.com/axsh/openvdc/hypervisor"
+	//hypervisor "github.com/axsh/openvdc/hypervisor"
 )
 
 
@@ -124,6 +125,23 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	exec.tasksLaunched++
 	log.Println("Tasks launched ", exec.tasksLaunched)
+
+
+
+	b := taskInfo.GetData()
+        s := string(b[:])
+
+        values, err := url.ParseQuery(s)
+
+        if err != nil {
+                panic(err)
+        }
+
+        imageName := values.Get("imageName")
+        hostName := values.Get("hostName")
+
+
+        log.Printf("ImageName: " + imageName + ", HostName: " + hostName)
 
 
 	//newTask(*imageName)

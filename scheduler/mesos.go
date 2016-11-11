@@ -98,11 +98,11 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 
 		var clientCommands string
 		if imageName != "" {
-			clientCommands = " -imageName=" + imageName
+			clientCommands = "imageName=" + imageName
 		}
 
 		if hostName != "" {
-			clientCommands = clientCommands + " -hostName=" + hostName
+			clientCommands = clientCommands + "&hostName=" + hostName
 		}
 
 		sched.processOffers(driver, offers, clientCommands)
@@ -192,6 +192,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 				Name:     proto.String("VDC" + "_" + taskId.GetValue()),
 				TaskId:   taskId,
 				SlaveId:  offer.SlaveId,
+				Data:     []byte(clientCommands),
 				Executor: sched.executor,
 				Resources: []*mesos.Resource{
 					util.NewScalarResource("cpus", CPUS_PER_TASK),
