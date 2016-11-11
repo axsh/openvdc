@@ -21,11 +21,15 @@ import (
 var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
-	tasksLaunched int
+	tasksLaunched      int
+	hypervisorProvider hypervisor.HypervisorProvider
 }
 
-func newVDCExecutor() *VDCExecutor {
-	return &VDCExecutor{tasksLaunched: 0}
+func newVDCExecutor(provider hypervisor.HypervisorProvider) *VDCExecutor {
+	return &VDCExecutor{
+		tasksLaunched:      0,
+		hypervisorProvider: provider,
+	}
 }
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
@@ -157,14 +161,22 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	log.Printf("ImageName: " + imageName + ", HostName: " + hostName)
 
-	p, ok := hypervisor.FindProvider("null")
-	if ok == false {
+	hv, err := exec.hypervisorProvider.CreateDriver()
+	if err != nil {
 		finState = mesos.TaskState_TASK_FAILED
 		return
 	}
-	hv, err := p.CreateDriver()
-	hv.CreateInstance()
-	hv.StartInstance()
+
+	err = hv.CreateInstance()
+	if err != nil {
+		finState = mesos.TaskState_TASK_FAILED
+		return
+	}
+	err = hv.StartInstance()
+	if err != nil {
+		finState = mesos.TaskState_TASK_FAILED
+		return
+	}
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
@@ -183,6 +195,8 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 	log.Println("Got error message:", err)
 }
 
+var hypervisorName = flag.String("hypervisor", "null", "")
+
 func init() {
 	flag.Parse()
 }
@@ -196,13 +210,16 @@ func must(err error) {
 func main() {
 	util.SetupLog()
 
-	log.Println("Initializing executor")
+	provider, ok := hypervisor.FindProvider(*hypervisorName)
+	if ok == false {
+		log.Fatalln("Unknown hypervisor name:", hypervisorName)
+	}
+	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
 	dconfig := exec.DriverConfig{
-		Executor: newVDCExecutor(),
+		Executor: newVDCExecutor(provider),
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
-
 	if err != nil {
 		log.Println("ERROR: Couldn't create ExecutorDriver ", err.Error())
 	}
