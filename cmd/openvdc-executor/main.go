@@ -33,22 +33,22 @@ func newVDCExecutor(provider hypervisor.HypervisorProvider) *VDCExecutor {
 }
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
-	log.Println("Registered Executor on slave ", slaveInfo.GetHostname())
+	log.Infoln("Registered Executor on slave ", slaveInfo.GetHostname())
 }
 
 func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mesos.SlaveInfo) {
-	log.Println("Re-registered Executor on slave ", slaveInfo.GetHostname())
+	log.Infoln("Re-registered Executor on slave ", slaveInfo.GetHostname())
 }
 
 func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
-	log.Println("Executor disconnected.")
+	log.Infoln("Executor disconnected.")
 }
 
 func zkConnect(ip string) *zk.Conn {
 	c, _, err := zk.Connect([]string{ip}, time.Second)
 
 	if err != nil {
-		log.Println("ERROR: failed connecting to Zookeeper: ", err)
+		log.Errorln("failed connecting to Zookeeper: ", err)
 	}
 
 	return c
@@ -58,10 +58,10 @@ func zkGetData(c *zk.Conn, dir string) []byte {
 	data, stat, err := c.Get(dir)
 
 	if err != nil {
-		log.Println("ERROR: failed getting data from Zookeeper: ", err)
+		log.Errorln("failed getting data from Zookeeper: ", err)
 	}
 
-	log.Println(stat)
+	log.Infoln(stat)
 
 	return data[:]
 }
@@ -73,11 +73,11 @@ func zkSendData(c *zk.Conn, dir string, data string) {
 	path, err := c.Create(dir, []byte(data), flags, acl)
 
 	if err != nil {
-		log.Println("ERROR: failed sending data to Zookeeper: ", err)
+		log.Errorln("failed sending data to Zookeeper: ", err)
 	}
 
-	log.Println("Sent: ", data, "to ", dir)
-	log.Println(path)
+	log.Infoln("Sent: ", data, "to ", dir)
+	log.Infoln(path)
 }
 
 func testZkConnection(ip string, dir string, msg string) {
@@ -85,7 +85,7 @@ func testZkConnection(ip string, dir string, msg string) {
 	c := zkConnect(ip)
 	zkSendData(c, dir, msg)
 	data := []byte(zkGetData(c, dir))
-	log.Println(data)
+	log.Infoln(data)
 }
 
 func trimName(untrimmedName string) string {
@@ -101,26 +101,26 @@ func newTask(imageName string) {
 
 		        switch trimmedTaskName {
 		                case "lxc-create":
-					log.Println("---Launching task: lxc-create---")
+					log.Infoln("---Launching task: lxc-create---")
 		                        newLxcContainer()
 		                case "lxc-start":
-					log.Println("---Launching task: lxc-start---")
+					log.Infoln("---Launching task: lxc-start---")
 		                        startLxcContainer()
 		                case "lxc-stop":
-					log.Println("---Launching task: lxc-stop---")
+					log.Infoln("---Launching task: lxc-stop---")
 		                        stopLxcContainer()
 		                case "lxc-destroy":
-					log.Println("---Launching task: lxc-destroy---")
+					log.Infoln("---Launching task: lxc-destroy---")
 		                        destroyLxcContainer()
 		                default:
-		                        log.Println("ERROR: Taskname unrecognized")
+		                        log.Infoln("ERROR: Taskname unrecognized")
 		        }
 	*/
-	log.Println(imageName)
+	log.Infoln(imageName)
 }
 
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
-	log.Println("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
+	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
 	runStatus := &mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
@@ -133,19 +133,19 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	finState := mesos.TaskState_TASK_FINISHED
 	defer func() {
-		log.Println("Finishing task", taskInfo.GetName())
+		log.Infoln("Finishing task", taskInfo.GetName())
 		finStatus := &mesos.TaskStatus{
 			TaskId: taskInfo.GetTaskId(),
 			State:  finState.Enum(),
 		}
 		if _, err := driver.SendStatusUpdate(finStatus); err != nil {
-			log.Println("ERROR: Couldn't send status update", err)
+			log.Infoln("ERROR: Couldn't send status update", err)
 		}
-		log.Println("Task finished", taskInfo.GetName())
+		log.Infoln("Task finished", taskInfo.GetName())
 	}()
 
 	exec.tasksLaunched++
-	log.Println("Tasks launched ", exec.tasksLaunched)
+	log.Infoln("Tasks launched ", exec.tasksLaunched)
 
 	b := taskInfo.GetData()
 	s := string(b[:])
@@ -159,7 +159,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	imageName := values.Get("imageName")
 	hostName := values.Get("hostName")
 
-	log.Printf("ImageName: " + imageName + ", HostName: " + hostName)
+	log.Infoln("ImageName: " + imageName + ", HostName: " + hostName)
 
 	hv, err := exec.hypervisorProvider.CreateDriver()
 	if err != nil {
@@ -180,19 +180,19 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
-	log.Println("Kill task")
+	log.Infoln("Kill task")
 }
 
 func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string) {
-	log.Println("Got framework message: ", msg)
+	log.Infoln("Got framework message: ", msg)
 }
 
 func (exec *VDCExecutor) Shutdown(driver exec.ExecutorDriver) {
-	log.Println("Shutting down the executor")
+	log.Infoln("Shutting down the executor")
 }
 
 func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
-	log.Println("Got error message:", err)
+	log.Errorln("Got error message:", err)
 }
 
 var hypervisorName = flag.String("hypervisor", "null", "")
@@ -221,19 +221,18 @@ func main() {
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {
-		log.Println("ERROR: Couldn't create ExecutorDriver ", err.Error())
+		log.Fatalln("Couldn't create ExecutorDriver ", err)
 	}
 
 	_, err = driver.Start()
 	if err != nil {
-		log.Println("ERROR: ExecutorDriver wasn't able to start: ", err)
-		return
+		log.Fatalln("ExecutorDriver wasn't able to start: ", err)
 	}
-	log.Println("Process running")
+	log.Infoln("Process running")
 
 	_, err = driver.Join()
 	if err != nil {
-		log.Println("ERROR: Something went wrong with the driver: ", err)
+		log.Fatalln("Something went wrong with the driver: ", err)
 	}
-	log.Println("Executor shutting down")
+	log.Infoln("Executor shutting down")
 }
