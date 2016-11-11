@@ -1,18 +1,24 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"strings"
 	"time"
 
-	vdc_utils "github.com/axsh/openvdc/util"
+	"net/url"
+
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	"github.com/samuel/go-zookeeper/zk"
-	"net/url"
 
-	hypervisor "github.com/axsh/openvdc/hypervisor"
+	"flag"
+
+	"github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/hypervisor"
+	_ "github.com/axsh/openvdc/hypervisor/null"
+	"github.com/axsh/openvdc/util"
 )
+
+var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
 	tasksLaunched int
@@ -118,8 +124,21 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 	_, err := driver.SendStatusUpdate(runStatus)
 	if err != nil {
-		log.Println("ERROR: Couldn't send status update", err)
+		log.Errorln("Couldn't send status update", err)
 	}
+
+	finState := mesos.TaskState_TASK_FINISHED
+	defer func() {
+		log.Println("Finishing task", taskInfo.GetName())
+		finStatus := &mesos.TaskStatus{
+			TaskId: taskInfo.GetTaskId(),
+			State:  finState.Enum(),
+		}
+		if _, err := driver.SendStatusUpdate(finStatus); err != nil {
+			log.Println("ERROR: Couldn't send status update", err)
+		}
+		log.Println("Task finished", taskInfo.GetName())
+	}()
 
 	exec.tasksLaunched++
 	log.Println("Tasks launched ", exec.tasksLaunched)
@@ -138,22 +157,14 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	log.Printf("ImageName: " + imageName + ", HostName: " + hostName)
 
-	hypervisor.NewLxcContainer(imageName, hostName)
-
-	//newTask(*imageName)
-
-	finishTask := func() {
-		log.Println("Finishing task", taskInfo.GetName())
-		finStatus := &mesos.TaskStatus{
-			TaskId: taskInfo.GetTaskId(),
-			State:  mesos.TaskState_TASK_FINISHED.Enum(),
-		}
-		if _, err := driver.SendStatusUpdate(finStatus); err != nil {
-			log.Println("ERROR: Couldn't send status update", err)
-		}
-		log.Println("Task finished", taskInfo.GetName())
+	p, ok := hypervisor.FindProvider("null")
+	if ok == false {
+		finState = mesos.TaskState_TASK_FAILED
+		return
 	}
-	finishTask()
+	hv, err := p.CreateDriver()
+	hv.CreateInstance()
+	hv.StartInstance()
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
@@ -173,7 +184,7 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 }
 
 func init() {
-
+	flag.Parse()
 }
 
 func must(err error) {
@@ -184,7 +195,7 @@ func must(err error) {
 
 func main() {
 
-	vdc_utils.SetupLog("/var/log/openvdc/", "OpenVDC-executor.log")
+	util.SetupLog("/var/log/openvdc/", "OpenVDC-executor.log")
 
 	log.Println("Initializing executor")
 
