@@ -155,30 +155,25 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 		var tasks []*mesos.TaskInfo
 
-		for (sched.tasksLaunched-sched.tasksErrored) < sched.totalTasks &&
-			CPUS_PER_TASK <= remainingCpus &&
-			MEM_PER_TASK <= remainingMems {
+		sched.tasksLaunched++
+		taskId := util.NewTaskID(strconv.Itoa(sched.tasksLaunched))
 
-			sched.tasksLaunched++
-			taskId := util.NewTaskID(strconv.Itoa(sched.tasksLaunched))
-
-			task := &mesos.TaskInfo{
-				Name:     proto.String("VDC" + "_" + taskId.GetValue()),
-				TaskId:   taskId,
-				SlaveId:  offer.SlaveId,
-				Data:     []byte(clientCommands),
-				Executor: sched.executor,
-				Resources: []*mesos.Resource{
-					util.NewScalarResource("cpus", CPUS_PER_TASK),
-					util.NewScalarResource("mem", MEM_PER_TASK),
-				},
-			}
-			log.Printf("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
-
-			tasks = append(tasks, task)
-			remainingCpus -= CPUS_PER_TASK
-			remainingMems -= MEM_PER_TASK
+		task := &mesos.TaskInfo{
+			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
+			TaskId:   taskId,
+			SlaveId:  offer.SlaveId,
+			Data:     []byte(clientCommands),
+			Executor: sched.executor,
+			Resources: []*mesos.Resource{
+				util.NewScalarResource("cpus", CPUS_PER_TASK),
+				util.NewScalarResource("mem", MEM_PER_TASK),
+			},
 		}
+		log.Printf("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
+
+		tasks = append(tasks, task)
+		remainingCpus -= CPUS_PER_TASK
+		remainingMems -= MEM_PER_TASK
 
 		log.Println("Launching ", len(tasks), "tasks for offer", offer.Id.GetValue())
 		// TODO: Replace with AcceptOffers(). https://issues.apache.org/jira/browse/MESOS-2955
