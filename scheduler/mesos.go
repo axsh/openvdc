@@ -86,9 +86,10 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 }
 
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
+	log := log.WithFields(log.Fields{"offers": len(offers)})
 	select {
 	case s := <-sched.offerChan:
-
+		log.Infoln("Process this offer as new request arrived.")
 		imageName := s.ImageName
 		hostName := s.HostName
 
@@ -106,13 +107,17 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 
 		sched.processOffers(driver, offers, clientCommands)
 	default:
-		log.Println("Skip offer since no allocation requests.", offers)
+		log.Debugln("Skip offer since no allocation requests.")
 		for _, offer := range offers {
 			stat, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 			if err != nil {
-				log.Println(err)
+				log.Errorln(err)
 			}
-			log.Println(stat)
+			log = log.WithField("mesos.Status", stat.String())
+			// Assert returned status.
+			if stat != mesos.Status_DRIVER_RUNNING {
+				log.Fatalln("Invalid status")
+			}
 		}
 	}
 }
