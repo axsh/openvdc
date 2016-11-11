@@ -17,6 +17,14 @@ import (
 	"github.com/axsh/openvdc/util"
 )
 
+// Build time constant variables from -ldflags
+var (
+	version   string
+	sha       string
+	builddate string
+	goversion string
+)
+
 var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {

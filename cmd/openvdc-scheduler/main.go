@@ -9,6 +9,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Build time constant variables from -ldflags
+var (
+	version   string
+	sha       string
+	builddate string
+	goversion string
+)
+
 var rootCmd = &cobra.Command{
 	Use:   "openvdc-scheduler",
 	Short: "",
