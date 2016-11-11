@@ -20,11 +20,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-var running bool = false
-var executorCmd string
-var executorUris []*mesos.CommandInfo_URI
-var executorCount int = 1
-
 const (
 	CPUS_PER_EXECUTOR   = 0.01
 	CPUS_PER_TASK       = 1
@@ -45,19 +40,25 @@ type VDCScheduler struct {
 	totalTasks    int
 	offerChan     api.APIOffer
 	listenAddr    string
-	artifactPort  uint16
-	executorPath  string
 }
 
 func newVDCScheduler(ch api.APIOffer, listenAddr string) *VDCScheduler {
 
-	go http.ListenAndServe(fmt.Sprintf("%s:%d", listenAddr, defaultArtifactPort), nil)
+	binUri := serveExecutorArtifact("openvdc-executor", fmt.Sprintf("http://%s:%d", listenAddr, defaultArtifactPort))
 
 	exec := &mesos.ExecutorInfo{
-		ExecutorId: util.NewExecutorID("default"),
+		ExecutorId: util.NewExecutorID("vdc-hypervisor-null"),
 		Name:       proto.String("VDC Executor"),
 		Source:     proto.String("go_test"),
-		Command:    &mesos.CommandInfo{},
+		Command: &mesos.CommandInfo{
+			Value: proto.String("./openvdc-executor -logtostderr=true -hypervisor=null"),
+			Uris: []*mesos.CommandInfo_URI{
+				&mesos.CommandInfo_URI{
+					Value:      proto.String(binUri),
+					Executable: proto.Bool(true),
+				},
+			},
+		},
 		Resources: []*mesos.Resource{
 			util.NewScalarResource("cpus", CPUS_PER_EXECUTOR),
 			util.NewScalarResource("mem", MEM_PER_EXECUTOR),
@@ -65,12 +66,10 @@ func newVDCScheduler(ch api.APIOffer, listenAddr string) *VDCScheduler {
 	}
 
 	return &VDCScheduler{
-		executor:     exec,
-		totalTasks:   taskCount,
-		offerChan:    ch,
-		listenAddr:   listenAddr,
-		artifactPort: defaultArtifactPort,
-		executorPath: "openvdc-executor",
+		executor:   exec,
+		totalTasks: taskCount,
+		offerChan:  ch,
+		listenAddr: listenAddr,
 	}
 }
 
@@ -161,32 +160,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			MEM_PER_TASK <= remainingMems {
 
 			sched.tasksLaunched++
-
-			taskId := &mesos.TaskID{
-				Value: proto.String(strconv.Itoa(sched.tasksLaunched)),
-			}
-
-			var uri *string
-
-			//Don't re-delcare these if the scheduler is arleady up and running.
-			if running == false {
-				uri, executorCmd = sched.serveExecutorArtifact()
-				executorUris = append(executorUris, &mesos.CommandInfo_URI{Value: uri, Executable: proto.Bool(true)})
-				running = true
-			}
-
-			sched.executor.ExecutorId = util.NewExecutorID(strconv.Itoa(executorCount))
-			executorCount += 1
-			executorCommand := fmt.Sprintf("./%s -logtostderr=true", executorCmd)
-
-			sched.executor.Command = &mesos.CommandInfo{
-				Value: proto.String(executorCommand),
-				Uris:  executorUris,
-			}
-
-			fmt.Println("----------------------------------")
-			fmt.Printf("%+v", sched.executor.Command)
-			fmt.Println("----------------------------------")
+			taskId := util.NewTaskID(strconv.Itoa(sched.tasksLaunched))
 
 			task := &mesos.TaskInfo{
 				Name:     proto.String("VDC" + "_" + taskId.GetValue()),
@@ -199,7 +173,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 					util.NewScalarResource("mem", MEM_PER_TASK),
 				},
 			}
-			log.Println("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
+			log.Printf("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
 
 			tasks = append(tasks, task)
 			remainingCpus -= CPUS_PER_TASK
@@ -248,26 +222,26 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func (sched *VDCScheduler) serveExecutorArtifact() (*string, string) {
+func serveExecutorArtifact(executorPath string, baseURI string) string {
 	serveFile := func(pattern string, filename string) {
 		http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, filename)
 		})
 	}
 
-	pathSplit := strings.Split(sched.executorPath, "/")
+	pathSplit := strings.Split(executorPath, "/")
 	var base string
 	if len(pathSplit) > 0 {
 		base = pathSplit[len(pathSplit)-1]
 	} else {
-		base = sched.executorPath
+		base = executorPath
 	}
-	serveFile("/"+base, sched.executorPath)
+	serveFile("/"+base, executorPath)
 
-	hostURI := fmt.Sprintf("http://%s:%d/%s", sched.listenAddr, sched.artifactPort, base)
-	log.Println("Hosting artifact '%s' at '%s'", sched.executorPath, hostURI)
+	hostURI := fmt.Sprintf("%s/%s", baseURI, base)
+	log.Printf("Hosting artifact '%s' at '%s'", executorPath, hostURI)
 
-	return &hostURI, base
+	return hostURI
 }
 
 func startAPIServer(laddr string, ch api.APIOffer) *api.APIServer {
@@ -318,6 +292,8 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string) {
 	if err != nil {
 		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
 	}
+	go http.ListenAndServe(fmt.Sprintf("%s:%d", listenAddr, defaultArtifactPort), nil)
+
 	if stat, err := driver.Run(); err != nil {
 		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
 	}
