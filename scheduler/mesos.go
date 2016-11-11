@@ -3,12 +3,11 @@ package scheduler
 import (
 	"fmt"
 	"net"
+	"os"
 
 	log "github.com/Sirupsen/logrus"
 
-	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/axsh/openvdc/api"
 	"github.com/gogo/protobuf/proto"
@@ -21,12 +20,15 @@ import (
 )
 
 const (
-	CPUS_PER_EXECUTOR   = 0.01
-	CPUS_PER_TASK       = 1
-	MEM_PER_EXECUTOR    = 64
-	MEM_PER_TASK        = 64
-	defaultArtifactPort = 12345
+	CPUS_PER_EXECUTOR = 0.01
+	CPUS_PER_TASK     = 1
+	MEM_PER_EXECUTOR  = 64
+	MEM_PER_TASK      = 64
 )
+
+// ExecutorPath is the path to the openvdc-executor binary.
+// Embed from -ldflags
+var ExecutorPath string
 
 var (
 	taskCount = 10
@@ -43,21 +45,16 @@ type VDCScheduler struct {
 }
 
 func newVDCScheduler(ch api.APIOffer, listenAddr string) *VDCScheduler {
-
-	binUri := serveExecutorArtifact("openvdc-executor", fmt.Sprintf("http://%s:%d", listenAddr, defaultArtifactPort))
-
+	// Assert ExecutorPath
+	if _, err := os.Stat(ExecutorPath); err != nil {
+		log.WithError(err).WithField("ExecutorPath", ExecutorPath).Fatal("Could not find openvdc-executor binary.")
+	}
 	exec := &mesos.ExecutorInfo{
 		ExecutorId: util.NewExecutorID("vdc-hypervisor-null"),
 		Name:       proto.String("VDC Executor"),
 		Source:     proto.String("go_test"),
 		Command: &mesos.CommandInfo{
-			Value: proto.String("./openvdc-executor -logtostderr=true -hypervisor=null"),
-			Uris: []*mesos.CommandInfo_URI{
-				&mesos.CommandInfo_URI{
-					Value:      proto.String(binUri),
-					Executable: proto.Bool(true),
-				},
-			},
+			Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=null", ExecutorPath)),
 		},
 		Resources: []*mesos.Resource{
 			util.NewScalarResource("cpus", CPUS_PER_EXECUTOR),
@@ -222,28 +219,6 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func serveExecutorArtifact(executorPath string, baseURI string) string {
-	serveFile := func(pattern string, filename string) {
-		http.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, filename)
-		})
-	}
-
-	pathSplit := strings.Split(executorPath, "/")
-	var base string
-	if len(pathSplit) > 0 {
-		base = pathSplit[len(pathSplit)-1]
-	} else {
-		base = executorPath
-	}
-	serveFile("/"+base, executorPath)
-
-	hostURI := fmt.Sprintf("%s/%s", baseURI, base)
-	log.Printf("Hosting artifact '%s' at '%s'", executorPath, hostURI)
-
-	return hostURI
-}
-
 func startAPIServer(laddr string, ch api.APIOffer) *api.APIServer {
 	lis, err := net.Listen("tcp", laddr)
 	if err != nil {
@@ -292,7 +267,6 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string) {
 	if err != nil {
 		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
 	}
-	go http.ListenAndServe(fmt.Sprintf("%s:%d", listenAddr, defaultArtifactPort), nil)
 
 	if stat, err := driver.Run(); err != nil {
 		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
