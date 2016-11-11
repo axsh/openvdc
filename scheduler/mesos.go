@@ -177,7 +177,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 			sched.executor.ExecutorId = util.NewExecutorID(strconv.Itoa(executorCount))
 			executorCount += 1
-			executorCommand := fmt.Sprintf("./%s -logtostderr=true -slow_tasks=false"+clientCommands, executorCmd)
+			executorCommand := fmt.Sprintf("./%s -logtostderr=true", executorCmd)
 
 			sched.executor.Command = &mesos.CommandInfo{
 				Value: proto.String(executorCommand),
