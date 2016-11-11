@@ -32,3 +32,13 @@ func (h *NullHypervisorDriver) StopInstance() error {
 	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("StopInstance")
 	return nil
 }
+
+func (h *NullHypervisorDriver) CreateInstance() error {
+	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("CreateInstance")
+	return nil
+}
+
+func (h *NullHypervisorDriver) DestroyInstance() error {
+	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("DestroyInstance")
+	return nil
+}

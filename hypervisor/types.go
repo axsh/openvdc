@@ -12,6 +12,8 @@ type HypervisorProvider interface {
 }
 
 type HypervisorDriver interface {
+	CreateInstance() error
+	DestroyInstance() error
 	StartInstance() error
 	StopInstance() error
 }
