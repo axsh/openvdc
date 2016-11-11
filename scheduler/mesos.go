@@ -70,7 +70,7 @@ func newVDCScheduler(ch api.APIOffer, listenAddr string) *VDCScheduler {
 		offerChan:    ch,
 		listenAddr:   listenAddr,
 		artifactPort: defaultArtifactPort,
-		executorPath: "executor",
+		executorPath: "openvdc-executor",
 	}
 }
 
