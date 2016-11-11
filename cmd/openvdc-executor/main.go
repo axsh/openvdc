@@ -201,12 +201,6 @@ func init() {
 	flag.Parse()
 }
 
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func main() {
 	util.SetupLog()
 
