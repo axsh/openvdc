@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"time"
 	"strings"
 	log "github.com/Sirupsen/logrus"
@@ -11,25 +10,9 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 	vdc_utils "github.com/axsh/openvdc/util"
 
-	// Trying to use the imported hypervisor crashes the executor.
-        // Probably due to the executor not finding it.
         //hypervisor "github.com/axsh/openvdc/hypervisor"
 )
 
-var (
-	slowTasks  = flag.Bool("slow_tasks", false, "")
-	imageName  = flag.String("imageName", "", "")
-        hostName   = flag.String("hostName", "", "")
-	lxcpath    string
-	template   string
-	distro     string
-	release    string
-	arch       string
-	name       string
-	verbose    bool
-	flush      bool
-	validation bool
-)
 
 type VDCExecutor struct {
 	tasksLaunched int
@@ -143,7 +126,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	log.Println("Tasks launched ", exec.tasksLaunched)
 
 
-	newTask(*imageName)
+	//newTask(*imageName)
 
 
 	finishTask := func() {
@@ -177,15 +160,7 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 }
 
 func init() {
-	flag.StringVar(&template, "template", "download", "Template to use")
-	flag.StringVar(&distro, "distro", "ubuntu", "Template to use")
-	flag.StringVar(&release, "release", "trusty", "Template to use")
-	flag.StringVar(&arch, "arch", "amd64", "Template to use")
-	flag.StringVar(&name, "name", "test", "Name of the container")
-	flag.BoolVar(&verbose, "verbose", false, "Verbose output")
-	flag.BoolVar(&flush, "flush", false, "Flush the cache")
-	flag.BoolVar(&validation, "validation", false, "GPG validation")
-	flag.Parse()
+
 }
 
 func must(err error) {
