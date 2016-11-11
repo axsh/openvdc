@@ -3,47 +3,34 @@
 package hypervisor
 
 import (
-        "flag"
         "time"
         "log"
 
         lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
-var (
-        slowTasks  = flag.Bool("slow_tasks", false, "")
-        imageName  = flag.String("imageName", "", "")
-        hostName   = flag.String("hostName", "", "")
-        lxcpath    string
-        template   string
-        distro     string
-        release    string
-        arch       string
-        name       string
-        verbose    bool
-        flush      bool
-        validation bool
-)
+var lxcpath string = lxc.DefaultConfigPath()
+var name string = "lxc-test"
 
-func NewLxcContainer() {
+func NewLxcContainer(imageName string, hostName string) {
 
-      c, err := lxc.NewContainer(name, lxcpath)
+        c, err := lxc.NewContainer(name, lxcpath)
         if err != nil {
                 log.Println("ERROR: %s\n", err)
         }
 
         log.Println("Creating lxc-container...\n")
-        if verbose {
-                c.SetVerbosity(lxc.Verbose)
-        }
+        //if verbose {
+          //      c.SetVerbosity(lxc.Verbose)
+        //}
 
         options := lxc.TemplateOptions{
-                Template:             template,
-                Distro:               distro,
-                Release:              release,
-                Arch:                 arch,
-                FlushCache:           flush,
-                DisableGPGValidation: validation,
+                Template:             download,
+                Distro:               ubuntu,
+                Release:              trusty,
+                Arch:                 amd64,
+                FlushCache:           false,
+                DisableGPGValidation: false,
         }
 
         if err := c.Create(options); err != nil {

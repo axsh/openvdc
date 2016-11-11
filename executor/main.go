@@ -11,7 +11,7 @@ import (
 	vdc_utils "github.com/axsh/openvdc/util"
         "net/url"
 
-	//hypervisor "github.com/axsh/openvdc/hypervisor"
+	hypervisor "github.com/axsh/openvdc/hypervisor"
 )
 
 
@@ -143,6 +143,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
         log.Printf("ImageName: " + imageName + ", HostName: " + hostName)
 
+	hypervisor.NewLxcContainer(imageName, hostName)
 
 	//newTask(*imageName)
 
