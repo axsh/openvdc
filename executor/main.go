@@ -1,19 +1,18 @@
 package main
 
 import (
-	"time"
-	"strings"
 	log "github.com/Sirupsen/logrus"
+	"strings"
+	"time"
 
+	vdc_utils "github.com/axsh/openvdc/util"
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	"github.com/samuel/go-zookeeper/zk"
-	vdc_utils "github.com/axsh/openvdc/util"
-        "net/url"
+	"net/url"
 
 	hypervisor "github.com/axsh/openvdc/hypervisor"
 )
-
 
 type VDCExecutor struct {
 	tasksLaunched int
@@ -80,36 +79,35 @@ func testZkConnection(ip string, dir string, msg string) {
 }
 
 func trimName(untrimmedName string) string {
-        limit := "_"
-        trimmedName := strings.Split(untrimmedName, limit)[0]
+	limit := "_"
+	trimmedName := strings.Split(untrimmedName, limit)[0]
 
-        return trimmedName
+	return trimmedName
 }
 
 func newTask(imageName string) {
 	/*
-	trimmedTaskName := trimName(taskName)
+		trimmedTaskName := trimName(taskName)
 
-        switch trimmedTaskName {
-                case "lxc-create":
-			log.Println("---Launching task: lxc-create---")
-                        newLxcContainer()
-                case "lxc-start":
-			log.Println("---Launching task: lxc-start---")
-                        startLxcContainer()
-                case "lxc-stop":
-			log.Println("---Launching task: lxc-stop---")
-                        stopLxcContainer()
-                case "lxc-destroy":
-			log.Println("---Launching task: lxc-destroy---")
-                        destroyLxcContainer()
-                default:
-                        log.Println("ERROR: Taskname unrecognized")
-        }
+	        switch trimmedTaskName {
+	                case "lxc-create":
+				log.Println("---Launching task: lxc-create---")
+	                        newLxcContainer()
+	                case "lxc-start":
+				log.Println("---Launching task: lxc-start---")
+	                        startLxcContainer()
+	                case "lxc-stop":
+				log.Println("---Launching task: lxc-stop---")
+	                        stopLxcContainer()
+	                case "lxc-destroy":
+				log.Println("---Launching task: lxc-destroy---")
+	                        destroyLxcContainer()
+	                default:
+	                        log.Println("ERROR: Taskname unrecognized")
+	        }
 	*/
 	log.Println(imageName)
 }
-
 
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Println("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
@@ -126,27 +124,23 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	exec.tasksLaunched++
 	log.Println("Tasks launched ", exec.tasksLaunched)
 
-
-
 	b := taskInfo.GetData()
-        s := string(b[:])
+	s := string(b[:])
 
-        values, err := url.ParseQuery(s)
+	values, err := url.ParseQuery(s)
 
-        if err != nil {
-                panic(err)
-        }
+	if err != nil {
+		panic(err)
+	}
 
-        imageName := values.Get("imageName")
-        hostName := values.Get("hostName")
+	imageName := values.Get("imageName")
+	hostName := values.Get("hostName")
 
-
-        log.Printf("ImageName: " + imageName + ", HostName: " + hostName)
+	log.Printf("ImageName: " + imageName + ", HostName: " + hostName)
 
 	hypervisor.NewLxcContainer(imageName, hostName)
 
 	//newTask(*imageName)
-
 
 	finishTask := func() {
 		log.Println("Finishing task", taskInfo.GetName())
