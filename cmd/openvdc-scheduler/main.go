@@ -31,7 +31,7 @@ func execute(cmd *cobra.Command, args []string) {
 }
 
 func main() {
-	util.SetupLog("/var/log/openvdc/", "scheduler.log")
+	util.SetupLog()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

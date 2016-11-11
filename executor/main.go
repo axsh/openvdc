@@ -93,24 +93,24 @@ func trimName(untrimmedName string) string {
 
 func newTask(imageName string) {
 	/*
-		trimmedTaskName := trimName(taskName)
+			trimmedTaskName := trimName(taskName)
 
-	        switch trimmedTaskName {
-	                case "lxc-create":
-				log.Println("---Launching task: lxc-create---")
-	                        newLxcContainer()
-	                case "lxc-start":
-				log.Println("---Launching task: lxc-start---")
-	                        startLxcContainer()
-	                case "lxc-stop":
-				log.Println("---Launching task: lxc-stop---")
-	                        stopLxcContainer()
-	                case "lxc-destroy":
-				log.Println("---Launching task: lxc-destroy---")
-	                        destroyLxcContainer()
-	                default:
-	                        log.Println("ERROR: Taskname unrecognized")
-	        }
+		        switch trimmedTaskName {
+		                case "lxc-create":
+					log.Println("---Launching task: lxc-create---")
+		                        newLxcContainer()
+		                case "lxc-start":
+					log.Println("---Launching task: lxc-start---")
+		                        startLxcContainer()
+		                case "lxc-stop":
+					log.Println("---Launching task: lxc-stop---")
+		                        stopLxcContainer()
+		                case "lxc-destroy":
+					log.Println("---Launching task: lxc-destroy---")
+		                        destroyLxcContainer()
+		                default:
+		                        log.Println("ERROR: Taskname unrecognized")
+		        }
 	*/
 	log.Println(imageName)
 }
@@ -194,8 +194,7 @@ func must(err error) {
 }
 
 func main() {
-
-	util.SetupLog("/var/log/openvdc/", "OpenVDC-executor.log")
+	util.SetupLog()
 
 	log.Println("Initializing executor")
 

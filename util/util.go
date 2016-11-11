@@ -1,10 +1,11 @@
 package util
 
 import (
-	log "github.com/Sirupsen/logrus"
-	"github.com/spf13/viper"
 	"net/http"
 	"os"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func GetRemoteJsonField(field string, url string) string {
@@ -24,23 +25,6 @@ func GetRemoteJsonField(field string, url string) string {
 	return result
 }
 
-func SetupLog(logpath string, filename string) {
-
-	if _, err := os.Stat(logpath); os.IsNotExist(err) {
-		os.Mkdir(logpath, os.ModePerm)
-	}
-
-	if _, err := os.Stat(logpath + filename); os.IsNotExist(err) {
-		_, err := os.Create(logpath + filename)
-		if err != nil {
-			log.Println("Error creating log file: ", err)
-		}
-	}
-
-	vdclog, err := os.OpenFile(logpath+filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Println("ERROR: Couldn't open log file", err)
-	}
-
-	log.SetOutput(vdclog)
+func SetupLog() {
+	log.SetOutput(os.Stdout)
 }
