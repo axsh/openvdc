@@ -3,7 +3,6 @@ package registry
 import (
 	"archive/zip"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,11 +17,6 @@ const (
 	githubURI             = "https://github.com"
 	githubRepoSlug        = "axsh/openvdc-images"
 	mimeTypeGitUploadPack = "application/x-git-upload-pack-advertisement"
-)
-
-var (
-	ErrLocalCacheNotReady = errors.New("Machine Image registry has not been cached yet")
-	ErrUnknownImageName   = errors.New("Unknown image name")
 )
 
 type GithubRegistry struct {
@@ -55,15 +49,6 @@ func (r *GithubRegistry) localCachePath() string {
 		r.Branch)
 }
 
-type MachineImageAttribute struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Images      []struct {
-		Hypervisor  string `json:"hypervisor"`
-		DownloadURL string `json:"download_url"`
-	} `json:"images"`
-}
-
 // Find queries machine image details from local registry cache.
 func (r *GithubRegistry) Find(imageName string) (*MachineImageAttribute, error) {
 	if !r.ValidateCache() {
@@ -78,7 +63,7 @@ func (r *GithubRegistry) Find(imageName string) (*MachineImageAttribute, error) 
 	}
 	defer f.Close()
 
-	mi := &MachineImageAttribute{}
+	mi := &MachineImageAttribute{Name: imageName}
 	err = json.NewDecoder(f).Decode(mi)
 	if err != nil {
 		return nil, err
