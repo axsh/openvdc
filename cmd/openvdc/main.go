@@ -40,10 +40,10 @@ func setupDefaultUserConfig(dir string) error {
 }
 
 func main() {
-	userConfDir := path.Join(os.Getenv("HOME"), ".openvdc")
-	err := setupDefaultUserConfig(userConfDir)
+	cmd.UserConfDir = path.Join(os.Getenv("HOME"), ".openvdc")
+	err := setupDefaultUserConfig(cmd.UserConfDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to setup %s\n", userConfDir)
+		fmt.Fprintf(os.Stderr, "Failed to setup %s\n", cmd.UserConfDir)
 		os.Exit(1)
 	}
 	cmd.Execute()

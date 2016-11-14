@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
-	"strings"
 
 	pb "github.com/axsh/openvdc/proto"
-	util "github.com/axsh/openvdc/util"
+	"github.com/axsh/openvdc/registry"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -21,42 +21,65 @@ func init() {
 	runCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
 
+func setupLocalRegistry() (registry.Registry, error) {
+	reg := registry.NewGithubRegistry(UserConfDir)
+	if !reg.ValidateCache() {
+		err := reg.Fetch()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	valid, err := reg.IsCacheObsolete()
+	if err != nil {
+		return nil, err
+	}
+	if !valid {
+		log.Infoln("Updating registry cache.")
+		err = reg.Fetch()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return reg, nil
+}
+
 var runCmd = &cobra.Command{
 	Use:   "run [Image ID]",
 	Short: "Run an instance",
 	Long:  `Register and start new instance.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		imageTitle := strings.ToLower(util.GetRemoteJsonField("title", "https://raw.githubusercontent.com/openvdc/images/master/centos-7.json"))
-
-		if len(args) > 0 {
-			inputImageTitle := args[0]
-
-			if inputImageTitle == imageTitle {
-
-				log.Println("Found image: ", imageTitle)
-
-				conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
-				if err != nil {
-					log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-				}
-
-				defer conn.Close()
-
-				c := pb.NewInstanceClient(conn)
-
-				resp, err := c.Run(context.Background(), &pb.RunRequest{imageTitle, hostName})
-
-				if err != nil {
-					log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-				}
-
-				log.Println(resp)
-			} else {
-				log.Warn("OpenVDC: Image not found. Available images: centos7")
-			}
-		} else {
-			log.Warn("OpenVDC: Please provide an Image ID.  Usage: run [Image ID]")
+		if len(args) != 1 {
+			log.Fatalf("Please provide an Image ID.")
 		}
+
+		imageSlug := args[0]
+
+		reg, err := setupLocalRegistry()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		mi, err := reg.Find(imageSlug)
+		if err != nil {
+			if err == registry.ErrUnknownImageName {
+				log.Fatalf("Image '%s' not found.", imageSlug)
+			} else {
+				log.Fatalln(err)
+			}
+		}
+		log.Printf("Found image: %s", imageSlug)
+
+		conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+		}
+		defer conn.Close()
+
+		c := pb.NewInstanceClient(conn)
+		resp, err := c.Run(context.Background(), &pb.RunRequest{mi.Name, hostName})
+		if err != nil {
+			log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+		}
+		log.Println(resp)
 		return nil
 	}}

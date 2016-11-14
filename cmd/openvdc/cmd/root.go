@@ -8,6 +8,7 @@ import (
 )
 
 var cfgFile string
+var UserConfDir string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
