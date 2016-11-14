@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package openvdc.model;
+
+option go_package="model";
+
+message Instance {
+  string uuid = 1;
+}
+

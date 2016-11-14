@@ -10,3 +10,4 @@ if ! type protoc-gen-go; then
   go get -u -v github.com/golang/protobuf/protoc-gen-go
 fi
 protoc -I . --go_out=plugins=grpc:. v1.proto
+protoc -I . --go_out=. model.proto

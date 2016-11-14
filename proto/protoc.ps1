@@ -15,3 +15,4 @@ if ($s -eq $False) {
 
 cd (Get-Item $MyInvocation.MyCommand.Path).DirectoryName
 protoc -I . --go_out=plugins=grpc:. v1.proto
+protoc -I . --go_out=. model.proto
