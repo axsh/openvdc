@@ -1,6 +1,6 @@
 {
 	"comment": "",
-	"ignore": "test deployment",
+	"ignore": "test deployment proto",
 	"package": [
 		{
 			"checksumSHA1": "yRNw/uu/4N7XHVe1PHtKPl6xtDg=",
