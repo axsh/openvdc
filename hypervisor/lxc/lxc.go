@@ -28,7 +28,7 @@ func (p *LXCHypervisorProvider) CreateDriver() (hypervisor.HypervisorDriver, err
 		lxcpath: lxc.DefaultConfigPath(),
 		name: "lxc-test",
 		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
-		template: lxc.DownloadTemplateOption,
+		template: lxc.DownloadTemplateOptions,
 	}, nil
 }
 
