@@ -3,11 +3,12 @@ package util
 import (
 	"net/http"
 	"os"
-	"golang.org/x/net/context"
+
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/api"
 	"github.com/spf13/viper"
-	 pb "github.com/axsh/openvdc/proto"
-        "google.golang.org/grpc"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 func GetRemoteJsonField(field string, url string) string {
@@ -33,20 +34,20 @@ func SetupLog() {
 
 func SendToApi(serverAddr string, hostName string, imageTitle string, taskType string) {
 
-        conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
-        if err != nil {
-                log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-        }
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+	}
 
-        defer conn.Close()
+	defer conn.Close()
 
-        c := pb.NewInstanceClient(conn)
+	c := api.NewInstanceClient(conn)
 
-        resp, err := c.Run(context.Background(), &pb.RunRequest{imageTitle, hostName, taskType,})
+	resp, err := c.Run(context.Background(), &api.RunRequest{imageTitle, hostName, taskType})
 
-        if err != nil {
-                log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-        }
+	if err != nil {
+		log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+	}
 
-        log.Println(resp)
+	log.Println(resp)
 }

@@ -4,13 +4,11 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/axsh/openvdc/proto"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-type APIOffer chan *pb.RunRequest
+type APIOffer chan *RunRequest
 
 type APIServer struct {
 	server    *grpc.Server
@@ -22,7 +20,7 @@ func NewAPIServer(c APIOffer) *APIServer {
 		server:    grpc.NewServer(),
 		offerChan: c,
 	}
-	pb.RegisterInstanceServer(s.server, &RemoteAPI{api: s})
+	RegisterInstanceServer(s.server, &RemoteAPI{api: s})
 	return s
 }
 
@@ -42,8 +40,8 @@ type RemoteAPI struct {
 	api *APIServer
 }
 
-func (s *RemoteAPI) Run(ctx context.Context, in *pb.RunRequest) (*pb.RunReply, error) {
+func (s *RemoteAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error) {
 	log.Printf("New Request: %v\n", in.String())
 	s.api.offerChan <- in
-	return &pb.RunReply{}, nil
+	return &RunReply{}, nil
 }

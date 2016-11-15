@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package openvdc;
+package api;
 
 service Instance {
 	rpc Run (RunRequest) returns (RunReply){}
