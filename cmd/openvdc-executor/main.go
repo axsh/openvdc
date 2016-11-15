@@ -102,28 +102,35 @@ func trimName(untrimmedName string) string {
 	return trimmedName
 }
 
-func newTask(imageName string) {
-	/*
-			trimmedTaskName := trimName(taskName)
+func newTask(hostName string, taskType string, exec *VDCExecutor) {
 
-		        switch trimmedTaskName {
-		                case "lxc-create":
-					log.Infoln("---Launching task: lxc-create---")
-		                        newLxcContainer()
-		                case "lxc-start":
-					log.Infoln("---Launching task: lxc-start---")
-		                        startLxcContainer()
-		                case "lxc-stop":
-					log.Infoln("---Launching task: lxc-stop---")
-		                        stopLxcContainer()
-		                case "lxc-destroy":
-					log.Infoln("---Launching task: lxc-destroy---")
-		                        destroyLxcContainer()
-		                default:
-		                        log.Infoln("ERROR: Taskname unrecognized")
-		        }
-	*/
-	log.Infoln(imageName)
+        hv, err := exec.hypervisorProvider.CreateDriver()
+        log.Errorln(err)
+
+        switch taskType {
+                case "run":
+                        err = hv.CreateInstance()
+                        if err != nil {
+                                log.Errorln("Error creating instance")
+                        }
+                case "destroy":
+                        err = hv.DestroyInstance()
+                        if err != nil {
+                                log.Errorln("Error destroying instance")
+                        }
+                case "start":
+                        err = hv.StartInstance()
+                        if err != nil {
+                                log.Errorln("Error starting instance")
+                        }
+                case "stop":
+                        err = hv.StopInstance()
+                        if err != nil {
+                                log.Errorln("Error stopping instance")
+                        }
+                default:
+                        log.Errorln("Invalid task name")
+        }
 }
 
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
@@ -165,10 +172,13 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	imageName := values.Get("imageName")
 	hostName := values.Get("hostName")
+	taskType := values.Get("taskType")
 
-	log.Infoln("ImageName: " + imageName + ", HostName: " + hostName)
+	log.Infoln("ImageName: " + imageName + ", HostName: " + hostName, "TaskType: " + taskType)
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	newTask(hostName, taskType, exec)
+
+	/*hv, err := exec.hypervisorProvider.CreateDriver()
 	if err != nil {
 		finState = mesos.TaskState_TASK_FAILED
 		return
@@ -183,7 +193,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	if err != nil {
 		finState = mesos.TaskState_TASK_FAILED
 		return
-	}
+	}*/
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {

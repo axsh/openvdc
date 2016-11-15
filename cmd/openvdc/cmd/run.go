@@ -76,7 +76,7 @@ var runCmd = &cobra.Command{
 		defer conn.Close()
 
 		c := pb.NewInstanceClient(conn)
-		resp, err := c.Run(context.Background(), &pb.RunRequest{mi.Name, hostName})
+		resp, err := c.Run(context.Background(), &pb.RunRequest{mi.Name, hostName, "run"})
 		if err != nil {
 			log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
 		}

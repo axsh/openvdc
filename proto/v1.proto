@@ -9,6 +9,7 @@ service Instance {
 message RunRequest{
 	string imageName = 1;
 	string hostName = 2;
+	string taskType = 3;
 }
 message RunReply {
 }

@@ -89,9 +89,11 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 		log.Infoln("Process this offer as new request arrived.")
 		imageName := s.ImageName
 		hostName := s.HostName
+		taskType := s.TaskType
 
 		fmt.Println("Scheduler, ImageName: ", imageName)
 		fmt.Println("Scheduler, HostName: ", hostName)
+		fmt.Println("Scheduler, TaskType: ", taskType)
 
 		var clientCommands string
 		if imageName != "" {
@@ -101,6 +103,10 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 		if hostName != "" {
 			clientCommands = clientCommands + "&hostName=" + hostName
 		}
+
+		if taskType != "" {
+                        clientCommands = clientCommands + "&taskType=" + taskType
+                }
 
 		sched.processOffers(driver, offers, clientCommands)
 	default:
