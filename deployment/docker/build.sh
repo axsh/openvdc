@@ -64,7 +64,7 @@ fi
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
 # Upload checked out tree to the container.
-docker_cp . "${CID}:/var/tmp/openvnet"
+docker_cp . "${CID}:/var/tmp/openvdc"
 # Upload build cache if found.
 if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   for f in $(ls ${build_cache_base}); do
@@ -78,7 +78,7 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   done
 fi
 # Run build script
-docker exec -t "${CID}" /bin/bash -c "cd openvnet; SKIP_CLEANUP=1 ./deployment/packagebuild/build_packages_vnet.sh"
+docker exec -t "${CID}" /bin/bash -c "cd openvdc; SKIP_CLEANUP=1 ./build.sh"
 if [[ -n "$BUILD_CACHE_DIR" ]]; then
     if [[ ! -d "$BUILD_CACHE_DIR" || ! -w "$BUILD_CACHE_DIR" ]]; then
         echo "ERROR: BUILD_CACHE_DIR '${BUILD_CACHE_DIR}' does not exist or not writable." >&2
