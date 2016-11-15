@@ -1,14 +1,11 @@
 package cmd
 
 import (
-	"context"
 
 	log "github.com/Sirupsen/logrus"
-
-	pb "github.com/axsh/openvdc/proto"
+	util "github.com/axsh/openvdc/util"
 	"github.com/axsh/openvdc/registry"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
 var serverAddr string
@@ -69,17 +66,8 @@ var runCmd = &cobra.Command{
 		}
 		log.Printf("Found image: %s", imageSlug)
 
-		conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
-		if err != nil {
-			log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-		}
-		defer conn.Close()
 
-		c := pb.NewInstanceClient(conn)
-		resp, err := c.Run(context.Background(), &pb.RunRequest{mi.Name, hostName, "run"})
-		if err != nil {
-			log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-		}
-		log.Println(resp)
+		util.SendToApi(serverAddr, mi.Name, hostName, "run")
+
 		return nil
 	}}

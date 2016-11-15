@@ -3,9 +3,11 @@ package util
 import (
 	"net/http"
 	"os"
-
+	"golang.org/x/net/context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/viper"
+	 pb "github.com/axsh/openvdc/proto"
+        "google.golang.org/grpc"
 )
 
 func GetRemoteJsonField(field string, url string) string {
@@ -27,4 +29,24 @@ func GetRemoteJsonField(field string, url string) string {
 
 func SetupLog() {
 	log.SetOutput(os.Stdout)
+}
+
+func SendToApi(serverAddr string, hostName string, imageTitle string, taskType string) {
+
+        conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+        if err != nil {
+                log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+        }
+
+        defer conn.Close()
+
+        c := pb.NewInstanceClient(conn)
+
+        resp, err := c.Run(context.Background(), &pb.RunRequest{imageTitle, hostName, taskType,})
+
+        if err != nil {
+                log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+        }
+
+        log.Println(resp)
 }
