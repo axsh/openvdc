@@ -30,11 +30,11 @@ func setupLocalRegistry() (registry.Registry, error) {
 		}
 	}
 
-	valid, err := reg.IsCacheObsolete()
+	refresh, err := reg.IsCacheObsolete()
 	if err != nil {
 		return nil, err
 	}
-	if !valid {
+	if refresh {
 		log.Infoln("Updating registry cache.")
 		err = reg.Fetch()
 		if err != nil {
