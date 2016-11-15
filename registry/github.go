@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -20,16 +21,18 @@ const (
 )
 
 type GithubRegistry struct {
-	confDir  string
-	Branch   string
-	RepoSlug string
+	confDir                 string
+	Branch                  string
+	RepoSlug                string
+	ForceCheckToRemoteAfter time.Duration
 }
 
 func NewGithubRegistry(confDir string) *GithubRegistry {
 	return &GithubRegistry{
-		confDir:  confDir,
-		Branch:   "master",
-		RepoSlug: githubRepoSlug,
+		confDir:                 confDir,
+		Branch:                  "master",
+		RepoSlug:                githubRepoSlug,
+		ForceCheckToRemoteAfter: 1 * time.Hour,
 	}
 }
 
@@ -85,7 +88,16 @@ func (r *GithubRegistry) IsCacheObsolete() (bool, error) {
 		// There was no local cache.
 		return true, nil
 	}
-	shabuf, err := ioutil.ReadFile(r.localCachePath() + ".sha")
+	shaPath := r.localCachePath() + ".sha"
+	stat, err := os.Stat(shaPath)
+	if err != nil {
+		return false, err
+	}
+	if time.Since(stat.ModTime()) < r.ForceCheckToRemoteAfter {
+		// Skip to make a remote request to check version.
+		return false, nil
+	}
+	shabuf, err := ioutil.ReadFile(shaPath)
 	if err != nil {
 		return false, err
 	}
@@ -95,6 +107,8 @@ func (r *GithubRegistry) IsCacheObsolete() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	// Refresh timestamp
+	os.Truncate(shaPath, stat.Size())
 	return (ref.Sha != sha), nil
 }
 
