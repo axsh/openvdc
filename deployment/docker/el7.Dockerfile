@@ -8,7 +8,7 @@ RUN yum install -y make git go
 ENV GOPATH=/var/tmp/go PATH=$PATH:$GOPATH/bin
 RUN mkdir $GOPATH
 RUN go get -u github.com/kardianos/govendor
-RUN mkdir /var/tmp/openvdc
+RUN mkdir -p /var/tmp/go/src/github.com/axsh/openvdc/cmd
 #ADD deployment/docker/yum.repo/dev.repo /etc/yum.repos.d/
 # Only enables "openvdc-third-party" repo.
 #RUN yum-config-manager --disable openvdc
