@@ -79,7 +79,7 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   done
 fi
 # Run build script
-docker exec -t "${CID}" /bin/bash -c "cd go; SKIP_CLEANUP=1 ./build.sh"
+docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc/cmd ; SKIP_CLEANUP=1 ./build.sh"
 if [[ -n "$BUILD_CACHE_DIR" ]]; then
     if [[ ! -d "$BUILD_CACHE_DIR" || ! -w "$BUILD_CACHE_DIR" ]]; then
         echo "ERROR: BUILD_CACHE_DIR '${BUILD_CACHE_DIR}' does not exist or not writable." >&2
