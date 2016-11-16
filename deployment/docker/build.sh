@@ -65,7 +65,7 @@ docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
 # Upload checked out tree to the container.
 #####docker_cp . "${CID}:/var/tmp/openvdc"
-docker_cp . "${CID}:/var/tmp/go"
+docker_cp . "${CID}:/var/tmp/go/src/github.com/axsh/openvdc/cmd"
 # Upload build cache if found.
 if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   for f in $(ls ${build_cache_base}); do
