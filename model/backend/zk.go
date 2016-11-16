@@ -79,9 +79,9 @@ func (z *Zk) ifNotExist(key string, callee func() error) error {
 	return nil
 }
 
-func (z *Zk) Create(key string, value []byte) error {
+func (z *Zk) create(key string, value []byte, flags int32) (string, error) {
 	if z.conn == nil {
-		return ErrConnectionNotReady
+		return "", ErrConnectionNotReady
 	}
 	var err error
 	absKey := path.Clean(path.Join(z.basePath, key))
@@ -92,9 +92,21 @@ func (z *Zk) Create(key string, value []byte) error {
 		return z.setupParents(dir)
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
-	_, err = z.conn.Create(absKey, value, int32(0), defaultACL)
+	return z.conn.Create(absKey, value, flags, defaultACL)
+}
+
+func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
+	nkey, err := z.create(key, value, zk.FlagSequence)
+	if err != nil {
+		return "", err
+	}
+	return nkey, nil
+}
+
+func (z *Zk) Create(key string, value []byte) error {
+	_, err := z.create(key, value, int32(0))
 	return err
 }
 

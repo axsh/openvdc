@@ -9,5 +9,6 @@ type ModelBackend interface {
 	Connect(dest []string) error
 	Close() error
 	Create(key string, value []byte) error
+	CreateWithID(key string, value []byte) (string, error)
 	Update(key string, value []byte) error
 }
