@@ -3,6 +3,7 @@ syntax = "proto3";
 package model;
 
 message Instance {
-  string uuid = 1;
+  string id = 1;
+  string executor_id = 2;
 }
 
