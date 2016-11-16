@@ -10,6 +10,7 @@ LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${
 # During development, assume that the executor binary locates in the build directory.
 EXECUTOR_PATH=$(pwd)/openvdc-executor
 
+export GOPATH=$PWD
 go get -u github.com/kardianos/govendor
 govendor sync
 
