@@ -12,7 +12,7 @@ EXECUTOR_PATH=$(pwd)/openvdc-executor
 
 export GOPATH=$PWD
 go get -u github.com/kardianos/govendor
-govendor sync
+$GOPATH/bin/govendor sync
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -ldflags "-X 'github.com/axsh/openvdc/scheduler.ExecutorPath=${EXECUTOR_PATH}'" -v ./cmd/openvdc-scheduler
