@@ -11,7 +11,7 @@ LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${
 EXECUTOR_PATH=$(pwd)/openvdc-executor
 
 export GOPATH=$PWD
-go get -u github.com/axsh/openvdc
+go get -u github.com/axsh/openvdc  ||  ;
 go get -u github.com/kardianos/govendor
 $GOPATH/bin/govendor sync
 
