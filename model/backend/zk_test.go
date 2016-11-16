@@ -1,13 +1,22 @@
 package backend
 
 import (
+	"os"
 	"testing"
 
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-var testZkServer = "127.0.0.1"
+var testZkServer string
+
+func init() {
+	if os.Getenv("ZK") != "" {
+		testZkServer = os.Getenv("ZK")
+	} else {
+		testZkServer = "127.0.0.1"
+	}
+}
 
 func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 	z := NewZkBackend()
