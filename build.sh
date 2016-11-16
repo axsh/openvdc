@@ -10,10 +10,8 @@ LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${
 # During development, assume that the executor binary locates in the build directory.
 EXECUTOR_PATH=$(pwd)/openvdc-executor
 
-export GOPATH=$PWD
-go get -u github.com/axsh/openvdc  ||  ;
-go get -u github.com/kardianos/govendor
-$GOPATH/bin/govendor sync
+#export GOPATH=$PWD
+#$GOPATH/bin/govendor sync
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -ldflags "-X 'github.com/axsh/openvdc/scheduler.ExecutorPath=${EXECUTOR_PATH}'" -v ./cmd/openvdc-scheduler
