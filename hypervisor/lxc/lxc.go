@@ -65,6 +65,10 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 		return err
 	}
 
+	if fmt.Sprint(c.State()) == "RUNNING" {
+                c.Stop()
+        }
+
 	d.log.Infoln("Destroying lxc-container..")
 	if err := c.Destroy(); err != nil {
 		d.log.Errorln(err)
@@ -119,7 +123,7 @@ func (d *LXCHypervisorDriver) InstanceConsole() error {
                 return err
         }
 
-	var options := lxc.ConsoleOptions{
+	var options = lxc.ConsoleOptions{
 		Tty:             -1,
 		StdinFd:         os.Stdin.Fd(), //These should probably be changed.
 		StdoutFd:        os.Stdout.Fd(),
