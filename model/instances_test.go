@@ -32,3 +32,23 @@ func TestCreateInstance(t *testing.T) {
 		assert.NotNil(got)
 	})
 }
+
+func TestFindInstance(t *testing.T) {
+	assert := assert.New(t)
+	n := &Instance{
+		ExecutorId: "xxx",
+	}
+	_, err := FindInstanceByID("i-xxxxx")
+	assert.Equal(backend.ErrConnectionNotReady, err)
+
+	withConnect(t, func() {
+		got, err := CreateInstance(n)
+		assert.NoError(err)
+		got2, err := FindInstanceByID(got.Id)
+		assert.NoError(err)
+		assert.NotNil(got2)
+		assert.Equal(got.Id, got2.Id)
+		_, err = FindInstanceByID("i-xxxxx")
+		assert.Error(err)
+	})
+}
