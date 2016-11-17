@@ -45,10 +45,24 @@ abdcefg12345678
 ## Start an instance with local bridge
 
 ```
-% openvdc run centos/7 --bridge[0]=localovs1 --interface[0]=10:54:ff:00:00:01 --ipv4[0]=10.100.0.10/24 --ipv4-gw[0]=10.100.0.1
+% openvdc run centos/7 --bridge[0]=localovs1 --macaddr[0]=10:54:ff:00:00:01 --ipv4[0]=10.100.0.10/24 --ipv4-gw[0]=10.100.0.1
 abdcefg12345678
 % openvdc ssh user@abdcefg12345678
 % openvdc destroy abdcefg12345678
+```
+
+```
+% vi mycentos7.json
+{
+  interaces: [
+    "name": 0,
+    "bridge": "localovs1",
+    "macaddr": "10:54:ff:00:00:01",
+    "ipv4": "10.10.10.10/24",
+    "ipv4-gw": "10.10.10.1",
+  ]
+}
+% openvdc run centos/7 mycentos7-1.json
 ```
 
 List all registered/running instances.
