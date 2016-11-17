@@ -24,21 +24,21 @@ func (p *LXCHypervisorProvider) Name() string {
 
 func (p *LXCHypervisorProvider) CreateDriver() (hypervisor.HypervisorDriver, error) {
 	return &LXCHypervisorDriver{
-		log: log.WithField("hypervisor", "lxc"),
+		log:     log.WithField("hypervisor", "lxc"),
 		lxcpath: lxc.DefaultConfigPath(),
-		name: "lxc-test",
+		name:    "lxc-test",
 		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
 		template: lxc.DownloadTemplateOptions,
 	}, nil
 }
 
 type LXCHypervisorDriver struct {
-	log        *log.Entry
-	imageName  string
-	hostName   string
-	lxcpath    string
-	template   lxc.TemplateOptions
-	name       string
+	log       *log.Entry
+	imageName string
+	hostName  string
+	lxcpath   string
+	template  lxc.TemplateOptions
+	name      string
 }
 
 func (d *LXCHypervisorDriver) CreateInstance() error {
@@ -66,8 +66,8 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 	}
 
 	if fmt.Sprint(c.State()) == "RUNNING" {
-                c.Stop()
-        }
+		c.Stop()
+	}
 
 	d.log.Infoln("Destroying lxc-container..")
 	if err := c.Destroy(); err != nil {
@@ -117,11 +117,11 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 
 func (d *LXCHypervisorDriver) InstanceConsole() error {
 
-        c, err := lxc.NewContainer(d.name, d.lxcpath)
-        if err != nil {
-                d.log.Errorln(err)
-                return err
-        }
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+	if err != nil {
+		d.log.Errorln(err)
+		return err
+	}
 
 	var options = lxc.ConsoleOptions{
 		Tty:             -1,
@@ -131,10 +131,9 @@ func (d *LXCHypervisorDriver) InstanceConsole() error {
 		EscapeCharacter: 'a',
 	}
 
-
-        if err := c.Console(options); err != nil {
-                d.log.Errorln(err)
-                return err
-        }
-        return nil
+	if err := c.Console(options); err != nil {
+		d.log.Errorln(err)
+		return err
+	}
+	return nil
 }

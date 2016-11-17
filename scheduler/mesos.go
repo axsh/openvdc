@@ -105,8 +105,8 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 		}
 
 		if taskType != "" {
-                        clientCommands = clientCommands + "&taskType=" + taskType
-                }
+			clientCommands = clientCommands + "&taskType=" + taskType
+		}
 
 		sched.processOffers(driver, offers, clientCommands)
 	default:
