@@ -5,7 +5,7 @@ $BUILDDATE=Get-Date -Format "yyyy/MM/dd HH:mm:ss zzz"
 $GOVERSION=$(go version)
 $LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
 # During development, assume that the executor binary locates in the build directory.
-$EXECUTOR_PATH=Join-Path $(Get-Location) "openvdc-executor"
+$EXECUTOR_PATH=Join-Path $(Get-Location) "openvdc-executor.exe"
 
 if ((Get-ChildItem ./vendor | Measure-Object).Count -eq 1) {
     Write-Error "ERROR: ./vendor has not been setup yet"
