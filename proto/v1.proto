@@ -12,5 +12,6 @@ message RunRequest{
 	string taskType = 3;
 }
 message RunReply {
+  string instance_id = 1;
 }
 
