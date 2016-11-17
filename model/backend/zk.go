@@ -84,9 +84,7 @@ func (z *Zk) create(key string, value []byte, flags int32) (string, error) {
 		return "", ErrConnectionNotReady
 	}
 	var err error
-	absKey := path.Clean(path.Join(z.basePath, key))
-	dir, _ := path.Split(absKey)
-	dir = strings.TrimSuffix(dir, "/")
+	absKey, dir := z.canonKey(key)
 
 	err = z.ifNotExist(dir, func() error {
 		return z.setupParents(dir)
@@ -115,8 +113,7 @@ func (z *Zk) Update(key string, value []byte) error {
 		return ErrConnectionNotReady
 	}
 	var err error
-	absKey := path.Join(z.basePath, path.Clean(key))
-	dir, _ := path.Split(absKey)
+	absKey, dir := z.canonKey(key)
 
 	err = z.ifNotExist(dir, func() error {
 		return z.setupParents(dir)
@@ -126,4 +123,11 @@ func (z *Zk) Update(key string, value []byte) error {
 	}
 	_, err = z.conn.Set(absKey, value, 1)
 	return err
+}
+
+func (z *Zk) canonKey(key string) (string, string) {
+	absKey := path.Clean(path.Join(z.basePath, key))
+	dir, _ := path.Split(absKey)
+	dir = strings.TrimSuffix(dir, "/")
+	return absKey, dir
 }
