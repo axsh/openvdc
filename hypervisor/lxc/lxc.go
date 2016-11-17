@@ -28,7 +28,7 @@ func (p *LXCHypervisorProvider) CreateDriver() (hypervisor.HypervisorDriver, err
 		lxcpath: lxc.DefaultConfigPath(),
 		name: "lxc-test",
 		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
-		template: lxc.DownloadTemplateOption,
+		template: lxc.DownloadTemplateOptions,
 	}, nil
 }
 
@@ -64,6 +64,10 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 		d.log.Errorln(err)
 		return err
 	}
+
+	if fmt.Sprint(c.State()) == "RUNNING" {
+                c.Stop()
+        }
 
 	d.log.Infoln("Destroying lxc-container..")
 	if err := c.Destroy(); err != nil {
@@ -109,4 +113,28 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 		return err
 	}
 	return nil
+}
+
+func (d *LXCHypervisorDriver) InstanceConsole() error {
+
+        c, err := lxc.NewContainer(d.name, d.lxcpath)
+        if err != nil {
+                d.log.Errorln(err)
+                return err
+        }
+
+	var options = lxc.ConsoleOptions{
+		Tty:             -1,
+		StdinFd:         os.Stdin.Fd(), //These should probably be changed.
+		StdoutFd:        os.Stdout.Fd(),
+		StderrFd:        os.Stderr.Fd(),
+		EscapeCharacter: 'a',
+	}
+
+
+        if err := c.Console(options); err != nil {
+                d.log.Errorln(err)
+                return err
+        }
+        return nil
 }

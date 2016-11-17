@@ -42,3 +42,8 @@ func (h *NullHypervisorDriver) DestroyInstance() error {
 	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("DestroyInstance")
 	return nil
 }
+
+func (h *NullHypervisorDriver) InstanceConsole() error {
+        log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("InstanceConsole")
+        return nil
+}

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package openvdc;
+package api;
 
 service Instance {
 	rpc Run (RunRequest) returns (RunReply){}
@@ -9,6 +9,7 @@ service Instance {
 message RunRequest{
 	string imageName = 1;
 	string hostName = 2;
+	string taskType = 3;
 }
 message RunReply {
 }

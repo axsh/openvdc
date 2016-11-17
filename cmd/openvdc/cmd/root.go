@@ -8,6 +8,7 @@ import (
 )
 
 var cfgFile string
+var UserConfDir string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -22,7 +23,11 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	RootCmd.AddCommand(runCmd)
+	RootCmd.AddCommand(createCmd)
+	RootCmd.AddCommand(destroyCmd)
+        RootCmd.AddCommand(runCmd)
+        RootCmd.AddCommand(stopCmd)
+	RootCmd.AddCommand(consoleCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
