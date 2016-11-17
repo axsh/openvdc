@@ -11,7 +11,7 @@ LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${
 EXECUTOR_PATH=$(pwd)/openvdc-executor
 
 #export GOPATH=$PWD
-#$GOPATH/bin/govendor sync
+$GOPATH/bin/govendor sync
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -ldflags "-X 'github.com/axsh/openvdc/scheduler.ExecutorPath=${EXECUTOR_PATH}'" -v ./cmd/openvdc-scheduler
