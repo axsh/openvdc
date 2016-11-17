@@ -3,6 +3,7 @@
 package lxc
 
 import (
+	"os"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -65,7 +66,7 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 		return err
 	}
 
-	if fmt.Sprint(c.State()) == "RUNNING" {
+	if c.State() == lxc.RUNNING {
 		c.Stop()
 	}
 
