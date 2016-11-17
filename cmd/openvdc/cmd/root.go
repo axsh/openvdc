@@ -27,6 +27,7 @@ func Execute() {
 	RootCmd.AddCommand(destroyCmd)
         RootCmd.AddCommand(startCmd)
         RootCmd.AddCommand(stopCmd)
+	RootCmd.AddCommand(consoleCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

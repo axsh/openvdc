@@ -128,6 +128,11 @@ func newTask(hostName string, taskType string, exec *VDCExecutor) {
                         if err != nil {
                                 log.Errorln("Error stopping instance")
                         }
+		case "console":
+                        err = hv.InstanceConsole()
+                        if err != nil {
+                                log.Errorln("Error connecting to instance")
+                        }
                 default:
                         log.Errorln("Invalid task name")
         }

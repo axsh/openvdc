@@ -110,3 +110,27 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 	}
 	return nil
 }
+
+func (d *LXCHypervisorDriver) InstanceConsole() error {
+
+        c, err := lxc.NewContainer(d.name, d.lxcpath)
+        if err != nil {
+                d.log.Errorln(err)
+                return err
+        }
+
+	var options := lxc.ConsoleOptions{
+		Tty:             -1,
+		StdinFd:         os.Stdin.Fd(), //These should probably be changed.
+		StdoutFd:        os.Stdout.Fd(),
+		StderrFd:        os.Stderr.Fd(),
+		EscapeCharacter: 'a',
+	}
+
+
+        if err := c.Console(options); err != nil {
+                d.log.Errorln(err)
+                return err
+        }
+        return nil
+}
