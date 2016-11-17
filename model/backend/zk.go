@@ -125,6 +125,15 @@ func (z *Zk) Update(key string, value []byte) error {
 	return err
 }
 
+func (z *Zk) Find(key string) (value []byte, err error) {
+	if z.conn == nil {
+		return nil, ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(key)
+	value, _, err = z.conn.Get(absKey)
+	return
+}
+
 func (z *Zk) canonKey(key string) (string, string) {
 	absKey := path.Clean(path.Join(z.basePath, key))
 	dir, _ := path.Split(absKey)

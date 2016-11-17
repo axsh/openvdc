@@ -11,4 +11,5 @@ type ModelBackend interface {
 	Create(key string, value []byte) error
 	CreateWithID(key string, value []byte) (string, error)
 	Update(key string, value []byte) error
+	Find(key string) ([]byte, error)
 }

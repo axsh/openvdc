@@ -52,3 +52,16 @@ func TestZkCreate(t *testing.T) {
 		z.conn.Delete(z.basePath+"/test1", 1)
 	})
 }
+
+func TestZkFind(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		err := z.Create("/test1", []byte{1})
+		assert.NoError(err)
+		v, err := z.Find("/test1")
+		assert.NoError(err)
+		assert.Equal([]byte{1}, v)
+		// TODO: implemente ModelBackend.Delete().
+		z.conn.Delete(z.basePath+"/test1", 1)
+	})
+}
