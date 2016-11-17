@@ -108,7 +108,7 @@ func newTask(hostName string, taskType string, exec *VDCExecutor) {
         log.Errorln(err)
 
         switch taskType {
-                case "run":
+                case "create":
                         err = hv.CreateInstance()
                         if err != nil {
                                 log.Errorln("Error creating instance")
@@ -118,10 +118,10 @@ func newTask(hostName string, taskType string, exec *VDCExecutor) {
                         if err != nil {
                                 log.Errorln("Error destroying instance")
                         }
-                case "start":
+                case "run":
                         err = hv.StartInstance()
                         if err != nil {
-                                log.Errorln("Error starting instance")
+                                log.Errorln("Error running instance")
                         }
                 case "stop":
                         err = hv.StopInstance()
