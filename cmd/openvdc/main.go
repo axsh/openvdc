@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/axsh/cmd/openvdc/cmd"
+	"github.com/axsh/openvdc/cmd/openvdc/cmd"
 )
 
 // Build time constant variables from -ldflags
