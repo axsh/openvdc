@@ -4,7 +4,8 @@ ENTRYPOINT ["/sbin/init"]
 RUN yum install -y yum-utils createrepo rpm-build rpmdevtools rsync sudo
 #RUN yum install -y make gcc gcc-c++ git \
 #   mariadb-devel sqlite-devel libpcap-devel
-RUN yum install -y make git go
+RUN yum install -y make git go epel-release
+RUN yum install -y lxc
 ENV GOPATH=/var/tmp/go PATH=$PATH:$GOPATH/bin
 RUN mkdir $GOPATH
 RUN go get -u github.com/kardianos/govendor
