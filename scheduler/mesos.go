@@ -225,23 +225,20 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func startAPIServer(laddr string, ch api.APIOffer, zkAddr string) *api.APIServer {
+func startAPIServer(laddr string, ch api.APIOffer, zkAddr string, driver sched.SchedulerDriver) *api.APIServer {
 	lis, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
 	}
 	log.Println("Listening gRPC API on: ", laddr)
-	s := api.NewAPIServer(ch, zkAddr)
+	s := api.NewAPIServer(ch, zkAddr, driver)
 	go s.Serve(lis)
 	return s
 }
 
 func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr string) {
 	ch := make(api.APIOffer)
-	apiServer := startAPIServer(apiListenAddr, ch, zkAddr)
-	defer func() {
-		apiServer.GracefulStop()
-	}()
+
 	fwinfo := &mesos.FrameworkInfo{
 		User: proto.String(""), // Mesos-go will fill in user.
 		Name: proto.String("VDC Scheduler"),
@@ -277,4 +274,9 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 	if stat, err := driver.Run(); err != nil {
 		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
 	}
+
+	apiServer := startAPIServer(apiListenAddr, ch, zkAddr, driver)
+        defer func() {
+                apiServer.GracefulStop()
+        }()
 }
