@@ -11,6 +11,9 @@ It is generated from these files:
 It has these top-level messages:
 	RunRequest
 	RunReply
+	ResourceRequest
+	ResourceReply
+	ResourceIDRequest
 */
 package api
 
@@ -82,9 +85,149 @@ func (m *RunReply) GetInstanceId() string {
 	return ""
 }
 
+type ResourceRequest struct {
+}
+
+func (m *ResourceRequest) Reset()                    { *m = ResourceRequest{} }
+func (m *ResourceRequest) String() string            { return proto.CompactTextString(m) }
+func (*ResourceRequest) ProtoMessage()               {}
+func (*ResourceRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+type ResourceReply struct {
+	ID string `protobuf:"bytes,1,opt,name=ID" json:"ID,omitempty"`
+}
+
+func (m *ResourceReply) Reset()                    { *m = ResourceReply{} }
+func (m *ResourceReply) String() string            { return proto.CompactTextString(m) }
+func (*ResourceReply) ProtoMessage()               {}
+func (*ResourceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *ResourceReply) GetID() string {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+type ResourceIDRequest struct {
+	// Types that are valid to be assigned to Key:
+	//	*ResourceIDRequest_ID
+	//	*ResourceIDRequest_Name
+	Key isResourceIDRequest_Key `protobuf_oneof:"Key"`
+}
+
+func (m *ResourceIDRequest) Reset()                    { *m = ResourceIDRequest{} }
+func (m *ResourceIDRequest) String() string            { return proto.CompactTextString(m) }
+func (*ResourceIDRequest) ProtoMessage()               {}
+func (*ResourceIDRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+type isResourceIDRequest_Key interface {
+	isResourceIDRequest_Key()
+}
+
+type ResourceIDRequest_ID struct {
+	ID string `protobuf:"bytes,1,opt,name=ID,oneof"`
+}
+type ResourceIDRequest_Name struct {
+	Name string `protobuf:"bytes,2,opt,name=Name,oneof"`
+}
+
+func (*ResourceIDRequest_ID) isResourceIDRequest_Key()   {}
+func (*ResourceIDRequest_Name) isResourceIDRequest_Key() {}
+
+func (m *ResourceIDRequest) GetKey() isResourceIDRequest_Key {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
+func (m *ResourceIDRequest) GetID() string {
+	if x, ok := m.GetKey().(*ResourceIDRequest_ID); ok {
+		return x.ID
+	}
+	return ""
+}
+
+func (m *ResourceIDRequest) GetName() string {
+	if x, ok := m.GetKey().(*ResourceIDRequest_Name); ok {
+		return x.Name
+	}
+	return ""
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ResourceIDRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ResourceIDRequest_OneofMarshaler, _ResourceIDRequest_OneofUnmarshaler, _ResourceIDRequest_OneofSizer, []interface{}{
+		(*ResourceIDRequest_ID)(nil),
+		(*ResourceIDRequest_Name)(nil),
+	}
+}
+
+func _ResourceIDRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ResourceIDRequest)
+	// Key
+	switch x := m.Key.(type) {
+	case *ResourceIDRequest_ID:
+		b.EncodeVarint(1<<3 | proto.WireBytes)
+		b.EncodeStringBytes(x.ID)
+	case *ResourceIDRequest_Name:
+		b.EncodeVarint(2<<3 | proto.WireBytes)
+		b.EncodeStringBytes(x.Name)
+	case nil:
+	default:
+		return fmt.Errorf("ResourceIDRequest.Key has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ResourceIDRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ResourceIDRequest)
+	switch tag {
+	case 1: // Key.ID
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Key = &ResourceIDRequest_ID{x}
+		return true, err
+	case 2: // Key.Name
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Key = &ResourceIDRequest_Name{x}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ResourceIDRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ResourceIDRequest)
+	// Key
+	switch x := m.Key.(type) {
+	case *ResourceIDRequest_ID:
+		n += proto.SizeVarint(1<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.ID)))
+		n += len(x.ID)
+	case *ResourceIDRequest_Name:
+		n += proto.SizeVarint(2<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.Name)))
+		n += len(x.Name)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 func init() {
 	proto.RegisterType((*RunRequest)(nil), "api.RunRequest")
 	proto.RegisterType((*RunReply)(nil), "api.RunReply")
+	proto.RegisterType((*ResourceRequest)(nil), "api.ResourceRequest")
+	proto.RegisterType((*ResourceReply)(nil), "api.ResourceReply")
+	proto.RegisterType((*ResourceIDRequest)(nil), "api.ResourceIDRequest")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -159,19 +302,123 @@ var _Instance_serviceDesc = grpc.ServiceDesc{
 	Metadata: "v1.proto",
 }
 
+// Client API for Resource service
+
+type ResourceClient interface {
+	Register(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*ResourceReply, error)
+	Unregister(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error)
+}
+
+type resourceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewResourceClient(cc *grpc.ClientConn) ResourceClient {
+	return &resourceClient{cc}
+}
+
+func (c *resourceClient) Register(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*ResourceReply, error) {
+	out := new(ResourceReply)
+	err := grpc.Invoke(ctx, "/api.Resource/Register", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *resourceClient) Unregister(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error) {
+	out := new(ResourceReply)
+	err := grpc.Invoke(ctx, "/api.Resource/Unregister", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Resource service
+
+type ResourceServer interface {
+	Register(context.Context, *ResourceRequest) (*ResourceReply, error)
+	Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error)
+}
+
+func RegisterResourceServer(s *grpc.Server, srv ResourceServer) {
+	s.RegisterService(&_Resource_serviceDesc, srv)
+}
+
+func _Resource_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ResourceServer).Register(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Resource/Register",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ResourceServer).Register(ctx, req.(*ResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Resource_Unregister_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResourceIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ResourceServer).Unregister(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Resource/Unregister",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ResourceServer).Unregister(ctx, req.(*ResourceIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Resource_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "api.Resource",
+	HandlerType: (*ResourceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Register",
+			Handler:    _Resource_Register_Handler,
+		},
+		{
+			MethodName: "Unregister",
+			Handler:    _Resource_Unregister_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "v1.proto",
+}
+
 func init() { proto.RegisterFile("v1.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 173 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x28, 0x33, 0xd4, 0x2b,
-	0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4e, 0x2c, 0xc8, 0x54, 0x4a, 0xe2, 0xe2, 0x0a, 0x2a, 0xcd,
-	0x0b, 0x4a, 0x2d, 0x2c, 0x4d, 0x2d, 0x2e, 0x11, 0x92, 0xe1, 0xe2, 0xcc, 0xcc, 0x4d, 0x4c, 0x4f,
-	0xf5, 0x4b, 0xcc, 0x4d, 0x95, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0c, 0x42, 0x08, 0x08, 0x49, 0x71,
-	0x71, 0x64, 0xe4, 0x17, 0x97, 0x80, 0x25, 0x99, 0xc0, 0x92, 0x70, 0x3e, 0x48, 0xae, 0x24, 0xb1,
-	0x38, 0x3b, 0xa4, 0xb2, 0x20, 0x55, 0x82, 0x19, 0x22, 0x07, 0xe3, 0x2b, 0x69, 0x73, 0x71, 0x80,
-	0xed, 0x28, 0xc8, 0xa9, 0x14, 0x92, 0xe7, 0xe2, 0xce, 0xcc, 0x2b, 0x2e, 0x49, 0xcc, 0x4b, 0x4e,
-	0x8d, 0xcf, 0x4c, 0x81, 0xda, 0xc1, 0x05, 0x13, 0xf2, 0x4c, 0x31, 0x32, 0xe6, 0xe2, 0xf0, 0x84,
-	0xf2, 0x84, 0xd4, 0xb9, 0x98, 0x83, 0x4a, 0xf3, 0x84, 0xf8, 0xf5, 0x12, 0x0b, 0x32, 0xf5, 0x10,
-	0xce, 0x94, 0xe2, 0x45, 0x08, 0x14, 0xe4, 0x54, 0x2a, 0x31, 0x24, 0xb1, 0x81, 0x7d, 0x64, 0x0c,
-	0x08, 0x00, 0x00, 0xff, 0xff, 0xed, 0x8a, 0xe2, 0xba, 0xdd, 0x00, 0x00, 0x00,
+	// 279 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x6c, 0x51, 0xc1, 0x4a, 0xc3, 0x40,
+	0x10, 0x6d, 0x13, 0x95, 0x74, 0xa4, 0xd6, 0x0e, 0x45, 0x4a, 0x10, 0x2a, 0x7b, 0x51, 0x10, 0x02,
+	0xb6, 0xe0, 0xc1, 0x63, 0xc9, 0xa1, 0x41, 0xf0, 0xb0, 0xe8, 0x59, 0xb6, 0xed, 0x50, 0x17, 0xdb,
+	0x64, 0xcd, 0x6e, 0x84, 0x5c, 0xfc, 0x76, 0xc9, 0x36, 0xdb, 0xa5, 0xe2, 0x2d, 0xf3, 0xde, 0x9b,
+	0x79, 0xef, 0x65, 0x21, 0xfa, 0x7e, 0x48, 0x54, 0x59, 0x98, 0x02, 0x43, 0xa1, 0x24, 0x5b, 0x02,
+	0xf0, 0x2a, 0xe7, 0xf4, 0x55, 0x91, 0x36, 0x78, 0x0d, 0x3d, 0xb9, 0x13, 0x1b, 0x7a, 0x11, 0x3b,
+	0x1a, 0x77, 0x6f, 0xba, 0x77, 0x3d, 0xee, 0x01, 0x8c, 0x21, 0xfa, 0x28, 0xb4, 0xb1, 0x64, 0x60,
+	0xc9, 0xc3, 0xdc, 0x70, 0x46, 0xe8, 0xcf, 0xd7, 0x5a, 0xd1, 0x38, 0xdc, 0x73, 0x6e, 0x66, 0xf7,
+	0x10, 0x59, 0x0f, 0xb5, 0xad, 0x71, 0x02, 0xe7, 0x32, 0xd7, 0x46, 0xe4, 0x2b, 0x7a, 0x97, 0xeb,
+	0xd6, 0x03, 0x1c, 0x94, 0xad, 0xd9, 0x10, 0x06, 0x9c, 0x74, 0x51, 0x95, 0x2b, 0x6a, 0x53, 0xb1,
+	0x09, 0xf4, 0x3d, 0xd4, 0x1c, 0xb9, 0x80, 0x20, 0x4b, 0xdb, 0xdd, 0x20, 0x4b, 0xd9, 0x1c, 0x86,
+	0x4e, 0x90, 0xa5, 0xae, 0xcb, 0xa5, 0x17, 0x2d, 0x3a, 0x8d, 0x0c, 0x47, 0x70, 0xe2, 0xb3, 0x2f,
+	0x3a, 0xdc, 0x4e, 0xf3, 0x53, 0x08, 0x9f, 0xa9, 0x9e, 0xce, 0x20, 0xca, 0xda, 0x14, 0x78, 0x0b,
+	0x21, 0xaf, 0x72, 0x1c, 0x24, 0x42, 0xc9, 0xc4, 0xff, 0x9e, 0xb8, 0xef, 0x01, 0xb5, 0xad, 0x59,
+	0x67, 0xfa, 0x03, 0x91, 0x33, 0xc6, 0xc7, 0xe6, 0x7b, 0x23, 0xb5, 0xa1, 0x12, 0x47, 0x7b, 0xe1,
+	0x71, 0x8f, 0x18, 0xff, 0xa0, 0xf6, 0x06, 0x3e, 0x01, 0xbc, 0xe5, 0xa5, 0xdb, 0xbc, 0x3a, 0xd2,
+	0x1c, 0xda, 0xfc, 0xbf, 0xbb, 0x3c, 0xb3, 0x2f, 0x39, 0xfb, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x71,
+	0xe2, 0xcb, 0x70, 0xd5, 0x01, 0x00, 0x00,
 }

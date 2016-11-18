@@ -26,6 +26,7 @@ func NewAPIServer(c APIOffer, modelAddr string) *APIServer {
 		modelStoreAddr: modelAddr,
 	}
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
+	RegisterResourceServer(s.server, &ResourceAPI{api: s})
 	return s
 }
 
@@ -56,4 +57,15 @@ func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error
 	inst, err := model.CreateInstance(&model.Instance{})
 	s.api.offerChan <- in
 	return &RunReply{InstanceId: inst.Id}, nil
+}
+
+type ResourceAPI struct {
+	api *APIServer
+}
+
+func (s *ResourceAPI) Register(context.Context, *ResourceRequest) (*ResourceReply, error) {
+	return &ResourceReply{}, nil
+}
+func (s *ResourceAPI) Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error) {
+	return &ResourceReply{}, nil
 }
