@@ -8,7 +8,7 @@ if ! type protoc ; then
 fi
 
 # Required version of github.com/golang/protobuf
-protoc_go_sha="8ee79997227bf9b34611aee7946ae64735e6fd93"
+protoc_go_sha=$(cat .protocgengo.sha)
 
 skip_goget_protoc=1
 if ! type protoc-gen-go; then
