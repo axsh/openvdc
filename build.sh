@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash   -x
 
 set -e
 
@@ -9,6 +9,9 @@ GOVERSION=$(go version)
 LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
 # During development, assume that the executor binary locates in the build directory.
 EXECUTOR_PATH=$(pwd)/openvdc-executor
+
+#export GOPATH=$PWD
+$GOPATH/bin/govendor sync
 
 if [[ $(ls -1 ./vendor | wc -l) -eq 1 ]]; then
   echo "ERROR: ./vendor has not been setup yet." >&2
