@@ -150,19 +150,6 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.Errorln("Couldn't send status update", err)
 	}
 
-	finState := mesos.TaskState_TASK_FINISHED
-	defer func() {
-		log.Infoln("Finishing task", taskInfo.GetName())
-		finStatus := &mesos.TaskStatus{
-			TaskId: taskInfo.GetTaskId(),
-			State:  finState.Enum(),
-		}
-		if _, err := driver.SendStatusUpdate(finStatus); err != nil {
-			log.Infoln("ERROR: Couldn't send status update", err)
-		}
-		log.Infoln("Task finished", taskInfo.GetName())
-	}()
-
 	exec.tasksLaunched++
 	log.Infoln("Tasks launched ", exec.tasksLaunched)
 
@@ -199,6 +186,22 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		finState = mesos.TaskState_TASK_FAILED
 		return
 	}*/
+}
+
+func DestroyTask(driver exec.ExecutorDriver) {
+
+        finState := mesos.TaskState_TASK_FINISHED
+
+        log.Infoln("Finishing task", taskInfo.GetName())
+        finStatus := &mesos.TaskStatus{
+                TaskId: taskInfo.GetTaskId(),
+                State:  finState.Enum(),
+        }
+
+        if _, err := driver.SendStatusUpdate(finStatus); err != nil {
+                log.Infoln("ERROR: Couldn't send status update", err)
+        }
+        log.Infoln("Task finished", taskInfo.GetName())
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
