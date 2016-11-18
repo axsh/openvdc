@@ -64,8 +64,8 @@ type ResourceAPI struct {
 }
 
 func (s *ResourceAPI) Register(context.Context, *ResourceRequest) (*ResourceReply, error) {
-	return &ResourceReply{}, nil
+	return &ResourceReply{ID: "r-00000001"}, nil
 }
 func (s *ResourceAPI) Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error) {
-	return &ResourceReply{}, nil
+	return &ResourceReply{ID: "r-00000001"}, nil
 }

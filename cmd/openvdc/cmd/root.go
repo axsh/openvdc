@@ -25,9 +25,11 @@ var RootCmd = &cobra.Command{
 func Execute() {
 	RootCmd.AddCommand(createCmd)
 	RootCmd.AddCommand(destroyCmd)
-        RootCmd.AddCommand(runCmd)
-        RootCmd.AddCommand(stopCmd)
+	RootCmd.AddCommand(runCmd)
+	RootCmd.AddCommand(stopCmd)
 	RootCmd.AddCommand(consoleCmd)
+	RootCmd.AddCommand(registerCmd)
+	RootCmd.AddCommand(unregisterCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
