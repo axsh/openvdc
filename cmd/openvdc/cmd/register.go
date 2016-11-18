@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
+
+	"golang.org/x/net/context"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
