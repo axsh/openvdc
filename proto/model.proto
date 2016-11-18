@@ -7,3 +7,11 @@ message Instance {
   string executor_id = 2;
 }
 
+enum ResourceType {
+  VM = 0;
+}
+
+message Resource {
+  string id = 1;
+  ResourceType type = 2;
+}

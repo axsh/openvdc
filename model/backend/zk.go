@@ -140,3 +140,11 @@ func (z *Zk) canonKey(key string) (string, string) {
 	dir = strings.TrimSuffix(dir, "/")
 	return absKey, dir
 }
+
+func (z *Zk) Delete(key string) error {
+	if z.conn == nil {
+		return ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(key)
+	return z.conn.Delete(absKey, 1)
+}

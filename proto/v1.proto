@@ -12,5 +12,22 @@ message RunRequest{
 	string taskType = 3;
 }
 message RunReply {
+  string instance_id = 1;
 }
 
+service Resource {
+  rpc Register(ResourceRequest) returns (ResourceReply){}
+  rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
+}
+
+message ResourceRequest {}
+message ResourceReply {
+  string ID = 1;
+}
+
+message ResourceIDRequest{
+  oneof Key {
+    string ID = 1;
+    string Name = 2;
+  }
+}

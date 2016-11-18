@@ -105,8 +105,8 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 		}
 
 		if taskType != "" {
-                        clientCommands = clientCommands + "&taskType=" + taskType
-                }
+			clientCommands = clientCommands + "&taskType=" + taskType
+		}
 
 		sched.processOffers(driver, offers, clientCommands)
 	default:
@@ -225,20 +225,20 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func startAPIServer(laddr string, ch api.APIOffer) *api.APIServer {
+func startAPIServer(laddr string, ch api.APIOffer, zkAddr string) *api.APIServer {
 	lis, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
 	}
 	log.Println("Listening gRPC API on: ", laddr)
-	s := api.NewAPIServer(ch)
+	s := api.NewAPIServer(ch, zkAddr)
 	go s.Serve(lis)
 	return s
 }
 
-func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string) {
+func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr string) {
 	ch := make(api.APIOffer)
-	apiServer := startAPIServer(apiListenAddr, ch)
+	apiServer := startAPIServer(apiListenAddr, ch, zkAddr)
 	defer func() {
 		apiServer.GracefulStop()
 	}()

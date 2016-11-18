@@ -22,7 +22,7 @@ func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 	z := NewZkBackend()
 	z.basePath = "/" + uuid.New()
 	defer func() {
-		err = z.conn.Delete(z.basePath, 1)
+		err = z.Delete(z.basePath)
 		z.Close()
 	}()
 	err = z.Connect([]string{testZkServer})
@@ -48,8 +48,7 @@ func TestZkCreate(t *testing.T) {
 		assert.NoError(err)
 		err = z.Create("/test1", []byte{})
 		assert.Error(err)
-		// TODO: implemente ModelBackend.Delete().
-		z.conn.Delete(z.basePath+"/test1", 1)
+		z.Delete("/test1")
 	})
 }
 
@@ -61,7 +60,6 @@ func TestZkFind(t *testing.T) {
 		v, err := z.Find("/test1")
 		assert.NoError(err)
 		assert.Equal([]byte{1}, v)
-		// TODO: implemente ModelBackend.Delete().
-		z.conn.Delete(z.basePath+"/test1", 1)
+		z.Delete("/test1")
 	})
 }
