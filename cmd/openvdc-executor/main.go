@@ -214,6 +214,13 @@ func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.Task
 
 func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string) {
 	log.Infoln("Got framework message: ", msg)
+
+	switch msg {
+                case "destroy":
+                        DestroyTask(driver)
+                default:
+                        log.Errorln("FrameworkMessage unrecognized.")
+        }
 }
 
 func (exec *VDCExecutor) Shutdown(driver exec.ExecutorDriver) {
