@@ -97,13 +97,6 @@ func testZkConnection(ip string, dir string, msg string) {
 	log.Infoln(data)
 }
 
-func trimName(untrimmedName string) string {
-	limit := "_"
-	trimmedName := strings.Split(untrimmedName, limit)[0]
-
-	return trimmedName
-}
-
 func newTask(hostName string, taskType string, exec *VDCExecutor) {
 
         hv, err := exec.hypervisorProvider.CreateDriver()
