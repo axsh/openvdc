@@ -25,6 +25,8 @@ var (
 	goversion string
 )
 
+var theTaskInfo mesos.TaskInfo
+
 var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
@@ -141,6 +143,8 @@ func newTask(hostName string, taskType string, exec *VDCExecutor) {
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
+	theTaskInfo = *taskInfo
+
 	runStatus := &mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
 		State:  mesos.TaskState_TASK_RUNNING.Enum(),
@@ -192,16 +196,16 @@ func DestroyTask(driver exec.ExecutorDriver) {
 
         finState := mesos.TaskState_TASK_FINISHED
 
-        log.Infoln("Finishing task", taskInfo.GetName())
+        log.Infoln("Finishing task", theTaskInfo.GetName())
         finStatus := &mesos.TaskStatus{
-                TaskId: taskInfo.GetTaskId(),
+                TaskId: theTaskInfo.GetTaskId(),
                 State:  finState.Enum(),
         }
 
         if _, err := driver.SendStatusUpdate(finStatus); err != nil {
                 log.Infoln("ERROR: Couldn't send status update", err)
         }
-        log.Infoln("Task finished", taskInfo.GetName())
+        log.Infoln("Task finished", theTaskInfo.GetName())
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
