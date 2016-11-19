@@ -4,14 +4,16 @@ import (
 	"os"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConnect(t *testing.T) {
 	assert := assert.New(t)
-	c, err := Connect([]string{os.Getenv("ZK")})
+	ctx, err := Connect(context.Background(), []string{os.Getenv("ZK")})
 	assert.NoError(err)
-	assert.NotNil(c)
-	err = Close()
+	assert.NotNil(ctx)
+	err = Close(ctx)
 	assert.NoError(err)
 }

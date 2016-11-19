@@ -4,18 +4,19 @@ import (
 	"os"
 	"testing"
 
-	"github.com/axsh/openvdc/model/backend"
+	"golang.org/x/net/context"
+
 	"github.com/stretchr/testify/assert"
 )
 
-func withConnect(t *testing.T, c func()) (err error) {
-	_, err = Connect([]string{os.Getenv("ZK")})
+func withConnect(t *testing.T, c func(context.Context)) error {
+	ctx, err := Connect(context.Background(), []string{os.Getenv("ZK")})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer Close()
-	c()
-	return
+	defer Close(ctx)
+	c(ctx)
+	return err
 }
 
 func TestCreateInstance(t *testing.T) {
@@ -23,11 +24,12 @@ func TestCreateInstance(t *testing.T) {
 	n := &Instance{
 		ExecutorId: "xxx",
 	}
-	_, err := CreateInstance(n)
-	assert.Equal(backend.ErrConnectionNotReady, err)
 
-	withConnect(t, func() {
-		got, err := CreateInstance(n)
+	_, err := Instances(context.Background()).Create(n)
+	assert.Equal(ErrBackendNotInContext, err)
+
+	withConnect(t, func(ctx context.Context) {
+		got, err := Instances(ctx).Create(n)
 		assert.NoError(err)
 		assert.NotNil(got)
 	})
@@ -38,17 +40,17 @@ func TestFindInstance(t *testing.T) {
 	n := &Instance{
 		ExecutorId: "xxx",
 	}
-	_, err := FindInstanceByID("i-xxxxx")
-	assert.Equal(backend.ErrConnectionNotReady, err)
+	_, err := Instances(context.Background()).FindByID("i-xxxxx")
+	assert.Equal(ErrBackendNotInContext, err)
 
-	withConnect(t, func() {
-		got, err := CreateInstance(n)
+	withConnect(t, func(ctx context.Context) {
+		got, err := Instances(ctx).Create(n)
 		assert.NoError(err)
-		got2, err := FindInstanceByID(got.Id)
+		got2, err := Instances(ctx).FindByID(got.Id)
 		assert.NoError(err)
 		assert.NotNil(got2)
 		assert.Equal(got.Id, got2.Id)
-		_, err = FindInstanceByID("i-xxxxx")
+		_, err = Instances(ctx).FindByID("i-xxxxx")
 		assert.Error(err)
 	})
 }
