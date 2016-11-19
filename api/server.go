@@ -26,13 +26,13 @@ func NewAPIServer(c APIOffer, modelAddr string) *APIServer {
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
 		grpc.InTapHandle(func(ctx context.Context, info *tap.Info) (context.Context, error) {
-			log.Infoln("Start InTapHandle")
 			bk := backend.NewZkBackend()
 			err := bk.Connect([]string{modelAddr})
 			if err != nil {
 				log.WithError(err).Errorf("Failed to connect to model backend: %s", modelAddr)
 				return ctx, err
 			}
+			ctx = withBackendCtx(ctx, bk)
 			go func() {
 				<-ctx.Done()
 
@@ -45,9 +45,8 @@ func NewAPIServer(c APIOffer, modelAddr string) *APIServer {
 				if err != nil {
 					log.WithError(err).Error("Failed to close connection to model backend.")
 				}
-				log.Infoln("End Context: ", ctx.Value("con1"))
 			}()
-			return withBackendCtx(ctx, bk), nil
+			return ctx, nil
 		}),
 	}
 	s := &APIServer{
