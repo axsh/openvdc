@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"runtime"
 
+	"google.golang.org/grpc"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model/backend"
 	"golang.org/x/net/context"
@@ -48,4 +50,21 @@ func GetBackendCtx(ctx context.Context) backend.ModelBackend {
 		log.Fatalf("Unexpected type to '%s' context value: %v", ctxBackendKey, reflect.TypeOf(bk))
 	}
 	return bk
+}
+
+func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		ctx, err := Connect(ctx, []string{modelAddr})
+		if err != nil {
+			log.WithError(err).Errorf("Failed to connect to model backend: %s", modelAddr)
+			return nil, err
+		}
+		defer func() {
+			err := Close(ctx)
+			if err != nil {
+				log.WithError(err).Error("Failed to close connection to model backend.")
+			}
+		}()
+		return handler(ctx, req)
+	}
 }
