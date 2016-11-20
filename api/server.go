@@ -67,8 +67,14 @@ type ResourceAPI struct {
 	api *APIServer
 }
 
-func (s *ResourceAPI) Register(context.Context, *ResourceRequest) (*ResourceReply, error) {
-	return &ResourceReply{ID: "r-00000001"}, nil
+func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*ResourceReply, error) {
+	resource, err := model.Resources(ctx).Create(&model.Resource{})
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+
+	return &ResourceReply{ID: resource.GetId()}, nil
 }
 func (s *ResourceAPI) Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error) {
 	return &ResourceReply{ID: "r-00000001"}, nil
