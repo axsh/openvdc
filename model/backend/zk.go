@@ -141,9 +141,9 @@ func (z *Zk) Find(key string) (value []byte, err error) {
 	return
 }
 
-func (z *Zk) canonKey(key string) (string, string) {
-	absKey := path.Clean(path.Join(z.basePath, key))
-	dir, _ := path.Split(absKey)
+func (z *Zk) canonKey(key string) (absKey string, dir string) {
+	absKey = path.Clean(path.Join(z.basePath, key))
+	dir, _ = path.Split(absKey)
 	dir = strings.TrimSuffix(dir, "/")
 	return absKey, dir
 }
