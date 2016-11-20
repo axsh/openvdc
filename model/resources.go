@@ -33,6 +33,7 @@ func (i *resources) connection() (backend.ModelBackend, error) {
 }
 
 func (i *resources) Create(n *Resource) (*Resource, error) {
+	n.State = ResourceState_Registed
 	data, err := proto.Marshal(n)
 	if err != nil {
 		return nil, err
@@ -76,10 +77,24 @@ func (i *resources) Destroy(id string) error {
 	if err != nil {
 		return err
 	}
+	if !n.validateStateTransition(ResourceState_Unregistered) {
+		return fmt.Errorf("Invalid state transition: %s -> %s",
+			ResourceState_name[int32(n.State)],
+			ResourceState_name[int32(ResourceState_Unregistered)],
+		)
+	}
 	n.State = ResourceState_Unregistered
 	data, err := proto.Marshal(n)
 	if err != nil {
 		return err
 	}
 	return bk.Update(fmt.Sprintf("/resources/%s", id), data)
+}
+
+func (r *Resource) validateStateTransition(next ResourceState) bool {
+	switch r.State {
+	case ResourceState_Registed:
+		return (next == ResourceState_Unregistered)
+	}
+	return false
 }
