@@ -13,6 +13,7 @@ import (
 type ResourceOps interface {
 	Create(*Resource) (*Resource, error)
 	FindByID(string) (*Resource, error)
+	Destroy(string) error
 }
 
 type resources struct {
@@ -64,4 +65,21 @@ func (i *resources) FindByID(id string) (*Resource, error) {
 	}
 	n.Id = id
 	return n, nil
+}
+
+func (i *resources) Destroy(id string) error {
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	n, err := i.FindByID(id)
+	if err != nil {
+		return err
+	}
+	n.State = ResourceState_Unregistered
+	data, err := proto.Marshal(n)
+	if err != nil {
+		return err
+	}
+	return bk.Update(fmt.Sprintf("/resources/%s", id), data)
 }

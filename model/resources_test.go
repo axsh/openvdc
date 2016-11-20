@@ -39,3 +39,20 @@ func TestFindResource(t *testing.T) {
 		assert.Error(err)
 	})
 }
+
+func TestDestroyResource(t *testing.T) {
+	assert := assert.New(t)
+	err := Resources(context.Background()).Destroy("r-xxxxx")
+	assert.Equal(ErrBackendNotInContext, err)
+
+	withConnect(t, func(ctx context.Context) {
+		n := &Resource{}
+		got, err := Resources(ctx).Create(n)
+		assert.NoError(err)
+		err = Resources(ctx).Destroy(got.Id)
+		assert.NoError(err)
+		got2, err := Resources(ctx).FindByID(got.Id)
+		assert.NoError(err)
+		assert.Equal(ResourceState_Unregistered, got2.State)
+	})
+}
