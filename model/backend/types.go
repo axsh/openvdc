@@ -4,6 +4,9 @@ import "errors"
 
 var ErrConnectionNotReady = errors.New("Connection is not established yet.")
 var ErrConnectionExists = errors.New("Connection is established")
+var ErrUnknownKey = func(key string) error {
+	return errors.New("Unknown key name: " + key)
+}
 
 type ModelBackend interface {
 	Connect(dest []string) error

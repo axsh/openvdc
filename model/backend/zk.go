@@ -121,7 +121,14 @@ func (z *Zk) Update(key string, value []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = z.conn.Set(absKey, value, 1)
+	ok, stat, err := z.conn.Exists(absKey)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrUnknownKey(absKey)
+	}
+	_, err = z.conn.Set(absKey, value, stat.Version)
 	return err
 }
 
