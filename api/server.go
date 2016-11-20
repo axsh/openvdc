@@ -76,6 +76,12 @@ func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*Resou
 
 	return &ResourceReply{ID: resource.GetId()}, nil
 }
-func (s *ResourceAPI) Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error) {
-	return &ResourceReply{ID: "r-00000001"}, nil
+func (s *ResourceAPI) Unregister(ctx context.Context, in *ResourceIDRequest) (*ResourceReply, error) {
+	err := model.Resources(ctx).Destroy(in.GetID())
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+
+	return &ResourceReply{ID: in.GetID()}, nil
 }
