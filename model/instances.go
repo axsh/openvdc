@@ -46,7 +46,7 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	nkey, err := bk.CreateWithID("/instances/i-", data)
+	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/i-", instancesBaseKey), data)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (i *instances) FindByID(id string) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	v, err := bk.Find(fmt.Sprintf("/instances/%s", id))
+	v, err := bk.Find(fmt.Sprintf("/%s/%s", instancesBaseKey, id))
 	if err != nil {
 		return nil, err
 	}

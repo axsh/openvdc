@@ -48,7 +48,7 @@ func (i *resources) Create(n *Resource) (*Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	nkey, err := bk.CreateWithID("/resources/r-", data)
+	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/r-", resourcesBaseKey), data)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (i *resources) FindByID(id string) (*Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	v, err := bk.Find(fmt.Sprintf("/resources/%s", id))
+	v, err := bk.Find(fmt.Sprintf("/%s/%s", resourcesBaseKey, id))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (i *resources) Destroy(id string) error {
 	if err != nil {
 		return err
 	}
-	return bk.Update(fmt.Sprintf("/resources/%s", id), data)
+	return bk.Update(fmt.Sprintf("/%s/%s", resourcesBaseKey, id), data)
 }
 
 func (r *Resource) validateStateTransition(next ResourceState) error {
