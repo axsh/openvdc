@@ -1,23 +1,70 @@
 package model
 
-import "github.com/axsh/openvdc/model/backend"
+import (
+	"errors"
+	"reflect"
+	"runtime"
 
-var bk backend.ModelBackend
+	"google.golang.org/grpc"
 
-func Connect(dest []string) (backend.ModelBackend, error) {
-	bk = backend.NewZkBackend()
+	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/model/backend"
+	"golang.org/x/net/context"
+)
+
+var ErrBackendNotInContext = errors.New("Given context does not have the backend object")
+
+func Connect(ctx context.Context, dest []string) (context.Context, error) {
+	bk := backend.NewZkBackend()
 	err := bk.Connect(dest)
 	if err != nil {
 		return nil, err
 	}
-	return bk, nil
+	return withBackendCtx(ctx, bk), nil
 }
 
-func Close() error {
+func Close(ctx context.Context) error {
+	bk := GetBackendCtx(ctx)
 	if bk == nil {
-		return backend.ErrConnectionNotReady
+		return ErrBackendNotInContext
 	}
-	err := bk.Close()
-	bk = nil
-	return err
+	return bk.Close()
+}
+
+type ctxKey string
+
+const ctxBackendKey ctxKey = "model.backend"
+
+func withBackendCtx(ctx context.Context, bk backend.ModelBackend) context.Context {
+	return context.WithValue(ctx, ctxBackendKey, bk)
+}
+
+func GetBackendCtx(ctx context.Context) backend.ModelBackend {
+	if ctx == nil {
+		_, file, line, _ := runtime.Caller(1)
+		log.Fatalf("GetBackendCtx() does not accept nil.: %s:%d", file, line)
+	}
+	bk, ok := ctx.Value(ctxBackendKey).(backend.ModelBackend)
+	// Assert returned type from ctx.
+	if !ok && bk != nil {
+		log.Fatalf("Unexpected type to '%s' context value: %v", ctxBackendKey, reflect.TypeOf(bk))
+	}
+	return bk
+}
+
+func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		ctx, err := Connect(ctx, []string{modelAddr})
+		if err != nil {
+			log.WithError(err).Errorf("Failed to connect to model backend: %s", modelAddr)
+			return nil, err
+		}
+		defer func() {
+			err := Close(ctx)
+			if err != nil {
+				log.WithError(err).Error("Failed to close connection to model backend.")
+			}
+		}()
+		return handler(ctx, req)
+	}
 }

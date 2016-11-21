@@ -4,15 +4,39 @@ import (
 	"fmt"
 	"path"
 
+	"golang.org/x/net/context"
+
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
 )
 
-func CreateInstance(n *Instance) (*Instance, error) {
+type InstanceOps interface {
+	Create(*Instance) (*Instance, error)
+	FindByID(string) (*Instance, error)
+}
+
+type instances struct {
+	ctx context.Context
+}
+
+func Instances(ctx context.Context) InstanceOps {
+	return &instances{ctx: ctx}
+}
+
+func (i *instances) connection() (backend.ModelBackend, error) {
+	bk := GetBackendCtx(i.ctx)
 	if bk == nil {
-		return nil, backend.ErrConnectionNotReady
+		return nil, ErrBackendNotInContext
 	}
+	return bk, nil
+}
+
+func (i *instances) Create(n *Instance) (*Instance, error) {
 	data, err := proto.Marshal(n)
+	if err != nil {
+		return nil, err
+	}
+	bk, err := i.connection()
 	if err != nil {
 		return nil, err
 	}
@@ -24,9 +48,10 @@ func CreateInstance(n *Instance) (*Instance, error) {
 	return n, nil
 }
 
-func FindInstanceByID(id string) (*Instance, error) {
-	if bk == nil {
-		return nil, backend.ErrConnectionNotReady
+func (i *instances) FindByID(id string) (*Instance, error) {
+	bk, err := i.connection()
+	if err != nil {
+		return nil, err
 	}
 	v, err := bk.Find(fmt.Sprintf("/instances/%s", id))
 	if err != nil {

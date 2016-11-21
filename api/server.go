@@ -22,8 +22,12 @@ type APIServer struct {
 }
 
 func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *APIServer {
+	sopts := []grpc.ServerOption{
+		// Setup request middleware for the model.backend database connection.
+		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),
+	}
 	s := &APIServer{
-		server:         grpc.NewServer(),
+		server:         grpc.NewServer(sopts...),
 		offerChan:      c,
 		modelStoreAddr: modelAddr,
 	}
@@ -50,13 +54,11 @@ type InstanceAPI struct {
 
 func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error) {
 	log.Printf("New Request: %v\n", in.String())
-	// TODO: Rewrite using RPC filter mechanism.
-	_, err := model.Connect([]string{s.api.modelStoreAddr})
+	inst, err := model.Instances(ctx).Create(&model.Instance{})
 	if err != nil {
+		log.WithError(err).Error()
 		return nil, err
 	}
-	defer model.Close()
-	inst, err := model.CreateInstance(&model.Instance{})
 	s.api.offerChan <- in
 	return &RunReply{InstanceId: inst.Id}, nil
 }
