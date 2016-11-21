@@ -121,7 +121,14 @@ func (z *Zk) Update(key string, value []byte) error {
 	if err != nil {
 		return err
 	}
-	_, err = z.conn.Set(absKey, value, 1)
+	ok, stat, err := z.conn.Exists(absKey)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrUnknownKey(absKey)
+	}
+	_, err = z.conn.Set(absKey, value, stat.Version)
 	return err
 }
 
@@ -134,9 +141,9 @@ func (z *Zk) Find(key string) (value []byte, err error) {
 	return
 }
 
-func (z *Zk) canonKey(key string) (string, string) {
-	absKey := path.Clean(path.Join(z.basePath, key))
-	dir, _ := path.Split(absKey)
+func (z *Zk) canonKey(key string) (absKey string, dir string) {
+	absKey = path.Clean(path.Join(z.basePath, key))
+	dir, _ = path.Split(absKey)
 	dir = strings.TrimSuffix(dir, "/")
 	return absKey, dir
 }

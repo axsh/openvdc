@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net"
 
 	log "github.com/Sirupsen/logrus"
@@ -67,9 +68,26 @@ type ResourceAPI struct {
 	api *APIServer
 }
 
-func (s *ResourceAPI) Register(context.Context, *ResourceRequest) (*ResourceReply, error) {
-	return &ResourceReply{ID: "r-00000001"}, nil
+func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*ResourceReply, error) {
+	resource, err := model.Resources(ctx).Create(&model.Resource{})
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+	return &ResourceReply{ID: resource.GetId()}, nil
 }
-func (s *ResourceAPI) Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error) {
-	return &ResourceReply{ID: "r-00000001"}, nil
+func (s *ResourceAPI) Unregister(ctx context.Context, in *ResourceIDRequest) (*ResourceReply, error) {
+	// in.Key takes nil possibly.
+	if in.GetKey() == nil {
+		log.Error("Invalid resource identifier")
+		return nil, fmt.Errorf("Invalid resource identifier")
+	}
+	// TODO: handle the case for in.GetName() is received.
+	err := model.Resources(ctx).Destroy(in.GetID())
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+
+	return &ResourceReply{ID: in.GetID()}, nil
 }

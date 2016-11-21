@@ -25,9 +25,13 @@ var unregisterCmd = &cobra.Command{
 			log.Fatal("Missing resource ID/name")
 		}
 
+		resourceID := args[0]
+		if len(resourceID) == 0 {
+			log.Fatalf("Invalid Resource ID: %s", resourceID)
+		}
 		return APICall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
-			res, err := c.Unregister(context.Background(), &api.ResourceIDRequest{})
+			res, err := c.Unregister(context.Background(), &api.ResourceIDRequest{Key: &api.ResourceIDRequest_ID{ID: resourceID}})
 			if err != nil {
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err

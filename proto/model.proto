@@ -11,7 +11,13 @@ enum ResourceType {
   VM = 0;
 }
 
+enum ResourceState {
+  Registered = 0;
+  Unregistered = 1;
+}
+
 message Resource {
   string id = 1;
   ResourceType type = 2;
+  ResourceState state = 3;
 }
