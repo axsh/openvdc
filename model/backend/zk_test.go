@@ -29,6 +29,7 @@ func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 	if err != err {
 		t.Fatal(err)
 	}
+	z.Schema().Install([]string{})
 	c(z)
 	return
 }
@@ -61,5 +62,17 @@ func TestZkFind(t *testing.T) {
 		assert.NoError(err)
 		assert.Equal([]byte{1}, v)
 		z.Delete("/test1")
+	})
+}
+
+func TestZkSchema(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		assert.Implements((*ModelSchema)(nil), z)
+		ms := z.Schema()
+		err := ms.Install([]string{"subkey1", "subkey2"})
+		assert.NoError(err)
+		err = ms.Install([]string{"subkey1", "subkey2"})
+		assert.NoError(err)
 	})
 }

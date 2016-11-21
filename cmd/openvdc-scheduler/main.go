@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/Sirupsen/logrus"
+
+	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/scheduler"
 	"github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 )
 
 // Build time constant variables from -ldflags
@@ -36,7 +41,25 @@ func init() {
 	rootCmd.PersistentFlags().SetAnnotation("master", cobra.BashCompSubdirsInDir, []string{})
 }
 
+func setupDatabaseSchema() {
+	ctx, err := model.Connect(context.Background(), []string{zkAddr})
+	if err != nil {
+		log.WithError(err).Fatalf("Could not connect to database: %s", zkAddr)
+	}
+	defer model.Close(ctx)
+	ms, ok := model.GetBackendCtx(ctx).(backend.ModelSchema)
+	if !ok {
+		return
+	}
+
+	err = model.InstallSchemas(ms)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to install schema")
+	}
+}
+
 func execute(cmd *cobra.Command, args []string) {
+	setupDatabaseSchema()
 	scheduler.Run(listenAddr, gRPCAddr, mesosMasterAddr, zkAddr)
 }
 

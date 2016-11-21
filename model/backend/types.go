@@ -17,3 +17,11 @@ type ModelBackend interface {
 	Find(key string) ([]byte, error)
 	Delete(key string) error
 }
+
+type ModelSchema interface {
+	Schema() SchemaHandler
+}
+
+type SchemaHandler interface {
+	Install(subkeys []string) error
+}
