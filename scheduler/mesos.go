@@ -271,12 +271,12 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
 	}
 
-	if stat, err := driver.Run(); err != nil {
-		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
-	}
-
 	apiServer := startAPIServer(apiListenAddr, ch, zkAddr, driver)
         defer func() {
                 apiServer.GracefulStop()
         }()
+
+	if stat, err := driver.Run(); err != nil {
+		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
+	}
 }
