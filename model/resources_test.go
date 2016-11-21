@@ -19,7 +19,7 @@ func TestCreateResource(t *testing.T) {
 		got, err := Resources(ctx).Create(n)
 		assert.NoError(err)
 		assert.NotNil(got)
-		assert.Equal(ResourceState_Registed, got.State)
+		assert.Equal(ResourceState_Registered, got.State)
 	})
 }
 
