@@ -47,29 +47,6 @@ func (z *Zk) Close() error {
 	return nil
 }
 
-func (z *Zk) setupParents(key string) error {
-	var parts []string
-	for i, k := range strings.Split(key, "/") {
-		parts = append(parts, k)
-		if i < 1 {
-			// first iteration is blank.
-			continue
-		}
-		partial := strings.Join(parts, "/")
-		exists, _, err := z.conn.Exists(partial)
-		if err != nil {
-			return err
-		}
-		if !exists {
-			_, err = z.conn.Create(partial, []byte{}, int32(0), defaultACL)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (z *Zk) ifNotExist(key string, callee func() error) error {
 	exists, _, err := z.conn.Exists(key)
 	if err != nil {
@@ -85,15 +62,7 @@ func (z *Zk) create(key string, value []byte, flags int32) (string, error) {
 	if z.conn == nil {
 		return "", ErrConnectionNotReady
 	}
-	var err error
-	absKey, dir := z.canonKey(key)
-
-	err = z.ifNotExist(dir, func() error {
-		return z.setupParents(dir)
-	})
-	if err != nil {
-		return "", err
-	}
+	absKey, _ := z.canonKey(key)
 	return z.conn.Create(absKey, value, flags, defaultACL)
 }
 
@@ -115,14 +84,8 @@ func (z *Zk) Update(key string, value []byte) error {
 		return ErrConnectionNotReady
 	}
 	var err error
-	absKey, dir := z.canonKey(key)
+	absKey, _ := z.canonKey(key)
 
-	err = z.ifNotExist(dir, func() error {
-		return z.setupParents(dir)
-	})
-	if err != nil {
-		return err
-	}
 	ok, stat, err := z.conn.Exists(absKey)
 	if err != nil {
 		return err

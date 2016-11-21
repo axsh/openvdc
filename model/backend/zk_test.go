@@ -29,6 +29,7 @@ func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 	if err != err {
 		t.Fatal(err)
 	}
+	z.Schema().Install([]string{})
 	c(z)
 	return
 }
