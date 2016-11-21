@@ -12,6 +12,8 @@ import (
 	"google.golang.org/grpc"
 
 	sched "github.com/mesos/mesos-go/scheduler"
+
+	util "github.com/mesos/mesos-go/mesosutil"
 )
 
 type APIOffer chan *RunRequest
@@ -39,6 +41,16 @@ func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *A
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
 	RegisterResourceServer(s.server, &ResourceAPI{api: s})
 	return s
+}
+
+func StopTask() {
+
+        //TODO: Don't hard code the IDs
+        theDriver.SendFrameworkMessage(
+                util.NewExecutorID("vdc-hypervisor-null"),
+                util.NewSlaveID("3870d2ed-0ef0-40b4-a6f3-bea46d43d5e1-S0"),
+                "destroy",
+        )
 }
 
 func (s *APIServer) Serve(listen net.Listener) error {
