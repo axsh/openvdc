@@ -33,7 +33,7 @@ func (i *resources) connection() (backend.ModelBackend, error) {
 }
 
 func (i *resources) Create(n *Resource) (*Resource, error) {
-	n.State = ResourceState_Registed
+	n.State = ResourceState_Registered
 	data, err := proto.Marshal(n)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (i *resources) Destroy(id string) error {
 func (r *Resource) validateStateTransition(next ResourceState) error {
 	var result bool
 	switch r.GetState() {
-	case ResourceState_Registed:
+	case ResourceState_Registered:
 		result = (next == ResourceState_Unregistered)
 	}
 

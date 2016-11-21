@@ -12,7 +12,7 @@ enum ResourceType {
 }
 
 enum ResourceState {
-  Registed = 0;
+  Registered = 0;
   Unregistered = 1;
 }
 
