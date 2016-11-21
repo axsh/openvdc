@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"path"
 
@@ -9,6 +10,8 @@ import (
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
 )
+
+var ErrInstanceMissingResource = errors.New("Resource is not associated")
 
 type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
@@ -38,6 +41,9 @@ func (i *instances) connection() (backend.ModelBackend, error) {
 }
 
 func (i *instances) Create(n *Instance) (*Instance, error) {
+	if n.GetResourceId() == "" {
+		return nil, ErrInstanceMissingResource
+	}
 	data, err := proto.Marshal(n)
 	if err != nil {
 		return nil, err
@@ -70,4 +76,8 @@ func (i *instances) FindByID(id string) (*Instance, error) {
 	}
 	n.Id = id
 	return n, nil
+}
+
+func (i *Instance) Resource(ctx context.Context) (*Resource, error) {
+	return Resources(ctx).FindByID(i.GetResourceId())
 }

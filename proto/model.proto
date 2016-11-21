@@ -5,6 +5,7 @@ package model;
 message Instance {
   string id = 1;
   string executor_id = 2;
+  string resource_id = 3;
 }
 
 enum ResourceType {

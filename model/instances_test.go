@@ -25,7 +25,11 @@ func TestCreateInstance(t *testing.T) {
 		ExecutorId: "xxx",
 	}
 
-	_, err := Instances(context.Background()).Create(n)
+	var err error
+	_, err = Instances(context.Background()).Create(n)
+	assert.Equal(ErrInstanceMissingResource, err)
+	n.ResourceId = "r-xxxx"
+	_, err = Instances(context.Background()).Create(n)
 	assert.Equal(ErrBackendNotInContext, err)
 
 	withConnect(t, func(ctx context.Context) {
@@ -39,6 +43,7 @@ func TestFindInstance(t *testing.T) {
 	assert := assert.New(t)
 	n := &Instance{
 		ExecutorId: "xxx",
+		ResourceId: "r-xxxx",
 	}
 	_, err := Instances(context.Background()).FindByID("i-xxxxx")
 	assert.Equal(ErrBackendNotInContext, err)
