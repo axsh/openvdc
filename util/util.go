@@ -24,11 +24,23 @@ func SendToApi(serverAddr string, hostName string, imageTitle string, taskType s
 
 	c := api.NewInstanceClient(conn)
 
-	resp, err := c.Run(context.Background(), &api.RunRequest{imageTitle, hostName, taskType})
+	switch(taskType) {
+                case "stop":
+                        resp, err := c.StopTask(context.Background(), &api.StopTaskRequest{hostName, taskType})
 
-	if err != nil {
-		log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-	}
+                        if err != nil {
+                                log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+                        }
 
-	log.Println(resp)
+                        log.Println(resp)
+
+                default:
+                        resp, err := c.Run(context.Background(), &api.RunRequest{imageTitle, hostName, taskType})
+
+                        if err != nil {
+                                log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
+                        }
+
+                        log.Println(resp)
+        }
 }
