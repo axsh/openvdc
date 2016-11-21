@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strings"
 	"time"
 
 	"net/url"
@@ -95,13 +94,6 @@ func testZkConnection(ip string, dir string, msg string) {
 	zkSendData(c, dir, msg)
 	data := []byte(zkGetData(c, dir))
 	log.Infoln(data)
-}
-
-func trimName(untrimmedName string) string {
-	limit := "_"
-	trimmedName := strings.Split(untrimmedName, limit)[0]
-
-	return trimmedName
 }
 
 func newTask(hostName string, taskType string, exec *VDCExecutor) {

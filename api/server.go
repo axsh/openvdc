@@ -9,6 +9,8 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	sched "github.com/mesos/mesos-go/scheduler"
 )
 
 type APIOffer chan *RunRequest
@@ -19,7 +21,7 @@ type APIServer struct {
 	offerChan      APIOffer
 }
 
-func NewAPIServer(c APIOffer, modelAddr string) *APIServer {
+func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *APIServer {
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
 		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),
