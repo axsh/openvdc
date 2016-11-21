@@ -77,11 +77,8 @@ func (i *resources) Destroy(id string) error {
 	if err != nil {
 		return err
 	}
-	if !n.validateStateTransition(ResourceState_Unregistered) {
-		return fmt.Errorf("Invalid state transition: %s -> %s",
-			ResourceState_name[int32(n.State)],
-			ResourceState_name[int32(ResourceState_Unregistered)],
-		)
+	if err := n.validateStateTransition(ResourceState_Unregistered); err != nil {
+		return err
 	}
 	n.State = ResourceState_Unregistered
 	data, err := proto.Marshal(n)
@@ -91,10 +88,19 @@ func (i *resources) Destroy(id string) error {
 	return bk.Update(fmt.Sprintf("/resources/%s", id), data)
 }
 
-func (r *Resource) validateStateTransition(next ResourceState) bool {
-	switch r.State {
+func (r *Resource) validateStateTransition(next ResourceState) error {
+	var result bool
+	switch r.GetState() {
 	case ResourceState_Registed:
-		return (next == ResourceState_Unregistered)
+		result = (next == ResourceState_Unregistered)
 	}
-	return false
+
+	if result {
+		return nil
+	}
+
+	return fmt.Errorf("Invalid state transition: %s -> %s",
+		r.GetState().String(),
+		next.String(),
+	)
 }
