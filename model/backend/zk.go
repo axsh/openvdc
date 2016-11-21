@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -154,4 +156,50 @@ func (z *Zk) Delete(key string) error {
 	}
 	absKey, _ := z.canonKey(key)
 	return z.conn.Delete(absKey, 1)
+}
+
+func (z *Zk) Schema() SchemaHandler {
+	return &zkSchemaHandler{zk: z}
+}
+
+type zkSchemaHandler struct {
+	zk *Zk
+}
+
+func (z *zkSchemaHandler) Install(subkeys []string) error {
+	conn := z.zk.conn
+	if conn == nil {
+		return ErrConnectionNotReady
+	}
+	{
+		// Install the root key if not exists.
+		ok, _, err := conn.Exists(z.zk.basePath)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			// TODO: Set the current schema version to the root key node.
+			// the data should be human readable.
+			_, err = conn.Create(z.zk.basePath, []byte{}, int32(0), defaultACL)
+			if err != nil {
+				log.WithError(err).Error("Failed to setup the root key.")
+				return err
+			}
+		}
+	}
+	for _, key := range subkeys {
+		absKey, _ := z.zk.canonKey(key)
+		ok, _, err := conn.Exists(absKey)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			_, err := conn.Create(absKey, []byte{}, int32(0), defaultACL)
+			if err != nil {
+				log.WithError(err).Errorf("Failed to setup the schema key: %s (%s)", key, absKey)
+				return err
+			}
+		}
+	}
+	return nil
 }

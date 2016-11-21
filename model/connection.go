@@ -31,6 +31,13 @@ func Close(ctx context.Context) error {
 	return bk.Close()
 }
 
+var schemaKeys []string
+
+func InstallSchemas(bk backend.ModelSchema) error {
+	schema := bk.Schema()
+	return schema.Install(schemaKeys)
+}
+
 type ctxKey string
 
 const ctxBackendKey ctxKey = "model.backend"

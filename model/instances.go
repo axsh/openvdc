@@ -15,6 +15,12 @@ type InstanceOps interface {
 	FindByID(string) (*Instance, error)
 }
 
+const instancesBaseKey = "instances"
+
+func init() {
+	schemaKeys = append(schemaKeys, instancesBaseKey)
+}
+
 type instances struct {
 	ctx context.Context
 }

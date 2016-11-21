@@ -16,6 +16,12 @@ type ResourceOps interface {
 	Destroy(string) error
 }
 
+const resourcesBaseKey = "resources"
+
+func init() {
+	schemaKeys = append(schemaKeys, resourcesBaseKey)
+}
+
 type resources struct {
 	ctx context.Context
 }

@@ -63,3 +63,15 @@ func TestZkFind(t *testing.T) {
 		z.Delete("/test1")
 	})
 }
+
+func TestZkSchema(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		assert.Implements((*ModelSchema)(nil), z)
+		ms := z.Schema()
+		err := ms.Install([]string{"subkey1", "subkey2"})
+		assert.NoError(err)
+		err = ms.Install([]string{"subkey1", "subkey2"})
+		assert.NoError(err)
+	})
+}
