@@ -15,6 +15,7 @@ import (
 )
 
 type APIOffer chan *RunRequest
+var theDriver sched.SchedulerDriver
 
 type APIServer struct {
 	server         *grpc.Server
@@ -32,6 +33,9 @@ func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *A
 		offerChan:      c,
 		modelStoreAddr: modelAddr,
 	}
+
+	theDriver = driver
+
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
 	RegisterResourceServer(s.server, &ResourceAPI{api: s})
 	return s
