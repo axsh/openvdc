@@ -8,8 +8,21 @@ if ($s -eq $False) {
     Write-Error "Can not find protoc. Download pre-compiled binary from https://github.com/google/protobuf/releases"
     Exit 1
 }
-$s = Check-Command("protoc-gen-go")
-if ($s -eq $False) {
+
+# Required version of github.com/golang/protobuf
+$protoc_go_sha=$(Get-Content .protocgengo.sha)
+
+$skip_goget_protoc = $True
+if (-Not $(Check-Command("protoc-gen-go")) ){
+    $skip_goget_protoc = $False
+} else {
+    Push-Location ${env:GOPATH}\src\github.com\golang\protobuf\protoc-gen-go
+    if ( -Not $(git rev-list HEAD | Select-String ${protoc_go_sha} -Quiet) ) {
+        $skip_goget_protoc = $False
+    }
+    Pop-Location
+}
+if ($skip_goget_protoc -eq $False) {
     go get -u -v github.com/golang/protobuf/protoc-gen-go
 }
 
