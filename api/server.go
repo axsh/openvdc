@@ -43,14 +43,16 @@ func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *A
 	return s
 }
 
-func StopTask() {
+func (s *InstanceAPI) StopTask(ctx context.Context, in *StopTaskRequest) (*StopTaskReply, error) {
 
-        //TODO: Don't hard code the IDs
+        //TODO: Don't hardcode the ID's.
         theDriver.SendFrameworkMessage(
                 util.NewExecutorID("vdc-hypervisor-null"),
                 util.NewSlaveID("3870d2ed-0ef0-40b4-a6f3-bea46d43d5e1-S0"),
                 "destroy",
         )
+
+        return &StopTaskReply{InstanceId: "test"}, nil
 }
 
 func (s *APIServer) Serve(listen net.Listener) error {

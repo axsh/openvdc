@@ -4,6 +4,7 @@ package api;
 
 service Instance {
 	rpc Run (RunRequest) returns (RunReply){}
+	rpc StopTask (StopTaskRequest) returns (StopTaskReply){}
 }
 
 message RunRequest{
@@ -14,6 +15,15 @@ message RunRequest{
 message RunReply {
   string instance_id = 1;
 }
+
+message StopTaskRequest{
+        string hostName = 1;
+        string taskType = 2;
+}
+message StopTaskReply {
+  string instance_id = 1;
+}
+
 
 service Resource {
   rpc Register(ResourceRequest) returns (ResourceReply){}
