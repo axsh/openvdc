@@ -190,13 +190,13 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}*/
 }
 
-func DestroyTask(driver exec.ExecutorDriver) {
+func DestroyTask(driver exec.ExecutorDriver, taskId *mesos.TaskID) {
 
         finState := mesos.TaskState_TASK_FINISHED
 
         log.Infoln("Finishing task", theTaskInfo.GetName())
         finStatus := &mesos.TaskStatus{
-                TaskId: theTaskInfo.GetTaskId(),
+                TaskId: taskId,
                 State:  finState.Enum(),
         }
 
@@ -211,11 +211,19 @@ func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.Task
 }
 
 func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string) {
-	log.Infoln("Got framework message: ", msg)
 
-	switch msg {
+	parts := strings.Split(msg, "_")
+        command := parts[0]
+        taskId := mesosutil.NewTaskID(parts[1])
+
+	log.Infoln("--------------FrameworkMessage---------------")
+	log.Infoln("command: ", command)
+        log.Infoln("taskId: ", taskId)
+	log.Infoln("---------------------------------------------")
+
+	switch command {
                 case "destroy":
-                        DestroyTask(driver)
+                        DestroyTask(driver, taskId)
                 default:
                         log.Errorln("FrameworkMessage unrecognized.")
         }
