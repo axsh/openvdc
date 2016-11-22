@@ -7,6 +7,7 @@ option go_package = "github.com/axsh/openvdc/api";
 import "model.proto";
 
 service Instance {
+  rpc Create (CreateRequest) returns (CreateReply){}
 	rpc Run (RunRequest) returns (RunReply){}
 	rpc StopTask (StopTaskRequest) returns (StopTaskReply){}
 }
@@ -29,6 +30,12 @@ message StopTaskReply {
   string instance_id = 1;
 }
 
+message CreateRequest{
+  string resource_id = 1;
+}
+message CreateReply{
+  string instance_id = 1;
+}
 
 service Resource {
   rpc Register(ResourceRequest) returns (ResourceReply){}

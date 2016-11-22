@@ -74,6 +74,25 @@ type InstanceAPI struct {
 	api *APIServer
 }
 
+func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateReply, error) {
+	if in.GetResourceId() == "" {
+		return nil, fmt.Errorf("Invalid Resource ID")
+	}
+	r, err := model.Resources(ctx).FindByID(in.GetResourceId())
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+	inst, err := model.Instances(ctx).Create(&model.Instance{
+		ResourceId: r.GetId(),
+	})
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+	return &CreateReply{InstanceId: inst.Id}, nil
+}
+
 func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error) {
 	log.Printf("New Request: %v\n", in.String())
 	inst, err := model.Instances(ctx).Create(&model.Instance{})

@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
+
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc/registry"
-	util "github.com/axsh/openvdc/util"
+	"github.com/axsh/openvdc/api"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 )
 
 var imageName string
@@ -18,31 +21,27 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create [Image ID]",
-	Short: "Create an instance",
-	Long:  `Register and create a new instance.`,
+	Use:   "create [Resource ID]",
+	Short: "Create an instance from resource",
+	Long:  `Create a new instance from resource.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			log.Fatalf("Please provide an Image ID.")
+			log.Fatalf("Please provide a Resource ID.")
 		}
 
-		imageSlug := args[0]
+		resourceID := args[0]
 
-		reg, err := setupLocalRegistry()
-		if err != nil {
-			log.Fatalln(err)
+		req := &api.CreateRequest{
+			ResourceId: resourceID,
 		}
-		mi, err := reg.Find(imageSlug)
-		if err != nil {
-			if err == registry.ErrUnknownTemplateName {
-				log.Fatalf("Image '%s' not found.", imageSlug)
-			} else {
-				log.Fatalln(err)
+		return remoteCall(func(conn *grpc.ClientConn) error {
+			c := api.NewInstanceClient(conn)
+			res, err := c.Create(context.Background(), req)
+			if err != nil {
+				log.WithError(err).Fatal("Disconnected abnormaly")
+				return err
 			}
-		}
-		log.Printf("Found image: %s", imageSlug)
-
-		util.SendToApi(serverAddr, mi.Name, hostName, "create")
-
-		return nil
+			fmt.Println(res)
+			return err
+		})
 	}}
