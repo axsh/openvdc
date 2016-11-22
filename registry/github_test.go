@@ -1,10 +1,8 @@
 package registry
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -25,9 +23,6 @@ func TestGithubFetch(t *testing.T) {
 	assert.NoError(err)
 	_, err = os.Stat(filepath.Join(dir, "registry", "github.com-axsh-openvdc-images", reg.Branch+".sha"))
 	assert.NoError(err)
-	c, err := exec.Command("find", dir).Output()
-	fmt.Println(dir)
-	fmt.Println(string(c))
 }
 
 func TestGitLsRemote(t *testing.T) {
