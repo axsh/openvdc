@@ -7,8 +7,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"strconv"
-
 	"github.com/axsh/openvdc/api"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
@@ -108,7 +106,7 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 			clientCommands = clientCommands + "&taskType=" + taskType
 		}
 
-		sched.processOffers(driver, offers, clientCommands)
+		sched.processOffers(driver, offers, clientCommands, hostName)
 	default:
 		log.Debugln("Skip offer since no allocation requests.")
 		for _, offer := range offers {
@@ -125,7 +123,7 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, clientCommands string) {
+func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, clientCommands string, hostName string) {
 	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
 		log.Println("All tasks are already launched: decline offer")
 		for _, offer := range offers {
@@ -164,7 +162,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		var tasks []*mesos.TaskInfo
 
 		sched.tasksLaunched++
-		taskId := util.NewTaskID(strconv.Itoa(sched.tasksLaunched))
+		taskId := util.NewTaskID(hostName)
 
 		task := &mesos.TaskInfo{
 			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
