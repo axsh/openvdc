@@ -16,6 +16,9 @@ BuildArch: x86_64
 
 BuildRequires: rpmdevtools
 
+%description
+This is an empty message to fulfill the requirement that this file has a "%description" header.
+
 %build 
 cd "$RPM_SOURCE_DIR/openvdc"
 (
