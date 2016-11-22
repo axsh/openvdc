@@ -1,10 +1,9 @@
 package cmd
 
 import (
-
 	log "github.com/Sirupsen/logrus"
-	util "github.com/axsh/openvdc/util"
 	"github.com/axsh/openvdc/registry"
+	util "github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
 )
 
@@ -16,29 +15,6 @@ func init() {
 	createCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
 	createCmd.PersistentFlags().StringVarP(&hostName, "name", "n", "", "Existing host name")
 	createCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-}
-
-func setupLocalRegistry() (registry.Registry, error) {
-	reg := registry.NewGithubRegistry(UserConfDir)
-	if !reg.ValidateCache() {
-		err := reg.Fetch()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	refresh, err := reg.IsCacheObsolete()
-	if err != nil {
-		return nil, err
-	}
-	if refresh {
-		log.Infoln("Updating registry cache.")
-		err = reg.Fetch()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return reg, nil
 }
 
 var createCmd = &cobra.Command{

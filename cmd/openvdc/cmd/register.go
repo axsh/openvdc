@@ -16,15 +16,6 @@ func init() {
 	registerCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
 
-func APICall(c func(*grpc.ClientConn) error) error {
-	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
-	if err != nil {
-		log.WithField("endpoint", serverAddr).Fatalf("Cannot connect to OpenVDC gRPC endpoint: %v", err)
-	}
-	defer conn.Close()
-	return c(conn)
-}
-
 var registerCmd = &cobra.Command{
 	Use:   "register [Resource.json]",
 	Short: "Register new resource definition",
@@ -34,7 +25,7 @@ var registerCmd = &cobra.Command{
 			log.Fatal("Missing resource file path")
 		}
 
-		return APICall(func(conn *grpc.ClientConn) error {
+		return remoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
 			res, err := c.Register(context.Background(), &api.ResourceRequest{})
 			if err != nil {

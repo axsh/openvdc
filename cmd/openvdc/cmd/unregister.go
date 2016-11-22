@@ -29,7 +29,7 @@ var unregisterCmd = &cobra.Command{
 		if len(resourceID) == 0 {
 			log.Fatalf("Invalid Resource ID: %s", resourceID)
 		}
-		return APICall(func(conn *grpc.ClientConn) error {
+		return remoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
 			res, err := c.Unregister(context.Background(), &api.ResourceIDRequest{Key: &api.ResourceIDRequest_ID{ID: resourceID}})
 			if err != nil {
