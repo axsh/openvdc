@@ -16,6 +16,7 @@ import (
 
 const (
 	githubURI             = "https://github.com"
+	githubRawURI          = "https://raw.githubusercontent.com"
 	githubRepoSlug        = "axsh/openvdc-images"
 	mimeTypeGitUploadPack = "application/x-git-upload-pack-advertisement"
 )
@@ -36,6 +37,13 @@ func NewGithubRegistry(confDir string) *GithubRegistry {
 	}
 }
 
+func (r *GithubRegistry) LocateURI(name string) string {
+	if !strings.HasSuffix(name, ".json") {
+		name += ".json"
+	}
+	return fmt.Sprintf("%s/%s/%s/%s", githubRawURI, r.RepoSlug, r.Branch, name)
+}
+
 func (r *GithubRegistry) findRemoteRef() (ref *gitRef, err error) {
 	refs, err := gitLsRemote(r.RepoSlug)
 	if err != nil {
@@ -52,26 +60,31 @@ func (r *GithubRegistry) localCachePath() string {
 		r.Branch)
 }
 
-// Find queries machine image details from local registry cache.
-func (r *GithubRegistry) Find(imageName string) (*MachineImageAttribute, error) {
+// Find queries resource template details from local registry cache.
+func (r *GithubRegistry) Find(templateName string) (*ResourceTemplate, error) {
 	if !r.ValidateCache() {
 		return nil, ErrLocalCacheNotReady
 	}
-	f, err := os.Open(filepath.Join(r.localCachePath(), imageName+".json"))
+	f, err := os.Open(filepath.Join(r.localCachePath(), templateName+".json"))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, ErrUnknownImageName
+			return nil, ErrUnknownTemplateName
 		}
 		return nil, err
 	}
 	defer f.Close()
 
-	mi := &MachineImageAttribute{Name: imageName}
+	mi := &MachineImageAttribute{}
 	err = json.NewDecoder(f).Decode(mi)
 	if err != nil {
 		return nil, err
 	}
-	return mi, nil
+	rt := &ResourceTemplate{
+		Name:     templateName,
+		remote:   r,
+		Template: mi,
+	}
+	return rt, nil
 }
 
 // ValidateCache validates the local cache folder items.

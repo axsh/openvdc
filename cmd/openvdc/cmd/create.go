@@ -34,7 +34,7 @@ var createCmd = &cobra.Command{
 		}
 		mi, err := reg.Find(imageSlug)
 		if err != nil {
-			if err == registry.ErrUnknownImageName {
+			if err == registry.ErrUnknownTemplateName {
 				log.Fatalf("Image '%s' not found.", imageSlug)
 			} else {
 				log.Fatalln(err)

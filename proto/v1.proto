@@ -17,6 +17,7 @@ message RunRequest{
 }
 message RunReply {
   string instance_id = 1;
+  string resource_id = 2;
 }
 
 service Resource {
@@ -24,7 +25,12 @@ service Resource {
   rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
 }
 
-message ResourceRequest {}
+message ResourceRequest {
+  oneof Template {
+    model.NoneTemplate none = 500;
+    model.VMTemplate vm = 501;
+  }
+}
 message ResourceReply {
   string ID = 1;
 }

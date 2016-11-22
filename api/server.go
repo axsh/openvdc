@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -68,8 +69,22 @@ type ResourceAPI struct {
 	api *APIServer
 }
 
+var ErrTemplateUndefined = errors.New("Template is undefined")
+
 func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*ResourceReply, error) {
-	resource, err := model.Resources(ctx).Create(&model.Resource{})
+	r := &model.Resource{}
+	switch x := in.Template.(type) {
+	case *ResourceRequest_None:
+		r.Type = model.ResourceType_NONE
+		r.Template = &model.Resource_None{None: x.None}
+	case *ResourceRequest_Vm:
+		r.Type = model.ResourceType_VM
+		r.Template = &model.Resource_Vm{Vm: x.Vm}
+	case nil:
+		log.WithError(ErrTemplateUndefined).Error("template parameter is nil")
+		return nil, ErrTemplateUndefined
+	}
+	resource, err := model.Resources(ctx).Create(r)
 	if err != nil {
 		log.WithError(err).Error()
 		return nil, err
