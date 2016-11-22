@@ -2,7 +2,7 @@ package main
 
 import (
 	"time"
-
+	"strings"
 	"net/url"
 
 	exec "github.com/mesos/mesos-go/executor"
@@ -14,6 +14,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/util"
+	mesosutil "github.com/mesos/mesos-go/mesosutil"
 )
 
 // Build time constant variables from -ldflags
