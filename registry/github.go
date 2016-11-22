@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -124,7 +126,10 @@ func (r *GithubRegistry) Fetch() error {
 
 	tmpDest, err := ioutil.TempDir("", "gh-images-reg")
 	defer func() {
-		os.RemoveAll(tmpDest)
+		err := os.RemoveAll(tmpDest)
+		if err != nil {
+			log.WithError(err).Errorf("Failed to cleanup tmp directory: %s", tmpDest)
+		}
 	}()
 
 	// https://github.com/axsh/openvdc-images/archive/%{sha}.zip
@@ -193,6 +198,7 @@ func unzip(archive, target string) error {
 	if err != nil {
 		return err
 	}
+	defer reader.Close()
 
 	if err := os.MkdirAll(target, 0755); err != nil {
 		return err
