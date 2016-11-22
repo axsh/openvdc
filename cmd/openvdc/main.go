@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/axsh/openvdc/cmd/openvdc/cmd"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 // Build time constant variables from -ldflags
@@ -27,7 +28,7 @@ func setupDefaultUserConfig(dir string) error {
 		}
 	}
 	// Install default configuration file here.
-	confPath := path.Join(dir, "config")
+	confPath := filepath.Join(dir, "config")
 	_, err = os.Open(confPath)
 	if os.IsNotExist(err) {
 		f, err := os.Create(confPath)
@@ -40,8 +41,14 @@ func setupDefaultUserConfig(dir string) error {
 }
 
 func main() {
-	cmd.UserConfDir = path.Join(os.Getenv("HOME"), ".openvdc")
-	err := setupDefaultUserConfig(cmd.UserConfDir)
+	//http://stackoverflow.com/questions/7922270/obtain-users-home-directory
+	path, err := homedir.Dir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to get $HOME")
+		os.Exit(1)
+	}
+	cmd.UserConfDir = filepath.Join(path, ".openvdc")
+	err = setupDefaultUserConfig(cmd.UserConfDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to setup %s\n", cmd.UserConfDir)
 		os.Exit(1)
