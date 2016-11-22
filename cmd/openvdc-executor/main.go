@@ -96,34 +96,40 @@ func testZkConnection(ip string, dir string, msg string) {
 	log.Infoln(data)
 }
 
-func newTask(hostName string, taskType string, exec *VDCExecutor) {
+func newTask(theHostName string, taskType string, exec *VDCExecutor) {
 
-        hv, err := exec.hypervisorProvider.CreateDriver()
-        log.Errorln(err)
+        hp := exec.hypervisorProvider
+        hp.SetName(theHostName)
+        hvd, err := hp.CreateDriver()
+
+        if err != nil {
+                log.Errorln("Hypervisor driver error", err)
+                return
+        }
 
         switch taskType {
                 case "create":
-                        err = hv.CreateInstance()
+                        err = hvd.CreateInstance()
                         if err != nil {
                                 log.Errorln("Error creating instance")
                         }
                 case "destroy":
-                        err = hv.DestroyInstance()
+                        err = hvd.DestroyInstance()
                         if err != nil {
                                 log.Errorln("Error destroying instance")
                         }
                 case "run":
-                        err = hv.StartInstance()
+                        err = hvd.StartInstance()
                         if err != nil {
                                 log.Errorln("Error running instance")
                         }
                 case "stop":
-                        err = hv.StopInstance()
+                        err = hvd.StopInstance()
                         if err != nil {
                                 log.Errorln("Error stopping instance")
                         }
 		case "console":
-                        err = hv.InstanceConsole()
+                        err = hvd.InstanceConsole()
                         if err != nil {
                                 log.Errorln("Error connecting to instance")
                         }
