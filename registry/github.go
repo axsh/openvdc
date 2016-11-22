@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -137,17 +139,23 @@ func (r *GithubRegistry) Fetch() error {
 
 	tmpDest, err := ioutil.TempDir("", "gh-images-reg")
 	defer func() {
-		os.RemoveAll(tmpDest)
+		err := os.RemoveAll(tmpDest)
+		if err != nil {
+			log.WithError(err).Errorf("Failed to cleanup tmp directory: %s", tmpDest)
+		}
 	}()
 
 	// https://github.com/axsh/openvdc-images/archive/%{sha}.zip
 	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
-	{
+	err = func() error {
 		f, err := ioutil.TempFile(tmpDest, "zip")
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() {
+			f.Close()
+			os.Remove(f.Name())
+		}()
 
 		res, err := http.Get(zipLinkURI)
 		if err != nil {
@@ -170,12 +178,17 @@ func (r *GithubRegistry) Fetch() error {
 		if err != nil {
 			return err
 		}
-		os.Remove(f.Name())
+		return nil
+	}()
+	if err != nil {
+		return err
 	}
 	// Create local registry cache.
 	regDir := r.localCachePath()
 	if _, err = os.Stat(regDir); os.IsNotExist(err) {
-		err = os.MkdirAll(regDir, 0755)
+		// mkdir -p should be limited to the parent directory because os.Rename() in later fails.
+		// https://github.com/golang/go/issues/14527
+		err = os.MkdirAll(filepath.Dir(regDir), 0755)
 		if err != nil {
 			return err
 		}
@@ -206,6 +219,7 @@ func unzip(archive, target string) error {
 	if err != nil {
 		return err
 	}
+	defer reader.Close()
 
 	if err := os.MkdirAll(target, 0755); err != nil {
 		return err

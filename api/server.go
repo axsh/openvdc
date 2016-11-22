@@ -13,9 +13,12 @@ import (
 	"google.golang.org/grpc"
 
 	sched "github.com/mesos/mesos-go/scheduler"
+
+	util "github.com/mesos/mesos-go/mesosutil"
 )
 
 type APIOffer chan *RunRequest
+var theDriver sched.SchedulerDriver
 
 type APIServer struct {
 	server         *grpc.Server
@@ -33,9 +36,26 @@ func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *A
 		offerChan:      c,
 		modelStoreAddr: modelAddr,
 	}
+
+	theDriver = driver
+
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
 	RegisterResourceServer(s.server, &ResourceAPI{api: s})
 	return s
+}
+
+func (s *InstanceAPI) StopTask(ctx context.Context, in *StopTaskRequest) (*StopTaskReply, error) {
+
+	hostName := in.HostName
+
+        //TODO: Don't hardcode the ID's.
+        theDriver.SendFrameworkMessage(
+                util.NewExecutorID("vdc-hypervisor-null"),
+                util.NewSlaveID("be590de8-83c0-47f5-9e4a-14f5326c240b-S0"),
+                "destroy_" + hostName,
+        )
+
+        return &StopTaskReply{InstanceId: "test"}, nil
 }
 
 func (s *APIServer) Serve(listen net.Listener) error {
@@ -61,6 +81,7 @@ func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error
 		log.WithError(err).Error()
 		return nil, err
 	}
+	in.HostName = inst.Id
 	s.api.offerChan <- in
 	return &RunReply{InstanceId: inst.Id}, nil
 }
