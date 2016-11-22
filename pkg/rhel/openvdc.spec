@@ -27,6 +27,7 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 
 %install
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+pwd
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
