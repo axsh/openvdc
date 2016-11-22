@@ -80,6 +80,7 @@ func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error
 		log.WithError(err).Error()
 		return nil, err
 	}
+	in.HostName = inst.Id
 	s.api.offerChan <- in
 	return &RunReply{InstanceId: inst.Id}, nil
 }
