@@ -31,3 +31,10 @@ mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
+
+%files
+%dir /opt/axsh/openvdc
+%dir /opt/axsh/openvdc/bin
+/opt/axsh/openvdc/bin/openvdc
+/opt/axsh/openvdc/bin/openvdc-executor
+/opt/axsh/openvdc/bin/openvdc-scheduler
