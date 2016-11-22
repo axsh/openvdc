@@ -173,7 +173,9 @@ func (r *GithubRegistry) Fetch() error {
 	// Create local registry cache.
 	regDir := r.localCachePath()
 	if _, err = os.Stat(regDir); os.IsNotExist(err) {
-		err = os.MkdirAll(regDir, 0755)
+		// mkdir -p should be limited to the parent directory because os.Rename() in later fails.
+		// https://github.com/golang/go/issues/14527
+		err = os.MkdirAll(filepath.Dir(regDir), 0755)
 		if err != nil {
 			return err
 		}
