@@ -134,12 +134,15 @@ func (r *GithubRegistry) Fetch() error {
 
 	// https://github.com/axsh/openvdc-images/archive/%{sha}.zip
 	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
-	{
+	err = func() error {
 		f, err := ioutil.TempFile(tmpDest, "zip")
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() {
+			f.Close()
+			os.Remove(f.Name())
+		}()
 
 		res, err := http.Get(zipLinkURI)
 		if err != nil {
@@ -162,7 +165,10 @@ func (r *GithubRegistry) Fetch() error {
 		if err != nil {
 			return err
 		}
-		os.Remove(f.Name())
+		return nil
+	}()
+	if err != nil {
+		return err
 	}
 	// Create local registry cache.
 	regDir := r.localCachePath()
