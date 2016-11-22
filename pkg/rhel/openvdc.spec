@@ -20,6 +20,7 @@ BuildRequires: rpmdevtools
 This is an empty message to fulfill the requirement that this file has a "%description" header.
 
 %build 
+pwd
 cd "$RPM_SOURCE_DIR/openvdc"
 (
   ./build.sh
