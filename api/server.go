@@ -50,7 +50,7 @@ func (s *InstanceAPI) StopTask(ctx context.Context, in *StopTaskRequest) (*StopT
         //TODO: Don't hardcode the ID's.
         theDriver.SendFrameworkMessage(
                 util.NewExecutorID("vdc-hypervisor-null"),
-                util.NewSlaveID("3870d2ed-0ef0-40b4-a6f3-bea46d43d5e1-S0"),
+                util.NewSlaveID("be590de8-83c0-47f5-9e4a-14f5326c240b-S0"),
                 "destroy_" + hostName,
         )
 
