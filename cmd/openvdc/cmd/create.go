@@ -7,11 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var serverAddr string
 var imageName string
 var hostName string
 
 func init() {
+	// TODO: Remove --server option from sub-command.
 	createCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
 	createCmd.PersistentFlags().StringVarP(&hostName, "name", "n", "", "Existing host name")
 	createCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
@@ -41,7 +41,6 @@ var createCmd = &cobra.Command{
 			}
 		}
 		log.Printf("Found image: %s", imageSlug)
-
 
 		util.SendToApi(serverAddr, mi.Name, hostName, "create")
 

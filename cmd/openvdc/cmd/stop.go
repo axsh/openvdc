@@ -7,6 +7,7 @@ import (
 )
 
 func init() {
+	// TODO: Remove --server option from sub-command.
         stopCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
         stopCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
