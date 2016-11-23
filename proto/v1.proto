@@ -8,6 +8,7 @@ import "model.proto";
 
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
+  rpc Start (StartRequest) returns (StartReply){}
 	rpc Run (RunRequest) returns (RunReply){}
 	rpc StopTask (StopTaskRequest) returns (StopTaskReply){}
 }
@@ -34,6 +35,13 @@ message CreateRequest{
   string resource_id = 1;
 }
 message CreateReply{
+  string instance_id = 1;
+}
+
+message StartRequest {
+  string instance_id = 1;
+}
+message StartReply {
   string instance_id = 1;
 }
 

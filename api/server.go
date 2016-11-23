@@ -94,6 +94,18 @@ func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateRep
 	return &CreateReply{InstanceId: inst.Id}, nil
 }
 
+func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {
+	if in.GetInstanceId() == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_INSTANCE_QUEUED); err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+	// TODO: Tell the scheduler there is a queued item to get next offer eagerly.
+	return &StartReply{InstanceId: in.GetInstanceId()}, nil
+}
+
 func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error) {
 	log.Printf("New Request: %v\n", in.String())
 	inst, err := model.Instances(ctx).Create(&model.Instance{})
