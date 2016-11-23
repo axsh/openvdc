@@ -17,6 +17,7 @@ type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
 	FindByID(string) (*Instance, error)
 	UpdateState(id string, next InstanceState) error
+	FilterByState(state InstanceState) ([]*Instance, error)
 }
 
 const instancesBaseKey = "instances"
@@ -99,6 +100,28 @@ func (i *instances) UpdateState(id string, next InstanceState) error {
 		return err
 	}
 	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), buf)
+}
+
+func (i *instances) FilterByState(state InstanceState) ([]*Instance, error) {
+	bk, err := i.connection()
+	if err != nil {
+		return nil, err
+	}
+	res := []*Instance{}
+	keys, err := bk.Keys(fmt.Sprintf("/%s", instancesBaseKey))
+	if err != nil {
+		return nil, err
+	}
+	for keys.Next() {
+		instance, err := i.FindByID(keys.Value())
+		if err != nil {
+			return nil, err
+		}
+		if instance.GetState() == state {
+			res = append(res, instance)
+		}
+	}
+	return res, nil
 }
 
 func (i *Instance) Resource(ctx context.Context) (*Resource, error) {
