@@ -59,3 +59,29 @@ func TestFindInstance(t *testing.T) {
 		assert.Error(err)
 	})
 }
+
+func TestUpdateStateInstance(t *testing.T) {
+	assert := assert.New(t)
+	err := Instances(context.Background()).UpdateState("i-xxxxx", InstanceState_INSTANCE_REGISTERED)
+	assert.Equal(ErrBackendNotInContext, err)
+
+	withConnect(t, func(ctx context.Context) {
+		n := &Instance{
+			ExecutorId: "xxx",
+			ResourceId: "r-xxxx",
+		}
+		got, err := Instances(ctx).Create(n)
+		assert.NoError(err)
+		assert.Equal(InstanceState_INSTANCE_REGISTERED, got.GetState())
+		assert.Error(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_TERMINATED))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_QUEUED))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_STARTING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_RUNNING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_STOPPING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_STOPPED))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_STARTING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_RUNNING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_SHUTTINGDOWN))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_INSTANCE_TERMINATED))
+	})
+}
