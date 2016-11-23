@@ -1,10 +1,9 @@
 package cmd
 
 import (
-
 	log "github.com/Sirupsen/logrus"
-	util "github.com/axsh/openvdc/util"
 	"github.com/axsh/openvdc/registry"
+	util "github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
 )
 
@@ -65,7 +64,6 @@ var createCmd = &cobra.Command{
 			}
 		}
 		log.Printf("Found image: %s", imageSlug)
-
 
 		util.SendToApi(serverAddr, mi.Name, hostName, "create")
 

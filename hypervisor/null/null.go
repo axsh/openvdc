@@ -48,6 +48,6 @@ func (h *NullHypervisorDriver) DestroyInstance() error {
 }
 
 func (h *NullHypervisorDriver) InstanceConsole() error {
-        log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("InstanceConsole")
-        return nil
+	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("InstanceConsole")
+	return nil
 }
