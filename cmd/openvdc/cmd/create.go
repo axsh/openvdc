@@ -44,4 +44,5 @@ var createCmd = &cobra.Command{
 			fmt.Println(res)
 			return err
 		})
-	}}
+	},
+}

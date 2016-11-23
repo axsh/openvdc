@@ -1,9 +1,9 @@
 package main
 
 import (
-	"time"
-	"strings"
 	"net/url"
+	"strings"
+	"time"
 
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
@@ -99,44 +99,44 @@ func testZkConnection(ip string, dir string, msg string) {
 
 func newTask(theHostName string, taskType string, exec *VDCExecutor) {
 
-        hp := exec.hypervisorProvider
-        hp.SetName(theHostName)
-        hvd, err := hp.CreateDriver()
+	hp := exec.hypervisorProvider
+	hp.SetName(theHostName)
+	hvd, err := hp.CreateDriver()
 
-        if err != nil {
-                log.Errorln("Hypervisor driver error", err)
-                return
-        }
+	if err != nil {
+		log.Errorln("Hypervisor driver error", err)
+		return
+	}
 
-        switch taskType {
-                case "create":
-                        err = hvd.CreateInstance()
-                        if err != nil {
-                                log.Errorln("Error creating instance")
-                        }
-                case "destroy":
-                        err = hvd.DestroyInstance()
-                        if err != nil {
-                                log.Errorln("Error destroying instance")
-                        }
-                case "run":
-                        err = hvd.StartInstance()
-                        if err != nil {
-                                log.Errorln("Error running instance")
-                        }
-                case "stop":
-                        err = hvd.StopInstance()
-                        if err != nil {
-                                log.Errorln("Error stopping instance")
-                        }
-		case "console":
-                        err = hvd.InstanceConsole()
-                        if err != nil {
-                                log.Errorln("Error connecting to instance")
-                        }
-                default:
-                        log.Errorln("Invalid task name")
-        }
+	switch taskType {
+	case "create":
+		err = hvd.CreateInstance()
+		if err != nil {
+			log.Errorln("Error creating instance")
+		}
+	case "destroy":
+		err = hvd.DestroyInstance()
+		if err != nil {
+			log.Errorln("Error destroying instance")
+		}
+	case "run":
+		err = hvd.StartInstance()
+		if err != nil {
+			log.Errorln("Error running instance")
+		}
+	case "stop":
+		err = hvd.StopInstance()
+		if err != nil {
+			log.Errorln("Error stopping instance")
+		}
+	case "console":
+		err = hvd.InstanceConsole()
+		if err != nil {
+			log.Errorln("Error connecting to instance")
+		}
+	default:
+		log.Errorln("Invalid task name")
+	}
 }
 
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
@@ -169,7 +169,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	hostName := values.Get("hostName")
 	taskType := values.Get("taskType")
 
-	log.Infoln("ImageName: " + imageName + ", HostName: " + hostName, "TaskType: " + taskType)
+	log.Infoln("ImageName: "+imageName+", HostName: "+hostName, "TaskType: "+taskType)
 
 	newTask(hostName, taskType, exec)
 
@@ -193,18 +193,18 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 func DestroyTask(driver exec.ExecutorDriver, taskId *mesos.TaskID) {
 
-        finState := mesos.TaskState_TASK_FINISHED
+	finState := mesos.TaskState_TASK_FINISHED
 
-        log.Infoln("Finishing task", theTaskInfo.GetName())
-        finStatus := &mesos.TaskStatus{
-                TaskId: taskId,
-                State:  finState.Enum(),
-        }
+	log.Infoln("Finishing task", theTaskInfo.GetName())
+	finStatus := &mesos.TaskStatus{
+		TaskId: taskId,
+		State:  finState.Enum(),
+	}
 
-        if _, err := driver.SendStatusUpdate(finStatus); err != nil {
-                log.Infoln("ERROR: Couldn't send status update", err)
-        }
-        log.Infoln("Task finished", theTaskInfo.GetName())
+	if _, err := driver.SendStatusUpdate(finStatus); err != nil {
+		log.Infoln("ERROR: Couldn't send status update", err)
+	}
+	log.Infoln("Task finished", theTaskInfo.GetName())
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
@@ -214,20 +214,20 @@ func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.Task
 func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string) {
 
 	parts := strings.Split(msg, "_")
-        command := parts[0]
-        taskId := mesosutil.NewTaskID(parts[1])
+	command := parts[0]
+	taskId := mesosutil.NewTaskID(parts[1])
 
 	log.Infoln("--------------FrameworkMessage---------------")
 	log.Infoln("command: ", command)
-        log.Infoln("taskId: ", taskId)
+	log.Infoln("taskId: ", taskId)
 	log.Infoln("---------------------------------------------")
 
 	switch command {
-                case "destroy":
-                        DestroyTask(driver, taskId)
-                default:
-                        log.Errorln("FrameworkMessage unrecognized.")
-        }
+	case "destroy":
+		DestroyTask(driver, taskId)
+	default:
+		log.Errorln("FrameworkMessage unrecognized.")
+	}
 }
 
 func (exec *VDCExecutor) Shutdown(driver exec.ExecutorDriver) {
