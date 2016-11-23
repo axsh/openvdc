@@ -16,8 +16,8 @@ enum ResourceType {
 }
 
 enum ResourceState {
-  Registered = 0;
-  Unregistered = 1;
+  RESOURCE_REGISTERED = 0;
+  RESOURCE_UNREGISTERED = 1;
 }
 
 message Resource {
