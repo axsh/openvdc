@@ -76,3 +76,30 @@ func TestZkSchema(t *testing.T) {
 		assert.NoError(err)
 	})
 }
+
+func TestZkKeys(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		// Iterate empty keys.
+		it, err := z.Keys("/")
+		assert.NoError(err)
+		assert.False(it.Next())
+		assert.Equal("", it.Value())
+
+		// Iterate exisiting keys.
+		err = z.Create("/test1", []byte{1})
+		assert.NoError(err)
+		err = z.Create("/test2", []byte{1})
+		assert.NoError(err)
+		it, err = z.Keys("/")
+		assert.NoError(err)
+		assert.True(it.Next())
+		assert.Equal("test1", it.Value())
+		assert.True(it.Next())
+		assert.Equal("test2", it.Value())
+		assert.False(it.Next())
+		assert.Equal("test2", it.Value())
+		z.Delete("/test1")
+		z.Delete("/test2")
+	})
+}

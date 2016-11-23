@@ -8,6 +8,11 @@ var ErrUnknownKey = func(key string) error {
 	return errors.New("Unknown key name: " + key)
 }
 
+type KeyIterator interface {
+	Next() bool
+	Value() string
+}
+
 type ModelBackend interface {
 	Connect(dest []string) error
 	Close() error
@@ -16,6 +21,7 @@ type ModelBackend interface {
 	Update(key string, value []byte) error
 	Find(key string) ([]byte, error)
 	Delete(key string) error
+	Keys(parentKey string) (KeyIterator, error)
 }
 
 type ModelSchema interface {
