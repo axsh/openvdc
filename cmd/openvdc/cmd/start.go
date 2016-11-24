@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
