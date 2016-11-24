@@ -6,8 +6,10 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pborman/uuid"
 
 	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/model"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
 	"github.com/mesos/mesos-go/auth/sasl"
@@ -24,6 +26,11 @@ const (
 	MEM_PER_TASK      = 64
 )
 
+var FrameworkInfo = &mesos.FrameworkInfo{
+	User: proto.String(""),
+	Name: proto.String("OpenVDC"),
+}
+
 // ExecutorPath is the path to the openvdc-executor binary.
 // Embed from -ldflags
 var ExecutorPath string
@@ -33,38 +40,26 @@ var (
 )
 
 type VDCScheduler struct {
-	executor      *mesos.ExecutorInfo
 	tasksLaunched int
 	tasksFinished int
 	tasksErrored  int
 	totalTasks    int
 	offerChan     api.APIOffer
 	listenAddr    string
+	zkAddr        string
 }
 
-func newVDCScheduler(ch api.APIOffer, listenAddr string) *VDCScheduler {
+func newVDCScheduler(ch api.APIOffer, listenAddr string, zkAddr string) *VDCScheduler {
 	// Assert ExecutorPath
 	if _, err := os.Stat(ExecutorPath); err != nil {
 		log.WithError(err).WithField("ExecutorPath", ExecutorPath).Fatal("Could not find openvdc-executor binary.")
 	}
-	exec := &mesos.ExecutorInfo{
-		ExecutorId: util.NewExecutorID("vdc-hypervisor-null"),
-		Name:       proto.String("VDC Executor"),
-		Source:     proto.String("go_test"),
-		Command: &mesos.CommandInfo{
-			Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=null", ExecutorPath)),
-		},
-		Resources: []*mesos.Resource{
-			util.NewScalarResource("cpus", CPUS_PER_EXECUTOR),
-			util.NewScalarResource("mem", MEM_PER_EXECUTOR),
-		},
-	}
 
 	return &VDCScheduler{
-		executor:   exec,
 		totalTasks: taskCount,
 		offerChan:  ch,
 		listenAddr: listenAddr,
+		zkAddr:     zkAddr,
 	}
 }
 
@@ -82,32 +77,18 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	log := log.WithFields(log.Fields{"offers": len(offers)})
-	select {
-	case s := <-sched.offerChan:
-		log.Infoln("Process this offer as new request arrived.")
-		imageName := s.ImageName
-		hostName := s.HostName
-		taskType := s.TaskType
 
-		fmt.Println("Scheduler, ImageName: ", imageName)
-		fmt.Println("Scheduler, HostName: ", hostName)
-		fmt.Println("Scheduler, TaskType: ", taskType)
-
-		var clientCommands string
-		if imageName != "" {
-			clientCommands = "imageName=" + imageName
+	ctx, err := model.Connect(context.Background(), []string{sched.zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed to connecto to datasource: ", sched.zkAddr)
+	} else {
+		defer model.Close(ctx)
+		err = sched.processOffers2(driver, offers, ctx)
+		if err != nil {
+			log.WithError(err).Error("Failed to process offers")
 		}
-
-		if hostName != "" {
-			clientCommands = clientCommands + "&hostName=" + hostName
-		}
-
-		if taskType != "" {
-			clientCommands = clientCommands + "&taskType=" + taskType
-		}
-
-		sched.processOffers(driver, offers, clientCommands, hostName)
-	default:
+	}
+	/*
 		log.Debugln("Skip offer since no allocation requests.")
 		for _, offer := range offers {
 			stat, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
@@ -120,9 +101,76 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 				log.Fatalln("Invalid status")
 			}
 		}
-	}
+	*/
 }
 
+func (sched *VDCScheduler) processOffers2(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
+	queued, err := model.Instances(ctx).FilterByState(model.InstanceState_INSTANCE_QUEUED)
+	if err != nil {
+		return err
+	}
+
+	if len(queued) == 0 {
+		log.Infoln("Skip offers since no allocation requests.")
+		for _, offer := range offers {
+			_, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
+			if err != nil {
+				log.WithError(err).Error("Failed to response DeclineOffer.")
+			}
+		}
+		return nil
+	}
+
+	findMatching := func(i *model.Instance) *mesos.Offer {
+		for _, offer := range offers {
+			// TODO: Check attribute: hypervisor name.
+			return offer
+		}
+		return nil
+	}
+
+	tasks := []*mesos.TaskInfo{}
+	acceptIDs := []*mesos.OfferID{}
+	for _, i := range queued {
+		log.Info("Queued Instance: ", i.GetId())
+		found := findMatching(i)
+		if found == nil {
+			continue
+		}
+		log.WithField("InstanceID", i.GetId()).Info("Found matching offer")
+
+		executor := &mesos.ExecutorInfo{
+			ExecutorId: util.NewExecutorID("vdc-hypervisor-null"),
+			Name:       proto.String("VDC Executor"),
+			Command: &mesos.CommandInfo{
+				Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=null -zk=%s", ExecutorPath, sched.zkAddr)),
+			},
+		}
+
+		taskId := util.NewTaskID(uuid.New())
+		task := &mesos.TaskInfo{
+			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
+			TaskId:   taskId,
+			SlaveId:  found.SlaveId,
+			Data:     []byte("instance_id=" + i.GetId()),
+			Executor: executor,
+			Resources: []*mesos.Resource{
+				util.NewScalarResource("cpus", CPUS_PER_TASK),
+				util.NewScalarResource("mem", MEM_PER_TASK),
+			},
+		}
+
+		tasks = append(tasks, task)
+		acceptIDs = append(acceptIDs, found.Id)
+	}
+	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(0.01)})
+	if err != nil {
+		log.WithError(err).Error("Faild to response LaunchTasks.")
+	}
+	return nil
+}
+
+/*
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, clientCommands string, hostName string) {
 	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
 		log.Println("All tasks are already launched: decline offer")
@@ -186,6 +234,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		driver.LaunchTasks([]*mesos.OfferID{offer.Id}, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	}
 }
+*/
 
 func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *mesos.TaskStatus) {
 	log.Println("Framework Resource Offers from master", status)
@@ -237,11 +286,6 @@ func startAPIServer(laddr string, ch api.APIOffer, zkAddr string, driver sched.S
 func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr string) {
 	ch := make(api.APIOffer)
 
-	fwinfo := &mesos.FrameworkInfo{
-		User: proto.String(""), // Mesos-go will fill in user.
-		Name: proto.String("VDC Scheduler"),
-	}
-
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
@@ -253,8 +297,8 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 		log.Fatalln("Invalid Address to -listen option: ", err)
 	}
 	config := sched.DriverConfig{
-		Scheduler:      newVDCScheduler(ch, listenAddr),
-		Framework:      fwinfo,
+		Scheduler:      newVDCScheduler(ch, listenAddr, zkAddr),
+		Framework:      FrameworkInfo,
 		Master:         mesosMasterAddr,
 		Credential:     cred,
 		BindingAddress: bindingAddrs[0],
