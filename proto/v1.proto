@@ -2,7 +2,12 @@ syntax = "proto3";
 
 package api;
 
+option go_package = "github.com/axsh/openvdc/api";
+
+import "model.proto";
+
 service Instance {
+  rpc Create (CreateRequest) returns (CreateReply){}
 	rpc Run (RunRequest) returns (RunReply){}
 	rpc StopTask (StopTaskRequest) returns (StopTaskReply){}
 }
@@ -14,6 +19,7 @@ message RunRequest{
 }
 message RunReply {
   string instance_id = 1;
+  string resource_id = 2;
 }
 
 message StopTaskRequest{
@@ -24,13 +30,24 @@ message StopTaskReply {
   string instance_id = 1;
 }
 
+message CreateRequest{
+  string resource_id = 1;
+}
+message CreateReply{
+  string instance_id = 1;
+}
 
 service Resource {
   rpc Register(ResourceRequest) returns (ResourceReply){}
   rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
 }
 
-message ResourceRequest {}
+message ResourceRequest {
+  oneof Template {
+    model.NoneTemplate none = 500;
+    model.VMTemplate vm = 501;
+  }
+}
 message ResourceReply {
   string ID = 1;
 }

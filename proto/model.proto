@@ -2,13 +2,17 @@ syntax = "proto3";
 
 package model;
 
+option go_package = "github.com/axsh/openvdc/model";
+
 message Instance {
   string id = 1;
   string executor_id = 2;
+  string resource_id = 3;
 }
 
 enum ResourceType {
-  VM = 0;
+  NONE = 0;
+  VM = 1;
 }
 
 enum ResourceState {
@@ -20,4 +24,16 @@ message Resource {
   string id = 1;
   ResourceType type = 2;
   ResourceState state = 3;
+  oneof Template {
+    NoneTemplate none = 500;
+    VMTemplate vm = 501;
+  }
+}
+
+message NoneTemplate {}
+
+message VMTemplate {
+  int32 vcpu = 1;
+  int32 memory_gb = 2;
+  string image_template_uri = 3;
 }

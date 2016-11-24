@@ -20,5 +20,6 @@ if [[ $skip_goget_protoc -eq 0 ]]; then
   go get -u -v github.com/golang/protobuf/protoc-gen-go
 fi
 
-protoc -I . --go_out=plugins=grpc:../api v1.proto
-protoc -I . --go_out=../model model.proto
+# we set option "go_package" so the protoc puts files to the namespace.
+protoc -I . --go_out=plugins=grpc:$GOPATH/src v1.proto
+protoc -I . --go_out=$GOPATH/src model.proto

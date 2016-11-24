@@ -6,26 +6,29 @@
 Package api is a generated protocol buffer package.
 
 It is generated from these files:
-        v1.proto
+	v1.proto
 
 It has these top-level messages:
-        RunRequest
-        RunReply
-        StopTaskRequest
-        StopTaskReply
-        ResourceRequest
-        ResourceReply
-        ResourceIDRequest
+	RunRequest
+	RunReply
+	StopTaskRequest
+	StopTaskReply
+	CreateRequest
+	CreateReply
+	ResourceRequest
+	ResourceReply
+	ResourceIDRequest
 */
 package api
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import model "github.com/axsh/openvdc/model"
 
 import (
-        context "golang.org/x/net/context"
-        grpc "google.golang.org/grpc"
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -37,12 +40,12 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-//const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type RunRequest struct {
-        ImageName string `protobuf:"bytes,1,opt,name=imageName" json:"imageName,omitempty"`
-        HostName  string `protobuf:"bytes,2,opt,name=hostName" json:"hostName,omitempty"`
-        TaskType  string `protobuf:"bytes,3,opt,name=taskType" json:"taskType,omitempty"`
+	ImageName string `protobuf:"bytes,1,opt,name=imageName" json:"imageName,omitempty"`
+	HostName  string `protobuf:"bytes,2,opt,name=hostName" json:"hostName,omitempty"`
+	TaskType  string `protobuf:"bytes,3,opt,name=taskType" json:"taskType,omitempty"`
 }
 
 func (m *RunRequest) Reset()                    { *m = RunRequest{} }
@@ -50,8 +53,30 @@ func (m *RunRequest) String() string            { return proto.CompactTextString
 func (*RunRequest) ProtoMessage()               {}
 func (*RunRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *RunRequest) GetImageName() string {
+	if m != nil {
+		return m.ImageName
+	}
+	return ""
+}
+
+func (m *RunRequest) GetHostName() string {
+	if m != nil {
+		return m.HostName
+	}
+	return ""
+}
+
+func (m *RunRequest) GetTaskType() string {
+	if m != nil {
+		return m.TaskType
+	}
+	return ""
+}
+
 type RunReply struct {
-        InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	ResourceId string `protobuf:"bytes,2,opt,name=resource_id,json=resourceId" json:"resource_id,omitempty"`
 }
 
 func (m *RunReply) Reset()                    { *m = RunReply{} }
@@ -59,9 +84,23 @@ func (m *RunReply) String() string            { return proto.CompactTextString(m
 func (*RunReply) ProtoMessage()               {}
 func (*RunReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *RunReply) GetInstanceId() string {
+	if m != nil {
+		return m.InstanceId
+	}
+	return ""
+}
+
+func (m *RunReply) GetResourceId() string {
+	if m != nil {
+		return m.ResourceId
+	}
+	return ""
+}
+
 type StopTaskRequest struct {
-        HostName string `protobuf:"bytes,1,opt,name=hostName" json:"hostName,omitempty"`
-        TaskType string `protobuf:"bytes,2,opt,name=taskType" json:"taskType,omitempty"`
+	HostName string `protobuf:"bytes,1,opt,name=hostName" json:"hostName,omitempty"`
+	TaskType string `protobuf:"bytes,2,opt,name=taskType" json:"taskType,omitempty"`
 }
 
 func (m *StopTaskRequest) Reset()                    { *m = StopTaskRequest{} }
@@ -69,8 +108,22 @@ func (m *StopTaskRequest) String() string            { return proto.CompactTextS
 func (*StopTaskRequest) ProtoMessage()               {}
 func (*StopTaskRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
+func (m *StopTaskRequest) GetHostName() string {
+	if m != nil {
+		return m.HostName
+	}
+	return ""
+}
+
+func (m *StopTaskRequest) GetTaskType() string {
+	if m != nil {
+		return m.TaskType
+	}
+	return ""
+}
+
 type StopTaskReply struct {
-        InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
 }
 
 func (m *StopTaskReply) Reset()                    { *m = StopTaskReply{} }
@@ -78,144 +131,305 @@ func (m *StopTaskReply) String() string            { return proto.CompactTextStr
 func (*StopTaskReply) ProtoMessage()               {}
 func (*StopTaskReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
+func (m *StopTaskReply) GetInstanceId() string {
+	if m != nil {
+		return m.InstanceId
+	}
+	return ""
+}
+
+type CreateRequest struct {
+	ResourceId string `protobuf:"bytes,1,opt,name=resource_id,json=resourceId" json:"resource_id,omitempty"`
+}
+
+func (m *CreateRequest) Reset()                    { *m = CreateRequest{} }
+func (m *CreateRequest) String() string            { return proto.CompactTextString(m) }
+func (*CreateRequest) ProtoMessage()               {}
+func (*CreateRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *CreateRequest) GetResourceId() string {
+	if m != nil {
+		return m.ResourceId
+	}
+	return ""
+}
+
+type CreateReply struct {
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+}
+
+func (m *CreateReply) Reset()                    { *m = CreateReply{} }
+func (m *CreateReply) String() string            { return proto.CompactTextString(m) }
+func (*CreateReply) ProtoMessage()               {}
+func (*CreateReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+
+func (m *CreateReply) GetInstanceId() string {
+	if m != nil {
+		return m.InstanceId
+	}
+	return ""
+}
+
 type ResourceRequest struct {
+	// Types that are valid to be assigned to Template:
+	//	*ResourceRequest_None
+	//	*ResourceRequest_Vm
+	Template isResourceRequest_Template `protobuf_oneof:"Template"`
 }
 
 func (m *ResourceRequest) Reset()                    { *m = ResourceRequest{} }
 func (m *ResourceRequest) String() string            { return proto.CompactTextString(m) }
 func (*ResourceRequest) ProtoMessage()               {}
-func (*ResourceRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*ResourceRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+type isResourceRequest_Template interface {
+	isResourceRequest_Template()
+}
+
+type ResourceRequest_None struct {
+	None *model.NoneTemplate `protobuf:"bytes,500,opt,name=none,oneof"`
+}
+type ResourceRequest_Vm struct {
+	Vm *model.VMTemplate `protobuf:"bytes,501,opt,name=vm,oneof"`
+}
+
+func (*ResourceRequest_None) isResourceRequest_Template() {}
+func (*ResourceRequest_Vm) isResourceRequest_Template()   {}
+
+func (m *ResourceRequest) GetTemplate() isResourceRequest_Template {
+	if m != nil {
+		return m.Template
+	}
+	return nil
+}
+
+func (m *ResourceRequest) GetNone() *model.NoneTemplate {
+	if x, ok := m.GetTemplate().(*ResourceRequest_None); ok {
+		return x.None
+	}
+	return nil
+}
+
+func (m *ResourceRequest) GetVm() *model.VMTemplate {
+	if x, ok := m.GetTemplate().(*ResourceRequest_Vm); ok {
+		return x.Vm
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*ResourceRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _ResourceRequest_OneofMarshaler, _ResourceRequest_OneofUnmarshaler, _ResourceRequest_OneofSizer, []interface{}{
+		(*ResourceRequest_None)(nil),
+		(*ResourceRequest_Vm)(nil),
+	}
+}
+
+func _ResourceRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*ResourceRequest)
+	// Template
+	switch x := m.Template.(type) {
+	case *ResourceRequest_None:
+		b.EncodeVarint(500<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.None); err != nil {
+			return err
+		}
+	case *ResourceRequest_Vm:
+		b.EncodeVarint(501<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Vm); err != nil {
+			return err
+		}
+	case nil:
+	default:
+		return fmt.Errorf("ResourceRequest.Template has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _ResourceRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*ResourceRequest)
+	switch tag {
+	case 500: // Template.none
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(model.NoneTemplate)
+		err := b.DecodeMessage(msg)
+		m.Template = &ResourceRequest_None{msg}
+		return true, err
+	case 501: // Template.vm
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(model.VMTemplate)
+		err := b.DecodeMessage(msg)
+		m.Template = &ResourceRequest_Vm{msg}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _ResourceRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*ResourceRequest)
+	// Template
+	switch x := m.Template.(type) {
+	case *ResourceRequest_None:
+		s := proto.Size(x.None)
+		n += proto.SizeVarint(500<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *ResourceRequest_Vm:
+		s := proto.Size(x.Vm)
+		n += proto.SizeVarint(501<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
 
 type ResourceReply struct {
-        ID string `protobuf:"bytes,1,opt,name=ID" json:"ID,omitempty"`
+	ID string `protobuf:"bytes,1,opt,name=ID" json:"ID,omitempty"`
 }
 
 func (m *ResourceReply) Reset()                    { *m = ResourceReply{} }
 func (m *ResourceReply) String() string            { return proto.CompactTextString(m) }
 func (*ResourceReply) ProtoMessage()               {}
-func (*ResourceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*ResourceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *ResourceReply) GetID() string {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
 
 type ResourceIDRequest struct {
-        // Types that are valid to be assigned to Key:
-        //      *ResourceIDRequest_ID
-        //      *ResourceIDRequest_Name
-        Key isResourceIDRequest_Key `protobuf_oneof:"Key"`
+	// Types that are valid to be assigned to Key:
+	//	*ResourceIDRequest_ID
+	//	*ResourceIDRequest_Name
+	Key isResourceIDRequest_Key `protobuf_oneof:"Key"`
 }
 
 func (m *ResourceIDRequest) Reset()                    { *m = ResourceIDRequest{} }
 func (m *ResourceIDRequest) String() string            { return proto.CompactTextString(m) }
 func (*ResourceIDRequest) ProtoMessage()               {}
-func (*ResourceIDRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (*ResourceIDRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
 type isResourceIDRequest_Key interface {
-        isResourceIDRequest_Key()
+	isResourceIDRequest_Key()
 }
 
 type ResourceIDRequest_ID struct {
-        ID string `protobuf:"bytes,1,opt,name=ID,oneof"`
+	ID string `protobuf:"bytes,1,opt,name=ID,oneof"`
 }
 type ResourceIDRequest_Name struct {
-        Name string `protobuf:"bytes,2,opt,name=Name,oneof"`
+	Name string `protobuf:"bytes,2,opt,name=Name,oneof"`
 }
 
 func (*ResourceIDRequest_ID) isResourceIDRequest_Key()   {}
 func (*ResourceIDRequest_Name) isResourceIDRequest_Key() {}
 
 func (m *ResourceIDRequest) GetKey() isResourceIDRequest_Key {
-        if m != nil {
-                return m.Key
-        }
-        return nil
+	if m != nil {
+		return m.Key
+	}
+	return nil
 }
 
 func (m *ResourceIDRequest) GetID() string {
-        if x, ok := m.GetKey().(*ResourceIDRequest_ID); ok {
-                return x.ID
-        }
-        return ""
+	if x, ok := m.GetKey().(*ResourceIDRequest_ID); ok {
+		return x.ID
+	}
+	return ""
 }
 
 func (m *ResourceIDRequest) GetName() string {
-        if x, ok := m.GetKey().(*ResourceIDRequest_Name); ok {
-                return x.Name
-        }
-        return ""
+	if x, ok := m.GetKey().(*ResourceIDRequest_Name); ok {
+		return x.Name
+	}
+	return ""
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*ResourceIDRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-        return _ResourceIDRequest_OneofMarshaler, _ResourceIDRequest_OneofUnmarshaler, _ResourceIDRequest_OneofSizer, []interface{}{
-                (*ResourceIDRequest_ID)(nil),
-                (*ResourceIDRequest_Name)(nil),
-        }
+	return _ResourceIDRequest_OneofMarshaler, _ResourceIDRequest_OneofUnmarshaler, _ResourceIDRequest_OneofSizer, []interface{}{
+		(*ResourceIDRequest_ID)(nil),
+		(*ResourceIDRequest_Name)(nil),
+	}
 }
 
 func _ResourceIDRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-        m := msg.(*ResourceIDRequest)
-        // Key
-        switch x := m.Key.(type) {
-        case *ResourceIDRequest_ID:
-                b.EncodeVarint(1<<3 | proto.WireBytes)
-                b.EncodeStringBytes(x.ID)
-        case *ResourceIDRequest_Name:
-                b.EncodeVarint(2<<3 | proto.WireBytes)
-                b.EncodeStringBytes(x.Name)
-        case nil:
-        default:
-                return fmt.Errorf("ResourceIDRequest.Key has unexpected type %T", x)
-        }
-        return nil
+	m := msg.(*ResourceIDRequest)
+	// Key
+	switch x := m.Key.(type) {
+	case *ResourceIDRequest_ID:
+		b.EncodeVarint(1<<3 | proto.WireBytes)
+		b.EncodeStringBytes(x.ID)
+	case *ResourceIDRequest_Name:
+		b.EncodeVarint(2<<3 | proto.WireBytes)
+		b.EncodeStringBytes(x.Name)
+	case nil:
+	default:
+		return fmt.Errorf("ResourceIDRequest.Key has unexpected type %T", x)
+	}
+	return nil
 }
 
 func _ResourceIDRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-        m := msg.(*ResourceIDRequest)
-        switch tag {
-        case 1: // Key.ID
-                if wire != proto.WireBytes {
-                        return true, proto.ErrInternalBadWireType
-                }
-                x, err := b.DecodeStringBytes()
-                m.Key = &ResourceIDRequest_ID{x}
-                return true, err
-        case 2: // Key.Name
-                if wire != proto.WireBytes {
-                        return true, proto.ErrInternalBadWireType
-                }
-                x, err := b.DecodeStringBytes()
-                m.Key = &ResourceIDRequest_Name{x}
-                return true, err
-        default:
-                return false, nil
-        }
+	m := msg.(*ResourceIDRequest)
+	switch tag {
+	case 1: // Key.ID
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Key = &ResourceIDRequest_ID{x}
+		return true, err
+	case 2: // Key.Name
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeStringBytes()
+		m.Key = &ResourceIDRequest_Name{x}
+		return true, err
+	default:
+		return false, nil
+	}
 }
 
 func _ResourceIDRequest_OneofSizer(msg proto.Message) (n int) {
-        m := msg.(*ResourceIDRequest)
-        // Key
-        switch x := m.Key.(type) {
-        case *ResourceIDRequest_ID:
-                n += proto.SizeVarint(1<<3 | proto.WireBytes)
-                n += proto.SizeVarint(uint64(len(x.ID)))
-                n += len(x.ID)
-        case *ResourceIDRequest_Name:
-                n += proto.SizeVarint(2<<3 | proto.WireBytes)
-                n += proto.SizeVarint(uint64(len(x.Name)))
-                n += len(x.Name)
-        case nil:
-        default:
-                panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-        }
-        return n
+	m := msg.(*ResourceIDRequest)
+	// Key
+	switch x := m.Key.(type) {
+	case *ResourceIDRequest_ID:
+		n += proto.SizeVarint(1<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.ID)))
+		n += len(x.ID)
+	case *ResourceIDRequest_Name:
+		n += proto.SizeVarint(2<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.Name)))
+		n += len(x.Name)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 func init() {
-        proto.RegisterType((*RunRequest)(nil), "api.RunRequest")
-        proto.RegisterType((*RunReply)(nil), "api.RunReply")
-        proto.RegisterType((*StopTaskRequest)(nil), "api.StopTaskRequest")
-        proto.RegisterType((*StopTaskReply)(nil), "api.StopTaskReply")
-        proto.RegisterType((*ResourceRequest)(nil), "api.ResourceRequest")
-        proto.RegisterType((*ResourceReply)(nil), "api.ResourceReply")
-        proto.RegisterType((*ResourceIDRequest)(nil), "api.ResourceIDRequest")
+	proto.RegisterType((*RunRequest)(nil), "api.RunRequest")
+	proto.RegisterType((*RunReply)(nil), "api.RunReply")
+	proto.RegisterType((*StopTaskRequest)(nil), "api.StopTaskRequest")
+	proto.RegisterType((*StopTaskReply)(nil), "api.StopTaskReply")
+	proto.RegisterType((*CreateRequest)(nil), "api.CreateRequest")
+	proto.RegisterType((*CreateReply)(nil), "api.CreateReply")
+	proto.RegisterType((*ResourceRequest)(nil), "api.ResourceRequest")
+	proto.RegisterType((*ResourceReply)(nil), "api.ResourceReply")
+	proto.RegisterType((*ResourceIDRequest)(nil), "api.ResourceIDRequest")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -224,224 +438,266 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-//const _ = grpc.SupportPackageIsVersion3
+const _ = grpc.SupportPackageIsVersion4
 
 // Client API for Instance service
 
 type InstanceClient interface {
-        Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunReply, error)
-        StopTask(ctx context.Context, in *StopTaskRequest, opts ...grpc.CallOption) (*StopTaskReply, error)
+	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateReply, error)
+	Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunReply, error)
+	StopTask(ctx context.Context, in *StopTaskRequest, opts ...grpc.CallOption) (*StopTaskReply, error)
 }
 
 type instanceClient struct {
-        cc *grpc.ClientConn
+	cc *grpc.ClientConn
 }
 
 func NewInstanceClient(cc *grpc.ClientConn) InstanceClient {
-        return &instanceClient{cc}
+	return &instanceClient{cc}
+}
+
+func (c *instanceClient) Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateReply, error) {
+	out := new(CreateReply)
+	err := grpc.Invoke(ctx, "/api.Instance/Create", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *instanceClient) Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (*RunReply, error) {
-        out := new(RunReply)
-        err := grpc.Invoke(ctx, "/api.Instance/Run", in, out, c.cc, opts...)
-        if err != nil {
-                return nil, err
-        }
-        return out, nil
+	out := new(RunReply)
+	err := grpc.Invoke(ctx, "/api.Instance/Run", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *instanceClient) StopTask(ctx context.Context, in *StopTaskRequest, opts ...grpc.CallOption) (*StopTaskReply, error) {
-        out := new(StopTaskReply)
-        err := grpc.Invoke(ctx, "/api.Instance/StopTask", in, out, c.cc, opts...)
-        if err != nil {
-                return nil, err
-        }
-        return out, nil
+	out := new(StopTaskReply)
+	err := grpc.Invoke(ctx, "/api.Instance/StopTask", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // Server API for Instance service
 
 type InstanceServer interface {
-        Run(context.Context, *RunRequest) (*RunReply, error)
-        StopTask(context.Context, *StopTaskRequest) (*StopTaskReply, error)
+	Create(context.Context, *CreateRequest) (*CreateReply, error)
+	Run(context.Context, *RunRequest) (*RunReply, error)
+	StopTask(context.Context, *StopTaskRequest) (*StopTaskReply, error)
 }
 
 func RegisterInstanceServer(s *grpc.Server, srv InstanceServer) {
-        s.RegisterService(&_Instance_serviceDesc, srv)
+	s.RegisterService(&_Instance_serviceDesc, srv)
+}
+
+func _Instance_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Instance/Create",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServer).Create(ctx, req.(*CreateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Instance_Run_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-        in := new(RunRequest)
-        if err := dec(in); err != nil {
-                return nil, err
-        }
-        if interceptor == nil {
-                return srv.(InstanceServer).Run(ctx, in)
-        }
-        info := &grpc.UnaryServerInfo{
-                Server:     srv,
-                FullMethod: "/api.Instance/Run",
-        }
-        handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-                return srv.(InstanceServer).Run(ctx, req.(*RunRequest))
-        }
-        return interceptor(ctx, in, info, handler)
+	in := new(RunRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServer).Run(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Instance/Run",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServer).Run(ctx, req.(*RunRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Instance_StopTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-        in := new(StopTaskRequest)
-        if err := dec(in); err != nil {
-                return nil, err
-        }
-        if interceptor == nil {
-                return srv.(InstanceServer).StopTask(ctx, in)
-        }
-        info := &grpc.UnaryServerInfo{
-                Server:     srv,
-                FullMethod: "/api.Instance/StopTask",
-        }
-        handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-                return srv.(InstanceServer).StopTask(ctx, req.(*StopTaskRequest))
-        }
-        return interceptor(ctx, in, info, handler)
+	in := new(StopTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServer).StopTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Instance/StopTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServer).StopTask(ctx, req.(*StopTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Instance_serviceDesc = grpc.ServiceDesc{
-        ServiceName: "api.Instance",
-        HandlerType: (*InstanceServer)(nil),
-        Methods: []grpc.MethodDesc{
-                {
-                        MethodName: "Run",
-                        Handler:    _Instance_Run_Handler,
-                },
-                {
-                        MethodName: "StopTask",
-                        Handler:    _Instance_StopTask_Handler,
-                },
-        },
-        Streams:  []grpc.StreamDesc{},
-        Metadata: fileDescriptor0,
+	ServiceName: "api.Instance",
+	HandlerType: (*InstanceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Create",
+			Handler:    _Instance_Create_Handler,
+		},
+		{
+			MethodName: "Run",
+			Handler:    _Instance_Run_Handler,
+		},
+		{
+			MethodName: "StopTask",
+			Handler:    _Instance_StopTask_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "v1.proto",
 }
 
 // Client API for Resource service
 
 type ResourceClient interface {
-        Register(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*ResourceReply, error)
-        Unregister(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error)
+	Register(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*ResourceReply, error)
+	Unregister(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error)
 }
 
 type resourceClient struct {
-        cc *grpc.ClientConn
+	cc *grpc.ClientConn
 }
 
 func NewResourceClient(cc *grpc.ClientConn) ResourceClient {
-        return &resourceClient{cc}
+	return &resourceClient{cc}
 }
 
 func (c *resourceClient) Register(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*ResourceReply, error) {
-        out := new(ResourceReply)
-        err := grpc.Invoke(ctx, "/api.Resource/Register", in, out, c.cc, opts...)
-        if err != nil {
-                return nil, err
-        }
-        return out, nil
+	out := new(ResourceReply)
+	err := grpc.Invoke(ctx, "/api.Resource/Register", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *resourceClient) Unregister(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error) {
-        out := new(ResourceReply)
-        err := grpc.Invoke(ctx, "/api.Resource/Unregister", in, out, c.cc, opts...)
-        if err != nil {
-                return nil, err
-        }
-        return out, nil
+	out := new(ResourceReply)
+	err := grpc.Invoke(ctx, "/api.Resource/Unregister", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // Server API for Resource service
 
 type ResourceServer interface {
-        Register(context.Context, *ResourceRequest) (*ResourceReply, error)
-        Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error)
+	Register(context.Context, *ResourceRequest) (*ResourceReply, error)
+	Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error)
 }
 
 func RegisterResourceServer(s *grpc.Server, srv ResourceServer) {
-        s.RegisterService(&_Resource_serviceDesc, srv)
+	s.RegisterService(&_Resource_serviceDesc, srv)
 }
 
 func _Resource_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-        in := new(ResourceRequest)
-        if err := dec(in); err != nil {
-                return nil, err
-        }
-        if interceptor == nil {
-                return srv.(ResourceServer).Register(ctx, in)
-        }
-        info := &grpc.UnaryServerInfo{
-                Server:     srv,
-                FullMethod: "/api.Resource/Register",
-        }
-        handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-                return srv.(ResourceServer).Register(ctx, req.(*ResourceRequest))
-        }
-        return interceptor(ctx, in, info, handler)
+	in := new(ResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ResourceServer).Register(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Resource/Register",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ResourceServer).Register(ctx, req.(*ResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Resource_Unregister_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-        in := new(ResourceIDRequest)
-        if err := dec(in); err != nil {
-                return nil, err
-        }
-        if interceptor == nil {
-                return srv.(ResourceServer).Unregister(ctx, in)
-        }
-        info := &grpc.UnaryServerInfo{
-                Server:     srv,
-                FullMethod: "/api.Resource/Unregister",
-        }
-        handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-                return srv.(ResourceServer).Unregister(ctx, req.(*ResourceIDRequest))
-        }
-        return interceptor(ctx, in, info, handler)
+	in := new(ResourceIDRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ResourceServer).Unregister(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Resource/Unregister",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ResourceServer).Unregister(ctx, req.(*ResourceIDRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Resource_serviceDesc = grpc.ServiceDesc{
-        ServiceName: "api.Resource",
-        HandlerType: (*ResourceServer)(nil),
-        Methods: []grpc.MethodDesc{
-                {
-                        MethodName: "Register",
-                        Handler:    _Resource_Register_Handler,
-                },
-                {
-                        MethodName: "Unregister",
-                        Handler:    _Resource_Unregister_Handler,
-                },
-        },
-        Streams:  []grpc.StreamDesc{},
-        Metadata: fileDescriptor0,
+	ServiceName: "api.Resource",
+	HandlerType: (*ResourceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Register",
+			Handler:    _Resource_Register_Handler,
+		},
+		{
+			MethodName: "Unregister",
+			Handler:    _Resource_Unregister_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "v1.proto",
 }
 
 func init() { proto.RegisterFile("v1.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-        // 319 bytes of a gzipped FileDescriptorProto
-        0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x52, 0xc1, 0x4a, 0xc3, 0x40,
-        0x10, 0x6d, 0x13, 0x95, 0x74, 0x24, 0xc6, 0x2e, 0x45, 0x4a, 0x10, 0x2a, 0x7b, 0x51, 0x10, 0x82,
-        0x56, 0xf0, 0xe0, 0xb1, 0xf4, 0x60, 0x10, 0x3c, 0xc4, 0x7a, 0x96, 0xb4, 0x1d, 0x6a, 0xa8, 0x4d,
-        0xd6, 0xec, 0x46, 0xc8, 0xc5, 0x6f, 0x77, 0xb3, 0xee, 0x76, 0x6d, 0x10, 0xf1, 0x96, 0x79, 0x33,
-        0xf3, 0xde, 0xdb, 0x37, 0x01, 0xef, 0xe3, 0x3a, 0x62, 0x65, 0x21, 0x0a, 0xe2, 0xa6, 0x2c, 0xa3,
-        0x73, 0x80, 0xa4, 0xca, 0x13, 0x7c, 0xaf, 0x90, 0x0b, 0x72, 0x0a, 0xbd, 0x6c, 0x93, 0xae, 0xf0,
-        0x31, 0xdd, 0xe0, 0xb0, 0x7b, 0xd6, 0xbd, 0xe8, 0x25, 0x16, 0x20, 0x21, 0x78, 0xaf, 0x05, 0x17,
-        0xaa, 0xe9, 0xa8, 0xe6, 0xb6, 0x6e, 0x7a, 0x22, 0xe5, 0xeb, 0x59, 0xcd, 0x70, 0xe8, 0x7e, 0xf7,
-        0x4c, 0x4d, 0x2f, 0xc1, 0x53, 0x1a, 0xec, 0xad, 0x26, 0x23, 0x38, 0xcc, 0x72, 0x2e, 0xd2, 0x7c,
-        0x81, 0x2f, 0xd9, 0x52, 0x6b, 0x80, 0x81, 0xe2, 0x25, 0x8d, 0x21, 0x78, 0x12, 0x05, 0x9b, 0xc9,
-        0x65, 0xe3, 0xea, 0xa7, 0x6e, 0xf7, 0x0f, 0x5d, 0xa7, 0xa5, 0x7b, 0x05, 0xbe, 0xa5, 0xfa, 0x97,
-        0x78, 0x1f, 0x82, 0x04, 0x79, 0x51, 0x95, 0x0b, 0xd4, 0xe2, 0x74, 0x04, 0xbe, 0x85, 0x1a, 0x92,
-        0x23, 0x70, 0xe2, 0xa9, 0xde, 0x95, 0x5f, 0x74, 0x02, 0x7d, 0x33, 0x10, 0x4f, 0x8d, 0xe5, 0x63,
-        0x3b, 0x74, 0xdf, 0x69, 0xc6, 0xc8, 0x00, 0xf6, 0x6c, 0x70, 0x12, 0x53, 0xd5, 0x64, 0x1f, 0xdc,
-        0x07, 0xac, 0xc7, 0x6b, 0xf0, 0x62, 0xed, 0x82, 0x9c, 0x83, 0x2b, 0xd3, 0x22, 0x41, 0x24, 0xcf,
-        0x13, 0xd9, 0xdb, 0x84, 0xbe, 0x05, 0xa4, 0x0d, 0xda, 0x21, 0xb7, 0xe0, 0x99, 0xe7, 0x91, 0x81,
-        0x6a, 0xb6, 0x82, 0x0b, 0x49, 0x0b, 0x55, 0x7b, 0xe3, 0x4f, 0x79, 0x0e, 0x6d, 0xb8, 0xe1, 0x48,
-        0x70, 0x95, 0x71, 0x81, 0xa5, 0xe6, 0x68, 0xbd, 0x5f, 0x73, 0xec, 0x44, 0x20, 0xb5, 0xef, 0x00,
-        0x9e, 0xf3, 0xd2, 0x6c, 0x9e, 0xec, 0xcc, 0x6c, 0x53, 0xf8, 0x7d, 0x77, 0x7e, 0xa0, 0x7e, 0xbf,
-        0x9b, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xd1, 0xbc, 0x56, 0x61, 0x8a, 0x02, 0x00, 0x00,
+	// 457 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x53, 0xcf, 0x6f, 0xd3, 0x30,
+	0x14, 0x6e, 0xd2, 0x31, 0x65, 0xaf, 0x2a, 0xdd, 0xcc, 0x84, 0xaa, 0x00, 0x1a, 0x8a, 0x90, 0x40,
+	0x1c, 0xd2, 0x51, 0x24, 0x0e, 0x1c, 0x4b, 0x0f, 0x44, 0xc0, 0x0e, 0xa1, 0x70, 0xe0, 0x82, 0xdc,
+	0xe6, 0xa9, 0x8d, 0xd6, 0xd8, 0x26, 0x76, 0x2a, 0x7a, 0xe1, 0x3f, 0xe1, 0xbf, 0x84, 0x3b, 0xb2,
+	0x1d, 0x2f, 0x4b, 0x40, 0xa8, 0x47, 0x7f, 0x3f, 0xde, 0xf7, 0xe5, 0xd9, 0x81, 0x60, 0xf7, 0x22,
+	0x16, 0x25, 0x57, 0x9c, 0xf4, 0xa9, 0xc8, 0xc3, 0x41, 0xc1, 0x33, 0xdc, 0x5a, 0x24, 0x5a, 0x02,
+	0xa4, 0x15, 0x4b, 0xf1, 0x5b, 0x85, 0x52, 0x91, 0x87, 0x70, 0x92, 0x17, 0x74, 0x8d, 0x57, 0xb4,
+	0xc0, 0xb1, 0xf7, 0xd8, 0x7b, 0x76, 0x92, 0x36, 0x00, 0x09, 0x21, 0xd8, 0x70, 0xa9, 0x0c, 0xe9,
+	0x1b, 0xf2, 0xe6, 0xac, 0x39, 0x45, 0xe5, 0xf5, 0x62, 0x2f, 0x70, 0xdc, 0xb7, 0x9c, 0x3b, 0x47,
+	0xef, 0x21, 0x30, 0x19, 0x62, 0xbb, 0x27, 0x17, 0x30, 0xc8, 0x99, 0x54, 0x94, 0xad, 0xf0, 0x6b,
+	0x9e, 0xd5, 0x19, 0xe0, 0xa0, 0x24, 0xd3, 0x82, 0x12, 0x25, 0xaf, 0x4a, 0x2b, 0xb0, 0x39, 0xe0,
+	0xa0, 0x24, 0x8b, 0x12, 0x18, 0x7d, 0x54, 0x5c, 0x2c, 0xa8, 0xbc, 0x76, 0xb5, 0x6f, 0x17, 0xf3,
+	0xfe, 0x53, 0xcc, 0xef, 0x14, 0xbb, 0x84, 0x61, 0x33, 0xea, 0x90, 0x76, 0xda, 0xf1, 0xa6, 0x44,
+	0xaa, 0xd0, 0x45, 0x77, 0xea, 0x7a, 0x7f, 0xd5, 0x8d, 0x61, 0xe0, 0x1c, 0x07, 0x25, 0x70, 0x18,
+	0xa5, 0xb5, 0xdb, 0x65, 0x3c, 0x87, 0x23, 0xc6, 0x19, 0x8e, 0x7f, 0xe9, 0xc5, 0x0e, 0xa6, 0xf7,
+	0x62, 0x7b, 0x81, 0x57, 0x9c, 0xe1, 0x02, 0x0b, 0xb1, 0xa5, 0x0a, 0xdf, 0xf6, 0x52, 0xa3, 0x21,
+	0x4f, 0xc0, 0xdf, 0x15, 0xe3, 0xdf, 0x56, 0x79, 0x56, 0x2b, 0x3f, 0x7f, 0xb8, 0xa5, 0xf3, 0x77,
+	0xc5, 0x0c, 0x20, 0x70, 0x48, 0x74, 0x01, 0xc3, 0x26, 0x50, 0x57, 0xbc, 0x0b, 0x7e, 0x32, 0xaf,
+	0x9b, 0xf9, 0xc9, 0x3c, 0x9a, 0xc1, 0x99, 0x13, 0x24, 0x73, 0xd7, 0xe9, 0xb4, 0x11, 0xe9, 0x99,
+	0xc9, 0x9c, 0x9c, 0xc3, 0x51, 0xf3, 0x32, 0x74, 0x1f, 0x7d, 0x9a, 0xdd, 0x81, 0xfe, 0x3b, 0xdc,
+	0x4f, 0x7f, 0x7a, 0x10, 0x24, 0xf5, 0x47, 0x92, 0x4b, 0x38, 0xb6, 0x2b, 0x21, 0x24, 0xa6, 0x22,
+	0x8f, 0x5b, 0x1b, 0x0d, 0x4f, 0x5b, 0x98, 0xd8, 0xee, 0xa3, 0x1e, 0x79, 0x0a, 0xfd, 0xb4, 0x62,
+	0x64, 0x64, 0xa8, 0xe6, 0xbd, 0x86, 0xc3, 0x06, 0xb0, 0xc2, 0x57, 0x10, 0xb8, 0x1b, 0x25, 0xe7,
+	0x86, 0xec, 0xbc, 0x95, 0x90, 0x74, 0x50, 0xe3, 0x9b, 0xfe, 0x80, 0xc0, 0x7d, 0xa3, 0x9e, 0x91,
+	0xe2, 0x3a, 0x97, 0x0a, 0xcb, 0x7a, 0x46, 0xe7, 0x42, 0xea, 0x19, 0xad, 0xad, 0x45, 0x3d, 0xf2,
+	0x1a, 0xe0, 0x13, 0x2b, 0x9d, 0xf3, 0x7e, 0x4b, 0x73, 0xb3, 0xb8, 0x7f, 0x7b, 0x67, 0x8f, 0xbe,
+	0x3c, 0x58, 0xe7, 0x6a, 0x53, 0x2d, 0xe3, 0x15, 0x2f, 0x26, 0xf4, 0xbb, 0xdc, 0x4c, 0xb8, 0x40,
+	0xb6, 0xcb, 0x56, 0x13, 0x2a, 0xf2, 0xe5, 0xb1, 0xf9, 0x59, 0x5f, 0xfe, 0x09, 0x00, 0x00, 0xff,
+	0xff, 0xbd, 0x60, 0x61, 0xd2, 0xca, 0x03, 0x00, 0x00,
 }
