@@ -1,19 +1,19 @@
 package main
 
 import (
+	"flag"
 	"net/url"
 	"strings"
-	"time"
 
+	"github.com/Sirupsen/logrus"
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 
-	"flag"
-
-	"github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/util"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
+	"golang.org/x/net/context"
 )
 
 // Build time constant variables from -ldflags
@@ -106,40 +106,76 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.Errorln("Couldn't send status update", err)
 	}
 
+	err = exec.startInstance(driver, taskInfo)
+	if err != nil {
+		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
+			TaskId: taskInfo.GetTaskId(),
+			State:  mesos.TaskState_TASK_FAILED.Enum(),
+		})
+		if err != nil {
+			log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
+		}
+	}
+}
 
+func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
 	b := taskInfo.GetData()
 	s := string(b[:])
 
 	values, err := url.ParseQuery(s)
-
 	if err != nil {
-		panic(err)
+		log.WithError(err).Error("Failed to parse TaskInfo.Data: ", s)
+		return err
+	}
+	instanceID := values.Get("instance_id")
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
+
+	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
 	}
 
-	imageName := values.Get("imageName")
-	hostName := values.Get("hostName")
-	taskType := values.Get("taskType")
+	// Push back to the initial state in case of error.
+	finState := model.InstanceState_INSTANCE_REGISTERED
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
 
-	log.Infoln("ImageName: "+imageName+", HostName: "+hostName, "TaskType: "+taskType)
-
-	newTask(hostName, taskType, exec)
-
-	/*hv, err := exec.hypervisorProvider.CreateDriver()
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_INSTANCE_STARTING)
 	if err != nil {
-		finState = mesos.TaskState_TASK_FAILED
-		return
+		log.WithError(err).WithField("state", model.InstanceState_INSTANCE_STARTING).Error("Failed Instances.UpdateState")
+		return err
 	}
 
+	hv, err := exec.hypervisorProvider.CreateDriver()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Creating instance")
 	err = hv.CreateInstance()
 	if err != nil {
-		finState = mesos.TaskState_TASK_FAILED
-		return
+		log.Error("Failed CreateInstance")
+		return err
 	}
+	log.Infof("Starting instance")
 	err = hv.StartInstance()
 	if err != nil {
-		finState = mesos.TaskState_TASK_FAILED
-		return
-	}*/
+		log.Error("Failed StartInstance")
+		return err
+	}
+	log.Infof("Instance launched successfully")
+	// Here can bring the instance state to RUNNING finally.
+	finState = model.InstanceState_INSTANCE_RUNNING
+	return nil
 }
 
 func DestroyTask(driver exec.ExecutorDriver, taskId *mesos.TaskID) {
@@ -189,7 +225,10 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 	log.Errorln("Got error message:", err)
 }
 
-var hypervisorName = flag.String("hypervisor", "null", "")
+var (
+	hypervisorName = flag.String("hypervisor", "null", "")
+	zkAddr         = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
+)
 
 func init() {
 	flag.Parse()
