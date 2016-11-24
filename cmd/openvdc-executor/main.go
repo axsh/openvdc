@@ -7,7 +7,6 @@ import (
 
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
-	"github.com/samuel/go-zookeeper/zk"
 
 	"flag"
 
@@ -51,50 +50,6 @@ func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mes
 
 func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 	log.Infoln("Executor disconnected.")
-}
-
-func zkConnect(ip string) *zk.Conn {
-	c, _, err := zk.Connect([]string{ip}, time.Second)
-
-	if err != nil {
-		log.Errorln("failed connecting to Zookeeper: ", err)
-	}
-
-	return c
-}
-
-func zkGetData(c *zk.Conn, dir string) []byte {
-	data, stat, err := c.Get(dir)
-
-	if err != nil {
-		log.Errorln("failed getting data from Zookeeper: ", err)
-	}
-
-	log.Infoln(stat)
-
-	return data[:]
-}
-
-func zkSendData(c *zk.Conn, dir string, data string) {
-	flags := int32(0)
-	acl := zk.WorldACL(zk.PermAll)
-
-	path, err := c.Create(dir, []byte(data), flags, acl)
-
-	if err != nil {
-		log.Errorln("failed sending data to Zookeeper: ", err)
-	}
-
-	log.Infoln("Sent: ", data, "to ", dir)
-	log.Infoln(path)
-}
-
-func testZkConnection(ip string, dir string, msg string) {
-
-	c := zkConnect(ip)
-	zkSendData(c, dir, msg)
-	data := []byte(zkGetData(c, dir))
-	log.Infoln(data)
 }
 
 func newTask(theHostName string, taskType string, exec *VDCExecutor) {
