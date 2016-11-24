@@ -1,0 +1,55 @@
+{
+  "id": "https://raw.githubusercontent.com/axsh/openvdc/master/schema/v1.json#",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "OpenVDC Resource Template Description.",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hypervisor": {
+            "type": "string",
+            "enum": [
+              "null",
+              "lxc"
+            ]
+          },
+          "download_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "checksum_type": {
+            "type": "string"
+          },
+          "checksum": {
+            "type": "string"
+          },
+          "minimum_vcpu": {
+            "type": "integer",
+            "default": 1
+          },
+          "minimum_memory_gb": {
+            "type": "integer",
+            "default": 1
+          }
+        },
+        "required": [
+          "hypervisor",
+          "download_url"
+        ]
+      }
+    }
+  },
+  "required": [
+    "title",
+    "images"
+  ]
+}

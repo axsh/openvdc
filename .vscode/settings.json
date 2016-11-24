@@ -1,8 +1,6 @@
 {
-  "protoc": {
-    "path": "protoc",
-    "options": [
-      "-I proto/ --go_out=plugins=grpc:proto proto/v1.proto"
-    ]
+  "search.exclude": {
+    "vendor/**": true,
+    "vendor/vendor.json": false
   }
 }
