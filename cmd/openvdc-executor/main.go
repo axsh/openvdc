@@ -29,13 +29,11 @@ var theTaskInfo mesos.TaskInfo
 var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
-	tasksLaunched      int
 	hypervisorProvider hypervisor.HypervisorProvider
 }
 
 func newVDCExecutor(provider hypervisor.HypervisorProvider) *VDCExecutor {
 	return &VDCExecutor{
-		tasksLaunched:      0,
 		hypervisorProvider: provider,
 	}
 }
@@ -108,8 +106,6 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.Errorln("Couldn't send status update", err)
 	}
 
-	exec.tasksLaunched++
-	log.Infoln("Tasks launched ", exec.tasksLaunched)
 
 	b := taskInfo.GetData()
 	s := string(b[:])
