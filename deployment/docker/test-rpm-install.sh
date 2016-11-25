@@ -22,7 +22,7 @@ set -a
 set +a
 
 if [[ -n "$JENKINS_HOME" ]]; then
-  # openvnet-axsh/branch1/el7
+  # openvdc-axsh/branch1/el7
   img_tag=$(echo "rpm-install.${JOB_NAME}/${BUILD_OS}" | tr '/' '.')
 else
   img_tag="rpm-install.openvdc.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
@@ -33,4 +33,19 @@ CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_
 docker exec -t $CID /bin/sh -c "echo '${RELEASE_SUFFIX}' > /etc/yum/vars/ovn_release_suffix"
 docker exec $CID yum install -y openvdc
 
-## 
+## Setup 
+docker exec $CID systemctl enable zookeeper
+docker exec $CID systemctl enable mesos-master
+docker exec $CID systemctl enable mesos-slave
+docker exec $CID systemctl enable openvdc-scheduler
+
+docker exec $CID systemctl start zookeeper
+docker exec $CID systemctl start mesos-master
+docker exec $CID systemctl start mesos-slave
+docker exec $CID systemctl start openvdc-scheduler
+
+docker exec $CID systemctl status zookeeper
+docker exec $CID systemctl status mesos-master
+docker exec $CID systemctl status mesos-slave
+docker exec $CID systemctl status openvdc-scheduler
+
