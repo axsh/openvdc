@@ -1,11 +1,5 @@
 [openvnet]
-name=OpenVNet Repo - devrepo
-baseurl=http://devrepo/repos/packages/rhel/$releasever/vnet/$ovn_release_suffix/
-enabled=1
-gpgcheck=0
-
-[openvnet-third-party]
-name=OpenVNet Third Party Repo - devrepo
-baseurl=http://devrepo/repos/packages/rhel/$releasever/third_party/current/
+name=OpenVDc Repo - devrepo
+baseurl=http://ci.openvdc.org/repos/x86_64/
 enabled=1
 gpgcheck=0
