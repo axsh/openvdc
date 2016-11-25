@@ -111,7 +111,7 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
 fi
 # Pull compiled yum repository
 #docker cp "${CID}:${REPO_BASE_DIR}" - | $SSH_REMOTE tar xf - -C "$(dirname ${REPO_BASE_DIR})"
-docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64/*rpm" ${RPM_LOCAL}
+docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64/openvdc-0.9-1.el7.centos.x86_64.rpm" ${RPM_LOCAL}
 echo "Wrote rpm to ${RPM_LOCAL}..."
 
 
