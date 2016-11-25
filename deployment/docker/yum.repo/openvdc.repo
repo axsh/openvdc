@@ -1,6 +1,0 @@
-[openvdc]
-name=OpenVDc Repo - devrepo
-baseurl=http://203.epo/repos/packages/rhel/$releasever/$ovn_release_suffix/
-enabled=1
-gpgcheck=0
-
