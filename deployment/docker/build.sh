@@ -61,8 +61,9 @@ else
 fi
 
 ### Prepare local (outside the docker container) rpm location
-mkdir -p ./rpm/
-RPM_LOCAL=${PWD}/rpm/
+#####mkdir -p ./rpm/
+#####RPM_LOCAL=${PWD}/rpm/
+RPM_ABSOLUTE=/var/www/html/openvdc-repos
 
 ##
 
@@ -115,9 +116,11 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
 fi
 # Pull compiled yum repository
 #docker cp "${CID}:${REPO_BASE_DIR}" - | $SSH_REMOTE tar xf - -C "$(dirname ${REPO_BASE_DIR})"
-docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" ${RPM_LOCAL}
+SSH_REMOTE="ssh yumrepo@192.168.56.111"    
+docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" - | $SSH_REMOTE tar xf - -C "$(dirname ${RPM_ABSOLUTE})"
+#docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" ${RPM_LOCAL}
 
-echo "Wrote rpm to ${RPM_LOCAL}..."
+#echo "Wrote rpm to ${RPM_LOCAL}..."
 
 
 #Build rpm 
