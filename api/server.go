@@ -17,24 +17,20 @@ import (
 	util "github.com/mesos/mesos-go/mesosutil"
 )
 
-type APIOffer chan *RunRequest
-
 var theDriver sched.SchedulerDriver
 
 type APIServer struct {
 	server         *grpc.Server
 	modelStoreAddr string
-	offerChan      APIOffer
 }
 
-func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *APIServer {
+func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
 		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),
 	}
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
-		offerChan:      c,
 		modelStoreAddr: modelAddr,
 	}
 
@@ -98,7 +94,7 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	if in.GetInstanceId() == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
 	}
-	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_INSTANCE_QUEUED); err != nil {
+	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.Instance_QUEUED); err != nil {
 		log.WithError(err).Error()
 		return nil, err
 	}
