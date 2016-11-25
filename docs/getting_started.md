@@ -4,6 +4,7 @@
 ## Install
 
 ```
+yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
 yum install -y http://openvdc.org/openvdc-release.rpm
 yum install -y openvdc
 ```
