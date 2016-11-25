@@ -83,29 +83,15 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 		log.WithError(err).Error("Failed to connecto to datasource: ", sched.zkAddr)
 	} else {
 		defer model.Close(ctx)
-		err = sched.processOffers2(driver, offers, ctx)
+		err = sched.processOffers(driver, offers, ctx)
 		if err != nil {
 			log.WithError(err).Error("Failed to process offers")
 		}
 	}
-	/*
-		log.Debugln("Skip offer since no allocation requests.")
-		for _, offer := range offers {
-			stat, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
-			if err != nil {
-				log.Errorln(err)
-			}
-			log = log.WithField("mesos.Status", stat.String())
-			// Assert returned status.
-			if stat != mesos.Status_DRIVER_RUNNING {
-				log.Fatalln("Invalid status")
-			}
-		}
-	*/
 }
 
-func (sched *VDCScheduler) processOffers2(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
-	queued, err := model.Instances(ctx).FilterByState(model.InstanceState_INSTANCE_QUEUED)
+func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
+	queued, err := model.Instances(ctx).FilterByState(model.Instance_QUEUED)
 	if err != nil {
 		return err
 	}
@@ -169,72 +155,6 @@ func (sched *VDCScheduler) processOffers2(driver sched.SchedulerDriver, offers [
 	}
 	return nil
 }
-
-/*
-func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, clientCommands string, hostName string) {
-	if (sched.tasksLaunched - sched.tasksErrored) >= sched.totalTasks {
-		log.Println("All tasks are already launched: decline offer")
-		for _, offer := range offers {
-			driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(120)})
-		}
-		return
-	}
-
-	for _, offer := range offers {
-		cpuResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
-			return res.GetName() == "cpus"
-		})
-		cpus := 0.0
-		for _, res := range cpuResources {
-			cpus += res.GetScalar().GetValue()
-		}
-
-		memResources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
-			return res.GetName() == "mem"
-		})
-		mems := 0.0
-		for _, res := range memResources {
-			mems += res.GetScalar().GetValue()
-		}
-
-		log.Println("Received Offer <", offer.Id.GetValue(), "> with cpus=", cpus, " mem=", mems)
-
-		remainingCpus := cpus
-		remainingMems := mems
-
-		if len(offer.ExecutorIds) == 0 {
-			remainingCpus -= CPUS_PER_EXECUTOR
-			remainingMems -= MEM_PER_EXECUTOR
-		}
-
-		var tasks []*mesos.TaskInfo
-
-		sched.tasksLaunched++
-		taskId := util.NewTaskID(hostName)
-
-		task := &mesos.TaskInfo{
-			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
-			TaskId:   taskId,
-			SlaveId:  offer.SlaveId,
-			Data:     []byte(clientCommands),
-			Executor: sched.executor,
-			Resources: []*mesos.Resource{
-				util.NewScalarResource("cpus", CPUS_PER_TASK),
-				util.NewScalarResource("mem", MEM_PER_TASK),
-			},
-		}
-		log.Printf("Prepared task: %s with offer %s for launch\n", task.GetName(), offer.Id.GetValue())
-
-		tasks = append(tasks, task)
-		remainingCpus -= CPUS_PER_TASK
-		remainingMems -= MEM_PER_TASK
-
-		log.Println("Launching ", len(tasks), "tasks for offer", offer.Id.GetValue())
-		// TODO: Replace with AcceptOffers(). https://issues.apache.org/jira/browse/MESOS-2955
-		driver.LaunchTasks([]*mesos.OfferID{offer.Id}, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
-	}
-}
-*/
 
 func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *mesos.TaskStatus) {
 	log.Println("Framework Resource Offers from master", status)
