@@ -60,6 +60,13 @@ else
   build_cache_base="${BUILD_CACHE_DIR}"
 fi
 
+### Prepare local (outside the docker container) rpm location
+mkdir -p ./rpm/
+RPM_LOCAL=${PWD}/rpm/
+
+##
+
+
 /usr/bin/env
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
@@ -103,7 +110,9 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
     done
 fi
 # Pull compiled yum repository
-### <for later use. Don't run now.>   docker cp "${CID}:${REPO_BASE_DIR}" - | $SSH_REMOTE tar xf - -C "$(dirname ${REPO_BASE_DIR})"
+#docker cp "${CID}:${REPO_BASE_DIR}" - | $SSH_REMOTE tar xf - -C "$(dirname ${REPO_BASE_DIR})"
+docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64/*rpm" ${RPM_LOCAL}
+echo "Wrote rpm to ${RPM_LOCAL}..."
 
 
 #Build rpm 
