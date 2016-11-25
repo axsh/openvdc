@@ -25,10 +25,10 @@ if [[ -n "$JENKINS_HOME" ]]; then
   # openvnet-axsh/branch1/el7
   img_tag=$(echo "rpm-install.${JOB_NAME}/${BUILD_OS}" | tr '/' '.')
 else
-  img_tag="rpm-install.openvnet.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
+  img_tag="rpm-install.openvdc.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
 fi
 
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}-rpm-test.Dockerfile" .
-CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.50}" -d ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} "${img_tag}")
+CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} "${img_tag}")
 docker exec -t $CID /bin/sh -c "echo '${RELEASE_SUFFIX}' > /etc/yum/vars/ovn_release_suffix"
-docker exec $CID yum install -y openvnet
+docker exec $CID yum install -y openvdc

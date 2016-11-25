@@ -111,13 +111,8 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
     done
 fi
 # Pull compiled yum repository
-#SSH_REMOTE="ssh yumrepo@192.168.56.111"    
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
 docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
-
-#docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" ${RPM_LOCAL}
-
-#echo "Wrote rpm to ${RPM_LOCAL}..."
 
 
 #Build rpm 
