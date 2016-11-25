@@ -163,7 +163,7 @@ func (sched *VDCScheduler) processOffers2(driver sched.SchedulerDriver, offers [
 		tasks = append(tasks, task)
 		acceptIDs = append(acceptIDs, found.Id)
 	}
-	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(0.01)})
+	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	if err != nil {
 		log.WithError(err).Error("Faild to response LaunchTasks.")
 	}
