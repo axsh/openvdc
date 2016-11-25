@@ -102,16 +102,25 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	return &StartReply{InstanceId: in.GetInstanceId()}, nil
 }
 
-func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error) {
-	log.Printf("New Request: %v\n", in.String())
-	inst, err := model.Instances(ctx).Create(&model.Instance{})
+func (s *InstanceAPI) Run(ctx context.Context, in *ResourceRequest) (*RunReply, error) {
+	resourceAPI := &ResourceAPI{api: s.api}
+	res0, err := resourceAPI.Register(ctx, in)
 	if err != nil {
-		log.WithError(err).Error()
+		log.WithError(err).Error("Failed InstanceAPI.Run at ResourceAPI.Register")
 		return nil, err
 	}
-	in.HostName = inst.Id
-	s.api.offerChan <- in
-	return &RunReply{InstanceId: inst.Id}, nil
+	resourceID := res0.GetID()
+	res1, err := s.Create(ctx, &CreateRequest{ResourceId: resourceID})
+	if err != nil {
+		log.WithError(err).Error("Failed InstanceAPI.Run at Create")
+		return nil, err
+	}
+	res2, err := s.Start(ctx, &StartRequest{InstanceId: res1.GetInstanceId()})
+	if err != nil {
+		log.WithError(err).Error("Failed InstanceAPI.Run at Start")
+		return nil, err
+	}
+	return &RunReply{InstanceId: res2.GetInstanceId(), ResourceId: resourceID}, nil
 }
 
 type ResourceAPI struct {

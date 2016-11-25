@@ -19,6 +19,33 @@ func init() {
 	registerCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
 
+func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
+	// TODO: handle direct content URI parameter.
+
+	reg, err := setupLocalRegistry()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	rt, err := reg.Find(templateSlug)
+	if err != nil {
+		if err == registry.ErrUnknownTemplateName {
+			log.Fatalf("Template '%s' not found.", templateSlug)
+		} else {
+			log.Fatalln(err)
+		}
+	}
+	log.Printf("Found template: %s", templateSlug)
+	return &api.ResourceRequest{
+		Template: &api.ResourceRequest_Vm{
+			Vm: &model.VMTemplate{
+				Vcpu:             1,
+				MemoryGb:         1,
+				ImageTemplateUri: rt.LocationURI(),
+			},
+		},
+	}
+}
+
 var registerCmd = &cobra.Command{
 	Use:   "register [ResourceTemplate.json]",
 	Short: "Register new resource.",
@@ -33,30 +60,7 @@ var registerCmd = &cobra.Command{
 		}
 
 		templateSlug := args[0]
-		// TODO: handle direct content URI parameter.
-
-		reg, err := setupLocalRegistry()
-		if err != nil {
-			log.Fatalln(err)
-		}
-		rt, err := reg.Find(templateSlug)
-		if err != nil {
-			if err == registry.ErrUnknownTemplateName {
-				log.Fatalf("Template '%s' not found.", templateSlug)
-			} else {
-				log.Fatalln(err)
-			}
-		}
-		log.Printf("Found template: %s", templateSlug)
-		req := &api.ResourceRequest{
-			Template: &api.ResourceRequest_Vm{
-				Vm: &model.VMTemplate{
-					Vcpu:             1,
-					MemoryGb:         1,
-					ImageTemplateUri: rt.LocationURI(),
-				},
-			},
-		}
+		req := prepareRegisterAPICall(templateSlug)
 		return remoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
 			res, err := c.Register(context.Background(), req)
