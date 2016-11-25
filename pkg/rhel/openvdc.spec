@@ -30,10 +30,11 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 %install
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+mkdir -p "$RPM_BUILD_ROOT"/usr/lib/systemd/system
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
-cp pkg/rhel/openvdc-scheduler.service /usr/lib/system
+cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"/usr/lib/systemd/system
 
 %files
 %dir /opt/axsh/openvdc
