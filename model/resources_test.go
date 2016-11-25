@@ -19,7 +19,7 @@ func TestCreateResource(t *testing.T) {
 		got, err := Resources(ctx).Create(n)
 		assert.NoError(err)
 		assert.NotNil(got)
-		assert.Equal(ResourceState_RESOURCE_REGISTERED, got.State)
+		assert.Equal(Resource_REGISTERED, got.State)
 	})
 }
 
@@ -55,6 +55,6 @@ func TestDestroyResource(t *testing.T) {
 		assert.NoError(err)
 		got2, err := Resources(ctx).FindByID(got.Id)
 		assert.NoError(err)
-		assert.Equal(ResourceState_RESOURCE_UNREGISTERED, got2.State)
+		assert.Equal(Resource_UNREGISTERED, got2.State)
 	})
 }

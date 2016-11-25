@@ -4,22 +4,21 @@ package model;
 
 option go_package = "github.com/axsh/openvdc/model";
 
-enum InstanceState {
-  INSTANCE_REGISTERED = 0;
-  INSTANCE_QUEUED = 1;
-  INSTANCE_STARTING = 2;
-  INSTANCE_RUNNING = 3;
-  INSTANCE_STOPPING = 4;
-  INSTANCE_STOPPED = 5;
-  INSTANCE_SHUTTINGDOWN = 6;
-  INSTANCE_TERMINATED = 7;
-}
-
 message Instance {
   string id = 1;
   string executor_id = 2;
   string resource_id = 3;
-  InstanceState state = 4;
+  enum State {
+    REGISTERED = 0;
+    QUEUED = 1;
+    STARTING = 2;
+    RUNNING = 3;
+    STOPPING = 4;
+    STOPPED = 5;
+    SHUTTINGDOWN = 6;
+    TERMINATED = 7;
+  }
+  State state = 4;
 }
 
 enum ResourceType {
@@ -27,15 +26,14 @@ enum ResourceType {
   VM = 1;
 }
 
-enum ResourceState {
-  RESOURCE_REGISTERED = 0;
-  RESOURCE_UNREGISTERED = 1;
-}
-
 message Resource {
   string id = 1;
   ResourceType type = 2;
-  ResourceState state = 3;
+  enum State {
+    REGISTERED = 0;
+    UNREGISTERED = 1;
+  }
+  State state = 3;
   oneof Template {
     NoneTemplate none = 500;
     VMTemplate vm = 501;

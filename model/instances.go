@@ -16,8 +16,8 @@ var ErrInstanceMissingResource = errors.New("Resource is not associated")
 type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
 	FindByID(string) (*Instance, error)
-	UpdateState(id string, next InstanceState) error
-	FilterByState(state InstanceState) ([]*Instance, error)
+	UpdateState(id string, next Instance_State) error
+	FilterByState(state Instance_State) ([]*Instance, error)
 }
 
 const instancesBaseKey = "instances"
@@ -46,7 +46,7 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	if n.GetResourceId() == "" {
 		return nil, ErrInstanceMissingResource
 	}
-	n.State = InstanceState_INSTANCE_REGISTERED
+	n.State = Instance_REGISTERED
 	data, err := proto.Marshal(n)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (i *instances) FindByID(id string) (*Instance, error) {
 	return n, nil
 }
 
-func (i *instances) UpdateState(id string, next InstanceState) error {
+func (i *instances) UpdateState(id string, next Instance_State) error {
 	n, err := i.FindByID(id)
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (i *instances) UpdateState(id string, next InstanceState) error {
 	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), buf)
 }
 
-func (i *instances) FilterByState(state InstanceState) ([]*Instance, error) {
+func (i *instances) FilterByState(state Instance_State) ([]*Instance, error) {
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
@@ -128,25 +128,25 @@ func (i *Instance) Resource(ctx context.Context) (*Resource, error) {
 	return Resources(ctx).FindByID(i.GetResourceId())
 }
 
-func (i *Instance) validateStateTransition(next InstanceState) error {
+func (i *Instance) validateStateTransition(next Instance_State) error {
 	result := func() bool {
 		switch i.GetState() {
-		case InstanceState_INSTANCE_REGISTERED:
-			return (next == InstanceState_INSTANCE_QUEUED)
-		case InstanceState_INSTANCE_QUEUED:
-			return (next == InstanceState_INSTANCE_STARTING)
-		case InstanceState_INSTANCE_STARTING:
-			return (next == InstanceState_INSTANCE_RUNNING)
-		case InstanceState_INSTANCE_RUNNING:
-			return (next == InstanceState_INSTANCE_STOPPING ||
-				next == InstanceState_INSTANCE_SHUTTINGDOWN)
-		case InstanceState_INSTANCE_STOPPING:
-			return (next == InstanceState_INSTANCE_STOPPED)
-		case InstanceState_INSTANCE_STOPPED:
-			return (next == InstanceState_INSTANCE_STARTING ||
-				next == InstanceState_INSTANCE_SHUTTINGDOWN)
-		case InstanceState_INSTANCE_SHUTTINGDOWN:
-			return (next == InstanceState_INSTANCE_TERMINATED)
+		case Instance_REGISTERED:
+			return (next == Instance_QUEUED)
+		case Instance_QUEUED:
+			return (next == Instance_STARTING)
+		case Instance_STARTING:
+			return (next == Instance_RUNNING)
+		case Instance_RUNNING:
+			return (next == Instance_STOPPING ||
+				next == Instance_SHUTTINGDOWN)
+		case Instance_STOPPING:
+			return (next == Instance_STOPPED)
+		case Instance_STOPPED:
+			return (next == Instance_STARTING ||
+				next == Instance_SHUTTINGDOWN)
+		case Instance_SHUTTINGDOWN:
+			return (next == Instance_TERMINATED)
 		}
 		return false
 	}()
