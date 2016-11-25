@@ -1,4 +1,4 @@
-[openvnet]
+[openvdc]
 name=OpenVDc Repo - devrepo
 baseurl=http://ci.openvdc.org/repos/x86_64/
 enabled=1
