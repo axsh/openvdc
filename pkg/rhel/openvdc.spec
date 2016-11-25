@@ -16,6 +16,8 @@ BuildArch: x86_64
 
 BuildRequires: rpmdevtools
 
+Requires: lxc mesosphere-zookeeper mesos
+
 %description
 This is an empty message to fulfill the requirement that this file has a "%description" header.
 
