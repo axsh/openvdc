@@ -6,6 +6,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"strings"
+
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
 )
@@ -20,6 +22,24 @@ const resourcesBaseKey = "resources"
 
 func init() {
 	schemaKeys = append(schemaKeys, resourcesBaseKey)
+}
+
+// Marker interface for all resource template structs.
+type ResourceTemplate interface {
+	isResourceTemplateKind()
+}
+
+func (*NoneTemplate) isResourceTemplateKind() {}
+func (*LxcTemplate) isResourceTemplateKind()  {}
+
+func NewTemplateByName(name string) ResourceTemplate {
+	switch ResourceType_value["RESOURCE_"+strings.ToUpper(name)] {
+	case int32(ResourceType_RESOURCE_NONE):
+		return &NoneTemplate{}
+	case int32(ResourceType_RESOURCE_LXC):
+		return &LxcTemplate{}
+	}
+	return nil
 }
 
 type resources struct {
