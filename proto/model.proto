@@ -22,8 +22,8 @@ message Instance {
 }
 
 enum ResourceType {
-  NONE = 0;
-  VM = 1;
+  RESOURCE_NONE = 0;
+  RESOURCE_LXC = 1;
 }
 
 message Resource {
@@ -36,14 +36,14 @@ message Resource {
   State state = 3;
   oneof Template {
     NoneTemplate none = 500;
-    VMTemplate vm = 501;
+    LxcTemplate lxc = 501;
   }
+  string template_uri = 4;
 }
 
 message NoneTemplate {}
 
-message VMTemplate {
+message LxcTemplate {
   int32 vcpu = 1;
   int32 memory_gb = 2;
-  string image_template_uri = 3;
 }

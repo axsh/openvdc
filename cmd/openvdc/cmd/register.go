@@ -36,11 +36,11 @@ func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
 	}
 	log.Printf("Found template: %s", templateSlug)
 	return &api.ResourceRequest{
-		Template: &api.ResourceRequest_Vm{
-			Vm: &model.VMTemplate{
-				Vcpu:             1,
-				MemoryGb:         1,
-				ImageTemplateUri: rt.LocationURI(),
+		TemplateUri: rt.LocationURI(),
+		Template: &api.ResourceRequest_Lxc{
+			Lxc: &model.LxcTemplate{
+				Vcpu:     1,
+				MemoryGb: 1,
 			},
 		},
 	}

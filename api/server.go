@@ -130,14 +130,16 @@ type ResourceAPI struct {
 var ErrTemplateUndefined = errors.New("Template is undefined")
 
 func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*ResourceReply, error) {
-	r := &model.Resource{}
+	r := &model.Resource{
+		TemplateUri: in.GetTemplateUri(),
+	}
 	switch x := in.Template.(type) {
 	case *ResourceRequest_None:
-		r.Type = model.ResourceType_NONE
+		r.Type = model.ResourceType_RESOURCE_NONE
 		r.Template = &model.Resource_None{None: x.None}
-	case *ResourceRequest_Vm:
-		r.Type = model.ResourceType_VM
-		r.Template = &model.Resource_Vm{Vm: x.Vm}
+	case *ResourceRequest_Lxc:
+		r.Type = model.ResourceType_RESOURCE_LXC
+		r.Template = &model.Resource_Lxc{Lxc: x.Lxc}
 	case nil:
 		log.WithError(ErrTemplateUndefined).Error("template parameter is nil")
 		return nil, ErrTemplateUndefined

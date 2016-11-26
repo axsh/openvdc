@@ -46,9 +46,10 @@ service Resource {
 }
 
 message ResourceRequest {
+  string template_uri = 1;
   oneof Template {
     model.NoneTemplate none = 500;
-    model.VMTemplate vm = 501;
+    model.LxcTemplate lxc = 501;
   }
 }
 message ResourceReply {
