@@ -2,7 +2,6 @@ package registry
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,9 +16,12 @@ import (
 )
 
 const (
-	githubURI             = "https://github.com"
-	githubRawURI          = "https://raw.githubusercontent.com"
-	githubRepoSlug        = "axsh/openvdc-images"
+	githubURI      = "https://github.com"
+	githubRawURI   = "https://raw.githubusercontent.com"
+	githubRepoSlug = "axsh/openvdc"
+	defaultPath    = "templates"
+	// Until 76f26d79b1be670 gets merged to master.
+	defaultRef            = "generalize-template"
 	mimeTypeGitUploadPack = "application/x-git-upload-pack-advertisement"
 )
 
@@ -27,14 +29,16 @@ type GithubRegistry struct {
 	confDir                 string
 	Branch                  string
 	RepoSlug                string
+	TreePath                string
 	ForceCheckToRemoteAfter time.Duration
 }
 
 func NewGithubRegistry(confDir string) *GithubRegistry {
 	return &GithubRegistry{
 		confDir:                 confDir,
-		Branch:                  "master",
+		Branch:                  defaultRef,
 		RepoSlug:                githubRepoSlug,
+		TreePath:                defaultPath,
 		ForceCheckToRemoteAfter: 1 * time.Hour,
 	}
 }
@@ -209,7 +213,7 @@ func (r *GithubRegistry) Fetch() error {
 	if len(tmpLs) != 1 {
 		return fmt.Errorf("%s returned unexpected archive structure", zipLinkURI)
 	}
-	return os.Rename(filepath.Join(tmpDest, tmpLs[0].Name()), regDir)
+	return os.Rename(filepath.Join(tmpDest, tmpLs[0].Name(), filepath.FromSlash(r.TreePath)), regDir)
 }
 
 // http://blog.ralch.com/tutorial/golang-working-with-zip/
