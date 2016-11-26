@@ -1,7 +1,7 @@
 {
   "id": "https://raw.githubusercontent.com/axsh/openvdc/master/schema/v1.json#",
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "OpenVDC Resource Template Description.",
+  "description": "OpenVDC Resource Template Schema",
   "type": "object",
   "properties": {
     "title": {
@@ -10,46 +10,51 @@
     "description": {
       "type": "string"
     },
-    "images": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "hypervisor": {
-            "type": "string",
-            "enum": [
-              "null",
-              "lxc"
-            ]
-          },
-          "download_url": {
-            "type": "string",
-            "format": "uri"
-          },
-          "checksum_type": {
-            "type": "string"
-          },
-          "checksum": {
-            "type": "string"
-          },
-          "minimum_vcpu": {
-            "type": "integer",
-            "default": 1
-          },
-          "minimum_memory_gb": {
-            "type": "integer",
-            "default": 1
-          }
+    "template": {
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/templates/none"
         },
-        "required": [
-          "hypervisor",
-          "download_url"
-        ]
+        {
+          "$ref": "#/templates/lxc"
+        }
+      ]
+    },
+    "templates": {
+      "none": {},
+      "lxc": {
+        "minimum_vcpu": {
+          "type": "integer",
+          "default": 1
+        },
+        "minimum_memory_gb": {
+          "type": "integer",
+          "default": 1
+        },
+        "lxc_image": {
+          "type": "object",
+          "properties": {
+            "download_url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "checksum_type": {
+              "type": "string"
+            },
+            "checksum": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "download_url"
+          ]
+        }
       }
     }
   },
   "required": [
     "title",
-    "images"
+    "template"
   ]
 }
