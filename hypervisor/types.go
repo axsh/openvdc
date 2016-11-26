@@ -9,7 +9,6 @@ import (
 type HypervisorProvider interface {
 	Name() string
 	CreateDriver() (HypervisorDriver, error)
-	SetName(string)
 }
 
 type HypervisorDriver interface {
@@ -26,7 +25,7 @@ var (
 
 func RegisterProvider(name string, p HypervisorProvider) error {
 	if _, exists := hypervisorProviders[name]; exists {
-		return fmt.Errorf("Duplicated hypervisor provider registration: %s\n", name)
+		return fmt.Errorf("Duplicated hypervisor provider registration: %s", name)
 	}
 	hypervisorProviders[name] = p
 	log.Infof("Registered hypervisor provider: %s\n", name)

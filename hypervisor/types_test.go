@@ -22,6 +22,18 @@ func (d *testDriver) StopInstance() error {
 	return nil
 }
 
+func (d *testDriver) InstanceConsole() error {
+	return nil
+}
+
+func (d *testDriver) CreateInstance() error {
+	return nil
+}
+
+func (d *testDriver) DestroyInstance() error {
+	return nil
+}
+
 func TestProviderRegistry(t *testing.T) {
 	{
 		RegisterProvider("test", &testProvider{})
