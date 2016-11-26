@@ -63,7 +63,7 @@ func (r *GithubRegistry) localCachePath() string {
 }
 
 // Find queries resource template details from local registry cache.
-func (r *GithubRegistry) Find(templateName string) (*ResourceTemplate, error) {
+func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
 	if !r.ValidateCache() {
 		return nil, ErrLocalCacheNotReady
 	}
@@ -76,15 +76,14 @@ func (r *GithubRegistry) Find(templateName string) (*ResourceTemplate, error) {
 	}
 	defer f.Close()
 
-	mi := &MachineImageAttribute{}
-	err = json.NewDecoder(f).Decode(mi)
+	tmpl, err := parseResourceTemplate(f)
 	if err != nil {
 		return nil, err
 	}
-	rt := &ResourceTemplate{
+	rt := &RegistryTemplate{
 		Name:     templateName,
 		remote:   r,
-		Template: mi,
+		Template: tmpl,
 	}
 	return rt, nil
 }
