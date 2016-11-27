@@ -6,7 +6,7 @@
 Name: openvdc
 Version: 0.9%{?dev_release_suffix:dev}
 Release: %{release}%{?dist}
-Summary: Metapackage that depends on all other OpenVNet packages.
+Summary: Metapackage that depends on all other OpenVDc packages.
 Vendor: Axsh Co. LTD <dev@axsh.net>
 URL: http://openvdc.org
 Source: https://github.com/axsh/openvdc
@@ -16,10 +16,13 @@ BuildArch: x86_64
 
 BuildRequires: rpmdevtools
 
+Requires: lxc mesosphere-zookeeper mesos
+%{systemd_requires}
+
 %description
 This is an empty message to fulfill the requirement that this file has a "%description" header.
 
-%build 
+%build
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
   ./build.sh
@@ -28,9 +31,13 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 %install
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
-cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
-cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
-cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
+mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
+cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
+mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
+cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 
 %files
 %dir /opt/axsh/openvdc
@@ -38,3 +45,14 @@ cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc-executor
 /opt/axsh/openvdc/bin/openvdc-scheduler
+%{_unitdir}/openvdc-scheduler.service
+%config(noreplace) /etc/sysconfig/openvdc
+
+%post
+%{systemd_post openvdc-scheduler.service}
+
+%postun
+%{systemd_postun openvdc-scheduler.service}
+
+%preun
+%{systemd_preun openvdc-scheduler.service}
