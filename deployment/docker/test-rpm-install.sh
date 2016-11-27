@@ -46,6 +46,15 @@ docker exec $CID systemctl enable mesos-slave
 docker exec $CID systemctl enable openvdc-scheduler
 
 docker exec $CID systemctl start zookeeper
+started=$(date '+%s')
+while ! (echo "" | docker exec $CID nc 127.0.0.1 2181) > /dev/null; do
+  echo "Waiting for zookeeper starts to listen '0.0.0.0:2181' ..."
+  sleep 1
+  if [[ $(($started + 60)) -le $(date '+%s') ]]; then
+    echo "Timed out for zookeeper becomes ready."
+    exit 1
+  fi
+done
 docker exec $CID systemctl start mesos-master
 #docker exec $CID systemctl start mesos-slave
 docker exec $CID systemctl start openvdc-scheduler
