@@ -21,7 +21,7 @@ Requires: lxc mesosphere-zookeeper mesos
 %description
 This is an empty message to fulfill the requirement that this file has a "%description" header.
 
-%build 
+%build
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
   ./build.sh
@@ -31,9 +31,9 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"/usr/lib/systemd/system
-cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
-cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
-cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
+cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"/usr/lib/systemd/system
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
