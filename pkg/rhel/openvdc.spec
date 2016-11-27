@@ -35,6 +35,8 @@ cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin 
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"/usr/lib/systemd/system
+mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
+cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 
 %files
 %dir /opt/axsh/openvdc
@@ -43,3 +45,4 @@ cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"/usr/lib/systemd/system
 /opt/axsh/openvdc/bin/openvdc-executor
 /opt/axsh/openvdc/bin/openvdc-scheduler
 /usr/lib/systemd/system/openvdc-scheduler.service
+%config(noreplace) /etc/sysconfig/openvdc
