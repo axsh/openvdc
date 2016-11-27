@@ -3,7 +3,6 @@ package scheduler
 import (
 	"fmt"
 	"net"
-	"os"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -24,9 +23,7 @@ const (
 	MEM_PER_TASK      = 64
 )
 
-// ExecutorPath is the path to the openvdc-executor binary.
-// Embed from -ldflags
-var ExecutorPath string
+const ExecutorPath = "openvdc-executor"
 
 var (
 	taskCount = 10
@@ -43,10 +40,6 @@ type VDCScheduler struct {
 }
 
 func newVDCScheduler(ch api.APIOffer, listenAddr string) *VDCScheduler {
-	// Assert ExecutorPath
-	if _, err := os.Stat(ExecutorPath); err != nil {
-		log.WithError(err).WithField("ExecutorPath", ExecutorPath).Fatal("Could not find openvdc-executor binary.")
-	}
 	exec := &mesos.ExecutorInfo{
 		ExecutorId: util.NewExecutorID("vdc-hypervisor-null"),
 		Name:       proto.String("VDC Executor"),
