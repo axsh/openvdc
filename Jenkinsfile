@@ -64,5 +64,5 @@ if( BUILD_OS != "all" ){
 // Using .each{} hits "a CPS-transformed closure is not yet supported (JENKINS-26481)"
 for( label in build_nodes) {
   stage_rpmbuild(label)
-// stage_test_rpm(label)
+  stage_test_rpm(label)
 }

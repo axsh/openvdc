@@ -4,6 +4,7 @@
 ## Install
 
 ```
+yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
 yum install -y http://openvdc.org/openvdc-release.rpm
 yum install -y openvdc
 ```
@@ -15,10 +16,11 @@ yum install -y openvdc
 systemctl enable zookeeper
 systemctl enable mesos-master
 systemctl enable mesos-slave
-systemctl enable openvdc-api
-systemctl enable openvdc-executor
-systemctl start openvdc-api
-systemctl start openvdc-executor
+systemctl enable openvdc-scheduler
+systemctl start zookeeper
+systemctl start mesos-master
+systemctl start mesos-slave
+systemctl start openvdc-scheduler
 ```
 
 
