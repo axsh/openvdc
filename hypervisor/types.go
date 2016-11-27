@@ -9,6 +9,7 @@ import (
 type HypervisorProvider interface {
 	Name() string
 	CreateDriver() (HypervisorDriver, error)
+	SetName(string)
 }
 
 type HypervisorDriver interface {

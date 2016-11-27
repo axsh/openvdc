@@ -12,6 +12,8 @@ func (p *testProvider) CreateDriver() (HypervisorDriver, error) {
 	return &testDriver{}, nil
 }
 
+func (p *testProvider) SetName(string) {}
+
 type testDriver struct{}
 
 func (d *testDriver) StartInstance() error {
