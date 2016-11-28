@@ -24,6 +24,7 @@ message Instance {
 enum ResourceType {
   RESOURCE_NONE = 0;
   RESOURCE_LXC = 1;
+  RESOURCE_NULL = 2;
 }
 
 message Resource {
@@ -37,6 +38,7 @@ message Resource {
   oneof Template {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
+    NullTemplate null = 502;
   }
   string template_uri = 4;
 }
@@ -55,3 +57,5 @@ message LxcTemplate {
   }
   Image lxc_image = 5;
 }
+
+message NullTemplate {}
