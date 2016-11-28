@@ -99,7 +99,7 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 	}
 
 	d.log.Infoln("Waiting for lxc-container to start networking")
-	if _, err := c.WaitIPAddresses(5 * time.Second); err != nil {
+	if _, err := c.WaitIPAddresses(30 * time.Second); err != nil {
 		d.log.Errorln(err)
 		return err
 	}
