@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewGithubRegistry(t *testing.T) {
+	assert := assert.New(t)
+	reg := NewGithubRegistry("xxx")
+	assert.Implements((*CachedRegistry)(nil), reg)
+}
+
 func TestGithubFetch(t *testing.T) {
 	assert := assert.New(t)
 	dir, err := ioutil.TempDir("", "reg-test")
@@ -47,6 +53,7 @@ func TestFind(t *testing.T) {
 	rt, err := reg.Find("centos/7/lxc")
 	assert.NoError(err)
 	assert.NotNil(rt)
+	assert.Equal(rt.source, reg)
 
 	// Try finding unknown template name.
 	rt, err = reg.Find("should-not-exist")

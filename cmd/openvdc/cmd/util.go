@@ -17,7 +17,7 @@ func remoteCall(c func(*grpc.ClientConn) error) error {
 	return c(conn)
 }
 
-func setupLocalRegistry() (registry.Registry, error) {
+func setupGithubRegistryCache() (registry.TemplateFinder, error) {
 	reg := registry.NewGithubRegistry(UserConfDir)
 	if !reg.ValidateCache() {
 		err := reg.Fetch()

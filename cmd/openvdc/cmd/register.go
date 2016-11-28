@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -20,13 +22,26 @@ func init() {
 }
 
 func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
-	// TODO: handle direct content URI parameter.
-
-	reg, err := setupLocalRegistry()
-	if err != nil {
-		log.Fatalln(err)
+	var finder registry.TemplateFinder
+	if strings.HasSuffix(templateSlug, ".json") {
+		u, err := url.Parse(templateSlug)
+		if err != nil {
+			log.Fatal("Invalid path: ", templateSlug)
+		}
+		if u.IsAbs() {
+			finder = registry.NewRemoteRegistry()
+		} else {
+			// Assume the local path string is given.
+			finder = registry.NewLocalRegistry()
+		}
+	} else {
+		var err error
+		finder, err = setupGithubRegistryCache()
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
-	rt, err := reg.Find(templateSlug)
+	rt, err := finder.Find(templateSlug)
 	if err != nil {
 		if err == registry.ErrUnknownTemplateName {
 			log.Fatalf("Template '%s' not found.", templateSlug)
