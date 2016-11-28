@@ -156,7 +156,7 @@ func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*Resou
 		log.WithError(err).Error()
 		return nil, err
 	}
-	return &ResourceReply{ID: resource.GetId()}, nil
+	return &ResourceReply{ID: resource.GetId(), Resource: resource}, nil
 }
 func (s *ResourceAPI) Unregister(ctx context.Context, in *ResourceIDRequest) (*ResourceReply, error) {
 	// in.Key takes nil possibly.
