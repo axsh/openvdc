@@ -169,3 +169,18 @@ func (s *ResourceAPI) Unregister(ctx context.Context, in *ResourceIDRequest) (*R
 
 	return &ResourceReply{ID: in.GetID()}, nil
 }
+
+func (s *ResourceAPI) Show(ctx context.Context, in *ResourceIDRequest) (*ResourceReply, error) {
+	// in.Key takes nil possibly.
+	if in.GetKey() == nil {
+		log.Error("Invalid resource identifier")
+		return nil, fmt.Errorf("Invalid resource identifier")
+	}
+	// TODO: handle the case for in.GetName() is received.
+	resource, err := model.Resources(ctx).FindByID(in.GetID())
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+	return &ResourceReply{ID: resource.GetId(), Resource: resource}, nil
+}
