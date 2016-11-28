@@ -20,13 +20,23 @@ func init() {
 }
 
 func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
-	// TODO: handle direct content URI parameter.
-
-	reg, err := setupLocalRegistry()
-	if err != nil {
-		log.Fatalln(err)
+	var finder registry.TemplateFinder
+	if strings.HasSuffix(templateSlug, ".json") {
+		_, err := url.Parse(templateSlug)
+		if err != nil {
+			// Assume the local path string is given.
+			finder = registry.NewLocalRegistry()
+		} else {
+			finder = registry.NewRemoteRegistry()
+		}
+	} else {
+		var err error
+		finder, err = setupGithubRegistryCache()
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
-	rt, err := reg.Find(templateSlug)
+	rt, err := finder.Find(templateSlug)
 	if err != nil {
 		if err == registry.ErrUnknownTemplateName {
 			log.Fatalf("Template '%s' not found.", templateSlug)

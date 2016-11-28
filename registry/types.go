@@ -27,16 +27,21 @@ type TemplateRoot struct {
 type RegistryTemplate struct {
 	Name     string
 	Template *TemplateRoot
-	remote   *GithubRegistry
+	source   TemplateFinder
 }
 
 // Returns absolute URI for the original location of the resource template.
 func (r *RegistryTemplate) LocationURI() string {
-	return r.remote.LocateURI(r.Name)
+	return r.source.LocateURI(r.Name)
 }
 
-type Registry interface {
+type TemplateFinder interface {
 	Find(templateName string) (*RegistryTemplate, error)
+	LocateURI(templateName string) string
+}
+
+type CachedRegistry interface {
+	TemplateFinder
 	ValidateCache() bool
 	IsCacheObsolete() (bool, error)
 	Fetch() error

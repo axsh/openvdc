@@ -86,7 +86,7 @@ func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
 	}
 	rt := &RegistryTemplate{
 		Name:     templateName,
-		remote:   r,
+		source:   r,
 		Template: tmpl,
 	}
 	return rt, nil
