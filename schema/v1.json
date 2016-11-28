@@ -18,6 +18,9 @@
         },
         {
           "$ref": "#/templates/lxc"
+        },
+        {
+          "$ref": "#/templates/null"
         }
       ]
     },
@@ -49,6 +52,16 @@
           "required": [
             "download_url"
           ]
+        }
+      },
+      "null": {
+        "minimum_vcpu": {
+          "type": "integer",
+          "default": 1
+        },
+        "minimum_memory_gb": {
+          "type": "integer",
+          "default": 1
         }
       }
     }

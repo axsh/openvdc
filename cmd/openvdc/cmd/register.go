@@ -5,13 +5,12 @@ import (
 	"net/url"
 	"strings"
 
-	"golang.org/x/net/context"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/registry"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -49,16 +48,25 @@ func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
 			log.Fatalln(err)
 		}
 	}
-	log.Printf("Found template: %s", templateSlug)
-	return &api.ResourceRequest{
+	req := &api.ResourceRequest{
 		TemplateUri: rt.LocationURI(),
-		Template: &api.ResourceRequest_Lxc{
-			Lxc: &model.LxcTemplate{
-				Vcpu:     1,
-				MemoryGb: 1,
-			},
-		},
 	}
+	// TODO: Define the factory method.
+	{
+		t := rt.Template.Template
+		switch t.(type) {
+		case *model.NullTemplate:
+			req.Template = &api.ResourceRequest_Null{
+				Null: t.(*model.NullTemplate),
+			}
+		case *model.LxcTemplate:
+			req.Template = &api.ResourceRequest_Lxc{
+				Lxc: t.(*model.LxcTemplate),
+			}
+		}
+	}
+	log.Printf("Found template: %s", templateSlug)
+	return req
 }
 
 var registerCmd = &cobra.Command{
@@ -66,8 +74,9 @@ var registerCmd = &cobra.Command{
 	Short: "Register new resource.",
 	Long:  "Register new resource from resource template.",
 	Example: `
-	% openvdc register centos-7
-	% openvdc register https://raw.githubusercontent.com/axsh/openvdc-images/master/centos-7.json
+	% openvdc register centos/7/lxc
+	% openvdc register ./templates/centos/7/null.json
+	% openvdc register https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {

@@ -31,6 +31,7 @@ type ResourceTemplate interface {
 
 func (*NoneTemplate) isResourceTemplateKind() {}
 func (*LxcTemplate) isResourceTemplateKind()  {}
+func (*NullTemplate) isResourceTemplateKind() {}
 
 func NewTemplateByName(name string) ResourceTemplate {
 	switch ResourceType(ResourceType_value["RESOURCE_"+strings.ToUpper(name)]) {
@@ -38,6 +39,8 @@ func NewTemplateByName(name string) ResourceTemplate {
 		return &NoneTemplate{}
 	case ResourceType_RESOURCE_LXC:
 		return &LxcTemplate{}
+	case ResourceType_RESOURCE_NULL:
+		return &NullTemplate{}
 	}
 	return nil
 }

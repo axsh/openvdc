@@ -140,6 +140,9 @@ func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*Resou
 	case *ResourceRequest_Lxc:
 		r.Type = model.ResourceType_RESOURCE_LXC
 		r.Template = &model.Resource_Lxc{Lxc: x.Lxc}
+	case *ResourceRequest_Null:
+		r.Type = model.ResourceType_RESOURCE_NULL
+		r.Template = &model.Resource_Null{Null: x.Null}
 	case nil:
 		log.WithError(ErrTemplateUndefined).Error("template parameter is nil")
 		return nil, ErrTemplateUndefined

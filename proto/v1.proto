@@ -50,6 +50,7 @@ message ResourceRequest {
   oneof Template {
     model.NoneTemplate none = 500;
     model.LxcTemplate lxc = 501;
+    model.NullTemplate null = 502;
   }
 }
 message ResourceReply {
