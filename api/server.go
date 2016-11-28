@@ -128,6 +128,7 @@ type ResourceAPI struct {
 }
 
 var ErrTemplateUndefined = errors.New("Template is undefined")
+var ErrUnknownTemplate = errors.New("Unknown template type")
 
 func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*ResourceReply, error) {
 	r := &model.Resource{
@@ -146,6 +147,9 @@ func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*Resou
 	case nil:
 		log.WithError(ErrTemplateUndefined).Error("template parameter is nil")
 		return nil, ErrTemplateUndefined
+	default:
+		log.Error("Unsupported template type")
+		return nil, ErrUnknownTemplate
 	}
 	resource, err := model.Resources(ctx).Create(r)
 	if err != nil {
