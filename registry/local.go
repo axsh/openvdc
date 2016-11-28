@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -23,7 +22,7 @@ func (r *LocalRegistry) LocateURI(name string) string {
 			return ""
 		}
 	}
-	return fmt.Sprintf("file:///%s", abs)
+	return "file://" + filepath.ToSlash(abs)
 }
 
 func (r *LocalRegistry) Find(templateName string) (*RegistryTemplate, error) {

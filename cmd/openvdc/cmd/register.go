@@ -23,12 +23,15 @@ func init() {
 func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
 	var finder registry.TemplateFinder
 	if strings.HasSuffix(templateSlug, ".json") {
-		_, err := url.Parse(templateSlug)
+		u, err := url.Parse(templateSlug)
 		if err != nil {
+			log.Fatal("Invalid path: ", templateSlug)
+		}
+		if u.IsAbs() {
+			finder = registry.NewRemoteRegistry()
+		} else {
 			// Assume the local path string is given.
 			finder = registry.NewLocalRegistry()
-		} else {
-			finder = registry.NewRemoteRegistry()
 		}
 	} else {
 		var err error

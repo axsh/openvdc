@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/axsh/openvdc/model/backend"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 type ResourceOps interface {

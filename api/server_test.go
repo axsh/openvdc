@@ -8,9 +8,8 @@ import (
 )
 
 func TestNewAPIServer(t *testing.T) {
-	c := make(APIOffer)
 	// TODO: Set mock SchedulerDriver
-	s := NewAPIServer(c, os.Getenv("ZK"), nil)
+	s := NewAPIServer(os.Getenv("ZK"), nil)
 	if s == nil {
 		t.Error("NewAPIServer() returned nil")
 	}
@@ -21,9 +20,8 @@ func TestAPIServerRun(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	c := make(APIOffer)
 	// TODO: Set mock SchedulerDriver
-	s := NewAPIServer(c, os.Getenv("ZK"), nil)
+	s := NewAPIServer(os.Getenv("ZK"), nil)
 	go func() {
 		time.Sleep(2 * time.Second)
 		s.Stop()

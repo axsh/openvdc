@@ -170,6 +170,23 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	if err != nil {
 		log.WithError(err).Error("Faild to response LaunchTasks.")
 	}
+
+	exists := func(s []*mesos.OfferID, i *mesos.OfferID) bool {
+		for _, o := range s {
+			if o.GetValue() == i.GetValue() {
+				return true
+			}
+		}
+		return false
+	}
+	for _, offer := range offers {
+		if !exists(acceptIDs, offer.GetId()) {
+			_, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
+			if err != nil {
+				log.WithError(err).Error("Failed to response DeclineOffer.")
+			}
+		}
+	}
 	return nil
 }
 
