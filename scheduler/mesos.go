@@ -99,8 +99,35 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 	findMatching := func(i *model.Instance) *mesos.Offer {
 		for _, offer := range offers {
-			// TODO: Check attribute: hypervisor name.
-			return offer
+			var hypervisorAttr *mesos.Attribute
+			for _, attr := range offer.Attributes {
+				if attr.GetName() == "hypervisor" &&
+					attr.GetType() == mesos.Value_TEXT {
+					hypervisorAttr = attr
+				}
+			}
+
+			if hypervisorAttr == nil {
+				continue
+			}
+			r, err := i.Resource(ctx)
+			if err != nil {
+				log.WithError(err).WithFields(log.Fields{
+					"instance_id": i.GetId(),
+					"resource_id": i.GetResourceId(),
+				}).Error("Failed to retrieve resource object")
+				continue
+			}
+			switch t := r.GetTemplate(); t.(type) {
+			case *model.Resource_Lxc:
+				if hypervisorAttr.GetText().GetValue() == "lxc" {
+					return offer
+				}
+			case *model.Resource_Null:
+				if hypervisorAttr.GetText().GetValue() == "null" {
+					return offer
+				}
+			}
 		}
 		return nil
 	}
