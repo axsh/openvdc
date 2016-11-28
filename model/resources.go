@@ -33,10 +33,10 @@ func (*NoneTemplate) isResourceTemplateKind() {}
 func (*LxcTemplate) isResourceTemplateKind()  {}
 
 func NewTemplateByName(name string) ResourceTemplate {
-	switch ResourceType_value["RESOURCE_"+strings.ToUpper(name)] {
-	case int32(ResourceType_RESOURCE_NONE):
+	switch ResourceType(ResourceType_value["RESOURCE_"+strings.ToUpper(name)]) {
+	case ResourceType_RESOURCE_NONE:
 		return &NoneTemplate{}
-	case int32(ResourceType_RESOURCE_LXC):
+	case ResourceType_RESOURCE_LXC:
 		return &LxcTemplate{}
 	}
 	return nil
