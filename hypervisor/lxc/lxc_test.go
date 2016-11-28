@@ -14,7 +14,7 @@ func TestProviderRegistration(t *testing.T) {
 
 func TestLXCHypervisorDriver(t *testing.T) {
 	p, _ := hypervisor.FindProvider("lxc")
-	lxc := p.CreateDriver()
+	lxc, _ := p.CreateDriver()
 	err := lxc.CreateInstance()
 	if err != nil {
 		t.Error(err)
