@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/axsh/openvdc/model/backend"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 var ErrInstanceMissingResource = errors.New("Resource is not associated")
