@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/axsh/openvdc/model/backend"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,6 +16,10 @@ func withConnect(t *testing.T, c func(context.Context)) error {
 		t.Fatal(err)
 	}
 	defer Close(ctx)
+	err = InstallSchemas(GetBackendCtx(ctx).(backend.ModelSchema))
+	if err != nil {
+		t.Fatal(err)
+	}
 	c(ctx)
 	return err
 }
