@@ -6,6 +6,8 @@ RUN yum install -y epel-release
 RUN yum install -y git go 
 ENV GOPATH=/var/tmp/go PATH=$PATH:$GOPATH/bin
 RUN mkdir $GOPATH
+RUN mkdir -p $GOPATH/src/github.com/axsh/openvdc
+
 RUN go get -u github.com/kardianos/govendor
 
 RUN yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm
