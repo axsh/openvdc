@@ -29,15 +29,16 @@ set +a
 
 if [[ -n "$JENKINS_HOME" ]]; then
   # openvdc-axsh/branch1/el7
-  img_tag=$(echo "rpm-install.${JOB_NAME}/${BUILD_OS}" | tr '/' '.')
+  img_tag=$(echo "unit-tests.${JOB_NAME}/${BUILD_OS}" | tr '/' '.')
 else
-  img_tag="rpm-install.openvdc.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
+  img_tag="unit-tests.openvdc.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
 fi
 
-docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}-rpm-test.Dockerfile" .
+docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}-unit-tests.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} "${img_tag}")
 docker exec -t $CID /bin/sh -c "echo '${RELEASE_SUFFIX}' > /etc/yum/vars/ovn_release_suffix"
-docker exec $CID yum install -y openvdc
+
+###docker exec $CID yum install -y openvdc
 
 ## Setup
 docker exec $CID systemctl enable zookeeper
@@ -66,4 +67,4 @@ docker exec $CID systemctl status openvdc-scheduler
 
 
 ## Run unit tests
-# docker exec $CID "cd /var/tmp/go/src/github.com/axsh/openvdc;  ./run_unit_tests.sh "
+docker exec $CID "cd /var/tmp/go/src/github.com/axsh/openvdc;  ./run_unit_tests.sh "

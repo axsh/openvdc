@@ -49,6 +49,15 @@ def stage_test_rpm(label) {
   }
 }
 
+def stage_unit_test(label) {
+  node(label) {
+    stage "Units Tests ${label}"
+    checkout scm
+    write_build_env(label)
+    sh "./deployment/docker/unit_tests.sh ./build.env"
+  }
+}
+
 node() {
     stage "Checkout"
     checkout scm
@@ -65,4 +74,5 @@ if( BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_rpmbuild(label)
   stage_test_rpm(label)
+  stage_unit_test(label)
 }
