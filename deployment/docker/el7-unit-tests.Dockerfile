@@ -4,7 +4,8 @@ ENTRYPOINT ["/sbin/init"]
 RUN yum install -y epel-release
 
 RUN yum install -y git go 
-ENV GOPATH=/var/tmp/go PATH=$PATH:$GOPATH/bin
+ENV GOPATH=/var/tmp/go 
+ENV PATH=$PATH:$GOPATH/bin
 RUN mkdir $GOPATH
 
 RUN mkdir -p $GOPATH/src/github.com/axsh/openvdc
