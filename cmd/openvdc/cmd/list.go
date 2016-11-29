@@ -2,7 +2,6 @@ package cmd
 
 import (
 	log "github.com/Sirupsen/logrus"
-	//util "github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
 	"github.com/axsh/openvdc/model"
 	"golang.org/x/net/context"
