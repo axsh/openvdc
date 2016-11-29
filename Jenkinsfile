@@ -54,7 +54,7 @@ def stage_unit_test(label) {
     stage "Units Tests ${label}"
     checkout scm
     write_build_env(label)
-    sh "./deployment/docker/unit_tests.sh ./build.env"
+    sh "./deployment/docker/unit-tests.sh ./build.env"
   }
 }
 
