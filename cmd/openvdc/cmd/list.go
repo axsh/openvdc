@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/axsh/openvdc/model"
 	"golang.org/x/net/context"
+	"os"
 )
 
 func init() {
@@ -13,6 +14,8 @@ func init() {
 	listCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
 	listCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
+
+var testZkServer string
 
 func getInstances(filter string, ctx context.Context) (string) {
 
@@ -50,7 +53,13 @@ var listCmd = &cobra.Command{
 	Long:  "List all registered/running instances",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		ctx, err := model.Connect(context.Background(), []string{"127.0.0.1"})
+		if os.Getenv("ZK") != "" {
+                	testZkServer = os.Getenv("ZK")
+        	} else {
+                	testZkServer = "127.0.0.1"
+		}
+
+		ctx, err := model.Connect(context.Background(), []string{testZkServer})
 		if err != nil {
 			log.WithError(err).Error("Failed to connect to datasource:")
 		} else {
