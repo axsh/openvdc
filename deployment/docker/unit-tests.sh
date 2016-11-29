@@ -36,35 +36,7 @@ fi
 
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}-unit-tests.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} "${img_tag}")
-docker exec -t $CID /bin/sh -c "echo '${RELEASE_SUFFIX}' > /etc/yum/vars/ovn_release_suffix"
-
-###docker exec $CID yum install -y openvdc
-
-## Setup
-docker exec $CID systemctl enable zookeeper
-docker exec $CID systemctl enable mesos-master
-docker exec $CID systemctl enable mesos-slave
-docker exec $CID systemctl enable openvdc-scheduler
-
-docker exec $CID systemctl start zookeeper
-started=$(date '+%s')
-while ! (echo "" | docker exec $CID nc 127.0.0.1 2181) > /dev/null; do
-  echo "Waiting for zookeeper starts to listen '0.0.0.0:2181' ..."
-  sleep 1
-  if [[ $(($started + 60)) -le $(date '+%s') ]]; then
-    echo "Timed out for zookeeper becomes ready."
-    exit 1
-  fi
-done
-docker exec $CID systemctl start mesos-master
-#docker exec $CID systemctl start mesos-slave
-docker exec $CID systemctl start openvdc-scheduler
-
-docker exec $CID systemctl status zookeeper
-docker exec $CID systemctl status mesos-master
-#docker exec $CID systemctl status mesos-slave
-docker exec $CID systemctl status openvdc-scheduler
 
 
 ## Run unit tests
-docker exec $CID "cd /var/tmp/go/src/github.com/axsh/openvdc;  ./run_unit_tests.sh "
+docker exec $CID "cd /var/tmp/go/src/github.com/axsh/openvdc;  ZK=127.0.0.1 go test -v ./..."
