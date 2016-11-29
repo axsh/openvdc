@@ -41,5 +41,5 @@ CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_
 docker cp . "${CID}:/var/tmp/go/src/github.com/axsh/openvdc"
 
 ## Run unit tests
-docker exec $CID "cd /var/tmp/go/src/github.com/axsh/openvdc;  govendor sync "
-docker exec $CID "cd /var/tmp/go/src/github.com/axsh/openvdc;  ZK=127.0.0.1 go test -v ./..."
+docker exec $CID /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc;  govendor sync"
+docker exec $CID /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc;  ZK=127.0.0.1 go test -v ./..."
