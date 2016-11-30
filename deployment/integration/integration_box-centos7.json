@@ -70,6 +70,11 @@
       "destination": "/tmp/dev.repo"
     },
     {
+      "type": "file",
+      "source": "/var/lib/jenkins/.ssh/id_rsa.pub", 
+      "destination": "/home/vagrant/.ssh/authorized_keys"
+    },
+    {
       "type": "shell",
       "execute_command": "chmod +x {{ .Path }}; echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "inline": [
