@@ -60,7 +60,8 @@ def stage_integration(label) {
   node(label) {
     stage "Integration Test ${label}"
     write_build_env(label)
-    sh "scp -r .  yumrepo@192.168.56.111:/data/openvdc-integration/"
+    sh "tar cf - . |  ssh yumrepo@192.168.56.111 tar xf - -C /data/openvdc-integration "
+//  sh "scp -r .  yumrepo@192.168.56.111:/data/openvdc-integration/"
     sh "./deployment/integration/build.sh"
   }
 }
