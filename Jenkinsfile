@@ -61,7 +61,7 @@ def stage_integration(label) {
     stage "Integration Test ${label}"
     write_build_env(label)
     sh "scp -r .  yumrepo@192.168.56.111:/data/openvdc-integration/"
-//  sh "./deployment/  ./build.env"
+    sh "./deployment/integration/build.sh"
   }
 }
 
