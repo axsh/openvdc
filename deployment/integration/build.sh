@@ -27,4 +27,4 @@ if ! type packer; then
     chmod 755 ./packer
   fi
 fi
-HOST_SWITCH=br0 packer build integration_box-centos7.json
+HOST_SWITCH=br0 packer build -force integration_box-centos7.json
