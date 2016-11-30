@@ -67,13 +67,14 @@
     {
       "type": "file",
       "source": "../../deployment/docker/yum.repo/dev.repo", 
-      "destination": "/etc/yum.repos.d/dev.repo"
+      "destination": "/tmp/dev.repo"
     },
     {
       "type": "shell",
       "execute_command": "chmod +x {{ .Path }}; echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "inline": [
         "cp /tmp/fastestmirror.conf /etc/yum/pluginconf.d/fastestmirror.conf",
+        "mv /tmp/dev.repo  /etc/yum.repos.d/dev.repo",
         "yum install -y epel-release lxc",
         "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm",
         "yum install -y mesosphere-zookeeper mesos",
