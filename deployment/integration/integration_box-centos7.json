@@ -71,7 +71,7 @@
     },
     {
       "type": "file",
-      "source": "../../id_rsa.pub", 
+      "source": "/var/lib/jenkins/.ssh/id_rsa.pub", 
       "destination": "/home/vagrant/.ssh/authorized_keys"
     },
     {
