@@ -1,4 +1,4 @@
-!groovy
+#!groovy
 
 // http://stackoverflow.com/questions/37425064/how-to-use-environment-variables-in-a-groovy-function-using-a-jenkinsfile
 import groovy.transform.Field
