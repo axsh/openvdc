@@ -60,6 +60,7 @@ def stage_integration(label) {
   node(label) {
     stage "Integration Test ${label}"
     write_build_env(label)
+    sh "cp /var/lib/jenkins/.ssh/id_rsa.pub deployment/integration "
     sh "tar cf - . |  ssh yumrepo@192.168.56.111 tar xf - -C /data/openvdc-integration "
     sh 'ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration  && ./build.sh"'
     sh 'ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration/output-virtualbox-ovf && vboxmanage import openvdc-integration.ovf && vboxmanage startvm openvdc-integration  --type headless"'
