@@ -66,7 +66,7 @@ def stage_integration(label) {
 
     sh 'ssh yumrepo@192.168.56.111 "vboxmanage guestcontrol openvdc-integration copyto --R  --target-directory /var/tmp  /data/openvdc-integration/deployment/integration"'
 
-#   sh 'ssh yumrepo@192.168.56.111  "vboxmanage controlvm  openvdc-integration poweroff   && vboxmanage unregistervm  openvdc-integration  --delete"'
+//  sh 'ssh yumrepo@192.168.56.111  "vboxmanage controlvm  openvdc-integration poweroff   && vboxmanage unregistervm  openvdc-integration  --delete"'
   }
 }
 
