@@ -1,7 +1,6 @@
 package model
 
 import (
-	"os"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -11,7 +10,8 @@ import (
 )
 
 func withConnect(t *testing.T, c func(context.Context)) error {
-	ctx, err := Connect(context.Background(), []string{os.Getenv("ZK")})
+	
+	ctx, err := Connect(context.Background(), []string{testZkServer})
 	if err != nil {
 		t.Fatal(err)
 	}
