@@ -23,10 +23,35 @@
           "$ref": "#/templates/null"
         }
       ]
+    }
+  },
+  "required": [
+    "title",
+    "template"
+  ],
+  "templates": {
+    "none": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "none"
+          ]
+        }
+      }
     },
-    "templates": {
-      "none": {},
-      "lxc": {
+    "lxc": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "lxc"
+          ]
+        },
         "minimum_vcpu": {
           "type": "integer",
           "default": 1
@@ -53,8 +78,18 @@
             "download_url"
           ]
         }
-      },
-      "null": {
+      }
+    },
+    "null": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "null"
+          ]
+        },
         "minimum_vcpu": {
           "type": "integer",
           "default": 1
@@ -65,9 +100,5 @@
         }
       }
     }
-  },
-  "required": [
-    "title",
-    "template"
-  ]
+  }
 }
