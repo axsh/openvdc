@@ -67,7 +67,7 @@
     {
       "type": "file",
       "source": "../../deployment/docker/yum.repo/dev.repo", 
-      "destination": "/etc/yum.repos.d"
+      "destination": "/etc/yum.repos.d/dev.repo"
     },
     {
       "type": "shell",
