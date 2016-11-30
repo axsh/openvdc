@@ -61,7 +61,7 @@ def stage_integration(label) {
     stage "Integration Test ${label}"
     write_build_env(label)
     sh "tar cf - . |  ssh yumrepo@192.168.56.111 tar xf - -C /data/openvdc-integration "
-    sh "ssh yumrepo@192.168.56.111  cd /data/openvdc-integration/deployment/integration/ && ./build.sh"
+    sh "ssh -t yumrepo@192.168.56.111  /bin/bash -c 'cd /data/openvdc-integration/deployment/integration/ && ./build.sh'"
   }
 }
 
