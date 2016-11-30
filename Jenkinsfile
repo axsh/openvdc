@@ -1,4 +1,4 @@
-#!groovy
+!groovy
 
 // http://stackoverflow.com/questions/37425064/how-to-use-environment-variables-in-a-groovy-function-using-a-jenkinsfile
 import groovy.transform.Field
@@ -60,7 +60,7 @@ def stage_integration(label) {
   node(label) {
     stage "Integration Test ${label}"
     write_build_env(label)
-    sh "scp ./  yumrepo@192.168.56.111:/data/openvdc_integration/"
+    sh "scp -r .  yumrepo@192.168.56.111:/data/openvdc-integration/"
 //  sh "./deployment/  ./build.env"
   }
 }
