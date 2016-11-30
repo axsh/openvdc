@@ -65,6 +65,11 @@
       "destination": "/tmp/fastestmirror.conf"
     },
     {
+      "type": "file",
+      "source": "../../deployment/docker/yum.repo/dev.repo", 
+      "destination": "/etc/yum.repos.d"
+    },
+    {
       "type": "shell",
       "execute_command": "chmod +x {{ .Path }}; echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "inline": [
