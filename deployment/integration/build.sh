@@ -27,4 +27,4 @@ if ! type packer; then
     chmod 755 ./packer
   fi
 fi
-HOST_SWITCH=vboxnet0 packer build 1box-centos7.json
+HOST_SWITCH=vboxnet0 packer build integration_box-centos7.json
