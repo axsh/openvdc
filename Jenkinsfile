@@ -63,7 +63,10 @@ def stage_integration(label) {
     sh "tar cf - . |  ssh yumrepo@192.168.56.111 tar xf - -C /data/openvdc-integration "
     sh 'ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration  && ./build.sh"'
     sh 'ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration/output-virtualbox-ovf && vboxmanage import openvdc-integration.ovf && vboxmanage startvm openvdc-integration  --type headless"'
-    sh 'ssh yumrepo@192.168.56.111  "vboxmanage controlvm  openvdc-integration poweroff   && vboxmanage unregistervm  openvdc-integration  --delete"'
+
+    sh 'ssh yumrepo@192.168.56.111 "vboxmanage guestcontrol openvdc-integration copyto --R  --target-directory /var/tmp  /data/openvdc-integration/deployment/integration"'
+
+#   sh 'ssh yumrepo@192.168.56.111  "vboxmanage controlvm  openvdc-integration poweroff   && vboxmanage unregistervm  openvdc-integration  --delete"'
   }
 }
 
