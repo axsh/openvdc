@@ -1,2 +1,2 @@
 NETWORKING=yes
-HOSTNAME=console
+HOSTNAME=zookeeper
