@@ -1,26 +1,16 @@
 package model
 
 import (
-	"os"
 	"testing"
 
-	"golang.org/x/net/context"
+	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
-
-var testZkServer string
-
-func init() {
-	if os.Getenv("ZK") != "" {
-                testZkServer = os.Getenv("ZK")
-        } else {
-                testZkServer = "127.0.0.1"
-        }
-}
 
 func TestConnect(t *testing.T) {
 	assert := assert.New(t)
-	ctx, err := Connect(context.Background(), []string{testZkServer})
+	ctx, err := Connect(context.Background(), []string{unittest.TestZkServer})
 	assert.NoError(err)
 	assert.NotNil(ctx)
 	err = Close(ctx)
