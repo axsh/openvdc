@@ -19,7 +19,10 @@ check_dep "brctl"
 check_dep "qemu-system-x86_64"
 check_dep "parted" # For mount-partition.sh
 
-download_seed_image "${SEED_IMAGE}"
+for box in ${BOXES} ; do
+    download_seed_image "${box}"
+done
+
 create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
 
 for node in ${scheduled_nodes[@]} ; do

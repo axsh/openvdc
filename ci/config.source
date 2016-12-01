@@ -12,4 +12,6 @@ NODES=(
 NETWORK="10.0.100.0"
 GATEWAY="10.0.100.1"
 PREFIX="24"
-SEED_IMAGE=""
+BOXES=(
+    "minimal-7.2.1511-x86_64.kvm.box"
+)
