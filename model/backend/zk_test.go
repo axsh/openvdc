@@ -1,22 +1,12 @@
 package backend
 
 import (
-	"os"
 	"testing"
 
+	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/assert"
 )
-
-var testZkServer string
-
-func init() {
-	if os.Getenv("ZK") != "" {
-		testZkServer = os.Getenv("ZK")
-	} else {
-		testZkServer = "127.0.0.1"
-	}
-}
 
 func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 	z := NewZkBackend()
@@ -25,7 +15,7 @@ func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 		err = z.Delete(z.basePath)
 		z.Close()
 	}()
-	err = z.Connect([]string{testZkServer})
+	err = z.Connect([]string{unittest.TestZkServer})
 	if err != err {
 		t.Fatal(err)
 	}

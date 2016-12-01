@@ -5,13 +5,14 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/stretchr/testify/assert"
 )
 
 func withConnect(t *testing.T, c func(context.Context)) error {
-	
-	ctx, err := Connect(context.Background(), []string{testZkServer})
+
+	ctx, err := Connect(context.Background(), []string{unittest.TestZkServer})
 	if err != nil {
 		t.Fatal(err)
 	}
