@@ -60,6 +60,10 @@ else
   build_cache_base="${BUILD_CACHE_DIR}"
 fi
 
+### This is the location on the dh machine where the openvdc yum repo is to be placed
+RPM_ABSOLUTE=/var/www/html/openvdc-repos
+
+
 /usr/bin/env
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
@@ -80,6 +84,10 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
 fi
 # Run build script
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
+
+# Build the yum repository
+docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/rpmbuild/RPMS/x86_64/ ; createrepo . "
+
 if [[ -n "$BUILD_CACHE_DIR" ]]; then
     if [[ ! -d "$BUILD_CACHE_DIR" || ! -w "$BUILD_CACHE_DIR" ]]; then
         echo "ERROR: BUILD_CACHE_DIR '${BUILD_CACHE_DIR}' does not exist or not writable." >&2
@@ -103,7 +111,8 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
     done
 fi
 # Pull compiled yum repository
-### <for later use. Don't run now.>   docker cp "${CID}:${REPO_BASE_DIR}" - | $SSH_REMOTE tar xf - -C "$(dirname ${REPO_BASE_DIR})"
+# $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
+docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
 
 
 #Build rpm 
