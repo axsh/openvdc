@@ -6,6 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewBoltBackend(t *testing.T) {
+	assert := assert.New(t)
+	z := NewBoltBackend()
+	assert.Implements((*ModelBackend)(nil), z)
+}
+
 func TestBoltConnect(t *testing.T) {
 	assert := assert.New(t)
 	z := NewBoltBackend()
