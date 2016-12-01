@@ -43,6 +43,18 @@ func TestZkCreate(t *testing.T) {
 	})
 }
 
+func TestZkCreateWithID(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		err := z.Create("/test1", []byte{})
+		assert.NoError(err)
+		nkey, err := z.CreateWithID("/test1/t-", []byte{})
+		assert.NoError(err)
+		z.Delete(nkey)
+		z.Delete("/test1")
+	})
+}
+
 func TestZkFind(t *testing.T) {
 	assert := assert.New(t)
 	withConnect(t, func(z *Zk) {
