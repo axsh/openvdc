@@ -82,7 +82,7 @@ function run_steps () {
 
 function build () {
     local steps="${@}"
-    TMP_ROOT="${ENV_ROOTDIR}/${NODE_DIR}/tmp_root"
+
     function ssh () {
         $(type -P ssh) -i "${ENV_ROOTDIR}/root@kemumaki" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
     }
