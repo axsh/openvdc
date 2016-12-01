@@ -2,14 +2,15 @@ package api
 
 import (
 	"net"
-	"os"
 	"testing"
 	"time"
+
+	"github.com/axsh/openvdc/internal/unittest"
 )
 
 func TestNewAPIServer(t *testing.T) {
 	// TODO: Set mock SchedulerDriver
-	s := NewAPIServer(os.Getenv("ZK"), nil)
+	s := NewAPIServer(unittest.TestZkServer, nil)
 	if s == nil {
 		t.Error("NewAPIServer() returned nil")
 	}
@@ -21,7 +22,7 @@ func TestAPIServerRun(t *testing.T) {
 		t.Error(err)
 	}
 	// TODO: Set mock SchedulerDriver
-	s := NewAPIServer(os.Getenv("ZK"), nil)
+	s := NewAPIServer(unittest.TestZkServer, nil)
 	go func() {
 		time.Sleep(2 * time.Second)
 		s.Stop()
