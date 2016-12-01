@@ -4,6 +4,9 @@
   "description": "OpenVDC Resource Template Schema",
   "type": "object",
   "properties": {
+    "_comment": {
+      "type": "string"
+    },
     "title": {
       "type": "string"
     },
@@ -35,6 +38,9 @@
         "type"
       ],
       "properties": {
+        "_comment": {
+          "type": "string"
+        },
         "type": {
           "enum": [
             "none"
@@ -47,6 +53,9 @@
         "type"
       ],
       "properties": {
+        "_comment": {
+          "type": "string"
+        },
         "type": {
           "enum": [
             "lxc"
@@ -63,6 +72,9 @@
         "lxc_image": {
           "type": "object",
           "properties": {
+            "_comment": {
+              "type": "string"
+            },
             "download_url": {
               "type": "string",
               "format": "uri"
@@ -85,6 +97,9 @@
         "type"
       ],
       "properties": {
+        "_comment": {
+          "type": "string"
+        },
         "type": {
           "enum": [
             "null"
