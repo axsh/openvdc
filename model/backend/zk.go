@@ -20,6 +20,8 @@ var ErrFindLastKey = func(key string) error {
 type Zk struct {
 	conn     *zk.Conn
 	basePath string
+	ev       <-chan zk.Event
+	// TODO: Add mutex
 }
 
 func NewZkBackend() *Zk {
@@ -29,15 +31,28 @@ func NewZkBackend() *Zk {
 }
 
 func (z *Zk) Connect(servers []string) error {
-	if z.conn != nil {
+	if z.isConnected() {
 		return ErrConnectionExists
 	}
-	c, f, err := zk.Connect(servers, time.Second)
+	c, ev, err := zk.Connect(servers, 10*time.Second)
 	if err != nil {
 		return err
 	}
-	<-f
-	z.conn = c
+
+	for e := range ev {
+		switch e.State {
+		case zk.StateHasSession:
+			// Set members if connected successfully.
+			z.conn = c
+			z.ev = ev
+			return nil
+		case zk.StateConnecting, zk.StateConnected, zk.StateConnectedReadOnly:
+			// Pass
+		default:
+			log.Errorf(e.State.String())
+		}
+	}
+
 	return nil
 }
 
@@ -47,35 +62,32 @@ func (z *Zk) Close() error {
 	}
 	defer func() {
 		z.conn = nil
+		z.ev = nil
 	}()
 	z.conn.Close()
-	return nil
-}
-
-func (z *Zk) ifExists(key string, callee func(*zk.Stat) error) error {
-	if z.conn == nil {
-		return ErrConnectionNotReady
-	}
-	exists, stat, err := z.conn.Exists(key)
-	if err != nil {
-		return err
-	}
-	if exists {
-		return callee(stat)
+	for ev := range z.ev {
+		if ev.State == zk.StateDisconnected {
+			return nil
+		} else {
+			log.Warn("ZK disconnecting... ", ev.State.String())
+		}
 	}
 	return nil
 }
 
-func (z *Zk) create(key string, value []byte, flags int32) (string, error) {
+func (z *Zk) isConnected() bool {
 	if z.conn == nil {
-		return "", ErrConnectionNotReady
+		return false
 	}
-	absKey, _ := z.canonKey(key)
-	return z.conn.Create(absKey, value, flags, defaultACL)
+	return z.conn.State() == zk.StateHasSession
 }
 
 func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
-	nkey, err := z.create(key, value, zk.FlagSequence)
+	if !z.isConnected() {
+		return "", ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(key)
+	nkey, err := z.conn.Create(absKey, value, zk.FlagSequence, defaultACL)
 	if err != nil {
 		return "", err
 	}
@@ -83,6 +95,9 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 }
 
 func (z *Zk) CreateWithID2(key string, value []byte) (string, error) {
+	if !z.isConnected() {
+		return "", ErrConnectionNotReady
+	}
 	absKey, base := z.canonKey(key)
 	_, stat, err := z.conn.Exists(base)
 	if err != nil {
@@ -100,12 +115,19 @@ func (z *Zk) CreateWithID2(key string, value []byte) (string, error) {
 }
 
 func (z *Zk) Create(key string, value []byte) error {
-	_, err := z.create(key, value, int32(0))
-	return err
+	if !z.isConnected() {
+		return ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(key)
+	_, err := z.conn.Create(absKey, value, int32(0), defaultACL)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (z *Zk) Update(key string, value []byte) error {
-	if z.conn == nil {
+	if !z.isConnected() {
 		return ErrConnectionNotReady
 	}
 	var err error
@@ -123,7 +145,7 @@ func (z *Zk) Update(key string, value []byte) error {
 }
 
 func (z *Zk) Find(key string) (value []byte, err error) {
-	if z.conn == nil {
+	if !z.isConnected() {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
@@ -132,7 +154,7 @@ func (z *Zk) Find(key string) (value []byte, err error) {
 }
 
 func (z *Zk) FindLastKey(prefixKey string) (string, error) {
-	if z.conn == nil {
+	if !z.isConnected() {
 		return "", ErrConnectionNotReady
 	}
 	absKey, base := z.canonKey(prefixKey)
@@ -156,7 +178,7 @@ func (z *Zk) canonKey(key string) (absKey string, dir string) {
 }
 
 func (z *Zk) Delete(key string) error {
-	if z.conn == nil {
+	if !z.isConnected() {
 		return ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
@@ -186,7 +208,7 @@ func (c *childIt) Value() string {
 }
 
 func (z *Zk) Keys(parentKey string) (KeyIterator, error) {
-	if z.conn == nil {
+	if !z.isConnected() {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(parentKey)
@@ -208,10 +230,10 @@ type zkSchemaHandler struct {
 }
 
 func (z *zkSchemaHandler) Install(subkeys []string) error {
-	conn := z.zk.conn
-	if conn == nil {
+	if !z.zk.isConnected() {
 		return ErrConnectionNotReady
 	}
+	conn := z.zk.conn
 	{
 		// Install the root key if not exists.
 		ok, _, err := conn.Exists(z.zk.basePath)
