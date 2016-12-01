@@ -1,0 +1,90 @@
+#!/bin/bash
+. "${ENV_ROOTDIR}/external_libraries/bashsteps/simple-defaults-for-bashsteps.source"
+
+function create_bridge() {
+  local name="$1"
+  local ip_addr="$2"
+
+  (
+    $starting_step "Create bridge ${name}"
+    brctl show | grep -q "${name}"
+    $skip_step_if_already_done ; set -xe
+    sudo brctl addbr "${name}"
+    sudo ip link set "${name}" up
+
+    if [[ -n "${ip_addr}" ]]; then
+      sudo ip addr add "${ip_addr}" dev "${name}"
+    fi
+  ) ; prev_cmd_failed
+}
+
+function check_dep() {
+  local dep="$1"
+
+  command -v "${dep}" >/dev/null 2>&1
+  if [[ "$?" != "0" ]]; then
+    echo "Missing dependency: ${dep}"
+    exit 1
+  fi
+}
+
+function copy_default_config() {
+  (
+    $starting_step "Put default config file in place"
+    [ -f "${ENV_ROOTDIR}/config.source" ]
+    $skip_step_if_already_done
+    cp "${ENV_ROOTDIR}/config.source.example" "${ENV_ROOTDIR}/config.source"
+  ) ; prev_cmd_failed
+}
+
+function masquerade() {
+  local subnet="${1}"
+
+  (
+    $starting_step "Masquerade for subnet ${subnet}"
+    sudo iptables-save | grep -wq "\-A POSTROUTING \-s ${subnet} \-j MASQUERADE"
+    $skip_step_if_already_done
+    sudo iptables -t nat -A POSTROUTING -s "${subnet}" -j MASQUERADE
+  ) ; prev_cmd_failed
+}
+
+function stop_masquerade() {
+  local subnet="${1}"
+
+  (
+    $starting_step "Stop masquerading for subnet ${subnet}"
+    sudo iptables-save | grep -wq "\-A POSTROUTING \-s ${subnet} \-j MASQUERADE"
+    [ "$?" != "0" ]
+    $skip_step_if_already_done
+    sudo iptables -t nat -D POSTROUTING -s "${subnet}" -j MASQUERADE
+  ) ; prev_cmd_failed
+}
+
+function run_steps () {
+    local step="${1}" stage="${2}"
+    local step_common="${ENV_ROOTDIR}/ind-steps/step-${step}/common.source"
+    (
+        [[ -f "${step_common}" ]] && . "${step_common}"
+        . "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh"
+    )
+}
+
+function build () {
+    local steps="${@}"
+    TMP_ROOT="${ENV_ROOTDIR}/${NODE_DIR}/tmp_root"
+    function ssh () {
+        $(type -P ssh) -i "${ENV_ROOTDIR}/root@kemumaki" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
+    }
+
+    # We first run init.sh for every step after which we run install.sh for every
+    # step and so on. This is because some stages will need to happen before booting
+    # the VM while others need to happen after boot.
+    for stage in init install preconfigure boot postconfigure provide ; do
+        for step in ${steps[@]} ; do
+            [[ -d "${ENV_ROOTDIR}/ind-steps/step-${step}" ]] || continue
+            [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]] && run_steps "${step}" "${stage}" || :
+        done
+    done
+
+    unset -f ssh
+}

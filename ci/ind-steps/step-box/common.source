@@ -1,0 +1,48 @@
+#!/bin/bash
+. "${ENV_ROOTDIR}/external_libraries/mount-partition/mount-partition.sh" load
+
+function vm_image () {
+    echo "${NODE_DIR}/box-disk1.raw"
+}
+
+function kill-vm() {
+    (
+        $starting_step "Kill vm ${vm_name}"
+        [[ ! -f "${NODE_DIR}/${vm_name}.pid" ]]
+        $skip_step_if_already_done; set -x
+        sudo kill $(sudo cat "${NODE_DIR}/${vm_name}.pid")
+        sudo rm "${NODE_DIR}/${vm_name}.pid"
+    ) ; $prev_cmd_failed
+}
+
+function destroy-vm() {
+    (
+        $starting_step "Destroy vm ${vm_name}"
+        [ ! -f "$(vm_image)" ]
+        $skip_step_if_already_done;
+        kill-vm
+        set -ex; rm "$(vm_image)"
+    ) ; $prev_cmd_failed
+}
+
+function umount-seed-image() {
+    (
+        $starting_step "Unmount temporary root folder for ${vm_name}"
+        mount | grep -q "${TMP_ROOT}"
+        [ "$?" != "0" ]
+        $skip_step_if_already_done
+        umount-partition --sudo "${TMP_ROOT}"
+        rmdir "${TMP_ROOT}"
+    ) ; prev_cmd_failed
+}
+
+function download_seed_image () {
+    (
+        $starting_step "Download seed image"
+        [ -f "${ENV_ROOTDIR}/${SEED_IMAGE}" ]
+        $skip_step_if_already_done
+        #TODO: Download the image
+        wget ${image_uri_location}
+    ) ; prev_cmd_failed
+}
+
