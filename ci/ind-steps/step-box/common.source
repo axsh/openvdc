@@ -35,14 +35,3 @@ function umount-seed-image() {
         rmdir "${TMP_ROOT}"
     ) ; prev_cmd_failed
 }
-
-function download_seed_image () {
-    (
-        $starting_step "Download seed image"
-        [ -f "${ENV_ROOTDIR}/${SEED_IMAGE}" ]
-        $skip_step_if_already_done
-        #TODO: Download the image
-        wget ${image_uri_location}
-    ) ; prev_cmd_failed
-}
-

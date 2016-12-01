@@ -8,9 +8,7 @@ fi
     $starting_step "Deploy seed image for ${vm_name}"
     [ -f "$(vm_image)" ]
     $skip_step_if_already_done; set -xe
-    cd "${ENV_ROOTDIR}"
-    tar -Sxzf "${SEED_IMAGE}"
-    mv box-disk1.raw "${NODE_DIR}"
+    tar -Sxzf "${ENV_ROOTDIR}/boxes/${SEED_IMAGE}" -C "${NODE_DIR}"
     rm box-disk1.rpm-qa
 ) ; prev_cmd_failed
 

@@ -28,6 +28,17 @@ function check_dep() {
   fi
 }
 
+function download_seed_image () {
+    local box="${1}"
+
+    (
+        $starting_step "Download ${box}"
+        [ -f "${ENV_ROOTDIR}/boxes/${box}" ]
+        $skip_step_if_already_done
+        #TODO: Download the image
+    ) ; prev_cmd_failed
+}
+
 function copy_default_config() {
   (
     $starting_step "Put default config file in place"
