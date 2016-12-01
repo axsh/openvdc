@@ -84,7 +84,7 @@ function build () {
     local steps="${@}"
 
     function ssh () {
-        $(type -P ssh) -i "${ENV_ROOTDIR}/root@kemumaki" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
+        $(type -P ssh) -i "${NODE_DIR}/root@${vm_name}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
     }
 
     # We first run init.sh for every step after which we run install.sh for every
