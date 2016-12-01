@@ -55,6 +55,25 @@ func TestZkCreateWithID(t *testing.T) {
 	})
 }
 
+func TestZkCreate2AndFindLast(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		err := z.Create("/test1", []byte{})
+		assert.NoError(err)
+		nkey1, err := z.CreateWithID2("/test1/t-", []byte{})
+		assert.NoError(err)
+		nkey2, err := z.CreateWithID2("/test1/t-", []byte{})
+		assert.NoError(err)
+		lkey, err := z.FindLastKey("/test1/t-")
+		assert.NoError(err)
+		assert.NotEqual(nkey1, lkey)
+		assert.Equal(nkey2, lkey)
+		z.Delete(nkey1)
+		z.Delete(nkey2)
+		z.Delete("/test1")
+	})
+}
+
 func TestZkFind(t *testing.T) {
 	assert := assert.New(t)
 	withConnect(t, func(z *Zk) {

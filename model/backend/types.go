@@ -22,6 +22,7 @@ type ModelBackend interface {
 	Find(key string) ([]byte, error)
 	Delete(key string) error
 	Keys(parentKey string) (KeyIterator, error)
+	FindLastKey(prefixKey string) (string, error)
 }
 
 type ModelSchema interface {

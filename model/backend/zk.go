@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"fmt"
 	"path"
 	"sort"
 	"strings"
@@ -12,6 +13,9 @@ import (
 )
 
 var defaultACL = zk.WorldACL(zk.PermAll)
+var ErrFindLastKey = func(key string) error {
+	return fmt.Errorf("Unable to find znode with last key: %s", key)
+}
 
 type Zk struct {
 	conn     *zk.Conn
@@ -48,13 +52,16 @@ func (z *Zk) Close() error {
 	return nil
 }
 
-func (z *Zk) ifNotExist(key string, callee func() error) error {
-	exists, _, err := z.conn.Exists(key)
+func (z *Zk) ifExists(key string, callee func(*zk.Stat) error) error {
+	if z.conn == nil {
+		return ErrConnectionNotReady
+	}
+	exists, stat, err := z.conn.Exists(key)
 	if err != nil {
 		return err
 	}
-	if !exists {
-		return callee()
+	if exists {
+		return callee(stat)
 	}
 	return nil
 }
@@ -69,6 +76,23 @@ func (z *Zk) create(key string, value []byte, flags int32) (string, error) {
 
 func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 	nkey, err := z.create(key, value, zk.FlagSequence)
+	if err != nil {
+		return "", err
+	}
+	return nkey, nil
+}
+
+func (z *Zk) CreateWithID2(key string, value []byte) (string, error) {
+	absKey, base := z.canonKey(key)
+	_, stat, err := z.conn.Exists(base)
+	if err != nil {
+		return "", err
+	}
+	stat2, err := z.conn.Set(base, []byte{}, stat.Version)
+	if err != nil {
+		return "", err
+	}
+	nkey, err := z.conn.Create(fmt.Sprintf("%s%010d", absKey, stat2.Version), value, 0, defaultACL)
 	if err != nil {
 		return "", err
 	}
@@ -105,6 +129,23 @@ func (z *Zk) Find(key string) (value []byte, err error) {
 	absKey, _ := z.canonKey(key)
 	value, _, err = z.conn.Get(absKey)
 	return
+}
+
+func (z *Zk) FindLastKey(prefixKey string) (string, error) {
+	if z.conn == nil {
+		return "", ErrConnectionNotReady
+	}
+	absKey, base := z.canonKey(prefixKey)
+	_, stat, err := z.conn.Exists(base)
+	if err != nil {
+		return "", err
+	}
+	lastKey := fmt.Sprintf("%s%010d", absKey, stat.Version)
+	exists, _, err := z.conn.Exists(lastKey)
+	if !exists {
+		return "", ErrFindLastKey(lastKey)
+	}
+	return lastKey, nil
 }
 
 func (z *Zk) canonKey(key string) (absKey string, dir string) {
