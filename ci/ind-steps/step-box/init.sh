@@ -9,7 +9,7 @@ fi
     [ -f "$(vm_image)" ]
     $skip_step_if_already_done; set -xe
     tar -Sxzf "${ENV_ROOTDIR}/boxes/${box}-${distr_ver}-${arch}.kvm.box" -C "${NODE_DIR}"
-    rm box-disk1.rpm-qa
+    rm ${NODE_DIR}/box-disk1.rpm-qa
 ) ; prev_cmd_failed
 
 (
