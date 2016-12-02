@@ -55,7 +55,7 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 		theDriver.SendFrameworkMessage(
 			util.NewExecutorID("vdc-hypervisor-null"),
 			util.NewSlaveID(os.Getenv("AGENT_ID")),
-			"stop__"+instanceID,
+			"stop_"+instanceID,
 		)
 	}
 	return &StopReply{InstanceId: "test"}, nil

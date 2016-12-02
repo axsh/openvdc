@@ -210,7 +210,7 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 	log.Infoln("---------------------------------------------")
 
 	switch command {
-	case "destroy":
+	case "stop":
 		DestroyTask(driver, taskId)
 	default:
 		log.Errorln("FrameworkMessage unrecognized.")
