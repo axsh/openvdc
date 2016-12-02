@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-//	util "github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
