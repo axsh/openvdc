@@ -46,14 +46,18 @@ func (s *InstanceAPI) StopTask(ctx context.Context, in *StopTaskRequest) (*StopT
 
 	hostName := in.HostName
 
-	//There might be a better way to do this, but for now the AgentID is set through an environment variable.
-	//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
-	theDriver.SendFrameworkMessage(
-		util.NewExecutorID("vdc-hypervisor-null"),
-		util.NewSlaveID(os.Getenv("AGENT_ID")),
-		"destroy_"+hostName,
-	)
+	if os.Getenv("AGENT_ID") == "" {
+		log.Errorln("AGENT_ID env variable needs to be set. Example: AGENT_ID=81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0")
+	} else {
 
+		//There might be a better way to do this, but for now the AgentID is set through an environment variable.
+		//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
+		theDriver.SendFrameworkMessage(
+			util.NewExecutorID("vdc-hypervisor-null"),
+			util.NewSlaveID(os.Getenv("AGENT_ID")),
+			"destroy_"+hostName,
+		)
+	}
 	return &StopTaskReply{InstanceId: "test"}, nil
 }
 
