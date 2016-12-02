@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"flag"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -64,6 +65,7 @@ func execute(cmd *cobra.Command, args []string) {
 }
 
 func main() {
+	flag.CommandLine.Parse([]string{})
 	util.SetupLog()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
