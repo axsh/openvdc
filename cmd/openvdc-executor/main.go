@@ -11,7 +11,6 @@ import (
 
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
-	"github.com/axsh/openvdc/util"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
 	"golang.org/x/net/context"
 )
@@ -235,8 +234,6 @@ func init() {
 }
 
 func main() {
-	util.SetupLog()
-
 	provider, ok := hypervisor.FindProvider(*hypervisorName)
 	if ok == false {
 		log.Fatalln("Unknown hypervisor name:", hypervisorName)

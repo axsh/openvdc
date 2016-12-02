@@ -10,7 +10,6 @@ import (
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/scheduler"
-	"github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 )
@@ -35,8 +34,8 @@ var listenAddr string
 var zkAddr string
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "localhost:5050", "Mesos Master node address")
-	rootCmd.PersistentFlags().StringVarP(&gRPCAddr, "api", "a", "localhost:5000", "gRPC API bind address")
+	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "192.168.1.224:5050", "Mesos Master node address")
+	rootCmd.PersistentFlags().StringVarP(&gRPCAddr, "api", "a", "192.168.1.224:5000", "gRPC API bind address")
 	rootCmd.PersistentFlags().StringVarP(&listenAddr, "listen", "l", "0.0.0.0", "Local bind address")
 	rootCmd.PersistentFlags().StringVarP(&zkAddr, "zk", "", "127.0.0.1", "Zookeeper node address")
 	rootCmd.PersistentFlags().SetAnnotation("master", cobra.BashCompSubdirsInDir, []string{})
@@ -66,7 +65,6 @@ func execute(cmd *cobra.Command, args []string) {
 
 func main() {
 	flag.CommandLine.Parse([]string{})
-	util.SetupLog()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
