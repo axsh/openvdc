@@ -1,9 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
-	util "github.com/axsh/openvdc/util"
+//	util "github.com/axsh/openvdc/util"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"github.com/axsh/openvdc/api"
 )
 
 func init() {
@@ -13,16 +17,31 @@ func init() {
 }
 
 var stopCmd = &cobra.Command{
-	Use:   "stop [Image ID]",
+	Use:   "stop [Instance ID]",
 	Short: "Stop an instance",
 	Long:  "Stop a running instance.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		if len(args) > 0 {
-			instanceID := args[0]
-			util.SendToApi(serverAddr, instanceID, "", "stop")
-		} else {
-			log.Warn("OpenVDC: Please provide an Instance ID.  Usage: stop [Image ID]")
+		if len(args) != 1 {
+			log.Fatalf("Please provide an instance ID.")
 		}
-		return nil
-	}}
+
+		instanceID := args[0]
+
+		req := &api.StopRequest{
+			InstanceId: instanceID,
+		}
+
+		return remoteCall(func(conn *grpc.ClientConn) error {
+			c := api.NewInstanceClient(conn)
+
+			res, err := c.Stop(context.Background(), req)
+			if err != nil {
+				log.WithError(err).Fatal("Disconnected abnormally")
+				return err
+			}
+			fmt.Println(res)
+			return err
+		})
+	},
+}
