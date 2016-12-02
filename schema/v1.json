@@ -61,11 +61,19 @@
             "lxc"
           ]
         },
-        "minimum_vcpu": {
+        "min_vcpu": {
           "type": "integer",
           "default": 1
         },
-        "minimum_memory_gb": {
+        "min_memory_gb": {
+          "type": "integer",
+          "default": 1
+        },
+        "vcpu": {
+          "type": "integer",
+          "default": 1
+        },
+        "memory_gb": {
           "type": "integer",
           "default": 1
         },
@@ -105,11 +113,11 @@
             "null"
           ]
         },
-        "minimum_vcpu": {
+        "min_vcpu": {
           "type": "integer",
           "default": 1
         },
-        "minimum_memory_gb": {
+        "min_memory_gb": {
           "type": "integer",
           "default": 1
         }
