@@ -17,8 +17,9 @@ func init() {
 
 var stopCmd = &cobra.Command{
 	Use:   "stop [Instance ID]",
-	Short: "Stop an instance",
+	Short: "Stop a running instance",
 	Long:  "Stop a running instance.",
+	Example: "openvdc stop i-0000000001",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		if len(args) != 1 {
