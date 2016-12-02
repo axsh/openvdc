@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -45,10 +46,11 @@ func (s *InstanceAPI) StopTask(ctx context.Context, in *StopTaskRequest) (*StopT
 
 	hostName := in.HostName
 
-	//TODO: Don't hardcode the ID's.
+	//There might be a better way to do this, but for now the AgentID is set through an environment variable.
+	//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
 	theDriver.SendFrameworkMessage(
 		util.NewExecutorID("vdc-hypervisor-null"),
-		util.NewSlaveID("be590de8-83c0-47f5-9e4a-14f5326c240b-S0"),
+		util.NewSlaveID(os.Getenv("AGENT_ID")),
 		"destroy_"+hostName,
 	)
 
