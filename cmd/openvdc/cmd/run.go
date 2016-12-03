@@ -16,8 +16,8 @@ var runCmd = &cobra.Command{
 	Short: "Run an instance",
 	Long:  "Run an instance",
 	Example: `
-	% openvdc run centos-7
-	% openvdc run https://raw.githubusercontent.com/axsh/openvdc-images/master/centos-7.json
+	% openvdc run centos/7/lxc
+	% openvdc run https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
