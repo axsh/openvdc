@@ -10,12 +10,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func init() {
-	// TODO: Remove --server option from sub-command.
-	runCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
-	runCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-}
-
 var runCmd = &cobra.Command{
 	Use:   "run [ResourceTemplate ID/URI]",
 	Short: "Run an instance",

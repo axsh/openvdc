@@ -11,12 +11,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func init() {
-	// TODO: Remove --server option from sub-command.
-	unregisterCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
-	unregisterCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-}
-
 var unregisterCmd = &cobra.Command{
 	Use:   "unregister [Resource ID]",
 	Short: "Unregister a resource",

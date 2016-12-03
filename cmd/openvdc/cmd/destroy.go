@@ -6,12 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	// TODO: Remove --server option from sub-command.
-	destroyCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
-	destroyCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-}
-
 var destroyCmd = &cobra.Command{
 	Use:   "destroy [Image ID]",
 	Short: "Destroy an instance",

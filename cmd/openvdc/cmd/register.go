@@ -14,12 +14,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func init() {
-	// TODO: Remove --server option from sub-command.
-	registerCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
-	registerCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-}
-
 func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
 	var finder registry.TemplateFinder
 	if strings.HasSuffix(templateSlug, ".json") {
