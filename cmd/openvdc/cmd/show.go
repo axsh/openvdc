@@ -5,6 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -29,7 +30,7 @@ var showCmd = &cobra.Command{
 				ID: resourceID,
 			},
 		}
-		return remoteCall(func(conn *grpc.ClientConn) error {
+		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
 			res, err := c.Show(context.Background(), req)
 			if err != nil {

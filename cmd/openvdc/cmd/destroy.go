@@ -2,7 +2,7 @@ package cmd
 
 import (
 	log "github.com/Sirupsen/logrus"
-	util "github.com/axsh/openvdc/util"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,7 @@ var destroyCmd = &cobra.Command{
 
 		if len(args) > 0 {
 			instanceID := args[0]
-			util.SendToApi(serverAddr, instanceID, "", "destroy")
+			util.SendToApi(util.ServerAddr, instanceID, "", "destroy")
 		} else {
 			log.Warn("OpenVDC: Please provide an Instance ID.  Usage: destroy [Image ID]")
 		}

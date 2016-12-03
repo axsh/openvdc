@@ -2,11 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/registry"
 	"github.com/spf13/cobra"
@@ -15,31 +14,13 @@ import (
 )
 
 func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
-	var finder registry.TemplateFinder
-	if strings.HasSuffix(templateSlug, ".json") {
-		u, err := url.Parse(templateSlug)
-		if err != nil {
-			log.Fatal("Invalid path: ", templateSlug)
-		}
-		if u.IsAbs() {
-			finder = registry.NewRemoteRegistry()
-		} else {
-			// Assume the local path string is given.
-			finder = registry.NewLocalRegistry()
-		}
-	} else {
-		var err error
-		finder, err = setupGithubRegistryCache()
-		if err != nil {
-			log.Fatalln(err)
-		}
-	}
-	rt, err := finder.Find(templateSlug)
+	rt, err := util.FetchTemplate(templateSlug)
 	if err != nil {
-		if err == registry.ErrUnknownTemplateName {
+		switch err {
+		case registry.ErrUnknownTemplateName:
 			log.Fatalf("Template '%s' not found.", templateSlug)
-		} else {
-			log.Fatalln(err)
+		default:
+			log.Fatalf("Invalid path: %s, %v", templateSlug, err)
 		}
 	}
 	req := &api.ResourceRequest{
@@ -79,7 +60,7 @@ var registerCmd = &cobra.Command{
 
 		templateSlug := args[0]
 		req := prepareRegisterAPICall(templateSlug)
-		return remoteCall(func(conn *grpc.ClientConn) error {
+		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
 			res, err := c.Register(context.Background(), req)
 			if err != nil {
