@@ -12,6 +12,8 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
+const versionAny = int32(-1)
+
 var defaultACL = zk.WorldACL(zk.PermAll)
 var ErrFindLastKey = func(key string) error {
 	return fmt.Errorf("Unable to find znode with last key: %s", key)
@@ -91,6 +93,16 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Treat the parent key as the sequence store to save the last ID
+	seqNode, nid := path.Split(nkey)
+	seqNode = strings.TrimSuffix(seqNode, "/")
+	_, err = z.conn.Set(seqNode, []byte(nid), versionAny)
+	if err != nil {
+		// Rollback by deleting new key node.
+		z.conn.Delete(nkey, versionAny)
+		return "", err
+	}
 	return nkey[len(z.basePath):], nil
 }
 
@@ -157,16 +169,16 @@ func (z *Zk) FindLastKey(prefixKey string) (string, error) {
 	if !z.isConnected() {
 		return "", ErrConnectionNotReady
 	}
-	absKey, base := z.canonKey(prefixKey)
-	_, stat, err := z.conn.Exists(base)
+	_, base := z.canonKey(prefixKey)
+	println(base)
+	buf, _, err := z.conn.Get(base)
 	if err != nil {
-		return "", err
+		return "", ErrFindLastKey(err.Error())
 	}
-	lastKey := fmt.Sprintf("%s%010d", absKey, stat.Version)
-	exists, _, err := z.conn.Exists(lastKey)
-	if !exists {
-		return "", ErrFindLastKey(lastKey)
+	if len(buf) == 0 {
+		return "", ErrFindLastKey("<empty>")
 	}
+	lastKey := path.Join(base, string(buf))
 	return lastKey[len(z.basePath):], nil
 }
 

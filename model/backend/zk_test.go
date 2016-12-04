@@ -66,15 +66,15 @@ func TestZkCreateWithID(t *testing.T) {
 	})
 }
 
-func TestZkCreate2AndFindLast(t *testing.T) {
+func TestZkCreateWithIDAndFindLast(t *testing.T) {
 	assert := assert.New(t)
 	withConnect(t, func(z *Zk) {
 		err := z.Create("/test1", []byte{})
 		assert.NoError(err)
-		nkey1, err := z.CreateWithID2("/test1/t-", []byte{})
+		nkey1, err := z.CreateWithID("/test1/t-", []byte{})
 		assert.NoError(err)
 		assert.True(strings.HasPrefix(nkey1, "/test1/t-"))
-		nkey2, err := z.CreateWithID2("/test1/t-", []byte{})
+		nkey2, err := z.CreateWithID("/test1/t-", []byte{})
 		assert.NoError(err)
 		assert.True(strings.HasPrefix(nkey2, "/test1/t-"))
 		lkey, err := z.FindLastKey("/test1/t-")
