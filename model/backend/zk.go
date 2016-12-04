@@ -106,26 +106,6 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 	return nkey[len(z.basePath):], nil
 }
 
-func (z *Zk) CreateWithID2(key string, value []byte) (string, error) {
-	if !z.isConnected() {
-		return "", ErrConnectionNotReady
-	}
-	absKey, base := z.canonKey(key)
-	_, stat, err := z.conn.Exists(base)
-	if err != nil {
-		return "", err
-	}
-	stat2, err := z.conn.Set(base, []byte{}, stat.Version)
-	if err != nil {
-		return "", err
-	}
-	nkey, err := z.conn.Create(fmt.Sprintf("%s%010d", absKey, stat2.Version), value, 0, defaultACL)
-	if err != nil {
-		return "", err
-	}
-	return nkey[len(z.basePath):], nil
-}
-
 func (z *Zk) Create(key string, value []byte) error {
 	if !z.isConnected() {
 		return ErrConnectionNotReady
