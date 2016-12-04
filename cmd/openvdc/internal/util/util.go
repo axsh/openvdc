@@ -3,13 +3,13 @@
 package util
 
 import (
-	"context"
 	"net/url"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/registry"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
