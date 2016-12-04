@@ -81,7 +81,7 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 }
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
-	queued, err := model.Instances(ctx).FilterByState(model.Instance_QUEUED)
+	queued, err := model.Instances(ctx).FilterByState(model.InstanceState_QUEUED)
 	if err != nil {
 		return err
 	}

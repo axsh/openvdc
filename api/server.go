@@ -94,7 +94,7 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	if in.GetInstanceId() == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
 	}
-	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.Instance_QUEUED); err != nil {
+	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_QUEUED); err != nil {
 		log.WithError(err).Error()
 		return nil, err
 	}

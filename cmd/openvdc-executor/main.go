@@ -140,7 +140,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mes
 	}
 
 	// Push back to the initial state in case of error.
-	finState := model.Instance_REGISTERED
+	finState := model.InstanceState_REGISTERED
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
@@ -149,9 +149,9 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mes
 		model.Close(ctx)
 	}()
 
-	err = model.Instances(ctx).UpdateState(instanceID, model.Instance_STARTING)
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
 	if err != nil {
-		log.WithError(err).WithField("state", model.Instance_STARTING).Error("Failed Instances.UpdateState")
+		log.WithError(err).WithField("state", model.InstanceState_STARTING).Error("Failed Instances.UpdateState")
 		return err
 	}
 
@@ -174,7 +174,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mes
 	}
 	log.Infof("Instance launched successfully")
 	// Here can bring the instance state to RUNNING finally.
-	finState = model.Instance_RUNNING
+	finState = model.InstanceState_RUNNING
 	return nil
 }
 

@@ -16,8 +16,8 @@ var ErrInstanceMissingResource = errors.New("Resource is not associated")
 type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
 	FindByID(string) (*Instance, error)
-	UpdateState(id string, next Instance_State) error
-	FilterByState(state Instance_State) ([]*Instance, error)
+	UpdateState(id string, next InstanceState_State) error
+	FilterByState(state InstanceState_State) ([]*Instance, error)
 }
 
 const instancesBaseKey = "instances"
@@ -46,20 +46,39 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	if n.GetResourceId() == "" {
 		return nil, ErrInstanceMissingResource
 	}
-	n.State = Instance_REGISTERED
-	data, err := proto.Marshal(n)
+
+	initState := &InstanceState{State: InstanceState_REGISTERED}
+	n.LastState = initState
+	data1, err := proto.Marshal(n)
 	if err != nil {
 		return nil, err
 	}
+	data2, err := proto.Marshal(initState)
+	if err != nil {
+		return nil, err
+	}
+
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
 	}
-	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/i-", instancesBaseKey), data)
+	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/i-", instancesBaseKey), data1)
+	if err != nil {
+		return nil, err
+	}
+	_, err = bk.Find(nkey)
 	if err != nil {
 		return nil, err
 	}
 	n.Id = path.Base(nkey)
+	if err = bk.Create(fmt.Sprintf("%s/state", nkey), []byte{}); err != nil {
+		return nil, err
+	}
+	_, err = bk.CreateWithID(fmt.Sprintf("%s/state/state-", nkey), data2)
+	if err != nil {
+		return nil, err
+	}
+
 	return n, nil
 }
 
@@ -81,28 +100,62 @@ func (i *instances) FindByID(id string) (*Instance, error) {
 	return n, nil
 }
 
-func (i *instances) UpdateState(id string, next Instance_State) error {
-	n, err := i.FindByID(id)
+func (i *instances) findLastState(id string) (*InstanceState, error) {
+	bk, err := i.connection()
+	if err != nil {
+		return nil, err
+	}
+	key, err := bk.FindLastKey(fmt.Sprintf("/%s/%s/state/state-", instancesBaseKey, id))
+	if err != nil {
+		return nil, err
+	}
+	buf, err := bk.Find(key)
+	if err != nil {
+		return nil, err
+	}
+
+	n := &InstanceState{}
+	err = proto.Unmarshal(buf, n)
+	if err != nil {
+		return nil, err
+	}
+	return n, nil
+}
+
+func (i *instances) UpdateState(id string, next InstanceState_State) error {
+	instance, err := i.FindByID(id)
 	if err != nil {
 		return err
 	}
-	if err := n.validateStateTransition(next); err != nil {
+	if err := instance.LastState.validateStateTransition(next); err != nil {
 		return err
 	}
-	n.State = next
+	nstate := &InstanceState{
+		State: next,
+	}
+	instance.LastState = nstate
+
+	buf1, err := proto.Marshal(instance)
+	if err != nil {
+		return err
+	}
+	buf2, err := proto.Marshal(nstate)
+	if err != nil {
+		return err
+	}
 
 	bk, err := i.connection()
 	if err != nil {
 		return err
 	}
-	buf, err := proto.Marshal(n)
+	_, err = bk.CreateWithID(fmt.Sprintf("/%s/%s/state/state-", instancesBaseKey, id), buf2)
 	if err != nil {
 		return err
 	}
-	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), buf)
+	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), buf1)
 }
 
-func (i *instances) FilterByState(state Instance_State) ([]*Instance, error) {
+func (i *instances) FilterByState(state InstanceState_State) ([]*Instance, error) {
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
@@ -117,7 +170,7 @@ func (i *instances) FilterByState(state Instance_State) ([]*Instance, error) {
 		if err != nil {
 			return nil, err
 		}
-		if instance.GetState() == state {
+		if instance.LastState.State == state {
 			res = append(res, instance)
 		}
 	}
@@ -128,25 +181,25 @@ func (i *Instance) Resource(ctx context.Context) (*Resource, error) {
 	return Resources(ctx).FindByID(i.GetResourceId())
 }
 
-func (i *Instance) validateStateTransition(next Instance_State) error {
+func (i *InstanceState) validateStateTransition(next InstanceState_State) error {
 	result := func() bool {
-		switch i.GetState() {
-		case Instance_REGISTERED:
-			return (next == Instance_QUEUED)
-		case Instance_QUEUED:
-			return (next == Instance_STARTING)
-		case Instance_STARTING:
-			return (next == Instance_RUNNING)
-		case Instance_RUNNING:
-			return (next == Instance_STOPPING ||
-				next == Instance_SHUTTINGDOWN)
-		case Instance_STOPPING:
-			return (next == Instance_STOPPED)
-		case Instance_STOPPED:
-			return (next == Instance_STARTING ||
-				next == Instance_SHUTTINGDOWN)
-		case Instance_SHUTTINGDOWN:
-			return (next == Instance_TERMINATED)
+		switch i.State {
+		case InstanceState_REGISTERED:
+			return (next == InstanceState_QUEUED)
+		case InstanceState_QUEUED:
+			return (next == InstanceState_STARTING)
+		case InstanceState_STARTING:
+			return (next == InstanceState_RUNNING)
+		case InstanceState_RUNNING:
+			return (next == InstanceState_STOPPING ||
+				next == InstanceState_SHUTTINGDOWN)
+		case InstanceState_STOPPING:
+			return (next == InstanceState_STOPPED)
+		case InstanceState_STOPPED:
+			return (next == InstanceState_STARTING ||
+				next == InstanceState_SHUTTINGDOWN)
+		case InstanceState_SHUTTINGDOWN:
+			return (next == InstanceState_TERMINATED)
 		}
 		return false
 	}()

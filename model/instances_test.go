@@ -68,7 +68,7 @@ func TestFindInstance(t *testing.T) {
 
 func TestUpdateStateInstance(t *testing.T) {
 	assert := assert.New(t)
-	err := Instances(context.Background()).UpdateState("i-xxxxx", Instance_REGISTERED)
+	err := Instances(context.Background()).UpdateState("i-xxxxx", InstanceState_REGISTERED)
 	assert.Equal(ErrBackendNotInContext, err)
 
 	withConnect(t, func(ctx context.Context) {
@@ -78,16 +78,16 @@ func TestUpdateStateInstance(t *testing.T) {
 		}
 		got, err := Instances(ctx).Create(n)
 		assert.NoError(err)
-		assert.Equal(Instance_REGISTERED, got.GetState())
-		assert.Error(Instances(ctx).UpdateState(got.GetId(), Instance_TERMINATED))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_QUEUED))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_STARTING))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_RUNNING))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_STOPPING))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_STOPPED))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_STARTING))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_RUNNING))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_SHUTTINGDOWN))
-		assert.NoError(Instances(ctx).UpdateState(got.GetId(), Instance_TERMINATED))
+		assert.Equal(InstanceState_REGISTERED, got.GetLastState().State)
+		assert.Error(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_QUEUED))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STARTING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STOPPING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STOPPED))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STARTING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_SHUTTINGDOWN))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))
 	})
 }
