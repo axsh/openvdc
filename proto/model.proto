@@ -48,8 +48,8 @@ message NoneTemplate {}
 message LxcTemplate {
   int32 vcpu = 1;
   int32 memory_gb = 2;
-  int32 minimum_vcpu = 3;
-  int32 minimum_memory_gb = 4;
+  int32 min_vcpu = 3;
+  int32 min_memory_gb = 4;
   message Image {
     string download_url = 1;
     string chksum_type = 2;

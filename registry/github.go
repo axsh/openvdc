@@ -16,14 +16,16 @@ import (
 )
 
 const (
-	githubURI      = "https://github.com"
-	githubRawURI   = "https://raw.githubusercontent.com"
-	githubRepoSlug = "axsh/openvdc"
-	defaultPath    = "templates"
-	// Until 76f26d79b1be670 gets merged to master.
-	defaultRef            = "generalize-template"
+	githubURI             = "https://github.com"
+	githubRawURI          = "https://raw.githubusercontent.com"
+	githubRepoSlug        = "axsh/openvdc"
+	defaultPath           = "templates"
 	mimeTypeGitUploadPack = "application/x-git-upload-pack-advertisement"
 )
+
+// Until 76f26d79b1be670 gets merged to master.
+// Build time flag
+var GithubDefaultRef = "generalize-template"
 
 type GithubRegistry struct {
 	confDir                 string
@@ -36,11 +38,15 @@ type GithubRegistry struct {
 func NewGithubRegistry(confDir string) *GithubRegistry {
 	return &GithubRegistry{
 		confDir:                 confDir,
-		Branch:                  defaultRef,
+		Branch:                  GithubDefaultRef,
 		RepoSlug:                githubRepoSlug,
 		TreePath:                defaultPath,
 		ForceCheckToRemoteAfter: 1 * time.Hour,
 	}
+}
+
+func (r *GithubRegistry) String() string {
+	return fmt.Sprintf("%s/%s/%s/%s", githubRawURI, r.RepoSlug, r.Branch, r.TreePath)
 }
 
 func (r *GithubRegistry) LocateURI(name string) string {
@@ -148,7 +154,7 @@ func (r *GithubRegistry) Fetch() error {
 		}
 	}()
 
-	// https://github.com/axsh/openvdc-images/archive/%{sha}.zip
+	// https://github.com/axsh/openvdc/archive/%{sha}.zip
 	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
 	err = func() error {
 		f, err := ioutil.TempFile(tmpDest, "zip")

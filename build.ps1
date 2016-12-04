@@ -6,6 +6,7 @@ $GOVERSION=$(go version)
 $LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
 
 Invoke-Expression "$(Join-Path ${env:GOPATH}\bin govendor.exe -Resolve) sync"
+Invoke-Expression "$(Join-Path ${env:GOPATH}\bin go-bindata.exe -Resolve) -pkg registry -o registry\schema.bindata.go schema"
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-scheduler
