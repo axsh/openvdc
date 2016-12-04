@@ -28,6 +28,7 @@ func RemoteCall(c func(*grpc.ClientConn) error) error {
 func SetupGithubRegistryCache() (registry.TemplateFinder, error) {
 	reg := registry.NewGithubRegistry(UserConfDir)
 	if !reg.ValidateCache() {
+		log.Infoln("Updating registry cache from", reg)
 		err := reg.Fetch()
 		if err != nil {
 			return nil, err
@@ -39,7 +40,7 @@ func SetupGithubRegistryCache() (registry.TemplateFinder, error) {
 		return nil, err
 	}
 	if refresh {
-		log.Infoln("Updating registry cache.")
+		log.Infoln("Updating registry cache from", reg)
 		err = reg.Fetch()
 		if err != nil {
 			return nil, err
