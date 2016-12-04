@@ -91,7 +91,7 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return nkey, nil
+	return nkey[len(z.basePath):], nil
 }
 
 func (z *Zk) CreateWithID2(key string, value []byte) (string, error) {
@@ -111,7 +111,7 @@ func (z *Zk) CreateWithID2(key string, value []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return nkey, nil
+	return nkey[len(z.basePath):], nil
 }
 
 func (z *Zk) Create(key string, value []byte) error {
@@ -167,7 +167,7 @@ func (z *Zk) FindLastKey(prefixKey string) (string, error) {
 	if !exists {
 		return "", ErrFindLastKey(lastKey)
 	}
-	return lastKey, nil
+	return lastKey[len(z.basePath):], nil
 }
 
 func (z *Zk) canonKey(key string) (absKey string, dir string) {

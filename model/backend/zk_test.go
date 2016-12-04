@@ -3,6 +3,8 @@ package backend
 import (
 	"testing"
 
+	"strings"
+
 	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/assert"
@@ -58,6 +60,7 @@ func TestZkCreateWithID(t *testing.T) {
 		assert.NoError(err)
 		nkey, err := z.CreateWithID("/test1/t-", []byte{})
 		assert.NoError(err)
+		assert.True(strings.HasPrefix(nkey, "/test1/t-"))
 		z.Delete(nkey)
 		z.Delete("/test1")
 	})
@@ -70,10 +73,13 @@ func TestZkCreate2AndFindLast(t *testing.T) {
 		assert.NoError(err)
 		nkey1, err := z.CreateWithID2("/test1/t-", []byte{})
 		assert.NoError(err)
+		assert.True(strings.HasPrefix(nkey1, "/test1/t-"))
 		nkey2, err := z.CreateWithID2("/test1/t-", []byte{})
 		assert.NoError(err)
+		assert.True(strings.HasPrefix(nkey2, "/test1/t-"))
 		lkey, err := z.FindLastKey("/test1/t-")
 		assert.NoError(err)
+		assert.True(strings.HasPrefix(lkey, "/test1/t-"))
 		assert.NotEqual(nkey1, lkey)
 		assert.Equal(nkey2, lkey)
 		z.Delete(nkey1)
