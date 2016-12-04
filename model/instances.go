@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 )
 
 var ErrInstanceMissingResource = errors.New("Resource is not associated")
@@ -47,7 +49,14 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 		return nil, ErrInstanceMissingResource
 	}
 
-	initState := &InstanceState{State: InstanceState_REGISTERED}
+	createdAt, err := ptypes.TimestampProto(time.Now())
+	if err != nil {
+		return nil, err
+	}
+	initState := &InstanceState{
+		State:     InstanceState_REGISTERED,
+		CreatedAt: createdAt,
+	}
 	n.LastState = initState
 	data1, err := proto.Marshal(n)
 	if err != nil {
@@ -130,8 +139,13 @@ func (i *instances) UpdateState(id string, next InstanceState_State) error {
 	if err := instance.LastState.validateStateTransition(next); err != nil {
 		return err
 	}
+	createdAt, err := ptypes.TimestampProto(time.Now())
+	if err != nil {
+		return err
+	}
 	nstate := &InstanceState{
-		State: next,
+		State:     next,
+		CreatedAt: createdAt,
 	}
 	instance.LastState = nstate
 

@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+
 package model;
 
 option go_package = "github.com/axsh/openvdc/model";
@@ -23,6 +25,7 @@ message InstanceState {
     TERMINATED = 7;
   }
   State state = 1;
+  google.protobuf.Timestamp created_at = 2;
 }
 
 enum ResourceType {
