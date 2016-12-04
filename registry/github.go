@@ -154,7 +154,7 @@ func (r *GithubRegistry) Fetch() error {
 		}
 	}()
 
-	// https://github.com/axsh/openvdc-images/archive/%{sha}.zip
+	// https://github.com/axsh/openvdc/archive/%{sha}.zip
 	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
 	err = func() error {
 		f, err := ioutil.TempFile(tmpDest, "zip")
