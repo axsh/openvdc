@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/axsh/openvdc/cmd/openvdc/cmd"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -47,10 +48,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to get $HOME")
 		os.Exit(1)
 	}
-	cmd.UserConfDir = filepath.Join(path, ".openvdc")
-	err = setupDefaultUserConfig(cmd.UserConfDir)
+	util.UserConfDir = filepath.Join(path, ".openvdc")
+	err = setupDefaultUserConfig(util.UserConfDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to setup %s\n", cmd.UserConfDir)
+		fmt.Fprintf(os.Stderr, "Failed to setup %s\n", util.UserConfDir)
 		os.Exit(1)
 	}
 	cmd.Execute()

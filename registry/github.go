@@ -2,7 +2,6 @@ package registry
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,24 +18,35 @@ import (
 const (
 	githubURI             = "https://github.com"
 	githubRawURI          = "https://raw.githubusercontent.com"
-	githubRepoSlug        = "axsh/openvdc-images"
+	githubRepoSlug        = "axsh/openvdc"
+	defaultPath           = "templates"
 	mimeTypeGitUploadPack = "application/x-git-upload-pack-advertisement"
 )
+
+// Until 76f26d79b1be670 gets merged to master.
+// Build time flag
+var GithubDefaultRef = "generalize-template"
 
 type GithubRegistry struct {
 	confDir                 string
 	Branch                  string
 	RepoSlug                string
+	TreePath                string
 	ForceCheckToRemoteAfter time.Duration
 }
 
 func NewGithubRegistry(confDir string) *GithubRegistry {
 	return &GithubRegistry{
 		confDir:                 confDir,
-		Branch:                  "master",
+		Branch:                  GithubDefaultRef,
 		RepoSlug:                githubRepoSlug,
+		TreePath:                defaultPath,
 		ForceCheckToRemoteAfter: 1 * time.Hour,
 	}
+}
+
+func (r *GithubRegistry) String() string {
+	return fmt.Sprintf("%s/%s/%s/%s", githubRawURI, r.RepoSlug, r.Branch, r.TreePath)
 }
 
 func (r *GithubRegistry) LocateURI(name string) string {
@@ -63,7 +73,7 @@ func (r *GithubRegistry) localCachePath() string {
 }
 
 // Find queries resource template details from local registry cache.
-func (r *GithubRegistry) Find(templateName string) (*ResourceTemplate, error) {
+func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
 	if !r.ValidateCache() {
 		return nil, ErrLocalCacheNotReady
 	}
@@ -76,15 +86,14 @@ func (r *GithubRegistry) Find(templateName string) (*ResourceTemplate, error) {
 	}
 	defer f.Close()
 
-	mi := &MachineImageAttribute{}
-	err = json.NewDecoder(f).Decode(mi)
+	tmpl, err := parseResourceTemplate(f)
 	if err != nil {
 		return nil, err
 	}
-	rt := &ResourceTemplate{
+	rt := &RegistryTemplate{
 		Name:     templateName,
-		remote:   r,
-		Template: mi,
+		source:   r,
+		Template: tmpl,
 	}
 	return rt, nil
 }
@@ -145,7 +154,7 @@ func (r *GithubRegistry) Fetch() error {
 		}
 	}()
 
-	// https://github.com/axsh/openvdc-images/archive/%{sha}.zip
+	// https://github.com/axsh/openvdc/archive/%{sha}.zip
 	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
 	err = func() error {
 		f, err := ioutil.TempFile(tmpDest, "zip")
@@ -210,7 +219,7 @@ func (r *GithubRegistry) Fetch() error {
 	if len(tmpLs) != 1 {
 		return fmt.Errorf("%s returned unexpected archive structure", zipLinkURI)
 	}
-	return os.Rename(filepath.Join(tmpDest, tmpLs[0].Name()), regDir)
+	return os.Rename(filepath.Join(tmpDest, tmpLs[0].Name(), filepath.FromSlash(r.TreePath)), regDir)
 }
 
 // http://blog.ralch.com/tutorial/golang-working-with-zip/
