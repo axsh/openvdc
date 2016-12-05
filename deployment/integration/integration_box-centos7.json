@@ -72,7 +72,7 @@
     {
       "type": "file",
       "source": "./release_id", 
-      "destination": "/etc/yum/vars/release_id"
+      "destination": "/tmp/release_id"
     },
     {
       "type": "file",
@@ -85,6 +85,7 @@
       "inline": [
         "cp /tmp/fastestmirror.conf /etc/yum/pluginconf.d/fastestmirror.conf",
         "mv /tmp/dev.repo  /etc/yum.repos.d/dev.repo",
+        "mv /tmp/release_id /etc/yum/vars/release_id",
         "yum install -y epel-release lxc",
         "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm",
         "yum install -y mesosphere-zookeeper mesos",
