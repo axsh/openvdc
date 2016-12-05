@@ -2,6 +2,19 @@
 
 set -e
 
+BUILD_ENV_PATH=${1:?"ERROR: env file is not given."}
+
+if [[ -n "${BUILD_ENV_PATH}" && ! -f "${BUILD_ENV_PATH}" ]]; then
+  echo "ERROR: Can't find the file: ${BUILD_ENV_PATH}" >&2
+  exit 1
+fi
+
+# http://stackoverflow.com/questions/19331497/set-environment-variables-from-file
+set -a
+. ${BUILD_ENV_PATH}
+set +a
+
+
 CID=openvdc-integration    # In future -- add a suffix to allow for concurrency
 function vbox_rm() {
     if [[ -z "$CID" ]]; then
@@ -20,6 +33,7 @@ function vbox_rm() {
 trap "vbox_rm  "  EXIT
 
 cp /var/lib/jenkins/.ssh/id_rsa.pub deployment/integration 
+echo ${RELEASE_SUFFIX} > ./release_id
 tar cf - . |  ssh yumrepo@192.168.56.111 tar xf - -C /data/openvdc-integration 
 ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration &&  ./build.sh"
 

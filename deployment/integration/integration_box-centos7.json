@@ -71,7 +71,7 @@
     },
     {
       "type": "file",
-      "source": "./release_id", 
+      "source": "../../release_id", 
       "destination": "/tmp/release_id"
     },
     {
