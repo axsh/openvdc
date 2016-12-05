@@ -1,5 +1,5 @@
 [openvdc]
 name=OpenVDc Repo - devrepo
-baseurl=http://ci.openvdc.org/repos/x86_64/
+baseurl=http://ci.openvdc.org/repos/${RELEASE_ID}/x86_64/
 enabled=1
 gpgcheck=0
