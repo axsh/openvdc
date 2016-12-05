@@ -17,24 +17,20 @@ import (
 	util "github.com/mesos/mesos-go/mesosutil"
 )
 
-type APIOffer chan *RunRequest
-
 var theDriver sched.SchedulerDriver
 
 type APIServer struct {
 	server         *grpc.Server
 	modelStoreAddr string
-	offerChan      APIOffer
 }
 
-func NewAPIServer(c APIOffer, modelAddr string, driver sched.SchedulerDriver) *APIServer {
+func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
 		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),
 	}
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
-		offerChan:      c,
 		modelStoreAddr: modelAddr,
 	}
 
@@ -94,16 +90,37 @@ func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateRep
 	return &CreateReply{InstanceId: inst.Id}, nil
 }
 
-func (s *InstanceAPI) Run(ctx context.Context, in *RunRequest) (*RunReply, error) {
-	log.Printf("New Request: %v\n", in.String())
-	inst, err := model.Instances(ctx).Create(&model.Instance{})
-	if err != nil {
+func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {
+	if in.GetInstanceId() == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.Instance_QUEUED); err != nil {
 		log.WithError(err).Error()
 		return nil, err
 	}
-	in.HostName = inst.Id
-	s.api.offerChan <- in
-	return &RunReply{InstanceId: inst.Id}, nil
+	// TODO: Tell the scheduler there is a queued item to get next offer eagerly.
+	return &StartReply{InstanceId: in.GetInstanceId()}, nil
+}
+
+func (s *InstanceAPI) Run(ctx context.Context, in *ResourceRequest) (*RunReply, error) {
+	resourceAPI := &ResourceAPI{api: s.api}
+	res0, err := resourceAPI.Register(ctx, in)
+	if err != nil {
+		log.WithError(err).Error("Failed InstanceAPI.Run at ResourceAPI.Register")
+		return nil, err
+	}
+	resourceID := res0.GetID()
+	res1, err := s.Create(ctx, &CreateRequest{ResourceId: resourceID})
+	if err != nil {
+		log.WithError(err).Error("Failed InstanceAPI.Run at Create")
+		return nil, err
+	}
+	res2, err := s.Start(ctx, &StartRequest{InstanceId: res1.GetInstanceId()})
+	if err != nil {
+		log.WithError(err).Error("Failed InstanceAPI.Run at Start")
+		return nil, err
+	}
+	return &RunReply{InstanceId: res2.GetInstanceId(), ResourceId: resourceID}, nil
 }
 
 type ResourceAPI struct {
