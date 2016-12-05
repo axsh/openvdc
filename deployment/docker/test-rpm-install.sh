@@ -64,6 +64,3 @@ docker exec $CID systemctl status mesos-master
 #docker exec $CID systemctl status mesos-slave
 docker exec $CID systemctl status openvdc-scheduler
 
-
-## Run unit tests
-# docker exec $CID "cd /var/tmp/go/src/github.com/axsh/openvdc;  ./run_unit_tests.sh "
