@@ -44,7 +44,15 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 	instanceID := in.InstanceId
 	sendCommand("stop", instanceID)
 
-	return &StopReply{InstanceId: "test"}, nil
+	return &StopReply{InstanceId: instanceID + " stopped."}, nil
+}
+
+func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
+
+        instanceID := in.InstanceId
+        sendCommand("destroy", instanceID)
+
+        return &DestroyReply{InstanceId: instanceID + " destroyed."}, nil
 }
 
 func sendCommand(cmd string, id string) {
