@@ -1,9 +1,8 @@
 
-
 (
     $starting_group "Install golang"
-    [[ -f ${TMP_ROOT}/opt/golang/bin/govendor ]]
-    $skip_group_if_unnessecary ; set -ex
+    [[ -f "${TMP_ROOT}/opt/golang/bin/govendor" ]]
+    $skip_group_if_unnecessary
     
     (
         $starting_step "Unpack golang archive"
@@ -16,7 +15,7 @@
         $starting_step "Setup go paths"
         check_env_var "GOROOT" && check_env_var "GOPATH"
         $skip_step_if_already_done ; set -ex
-        sudo chroot ${TMP_ROOT} /bin/bash <<EOS
+        sudo chroot ${TMP_ROOT} /bin/bash -e <<EOS
              cat <<'EOF' >> /root/.bash_profile
 export GOROOT=/opt/go
 export GOPATH=/opt/golang
