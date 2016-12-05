@@ -58,7 +58,7 @@
         },
         "type": {
           "enum": [
-            "lxc"
+            "vm/lxc"
           ]
         },
         "min_vcpu": {
@@ -110,7 +110,7 @@
         },
         "type": {
           "enum": [
-            "null"
+            "vm/null"
           ]
         },
         "min_vcpu": {

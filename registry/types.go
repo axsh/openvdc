@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
 )
 
@@ -22,6 +23,12 @@ type TemplateRoot struct {
 	// https://golang.org/pkg/encoding/json/#RawMessage
 	RawTemplate json.RawMessage        `json:"template"`
 	Template    model.ResourceTemplate `json:"-"`
+
+	handler handlers.ResourceHandler
+}
+
+func (t *TemplateRoot) ResourceHandler() handlers.ResourceHandler {
+	return t.handler
 }
 
 type RegistryTemplate struct {
@@ -61,14 +68,15 @@ func parseResourceTemplate(in io.Reader) (*TemplateRoot, error) {
 	if err := json.Unmarshal(root.RawTemplate, &typeFind); err != nil {
 		return nil, err
 	}
-	tmpl := model.NewTemplateByName(typeFind.Type)
-	if tmpl == nil {
-		return nil, fmt.Errorf("Unknown template name: %s", typeFind.Type)
+	hnd, ok := handlers.FindByType(typeFind.Type)
+	if !ok {
+		return nil, fmt.Errorf("Unknown template type: %s", typeFind.Type)
 	}
-	err = json.Unmarshal(root.RawTemplate, tmpl)
+	tmpl, err := hnd.ParseTemplate(root.RawTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse JSON in template key")
+		return nil, fmt.Errorf("Failed to parse template section in %s", root.Title)
 	}
 	root.Template = tmpl
+	root.handler = hnd
 	return root, nil
 }

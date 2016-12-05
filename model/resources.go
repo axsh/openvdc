@@ -6,8 +6,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"strings"
-
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/golang/protobuf/proto"
 )
@@ -32,18 +30,6 @@ type ResourceTemplate interface {
 func (*NoneTemplate) isResourceTemplateKind() {}
 func (*LxcTemplate) isResourceTemplateKind()  {}
 func (*NullTemplate) isResourceTemplateKind() {}
-
-func NewTemplateByName(name string) ResourceTemplate {
-	switch ResourceType(ResourceType_value["RESOURCE_"+strings.ToUpper(name)]) {
-	case ResourceType_RESOURCE_NONE:
-		return &NoneTemplate{}
-	case ResourceType_RESOURCE_LXC:
-		return &LxcTemplate{}
-	case ResourceType_RESOURCE_NULL:
-		return &NullTemplate{}
-	}
-	return nil
-}
 
 type resources struct {
 	ctx context.Context
