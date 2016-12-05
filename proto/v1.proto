@@ -43,16 +43,20 @@ message StartReply {
 service Resource {
   rpc Register(ResourceRequest) returns (ResourceReply){}
   rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
+  rpc Show(ResourceIDRequest) returns (ResourceReply){}
 }
 
 message ResourceRequest {
+  string template_uri = 1;
   oneof Template {
     model.NoneTemplate none = 500;
-    model.VMTemplate vm = 501;
+    model.LxcTemplate lxc = 501;
+    model.NullTemplate null = 502;
   }
 }
 message ResourceReply {
   string ID = 1;
+  model.Resource resource = 2;
 }
 
 message ResourceIDRequest{

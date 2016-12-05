@@ -3,47 +3,45 @@ package cmd
 import (
 	"fmt"
 
-	"golang.org/x/net/context"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/registry"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-func init() {
-	// TODO: Remove --server option from sub-command.
-	registerCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
-	registerCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-}
-
 func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
-	// TODO: handle direct content URI parameter.
-
-	reg, err := setupLocalRegistry()
+	rt, err := util.FetchTemplate(templateSlug)
 	if err != nil {
-		log.Fatalln(err)
-	}
-	rt, err := reg.Find(templateSlug)
-	if err != nil {
-		if err == registry.ErrUnknownTemplateName {
+		switch err {
+		case registry.ErrUnknownTemplateName:
 			log.Fatalf("Template '%s' not found.", templateSlug)
-		} else {
-			log.Fatalln(err)
+		default:
+			log.Fatalf("Invalid path: %s, %v", templateSlug, err)
+		}
+	}
+	req := &api.ResourceRequest{
+		TemplateUri: rt.LocationURI(),
+	}
+	// TODO: Define the factory method.
+	{
+		t := rt.Template.Template
+		switch t.(type) {
+		case *model.NullTemplate:
+			req.Template = &api.ResourceRequest_Null{
+				Null: t.(*model.NullTemplate),
+			}
+		case *model.LxcTemplate:
+			req.Template = &api.ResourceRequest_Lxc{
+				Lxc: t.(*model.LxcTemplate),
+			}
 		}
 	}
 	log.Printf("Found template: %s", templateSlug)
-	return &api.ResourceRequest{
-		Template: &api.ResourceRequest_Vm{
-			Vm: &model.VMTemplate{
-				Vcpu:             1,
-				MemoryGb:         1,
-				ImageTemplateUri: rt.LocationURI(),
-			},
-		},
-	}
+	return req
 }
 
 var registerCmd = &cobra.Command{
@@ -51,8 +49,9 @@ var registerCmd = &cobra.Command{
 	Short: "Register new resource.",
 	Long:  "Register new resource from resource template.",
 	Example: `
-	% openvdc register centos-7
-	% openvdc register https://raw.githubusercontent.com/axsh/openvdc-images/master/centos-7.json
+	% openvdc register centos/7/lxc
+	% openvdc register ./templates/centos/7/null.json
+	% openvdc register https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
@@ -61,7 +60,7 @@ var registerCmd = &cobra.Command{
 
 		templateSlug := args[0]
 		req := prepareRegisterAPICall(templateSlug)
-		return remoteCall(func(conn *grpc.ClientConn) error {
+		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
 			res, err := c.Register(context.Background(), req)
 			if err != nil {

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/axsh/openvdc/master/schema/v1.json#",
+  "title": "CentOS7",
+  "template": {
+    "type": "null"
+  }
+}

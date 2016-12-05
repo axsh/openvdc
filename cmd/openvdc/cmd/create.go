@@ -5,6 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -14,10 +15,7 @@ var imageName string
 var hostName string
 
 func init() {
-	// TODO: Remove --server option from sub-command.
-	createCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
 	createCmd.PersistentFlags().StringVarP(&hostName, "name", "n", "", "Existing host name")
-	createCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
 
 var createCmd = &cobra.Command{
@@ -34,7 +32,7 @@ var createCmd = &cobra.Command{
 		req := &api.CreateRequest{
 			ResourceId: resourceID,
 		}
-		return remoteCall(func(conn *grpc.ClientConn) error {
+		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 			res, err := c.Create(context.Background(), req)
 			if err != nil {

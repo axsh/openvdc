@@ -128,26 +128,35 @@ type ResourceAPI struct {
 }
 
 var ErrTemplateUndefined = errors.New("Template is undefined")
+var ErrUnknownTemplate = errors.New("Unknown template type")
 
 func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*ResourceReply, error) {
-	r := &model.Resource{}
+	r := &model.Resource{
+		TemplateUri: in.GetTemplateUri(),
+	}
 	switch x := in.Template.(type) {
 	case *ResourceRequest_None:
-		r.Type = model.ResourceType_NONE
+		r.Type = model.ResourceType_RESOURCE_NONE
 		r.Template = &model.Resource_None{None: x.None}
-	case *ResourceRequest_Vm:
-		r.Type = model.ResourceType_VM
-		r.Template = &model.Resource_Vm{Vm: x.Vm}
+	case *ResourceRequest_Lxc:
+		r.Type = model.ResourceType_RESOURCE_LXC
+		r.Template = &model.Resource_Lxc{Lxc: x.Lxc}
+	case *ResourceRequest_Null:
+		r.Type = model.ResourceType_RESOURCE_NULL
+		r.Template = &model.Resource_Null{Null: x.Null}
 	case nil:
 		log.WithError(ErrTemplateUndefined).Error("template parameter is nil")
 		return nil, ErrTemplateUndefined
+	default:
+		log.Error("Unsupported template type")
+		return nil, ErrUnknownTemplate
 	}
 	resource, err := model.Resources(ctx).Create(r)
 	if err != nil {
 		log.WithError(err).Error()
 		return nil, err
 	}
-	return &ResourceReply{ID: resource.GetId()}, nil
+	return &ResourceReply{ID: resource.GetId(), Resource: resource}, nil
 }
 func (s *ResourceAPI) Unregister(ctx context.Context, in *ResourceIDRequest) (*ResourceReply, error) {
 	// in.Key takes nil possibly.
@@ -163,4 +172,19 @@ func (s *ResourceAPI) Unregister(ctx context.Context, in *ResourceIDRequest) (*R
 	}
 
 	return &ResourceReply{ID: in.GetID()}, nil
+}
+
+func (s *ResourceAPI) Show(ctx context.Context, in *ResourceIDRequest) (*ResourceReply, error) {
+	// in.Key takes nil possibly.
+	if in.GetKey() == nil {
+		log.Error("Invalid resource identifier")
+		return nil, fmt.Errorf("Invalid resource identifier")
+	}
+	// TODO: handle the case for in.GetName() is received.
+	resource, err := model.Resources(ctx).FindByID(in.GetID())
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+	return &ResourceReply{ID: resource.GetId(), Resource: resource}, nil
 }

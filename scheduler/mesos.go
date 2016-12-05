@@ -97,10 +97,42 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		return nil
 	}
 
+	getHypervisorName := func(offer *mesos.Offer) string {
+		for _, attr := range offer.Attributes {
+			if attr.GetName() == "hypervisor" &&
+				attr.GetType() == mesos.Value_TEXT {
+				return attr.GetText().GetValue()
+			}
+		}
+		return ""
+	}
+
 	findMatching := func(i *model.Instance) *mesos.Offer {
 		for _, offer := range offers {
-			// TODO: Check attribute: hypervisor name.
-			return offer
+			hypervisorName := getHypervisorName(offer)
+			if hypervisorName == "" {
+				continue
+			}
+			r, err := i.Resource(ctx)
+			if err != nil {
+				log.WithError(err).WithFields(log.Fields{
+					"instance_id": i.GetId(),
+					"resource_id": i.GetResourceId(),
+				}).Error("Failed to retrieve resource object")
+				continue
+			}
+			switch t := r.GetTemplate(); t.(type) {
+			case *model.Resource_Lxc:
+				if hypervisorName == "lxc" {
+					return offer
+				}
+			case *model.Resource_Null:
+				if hypervisorName == "null" {
+					return offer
+				}
+			default:
+				log.Warnf("Unknown template type")
+			}
 		}
 		return nil
 	}
@@ -108,18 +140,22 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	tasks := []*mesos.TaskInfo{}
 	acceptIDs := []*mesos.OfferID{}
 	for _, i := range queued {
-		log.Info("Queued Instance: ", i.GetId())
 		found := findMatching(i)
 		if found == nil {
 			continue
 		}
-		log.WithField("InstanceID", i.GetId()).Info("Found matching offer")
+		hypervisorName := getHypervisorName(found)
+		log.WithFields(log.Fields{
+			"instance_id": i.GetId(),
+			"hypervisor":  hypervisorName,
+		}).Info("Found matching offer")
 
 		executor := &mesos.ExecutorInfo{
-			ExecutorId: util.NewExecutorID("vdc-hypervisor-null"),
+			ExecutorId: util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 			Name:       proto.String("VDC Executor"),
 			Command: &mesos.CommandInfo{
-				Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=null -zk=%s", ExecutorPath, sched.zkAddr)),
+				Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=%s -zk=%s",
+					ExecutorPath, hypervisorName, sched.zkAddr)),
 			},
 		}
 
