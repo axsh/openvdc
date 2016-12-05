@@ -61,7 +61,8 @@ else
 fi
 
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
-RPM_ABSOLUTE=/var/www/html/openvdc-repos
+RELEASE_SUFFIX=$(deployment/packagebuild/gen-dev-build-tag.sh)
+RPM_ABSOLUTE=/var/www/html/openvdc-repos/${RELEASE_SUFFIX}_test/
 
 
 /usr/bin/env
@@ -83,15 +84,11 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   done
 fi
 # Run build script
-#+
-RELEASE_SUFFIX=$(deployment/packagebuild/gen-dev-build-tag.sh)
-#-
 
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
 
 # Build the yum repository
-docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/rpmbuild/RPMS/x86_64/${RELEASE_SUFFIX}_test/ ; createrepo . "
-#  Edited this out, 5 Dec. docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/rpmbuild/RPMS/x86_64/ ; createrepo . "
+docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/rpmbuild/RPMS/x86_64/ ; createrepo . "
 
 if [[ -n "$BUILD_CACHE_DIR" ]]; then
     if [[ ! -d "$BUILD_CACHE_DIR" || ! -w "$BUILD_CACHE_DIR" ]]; then
