@@ -37,6 +37,7 @@ fi
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}-rpm-test.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} "${img_tag}")
 docker exec -t $CID /bin/sh -c "echo '${RELEASE_SUFFIX}' > /etc/yum/vars/RELEASE_ID"
+docker exec -t $CID /bin/sh cat /etc/yum/vars/RELEASE_ID
 docker exec $CID yum install -y openvdc
 
 ## Setup
