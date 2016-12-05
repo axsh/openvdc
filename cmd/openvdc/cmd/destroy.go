@@ -3,6 +3,9 @@ package cmd
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"github.com/axsh/openvdc/api"
 )
 
 var destroyCmd = &cobra.Command{
@@ -11,8 +14,26 @@ var destroyCmd = &cobra.Command{
 	Long:  "Destroy an already existing instance.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		log.Infoln("Under construction")
+		if len(args) < 1 {
+			log.Fatal("Please provide an instance ID")
+		}
 
-		return nil
+		instanceID := args[0]
+
+		req := &api.DestroyRequest{
+			InstanceId: instanceID,
+		}
+
+		return remoteCall(func(conn *grpc.ClientConn) error {
+			c := api.NewInstanceClient(conn)
+
+			res, err := c.Destroy(context.Background(), req)
+			if err != nil {
+				log.WithError(err).Fatal("Disconnected abnormally")
+				return err
+			}
+			fmt.Println(res)
+			return err
+		})
 	},
 }
