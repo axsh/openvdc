@@ -7,6 +7,7 @@ import (
 
 func init() {
 	TemplateCmd.AddCommand(template.ValidateCmd)
+	TemplateCmd.AddCommand(template.ShowCmd)
 }
 
 var TemplateCmd = &cobra.Command{
