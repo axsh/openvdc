@@ -35,7 +35,7 @@ trap "vbox_rm  "  EXIT
 cp /var/lib/jenkins/.ssh/id_rsa.pub deployment/integration 
 echo ${RELEASE_SUFFIX} > ./release_id
 tar cf - . |  ssh yumrepo@192.168.56.111 tar xf - -C /data/openvdc-integration 
-ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration &&  ./build.sh"
+ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration &&  ./build.sh "
 
 
 ssh yumrepo@192.168.56.111  "cd /data/openvdc-integration/deployment/integration/output-virtualbox-ovf && vboxmanage import openvdc-integration.ovf && vboxmanage startvm ${CID}  --type headless"
