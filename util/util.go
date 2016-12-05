@@ -35,12 +35,6 @@ func SendToApi(serverAddr string, hostName string, imageTitle string, taskType s
 		log.Println(resp)
 
 	default:
-		resp, err := c.Run(context.Background(), &api.RunRequest{imageTitle, hostName, taskType})
-
-		if err != nil {
-			log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-		}
-
-		log.Println(resp)
+		log.Fatalf("Unknown task type: %s", taskType)
 	}
 }

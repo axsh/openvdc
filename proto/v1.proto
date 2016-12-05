@@ -8,15 +8,11 @@ import "model.proto";
 
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
-	rpc Run (RunRequest) returns (RunReply){}
+  rpc Start (StartRequest) returns (StartReply){}
+	rpc Run (ResourceRequest) returns (RunReply){}
 	rpc StopTask (StopTaskRequest) returns (StopTaskReply){}
 }
 
-message RunRequest{
-	string imageName = 1;
-	string hostName = 2;
-	string taskType = 3;
-}
 message RunReply {
   string instance_id = 1;
   string resource_id = 2;
@@ -34,6 +30,13 @@ message CreateRequest{
   string resource_id = 1;
 }
 message CreateReply{
+  string instance_id = 1;
+}
+
+message StartRequest {
+  string instance_id = 1;
+}
+message StartReply {
   string instance_id = 1;
 }
 

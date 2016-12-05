@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/axsh/openvdc/model/backend"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 type ResourceOps interface {
@@ -39,7 +39,7 @@ func (i *resources) connection() (backend.ModelBackend, error) {
 }
 
 func (i *resources) Create(n *Resource) (*Resource, error) {
-	n.State = ResourceState_Registered
+	n.State = Resource_REGISTERED
 	data, err := proto.Marshal(n)
 	if err != nil {
 		return nil, err
@@ -83,10 +83,10 @@ func (i *resources) Destroy(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := n.validateStateTransition(ResourceState_Unregistered); err != nil {
+	if err := n.validateStateTransition(Resource_UNREGISTERED); err != nil {
 		return err
 	}
-	n.State = ResourceState_Unregistered
+	n.State = Resource_UNREGISTERED
 	data, err := proto.Marshal(n)
 	if err != nil {
 		return err
@@ -94,11 +94,11 @@ func (i *resources) Destroy(id string) error {
 	return bk.Update(fmt.Sprintf("/%s/%s", resourcesBaseKey, id), data)
 }
 
-func (r *Resource) validateStateTransition(next ResourceState) error {
+func (r *Resource) validateStateTransition(next Resource_State) error {
 	var result bool
 	switch r.GetState() {
-	case ResourceState_Registered:
-		result = (next == ResourceState_Unregistered)
+	case Resource_REGISTERED:
+		result = (next == Resource_UNREGISTERED)
 	}
 
 	if result {

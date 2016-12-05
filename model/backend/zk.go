@@ -2,6 +2,7 @@ package backend
 
 import (
 	"path"
+	"sort"
 	"strings"
 	"time"
 
@@ -119,6 +120,42 @@ func (z *Zk) Delete(key string) error {
 	}
 	absKey, _ := z.canonKey(key)
 	return z.conn.Delete(absKey, 1)
+}
+
+// TODO: Add mutex for thread safety.
+type childIt struct {
+	cur      int
+	children *[]string
+}
+
+func (c *childIt) Next() bool {
+	if len(*c.children) > c.cur {
+		c.cur++
+	}
+	return (len(*c.children) > c.cur)
+}
+
+func (c *childIt) Value() string {
+	if c.cur < 0 || len(*c.children) == 0 {
+		return ""
+	} else if len(*c.children) == c.cur {
+		return (*c.children)[c.cur-1]
+	}
+	return (*c.children)[c.cur]
+}
+
+func (z *Zk) Keys(parentKey string) (KeyIterator, error) {
+	if z.conn == nil {
+		return nil, ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(parentKey)
+	children, _, err := z.conn.Children(absKey)
+	if err != nil {
+		return nil, err
+	}
+	// Sort keys in client side.
+	sort.Strings(children)
+	return &childIt{children: &children, cur: -1}, nil
 }
 
 func (z *Zk) Schema() SchemaHandler {
