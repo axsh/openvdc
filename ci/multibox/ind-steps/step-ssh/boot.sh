@@ -9,8 +9,8 @@
         sleep 5
         tries=$(( tries + 1 ))
         [[ $tries -eq ${timeout} ]] && exit 1
-
     done
+    :
 ) ; prev_cmd_failed
 
 ssh-keygen -R ${IP_ADDR}
