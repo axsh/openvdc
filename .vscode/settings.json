@@ -2,5 +2,13 @@
   "search.exclude": {
     "vendor/**": true,
     "vendor/vendor.json": false
-  }
+  },
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/templates/**/*.json"
+      ],
+      "url": "./schema/v1.json"
+    }
+  ]
 }
