@@ -61,6 +61,7 @@ def stage_integration(label) {
     stage "Integration Test ${label}"
     write_build_env(label)
     sh "deployment/integration/run_integration.sh  ./build.env"
+  }
 }
 
 
@@ -83,4 +84,4 @@ for( label in build_nodes) {
   stage_test_rpm(label)
   stage_integration(label)
 }
-}
+
