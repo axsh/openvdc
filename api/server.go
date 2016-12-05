@@ -6,16 +6,13 @@ import (
 	"net"
 	"os"
 
-	log "github.com/Sirupsen/logrus"
-
 	"github.com/axsh/openvdc/model"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	sched "github.com/mesos/mesos-go/scheduler"
-
 	util "github.com/mesos/mesos-go/mesosutil"
+	log "github.com/Sirupsen/logrus"
 )
 
 var theDriver sched.SchedulerDriver
@@ -45,20 +42,24 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
 
 	instanceID := in.InstanceId
+	sendCommand("stop", instanceID)
 
-	if os.Getenv("AGENT_ID") == "" {
-		log.Errorln("AGENT_ID env variable needs to be set. Example: AGENT_ID=81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0")
-	} else {
-
-		//There might be a better way to do this, but for now the AgentID is set through an environment variable.
-		//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
-		theDriver.SendFrameworkMessage(
-			util.NewExecutorID("vdc-hypervisor-null"),
-			util.NewSlaveID(os.Getenv("AGENT_ID")),
-			"stop_"+instanceID,
-		)
-	}
 	return &StopReply{InstanceId: "test"}, nil
+}
+
+func sendCommand(cmd string, id string) {
+	
+	if os.Getenv("AGENT_ID") == "" {
+                log.Errorln("AGENT_ID env variable needs to be set. Example: AGENT_ID=81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0")
+        } else {
+                //There might be a better way to do this, but for now the AgentID is set through an environment variable.
+                //Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
+                theDriver.SendFrameworkMessage(
+                        util.NewExecutorID("vdc-hypervisor-null"),
+                        util.NewSlaveID(os.Getenv("AGENT_ID")),
+                        cmd + "_" + id,
+                )
+        }
 }
 
 func (s *APIServer) Serve(listen net.Listener) error {
