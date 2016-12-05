@@ -71,6 +71,11 @@
     },
     {
       "type": "file",
+      "source": "./release_id", 
+      "destination": "/etc/yum/vars/release_id"
+    },
+    {
+      "type": "file",
       "source": "id_rsa.pub",
       "destination": "/home/vagrant/.ssh/authorized_keys"
     },

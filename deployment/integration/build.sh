@@ -2,6 +2,11 @@
 
 set -e
 
+## This variable/file is needed for yum
+echo '${RELEASE_SUFFIX}' > ./release_id
+
+
+
 #box_url="${1:?ERROR: Require to set download .box URL}"
 box_url="http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_centos-7.2_chef-provisionerless.box"
 box_tmp="${2:-boxtemp/7.2}"
