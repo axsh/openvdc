@@ -30,5 +30,5 @@ fi
     # to take care of keeping the files updated
     false
     $skip_step_if_already_done; set -ex
-    sudo rsync -ruv "${NODE_DIR}/guestroot/" "${TMP_ROOT}"
+    sudo rsync -rv "${NODE_DIR}/guestroot/" "${TMP_ROOT}"
 ) ; prev_cmd_failed
