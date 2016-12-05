@@ -84,7 +84,8 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
 fi
 # Run build script
 #+
-RELEASE_SUFFIX=$(../packagebuild/gen-dev-build-tag.sh)
+pwd
+RELEASE_SUFFIX=$(deployment/docker/packagebuild/gen-dev-build-tag.sh)
 #-
 
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
