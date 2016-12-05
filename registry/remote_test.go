@@ -17,7 +17,7 @@ func TestRemoteRegistryFind(t *testing.T) {
 	assert := assert.New(t)
 	reg := NewRemoteRegistry()
 	rt, err := reg.Find(fmt.Sprintf("%s/%s/%s/templates/centos/7/lxc.json",
-		githubRawURI, githubRepoSlug, defaultRef))
+		githubRawURI, githubRepoSlug, GithubDefaultRef))
 	assert.NoError(err)
 	assert.NotNil(rt)
 	assert.Equal(rt.source, reg)

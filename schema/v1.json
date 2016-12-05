@@ -4,6 +4,9 @@
   "description": "OpenVDC Resource Template Schema",
   "type": "object",
   "properties": {
+    "_comment": {
+      "type": "string"
+    },
     "title": {
       "type": "string"
     },
@@ -23,21 +26,63 @@
           "$ref": "#/templates/null"
         }
       ]
+    }
+  },
+  "required": [
+    "title",
+    "template"
+  ],
+  "templates": {
+    "none": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "none"
+          ]
+        }
+      }
     },
-    "templates": {
-      "none": {},
-      "lxc": {
-        "minimum_vcpu": {
+    "lxc": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "lxc"
+          ]
+        },
+        "min_vcpu": {
           "type": "integer",
           "default": 1
         },
-        "minimum_memory_gb": {
+        "min_memory_gb": {
+          "type": "integer",
+          "default": 1
+        },
+        "vcpu": {
+          "type": "integer",
+          "default": 1
+        },
+        "memory_gb": {
           "type": "integer",
           "default": 1
         },
         "lxc_image": {
           "type": "object",
           "properties": {
+            "_comment": {
+              "type": "string"
+            },
             "download_url": {
               "type": "string",
               "format": "uri"
@@ -53,21 +98,30 @@
             "download_url"
           ]
         }
-      },
-      "null": {
-        "minimum_vcpu": {
+      }
+    },
+    "null": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "null"
+          ]
+        },
+        "min_vcpu": {
           "type": "integer",
           "default": 1
         },
-        "minimum_memory_gb": {
+        "min_memory_gb": {
           "type": "integer",
           "default": 1
         }
       }
     }
-  },
-  "required": [
-    "title",
-    "template"
-  ]
+  }
 }

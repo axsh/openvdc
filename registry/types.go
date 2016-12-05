@@ -20,8 +20,8 @@ type TemplateRoot struct {
 
 	// "template" block is delayed to parse.
 	// https://golang.org/pkg/encoding/json/#RawMessage
-	RawTemplate map[string]json.RawMessage `json:"template"`
-	Template    model.ResourceTemplate     `json:"-"`
+	RawTemplate json.RawMessage        `json:"template"`
+	Template    model.ResourceTemplate `json:"-"`
 }
 
 type RegistryTemplate struct {
@@ -55,21 +55,19 @@ func parseResourceTemplate(in io.Reader) (*TemplateRoot, error) {
 		return nil, err
 	}
 	// Delayed parse for "template" key
-	var tmpl model.ResourceTemplate
-	for tmplName, raw := range root.RawTemplate {
-		tmpl = model.NewTemplateByName(tmplName)
-		if tmpl == nil {
-			return nil, fmt.Errorf("Unknown template name: %s", tmplName)
-		}
-		err := json.Unmarshal(raw, tmpl)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parse JSON in template key")
-		}
-		// This is "oneof" type so process only the first item.
-		break
+	typeFind := struct {
+		Type string `json:"type"`
+	}{}
+	if err := json.Unmarshal(root.RawTemplate, &typeFind); err != nil {
+		return nil, err
 	}
+	tmpl := model.NewTemplateByName(typeFind.Type)
 	if tmpl == nil {
-		return nil, fmt.Errorf("Invalid template definition")
+		return nil, fmt.Errorf("Unknown template name: %s", typeFind.Type)
+	}
+	err = json.Unmarshal(root.RawTemplate, tmpl)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse JSON in template key")
 	}
 	root.Template = tmpl
 	return root, nil
