@@ -83,3 +83,4 @@ for( label in build_nodes) {
   stage_test_rpm(label)
   stage_integration(label)
 }
+}
