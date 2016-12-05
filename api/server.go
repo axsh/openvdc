@@ -55,6 +55,14 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
         return &DestroyReply{InstanceId: instanceID + " destroyed."}, nil
 }
 
+func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
+
+        instanceID := in.InstanceId
+        sendCommand("console", instanceID)
+
+        return &ConsoleReply{InstanceId: instanceID}, nil
+}
+
 func sendCommand(cmd string, id string) {
 	
 	if os.Getenv("AGENT_ID") == "" {
