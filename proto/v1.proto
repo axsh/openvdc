@@ -9,8 +9,10 @@ import "model.proto";
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
   rpc Start (StartRequest) returns (StartReply){}
-	rpc Run (ResourceRequest) returns (RunReply){}
-	rpc StopTask (StopTaskRequest) returns (StopTaskReply){}
+  rpc Run (ResourceRequest) returns (RunReply){}
+  rpc Stop (StopRequest) returns (StopReply){}
+  rpc Destroy (DestroyRequest) returns (DestroyReply){}
+  rpc Console (ConsoleRequest) returns (ConsoleReply){}
 }
 
 message RunReply {
@@ -18,11 +20,24 @@ message RunReply {
   string resource_id = 2;
 }
 
-message StopTaskRequest{
-        string hostName = 1;
-        string taskType = 2;
+message StopRequest{
+  string instance_id = 1;
 }
-message StopTaskReply {
+message StopReply {
+  string instance_id = 1;
+}
+
+message DestroyRequest{
+  string instance_id = 1;
+}
+message DestroyReply {
+  string instance_id = 1;
+}
+
+message ConsoleRequest{
+  string instance_id = 1;
+}
+message ConsoleReply {
   string instance_id = 1;
 }
 
