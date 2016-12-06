@@ -75,7 +75,11 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 	if err != nil {
 		return err
 	}
-
+	// Fetch associated resource to the instance
+	res, err := inst.Resource(ctx)
+	if err != nil {
+		return err
+	}
 	//There might be a better way to do this, but for now the AgentID is set through an environment variable.
 	//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
 	slaveID, ok := os.LookupEnv("AGENT_ID")
@@ -84,7 +88,7 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 	}
 
 	_, err = s.api.scheduler.SendFrameworkMessage(
-		util.NewExecutorID("vdc-hypervisor-null"),
+		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", res.ResourceTemplate().ResourceName())),
 		util.NewSlaveID(slaveID),
 		fmt.Sprintf("%s_%s", cmd, instanceID),
 	)
