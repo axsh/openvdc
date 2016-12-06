@@ -82,7 +82,7 @@ func sendCommand(ctx context.Context, cmd string, instanceID string) error {
 	//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
 	slaveID, ok := os.LookupEnv("AGENT_ID")
 	if !ok {
-		slaveID = inst.ExecutorId
+		slaveID = inst.SlaveId
 	}
 
 	_, err = theDriver.SendFrameworkMessage(

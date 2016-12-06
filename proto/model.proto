@@ -8,7 +8,7 @@ option go_package = "github.com/axsh/openvdc/model";
 
 message Instance {
   string id = 1;
-  string executor_id = 2;
+  string slave_id = 2;
   string resource_id = 3;
   InstanceState last_state = 4;
 }
