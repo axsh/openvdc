@@ -95,6 +95,22 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 	return err
 }
 
+func (s *InstanceAPI) Show(ctx context.Context, in *InstanceIDRequest) (*InstanceReply, error) {
+	// in.Key takes nil possibly.
+	if in.GetKey() == nil {
+		log.Error("Invalid instance identifier")
+		return nil, fmt.Errorf("Invalid instance identifier")
+	}
+
+	// TODO: handle the case for in.GetName() is received.
+	instance, err := model.Instances(ctx).FindByID(in.GetID())
+	if err != nil {
+		log.WithError(err).WithField("key", in.GetID()).Error("Failed Instances.FindByID")
+		return nil, err
+	}
+	return &InstanceReply{ID: instance.GetId(), Instance: instance}, nil
+}
+
 func (s *APIServer) Serve(listen net.Listener) error {
 	return s.server.Serve(listen)
 }
