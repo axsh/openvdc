@@ -15,11 +15,10 @@ import (
 	sched "github.com/mesos/mesos-go/scheduler"
 )
 
-var theDriver sched.SchedulerDriver
-
 type APIServer struct {
 	server         *grpc.Server
 	modelStoreAddr string
+	scheduler      sched.SchedulerDriver
 }
 
 func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
@@ -30,9 +29,8 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
 		modelStoreAddr: modelAddr,
+		scheduler:      driver,
 	}
-
-	theDriver = driver
 
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
 	RegisterResourceServer(s.server, &ResourceAPI{api: s})
@@ -42,7 +40,7 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
 
 	instanceID := in.InstanceId
-	if err := sendCommand(ctx, "stop", instanceID); err != nil {
+	if err := s.sendCommand(ctx, "stop", instanceID); err != nil {
 		log.WithError(err).Error("Failed sendCommand(stop)")
 		return nil, err
 	}
@@ -53,7 +51,7 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
 	instanceID := in.InstanceId
-	if err := sendCommand(ctx, "destroy", instanceID); err != nil {
+	if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
 		log.WithError(err).Error("Failed sendCommand(destroy)")
 		return nil, err
 	}
@@ -64,7 +62,7 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
 
 	instanceID := in.InstanceId
-	if err := sendCommand(ctx, "console", instanceID); err != nil {
+	if err := s.sendCommand(ctx, "console", instanceID); err != nil {
 		log.WithError(err).Error("Failed sendCommand(console)")
 		return nil, err
 	}
@@ -72,7 +70,7 @@ func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*Console
 	return &ConsoleReply{InstanceId: instanceID}, nil
 }
 
-func sendCommand(ctx context.Context, cmd string, instanceID string) error {
+func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID string) error {
 	inst, err := model.Instances(ctx).FindByID(instanceID)
 	if err != nil {
 		return err
@@ -85,7 +83,7 @@ func sendCommand(ctx context.Context, cmd string, instanceID string) error {
 		slaveID = inst.SlaveId
 	}
 
-	_, err = theDriver.SendFrameworkMessage(
+	_, err = s.api.scheduler.SendFrameworkMessage(
 		util.NewExecutorID("vdc-hypervisor-null"),
 		util.NewSlaveID(slaveID),
 		fmt.Sprintf("%s_%s", cmd, instanceID),
