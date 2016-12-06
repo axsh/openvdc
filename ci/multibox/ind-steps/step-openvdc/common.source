@@ -1,0 +1,3 @@
+scheduler=${scheduler:-false}
+git_revision=${git_revision:-( cd ${ENV_ROOTDIR} ; git rev-parse --verify HEAD )}
+
