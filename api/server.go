@@ -45,7 +45,7 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 		return nil, err
 	}
 
-	return &StopReply{InstanceId: instanceID + " stopped."}, nil
+	return &StopReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
@@ -56,7 +56,7 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 		return nil, err
 	}
 
-	return &DestroyReply{InstanceId: instanceID + " destroyed."}, nil
+	return &DestroyReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
