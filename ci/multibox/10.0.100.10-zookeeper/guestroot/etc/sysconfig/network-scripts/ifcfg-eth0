@@ -1,3 +1,4 @@
+
 DEVICE=eth0
 ONBOOT=yes
 TYPE=Ethernet
