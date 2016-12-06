@@ -58,7 +58,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.Errorln("Couldn't send status update", err)
 	}
 
-	err = exec.startInstance(driver, taskInfo)
+	err = exec.bootInstance(driver, taskInfo)
 	if err != nil {
 		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 			TaskId: taskInfo.GetTaskId(),
@@ -70,7 +70,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 }
 
-func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
+func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
 	instanceID := taskInfo.GetTaskId().GetValue()
 	log := log.WithFields(logrus.Fields{
 		"instance_id": instanceID,
