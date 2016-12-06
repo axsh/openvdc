@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 )
 
 var consoleCmd = &cobra.Command{
@@ -24,7 +26,7 @@ var consoleCmd = &cobra.Command{
                         InstanceId: instanceID,
                 }
 
-                return remoteCall(func(conn *grpc.ClientConn) error {
+                return util.RemoteCall(func(conn *grpc.ClientConn) error {
                         c := api.NewInstanceClient(conn)
 
                         res, err := c.Console(context.Background(), req)
