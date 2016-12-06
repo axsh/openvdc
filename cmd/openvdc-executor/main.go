@@ -122,6 +122,51 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	return nil
 }
 
+func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID string) error {
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
+
+	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
+	}
+
+	// Push back to the state below in case of error.
+	finState := model.InstanceState_STOPPED
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
+
+	hv, err := exec.hypervisorProvider.CreateDriver()
+	if err != nil {
+		return err
+	}
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
+	if err != nil {
+		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+	log.Infof("Starting instance")
+	err = hv.StartInstance()
+	if err != nil {
+		log.Error("Failed StartInstance")
+		return err
+	}
+	log.Infof("Instance started successfully")
+	// Here can bring the instance state to RUNNING finally.
+	finState = model.InstanceState_RUNNING
+	return nil
+}
+
 func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID string) error {
 	log := log.WithFields(logrus.Fields{
 		"instance_id": instanceID,
@@ -134,7 +179,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		return err
 	}
 
-	// Push back to the initial state in case of error.
+	// Push back to the state below in case of error.
 	finState := model.InstanceState_RUNNING
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
@@ -179,7 +224,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return err
 	}
 
-	// Push back to the initial state in case of error.
+	// Push back to the state below in case of error.
 	finState := model.InstanceState_RUNNING
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
@@ -234,6 +279,11 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 	var err error
 
 	switch command {
+	case "start":
+		err = exec.startInstance(driver, taskId.GetValue())
+		if err != nil {
+			log.WithError(err).Error("Failed to start instance")
+		}
 	case "stop":
 		err = exec.stopInstance(driver, taskId.GetValue())
 		if err != nil {
