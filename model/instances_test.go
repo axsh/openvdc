@@ -91,3 +91,27 @@ func TestUpdateStateInstance(t *testing.T) {
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))
 	})
 }
+
+func TestUpdateInstance(t *testing.T) {
+	assert := assert.New(t)
+	err := Instances(context.Background()).Update(&Instance{Id: "i-xxxx"})
+	assert.Equal(ErrBackendNotInContext, err)
+
+	withConnect(t, func(ctx context.Context) {
+		n := &Instance{
+			ExecutorId: "xxx",
+			ResourceId: "r-xxxx",
+		}
+		err = Instances(ctx).Update(n)
+		assert.Error(err)
+		assert.Equal(ErrInvalidID, err, "Empty ID object should get ErrInvalidID")
+
+		got, err := Instances(ctx).Create(n)
+		assert.NoError(err)
+		got.ResourceId = "r-yyyy"
+		err = Instances(ctx).Update(got)
+		got2, err := Instances(ctx).FindByID(got.Id)
+		assert.NoError(err)
+		assert.Equal(got.ResourceId, got2.ResourceId)
+	})
+}
