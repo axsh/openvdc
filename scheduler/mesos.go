@@ -173,6 +173,10 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 		tasks = append(tasks, task)
 		acceptIDs = append(acceptIDs, found.Id)
+
+		// Associate mesos Slave ID to the instance.
+		i.ExecutorId = found.SlaveId.GetValue()
+		model.Instances(ctx).Update(i)
 	}
 	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	if err != nil {
