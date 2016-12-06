@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"net/url"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -118,15 +117,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 }
 
 func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
-	b := taskInfo.GetData()
-	s := string(b[:])
-
-	values, err := url.ParseQuery(s)
-	if err != nil {
-		log.WithError(err).Error("Failed to parse TaskInfo.Data: ", s)
-		return err
-	}
-	instanceID := values.Get("instance_id")
+	instanceID := taskInfo.GetTaskId().GetValue()
 	log := log.WithFields(logrus.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),

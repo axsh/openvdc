@@ -5,7 +5,6 @@ import (
 	"net"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/pborman/uuid"
 
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
@@ -159,7 +158,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			},
 		}
 
-		taskId := util.NewTaskID(uuid.New())
+		taskId := util.NewTaskID(i.GetId())
 		task := &mesos.TaskInfo{
 			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
 			TaskId:   taskId,
