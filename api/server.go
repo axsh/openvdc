@@ -10,9 +10,9 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	sched "github.com/mesos/mesos-go/scheduler"
-	util "github.com/mesos/mesos-go/mesosutil"
 	log "github.com/Sirupsen/logrus"
+	util "github.com/mesos/mesos-go/mesosutil"
+	sched "github.com/mesos/mesos-go/scheduler"
 )
 
 var theDriver sched.SchedulerDriver
@@ -42,40 +42,55 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
 
 	instanceID := in.InstanceId
-	sendCommand("stop", instanceID)
+	if err := sendCommand(ctx, "stop", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(stop)")
+		return nil, err
+	}
 
 	return &StopReply{InstanceId: instanceID + " stopped."}, nil
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
-        instanceID := in.InstanceId
-        sendCommand("destroy", instanceID)
+	instanceID := in.InstanceId
+	if err := sendCommand(ctx, "destroy", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(destroy)")
+		return nil, err
+	}
 
-        return &DestroyReply{InstanceId: instanceID + " destroyed."}, nil
+	return &DestroyReply{InstanceId: instanceID + " destroyed."}, nil
 }
 
 func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
 
-        instanceID := in.InstanceId
-        sendCommand("console", instanceID)
+	instanceID := in.InstanceId
+	if err := sendCommand(ctx, "console", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(console)")
+		return nil, err
+	}
 
-        return &ConsoleReply{InstanceId: instanceID}, nil
+	return &ConsoleReply{InstanceId: instanceID}, nil
 }
 
-func sendCommand(cmd string, id string) {
-	
-	if os.Getenv("AGENT_ID") == "" {
-                log.Errorln("AGENT_ID env variable needs to be set. Example: AGENT_ID=81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0")
-        } else {
-                //There might be a better way to do this, but for now the AgentID is set through an environment variable.
-                //Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
-                theDriver.SendFrameworkMessage(
-                        util.NewExecutorID("vdc-hypervisor-null"),
-                        util.NewSlaveID(os.Getenv("AGENT_ID")),
-                        cmd + "_" + id,
-                )
-        }
+func sendCommand(ctx context.Context, cmd string, instanceID string) error {
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		return err
+	}
+
+	//There might be a better way to do this, but for now the AgentID is set through an environment variable.
+	//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
+	slaveID, ok := os.LookupEnv("AGENT_ID")
+	if !ok {
+		slaveID = inst.ExecutorId
+	}
+
+	_, err = theDriver.SendFrameworkMessage(
+		util.NewExecutorID("vdc-hypervisor-null"),
+		util.NewSlaveID(slaveID),
+		fmt.Sprintf("%s_%s", cmd, instanceID),
+	)
+	return err
 }
 
 func (s *APIServer) Serve(listen net.Listener) error {
