@@ -22,8 +22,6 @@ var (
 	goversion string
 )
 
-var theTaskInfo mesos.TaskInfo
-
 var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
@@ -48,52 +46,8 @@ func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 	log.Infoln("Executor disconnected.")
 }
 
-func newTask(theHostName string, taskType string, exec *VDCExecutor) {
-
-	hp := exec.hypervisorProvider
-	hp.SetName(theHostName)
-	hvd, err := hp.CreateDriver()
-
-	if err != nil {
-		log.Errorln("Hypervisor driver error", err)
-		return
-	}
-
-	switch taskType {
-	case "create":
-		err = hvd.CreateInstance()
-		if err != nil {
-			log.Errorln("Error creating instance")
-		}
-	case "destroy":
-		err = hvd.DestroyInstance()
-		if err != nil {
-			log.Errorln("Error destroying instance")
-		}
-	case "run":
-		err = hvd.StartInstance()
-		if err != nil {
-			log.Errorln("Error running instance")
-		}
-	case "stop":
-		err = hvd.StopInstance()
-		if err != nil {
-			log.Errorln("Error stopping instance")
-		}
-	case "console":
-		err = hvd.InstanceConsole()
-		if err != nil {
-			log.Errorln("Error connecting to instance")
-		}
-	default:
-		log.Errorln("Invalid task name")
-	}
-}
-
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
-
-	theTaskInfo = *taskInfo
 
 	runStatus := &mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
@@ -172,7 +126,6 @@ func DestroyTask(driver exec.ExecutorDriver, taskId *mesos.TaskID) {
 
 	finState := mesos.TaskState_TASK_FINISHED
 
-	log.Infoln("Finishing task", theTaskInfo.GetName())
 	finStatus := &mesos.TaskStatus{
 		TaskId: taskId,
 		State:  finState.Enum(),
@@ -181,7 +134,6 @@ func DestroyTask(driver exec.ExecutorDriver, taskId *mesos.TaskID) {
 	if _, err := driver.SendStatusUpdate(finStatus); err != nil {
 		log.Infoln("ERROR: Couldn't send status update", err)
 	}
-	log.Infoln("Task finished", theTaskInfo.GetName())
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
