@@ -130,9 +130,30 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	if in.GetInstanceId() == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
 	}
-	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_QUEUED); err != nil {
-		log.WithError(err).Error()
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
+	}
+	lastState := inst.GetLastState()
+	switch lastState.GetState() {
+	case model.InstanceState_REGISTERED:
+		if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_QUEUED); err != nil {
+			log.WithError(err).Error()
+			return nil, err
+		}
+	case model.InstanceState_STOPPED:
+		if err := s.sendCommand(ctx, "start", in.GetInstanceId()); err != nil {
+			log.WithError(err).Error("Failed to sendCommand(start)")
+			return nil, err
+		}
+	default:
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error("Unexpected instance state")
+		// TODO: Investigate gRPC error response
+		return nil, fmt.Errorf("Unexpected instance state")
 	}
 	// TODO: Tell the scheduler there is a queued item to get next offer eagerly.
 	return &StartReply{InstanceId: in.GetInstanceId()}, nil
