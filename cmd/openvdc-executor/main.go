@@ -122,18 +122,99 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mes
 	return nil
 }
 
-func DestroyTask(driver exec.ExecutorDriver, taskId *mesos.TaskID) {
+func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID string) error {
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
 
-	finState := mesos.TaskState_TASK_FINISHED
-
-	finStatus := &mesos.TaskStatus{
-		TaskId: taskId,
-		State:  finState.Enum(),
+	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
 	}
 
-	if _, err := driver.SendStatusUpdate(finStatus); err != nil {
-		log.Infoln("ERROR: Couldn't send status update", err)
+	// Push back to the initial state in case of error.
+	finState := model.InstanceState_RUNNING
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
+
+	hv, err := exec.hypervisorProvider.CreateDriver()
+	if err != nil {
+		return err
 	}
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STOPPING)
+	if err != nil {
+		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+	log.Infof("Stopping instance")
+	err = hv.StopInstance()
+	if err != nil {
+		log.Error("Failed StopInstance")
+		return err
+	}
+	log.Infof("Instance stopped successfully")
+	// Here can bring the instance state to STOPPED finally.
+	finState = model.InstanceState_STOPPED
+	return nil
+}
+
+func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceID string) error {
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
+
+	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
+	}
+
+	// Push back to the initial state in case of error.
+	finState := model.InstanceState_RUNNING
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
+
+	hv, err := exec.hypervisorProvider.CreateDriver()
+	if err != nil {
+		return err
+	}
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_SHUTTINGDOWN)
+	if err != nil {
+		log.WithError(err).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+	log.Infof("Shuttingdown instance")
+	err = hv.StopInstance()
+	if err != nil {
+		log.Error("Failed StopInstance")
+		return err
+	}
+	err = hv.DestroyInstance()
+	if err != nil {
+		log.Error("Failed DestroyInstance")
+		return err
+	}
+	log.Infof("Instance terminated successfully")
+	// Here can bring the instance state to TERMINATED finally.
+	finState = model.InstanceState_TERMINATED
+	return nil
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
@@ -150,12 +231,34 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 	log.Infoln("command: ", command)
 	log.Infoln("taskId: ", taskId)
 	log.Infoln("---------------------------------------------")
+	var err error
 
 	switch command {
 	case "stop":
-		DestroyTask(driver, taskId)
+		err = exec.stopInstance(driver, taskId.GetValue())
+		if err != nil {
+			log.WithError(err).Error("Failed to stop instance")
+		}
+	case "destroy":
+		var tstatus *mesos.TaskStatus
+		err = exec.terminateInstance(driver, taskId.GetValue())
+		if err != nil {
+			log.WithError(err).Error("Failed to terminate instance")
+			tstatus = &mesos.TaskStatus{
+				TaskId: taskId,
+				State:  mesos.TaskState_TASK_FAILED.Enum(),
+			}
+		} else {
+			tstatus = &mesos.TaskStatus{
+				TaskId: taskId,
+				State:  mesos.TaskState_TASK_FINISHED.Enum(),
+			}
+		}
+		if _, err := driver.SendStatusUpdate(tstatus); err != nil {
+			log.WithError(err).Error("Couldn't send status update")
+		}
 	default:
-		log.Errorln("FrameworkMessage unrecognized.")
+		log.WithField("msg", msg).Errorln("FrameworkMessage unrecognized.")
 	}
 }
 
