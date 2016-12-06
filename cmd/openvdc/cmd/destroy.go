@@ -1,22 +1,42 @@
 package cmd
 
 import (
+	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
+
+	"github.com/axsh/openvdc/api"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 var destroyCmd = &cobra.Command{
-	Use:   "destroy [Image ID]",
+	Use:   "destroy [Instance ID]",
 	Short: "Destroy an instance",
 	Long:  "Destroy an already existing instance.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		if len(args) > 0 {
-			instanceID := args[0]
-			util.SendToApi(util.ServerAddr, instanceID, "", "destroy")
-		} else {
-			log.Warn("OpenVDC: Please provide an Instance ID.  Usage: destroy [Image ID]")
+		if len(args) < 1 {
+			log.Fatal("Please provide an instance ID")
 		}
-		return nil
-	}}
+
+		instanceID := args[0]
+
+		req := &api.DestroyRequest{
+			InstanceId: instanceID,
+		}
+
+		return util.RemoteCall(func(conn *grpc.ClientConn) error {
+			c := api.NewInstanceClient(conn)
+
+			res, err := c.Destroy(context.Background(), req)
+			if err != nil {
+				log.WithError(err).Fatal("Disconnected abnormally")
+				return err
+			}
+			fmt.Println(res)
+			return err
+		})
+	},
+}

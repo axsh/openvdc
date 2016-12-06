@@ -4,17 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"net"
-
-	log "github.com/Sirupsen/logrus"
+	"os"
 
 	"github.com/axsh/openvdc/model"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	sched "github.com/mesos/mesos-go/scheduler"
-
 	util "github.com/mesos/mesos-go/mesosutil"
+	log "github.com/Sirupsen/logrus"
 )
 
 var theDriver sched.SchedulerDriver
@@ -41,18 +39,43 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 	return s
 }
 
-func (s *InstanceAPI) StopTask(ctx context.Context, in *StopTaskRequest) (*StopTaskReply, error) {
+func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
 
-	hostName := in.HostName
+	instanceID := in.InstanceId
+	sendCommand("stop", instanceID)
 
-	//TODO: Don't hardcode the ID's.
-	theDriver.SendFrameworkMessage(
-		util.NewExecutorID("vdc-hypervisor-null"),
-		util.NewSlaveID("be590de8-83c0-47f5-9e4a-14f5326c240b-S0"),
-		"destroy_"+hostName,
-	)
+	return &StopReply{InstanceId: instanceID + " stopped."}, nil
+}
 
-	return &StopTaskReply{InstanceId: "test"}, nil
+func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
+
+        instanceID := in.InstanceId
+        sendCommand("destroy", instanceID)
+
+        return &DestroyReply{InstanceId: instanceID + " destroyed."}, nil
+}
+
+func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
+
+        instanceID := in.InstanceId
+        sendCommand("console", instanceID)
+
+        return &ConsoleReply{InstanceId: instanceID}, nil
+}
+
+func sendCommand(cmd string, id string) {
+	
+	if os.Getenv("AGENT_ID") == "" {
+                log.Errorln("AGENT_ID env variable needs to be set. Example: AGENT_ID=81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0")
+        } else {
+                //There might be a better way to do this, but for now the AgentID is set through an environment variable.
+                //Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
+                theDriver.SendFrameworkMessage(
+                        util.NewExecutorID("vdc-hypervisor-null"),
+                        util.NewSlaveID(os.Getenv("AGENT_ID")),
+                        cmd + "_" + id,
+                )
+        }
 }
 
 func (s *APIServer) Serve(listen net.Listener) error {
