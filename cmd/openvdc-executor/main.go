@@ -99,7 +99,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return err
 	}
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}

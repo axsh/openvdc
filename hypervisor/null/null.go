@@ -20,7 +20,7 @@ func (n *NullHypervisorProvider) Name() string {
 	return "null"
 }
 
-func (n *NullHypervisorProvider) CreateDriver() (hypervisor.HypervisorDriver, error) {
+func (n *NullHypervisorProvider) CreateDriver(string) (hypervisor.HypervisorDriver, error) {
 	return &NullHypervisorDriver{}, nil
 }
 
