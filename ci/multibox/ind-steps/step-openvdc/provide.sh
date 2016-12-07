@@ -2,8 +2,8 @@
 $scheduler && {
     (
         $starting_step "Starting scheduler on ${vm_name}"
-        false
+	ssh root@${IP_ADDR} "systemctl status ${service} | grep -q running"
         $skip_step_if_already_done ; set -ex
-        ssh root@${IP_ADDR} "/opt/axsh/openvdc/bin/openvdc-scheduler --master=${mesos_master}:5050 --zk=${zk}:2181 --api=${IP_ADDR}:5000"
+        ssh root@${IP_ADDR} "systemctl start openvdc-scheduler"
     ) ; prev_cmd_failed
 }
