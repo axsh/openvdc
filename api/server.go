@@ -51,6 +51,21 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
 	instanceID := in.InstanceId
+
+	if instanceID == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+	
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	if inst.GetLastState().GetState() == model.InstanceState_TERMINATED {
+		return nil, fmt.Errorf("Instance already terminated")
+	}
+
 	if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
 		log.WithError(err).Error("Failed sendCommand(destroy)")
 		return nil, err
