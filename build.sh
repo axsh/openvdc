@@ -17,11 +17,16 @@ if [[ ! -x $GOPATH/bin/go-bindata ]]; then
 fi
 $GOPATH/bin/go-bindata -pkg registry -o registry/schema.bindata.go schema
 
-# Until 76f26d79b1be670 gets merged to master.
-if (git rev-list master | grep 76f26d79b1be670) > /dev/null; then
+# Determine the default branch reference for registry/github.go
+SCHEMA_LAST_COMMIT=${SCHEMA_LAST_COMMIT:-$(git log -n 1 --pretty=format:%H -- schema/ registry/schema.bindata.go)}
+if (git rev-list origin/master | grep "${SCHEMA_LAST_COMMIT}") > /dev/null; then
+  # Found no changes for resource template/schema on HEAD.
+  # so that set preference to the master branch.
   LDFLAGS="${LDFLAGS} -X 'registry.GithubDefaultRef=master'"
 else
-  LDFLAGS="${LDFLAGS} -X 'registry.GithubDefaultRef=generalize-template'"
+  # Found resource template/schema changes on this HEAD. Switch the default reference branch.
+  # Check if $GIT_BRANCH has something once in case of running in Jenkins.
+  LDFLAGS="${LDFLAGS} -X 'registry.GithubDefaultRef=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}'"
 fi
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
