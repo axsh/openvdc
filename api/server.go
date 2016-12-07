@@ -178,6 +178,16 @@ func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateRep
 		log.WithError(err).Error()
 		return nil, err
 	}
+	
+	if r.GetState() == model.Resource_UNREGISTERED {
+		log.WithFields(log.Fields{
+                "resource_id": in.GetResourceId(),
+                        "state":       r.GetState().String(),
+                }).Error("Cannot use unregistered resource")
+
+                return nil, fmt.Errorf("Cannot use unregistered resource")
+	}
+
 	inst, err := model.Instances(ctx).Create(&model.Instance{
 		ResourceId: r.GetId(),
 	})
