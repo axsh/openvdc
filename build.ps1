@@ -6,7 +6,8 @@ $GOVERSION=$(go version)
 $LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
 
 Invoke-Expression "$(Join-Path ${env:GOPATH}\bin govendor.exe -Resolve) sync"
-Invoke-Expression "$(Join-Path ${env:GOPATH}\bin go-bindata.exe -Resolve) -pkg registry -o registry\schema.bindata.go schema"
+$modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/).split(" ", 1)
+Invoke-Expression "$(Join-Path ${env:GOPATH}\bin go-bindata.exe -Resolve) -modtime ${modtime} -pkg registry -o registry\schema.bindata.go schema"
 
 # Determine the default branch reference for registry/github.go
 $SCHEMA_LAST_COMMIT=$(git log -n 1 --pretty=format:%H -- schema/ registry/schema.bindata.go)

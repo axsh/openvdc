@@ -15,7 +15,9 @@ $GOPATH/bin/govendor sync
 if [[ ! -x $GOPATH/bin/go-bindata ]]; then
   go get -u github.com/jteeuwen/go-bindata/...
 fi
-$GOPATH/bin/go-bindata -pkg registry -o registry/schema.bindata.go schema
+
+modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/ | cut -d' ' -f1)
+$GOPATH/bin/go-bindata -modtime "${modtime}" -pkg registry -o registry/schema.bindata.go schema
 
 # Determine the default branch reference for registry/github.go
 SCHEMA_LAST_COMMIT=${SCHEMA_LAST_COMMIT:-$(git log -n 1 --pretty=format:%H -- schema/ registry/schema.bindata.go)}
