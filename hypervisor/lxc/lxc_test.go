@@ -16,7 +16,7 @@ func TestLXCHypervisorDriver(t *testing.T) {
 	t.Skipf("Currently skipping this test because it requires too many outside dependencies. Will rewrite as integration test later.")
 
 	p, _ := hypervisor.FindProvider("lxc")
-	lxc, _ := p.CreateDriver()
+	lxc, _ := p.CreateDriver("lxc-test")
 	err := lxc.CreateInstance()
 	if err != nil {
 		t.Error(err)

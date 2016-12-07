@@ -3,6 +3,8 @@ package backend
 import (
 	"testing"
 
+	"strings"
+
 	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/assert"
@@ -22,6 +24,14 @@ func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 	z.Schema().Install([]string{})
 	c(z)
 	return
+}
+
+func TestNewZkBackend(t *testing.T) {
+	assert := assert.New(t)
+
+	z := NewZkBackend()
+	assert.Implements((*ModelBackend)(nil), z)
+	assert.Implements((*ModelSchema)(nil), z)
 }
 
 func TestZkConnect(t *testing.T) {
@@ -50,7 +60,30 @@ func TestZkCreateWithID(t *testing.T) {
 		assert.NoError(err)
 		nkey, err := z.CreateWithID("/test1/t-", []byte{})
 		assert.NoError(err)
+		assert.True(strings.HasPrefix(nkey, "/test1/t-"))
 		z.Delete(nkey)
+		z.Delete("/test1")
+	})
+}
+
+func TestZkCreateWithIDAndFindLast(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		err := z.Create("/test1", []byte{})
+		assert.NoError(err)
+		nkey1, err := z.CreateWithID("/test1/t-", []byte{})
+		assert.NoError(err)
+		assert.True(strings.HasPrefix(nkey1, "/test1/t-"))
+		nkey2, err := z.CreateWithID("/test1/t-", []byte{})
+		assert.NoError(err)
+		assert.True(strings.HasPrefix(nkey2, "/test1/t-"))
+		lkey, err := z.FindLastKey("/test1/t-")
+		assert.NoError(err)
+		assert.True(strings.HasPrefix(lkey, "/test1/t-"))
+		assert.NotEqual(nkey1, lkey)
+		assert.Equal(nkey2, lkey)
+		z.Delete(nkey1)
+		z.Delete(nkey2)
 		z.Delete("/test1")
 	})
 }
@@ -70,7 +103,6 @@ func TestZkFind(t *testing.T) {
 func TestZkSchema(t *testing.T) {
 	assert := assert.New(t)
 	withConnect(t, func(z *Zk) {
-		assert.Implements((*ModelSchema)(nil), z)
 		ms := z.Schema()
 		err := ms.Install([]string{"subkey1", "subkey2"})
 		assert.NoError(err)

@@ -8,11 +8,9 @@ func (p *testProvider) Name() string {
 	return "test"
 }
 
-func (p *testProvider) CreateDriver() (HypervisorDriver, error) {
+func (p *testProvider) CreateDriver(string) (HypervisorDriver, error) {
 	return &testDriver{}, nil
 }
-
-func (p *testProvider) SetName(string) {}
 
 type testDriver struct{}
 

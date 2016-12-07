@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"net/url"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
-	"github.com/axsh/openvdc/util"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
 	"golang.org/x/net/context"
 )
@@ -23,8 +21,6 @@ var (
 	builddate string
 	goversion string
 )
-
-var theTaskInfo mesos.TaskInfo
 
 var log = logrus.WithField("context", "vdc-executor")
 
@@ -50,52 +46,8 @@ func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 	log.Infoln("Executor disconnected.")
 }
 
-func newTask(theHostName string, taskType string, exec *VDCExecutor) {
-
-	hp := exec.hypervisorProvider
-	hp.SetName(theHostName)
-	hvd, err := hp.CreateDriver()
-
-	if err != nil {
-		log.Errorln("Hypervisor driver error", err)
-		return
-	}
-
-	switch taskType {
-	case "create":
-		err = hvd.CreateInstance()
-		if err != nil {
-			log.Errorln("Error creating instance")
-		}
-	case "destroy":
-		err = hvd.DestroyInstance()
-		if err != nil {
-			log.Errorln("Error destroying instance")
-		}
-	case "run":
-		err = hvd.StartInstance()
-		if err != nil {
-			log.Errorln("Error running instance")
-		}
-	case "stop":
-		err = hvd.StopInstance()
-		if err != nil {
-			log.Errorln("Error stopping instance")
-		}
-	case "console":
-		err = hvd.InstanceConsole()
-		if err != nil {
-			log.Errorln("Error connecting to instance")
-		}
-	default:
-		log.Errorln("Invalid task name")
-	}
-}
-
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
-
-	theTaskInfo = *taskInfo
 
 	runStatus := &mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
@@ -106,7 +58,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.Errorln("Couldn't send status update", err)
 	}
 
-	err = exec.startInstance(driver, taskInfo)
+	err = exec.bootInstance(driver, taskInfo)
 	if err != nil {
 		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 			TaskId: taskInfo.GetTaskId(),
@@ -118,16 +70,8 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 }
 
-func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
-	b := taskInfo.GetData()
-	s := string(b[:])
-
-	values, err := url.ParseQuery(s)
-	if err != nil {
-		log.WithError(err).Error("Failed to parse TaskInfo.Data: ", s)
-		return err
-	}
-	instanceID := values.Get("instance_id")
+func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
+	instanceID := taskInfo.GetTaskId().GetValue()
 	log := log.WithFields(logrus.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
@@ -140,7 +84,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mes
 	}
 
 	// Push back to the initial state in case of error.
-	finState := model.Instance_REGISTERED
+	finState := model.InstanceState_REGISTERED
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
@@ -149,13 +93,13 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mes
 		model.Close(ctx)
 	}()
 
-	err = model.Instances(ctx).UpdateState(instanceID, model.Instance_STARTING)
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
 	if err != nil {
-		log.WithError(err).WithField("state", model.Instance_STARTING).Error("Failed Instances.UpdateState")
+		log.WithError(err).WithField("state", model.InstanceState_STARTING).Error("Failed Instances.UpdateState")
 		return err
 	}
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
@@ -174,24 +118,162 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, taskInfo *mes
 	}
 	log.Infof("Instance launched successfully")
 	// Here can bring the instance state to RUNNING finally.
-	finState = model.Instance_RUNNING
+	finState = model.InstanceState_RUNNING
 	return nil
 }
 
-func DestroyTask(driver exec.ExecutorDriver, taskId *mesos.TaskID) {
+func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID string) error {
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
 
-	finState := mesos.TaskState_TASK_FINISHED
-
-	log.Infoln("Finishing task", theTaskInfo.GetName())
-	finStatus := &mesos.TaskStatus{
-		TaskId: taskId,
-		State:  finState.Enum(),
+	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
 	}
 
-	if _, err := driver.SendStatusUpdate(finStatus); err != nil {
-		log.Infoln("ERROR: Couldn't send status update", err)
+	// Push back to the state below in case of error.
+	finState := model.InstanceState_STOPPED
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
+
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	if err != nil {
+		return err
 	}
-	log.Infoln("Task finished", theTaskInfo.GetName())
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
+	if err != nil {
+		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+	log.Infof("Starting instance")
+	err = hv.StartInstance()
+	if err != nil {
+		log.Error("Failed StartInstance")
+		return err
+	}
+	log.Infof("Instance started successfully")
+	// Here can bring the instance state to RUNNING finally.
+	finState = model.InstanceState_RUNNING
+	return nil
+}
+
+func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID string) error {
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
+
+	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
+	}
+
+	// Push back to the state below in case of error.
+	finState := model.InstanceState_RUNNING
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
+
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	if err != nil {
+		return err
+	}
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STOPPING)
+	if err != nil {
+		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+	log.Infof("Stopping instance")
+	err = hv.StopInstance()
+	if err != nil {
+		log.Error("Failed StopInstance")
+		return err
+	}
+	log.Infof("Instance stopped successfully")
+	// Here can bring the instance state to STOPPED finally.
+	finState = model.InstanceState_STOPPED
+	return nil
+}
+
+func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceID string) error {
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
+
+	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
+	}
+
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.Errorln(err)
+	}
+
+	originalState := inst.GetLastState().GetState()
+
+	// Push back to the state below in case of error.
+	finState := model.InstanceState_RUNNING
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
+
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	if err != nil {
+		return err
+	}
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_SHUTTINGDOWN)
+	if err != nil {
+		log.WithError(err).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+
+	// Trying to stop an already stopped container results in an error
+	// causing the container to not get destroyed.
+
+	if originalState != model.InstanceState_STOPPED {
+		log.Infof("Shuttingdown instance")
+		err = hv.StopInstance()
+		if err != nil {
+			log.Error("Failed StopInstance")
+			return err
+		}
+	}
+
+	err = hv.DestroyInstance()
+	if err != nil {
+		log.Error("Failed DestroyInstance")
+		return err
+	}
+	log.Infof("Instance terminated successfully")
+	// Here can bring the instance state to TERMINATED finally.
+	finState = model.InstanceState_TERMINATED
+	return nil
 }
 
 func (exec *VDCExecutor) KillTask(driver exec.ExecutorDriver, taskID *mesos.TaskID) {
@@ -208,12 +290,39 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 	log.Infoln("command: ", command)
 	log.Infoln("taskId: ", taskId)
 	log.Infoln("---------------------------------------------")
+	var err error
 
 	switch command {
+	case "start":
+		err = exec.startInstance(driver, taskId.GetValue())
+		if err != nil {
+			log.WithError(err).Error("Failed to start instance")
+		}
+	case "stop":
+		err = exec.stopInstance(driver, taskId.GetValue())
+		if err != nil {
+			log.WithError(err).Error("Failed to stop instance")
+		}
 	case "destroy":
-		DestroyTask(driver, taskId)
+		var tstatus *mesos.TaskStatus
+		err = exec.terminateInstance(driver, taskId.GetValue())
+		if err != nil {
+			log.WithError(err).Error("Failed to terminate instance")
+			tstatus = &mesos.TaskStatus{
+				TaskId: taskId,
+				State:  mesos.TaskState_TASK_FAILED.Enum(),
+			}
+		} else {
+			tstatus = &mesos.TaskStatus{
+				TaskId: taskId,
+				State:  mesos.TaskState_TASK_FINISHED.Enum(),
+			}
+		}
+		if _, err := driver.SendStatusUpdate(tstatus); err != nil {
+			log.WithError(err).Error("Couldn't send status update")
+		}
 	default:
-		log.Errorln("FrameworkMessage unrecognized.")
+		log.WithField("msg", msg).Errorln("FrameworkMessage unrecognized.")
 	}
 }
 
@@ -235,8 +344,6 @@ func init() {
 }
 
 func main() {
-	util.SetupLog()
-
 	provider, ok := hypervisor.FindProvider(*hypervisorName)
 	if ok == false {
 		log.Fatalln("Unknown hypervisor name:", hypervisorName)

@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"path"
+	"reflect"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -22,14 +24,40 @@ func init() {
 	schemaKeys = append(schemaKeys, resourcesBaseKey)
 }
 
-// Marker interface for all resource template structs.
+// ResourceTemplate is a marker interface for all resource template structs.
 type ResourceTemplate interface {
 	isResourceTemplateKind()
+	ResourceName() string
 }
 
 func (*NoneTemplate) isResourceTemplateKind() {}
+func (*NoneTemplate) ResourceName() string    { return "none" }
 func (*LxcTemplate) isResourceTemplateKind()  {}
+func (*LxcTemplate) ResourceName() string     { return "lxc" }
 func (*NullTemplate) isResourceTemplateKind() {}
+func (*NullTemplate) ResourceName() string    { return "null" }
+
+func NewTemplateByName(name string) ResourceTemplate {
+	switch ResourceType(ResourceType_value["RESOURCE_"+strings.ToUpper(name)]) {
+	case ResourceType_RESOURCE_NONE:
+		return &NoneTemplate{}
+	case ResourceType_RESOURCE_LXC:
+		return &LxcTemplate{}
+	case ResourceType_RESOURCE_NULL:
+		return &NullTemplate{}
+	}
+	return nil
+}
+
+// ResourceTemplate resolves the assigned object type of
+// "Template" OneOf field and cast to ResourceTemplate interface.
+// So that you can get the resource name in string.
+func (r *Resource) ResourceTemplate() ResourceTemplate {
+	v := reflect.ValueOf(r.Template)
+	fieldName := strings.TrimPrefix(v.Type().String(), "*model.Resource_")
+	field := v.Elem().FieldByName(fieldName)
+	return field.Interface().(ResourceTemplate)
+}
 
 type resources struct {
 	ctx context.Context
