@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
+
+	"github.com/axsh/openvdc/api"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"github.com/axsh/openvdc/api"
-	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 )
 
 var destroyCmd = &cobra.Command{
@@ -15,7 +17,6 @@ var destroyCmd = &cobra.Command{
 	Short: "Destroy an instance",
 	Long:  "Destroy an already existing instance.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		if len(args) < 1 {
 			log.Fatal("Please provide an instance ID")
 		}

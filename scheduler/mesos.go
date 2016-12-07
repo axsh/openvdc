@@ -5,7 +5,6 @@ import (
 	"net"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/pborman/uuid"
 
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
@@ -81,7 +80,7 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 }
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
-	queued, err := model.Instances(ctx).FilterByState(model.Instance_QUEUED)
+	queued, err := model.Instances(ctx).FilterByState(model.InstanceState_QUEUED)
 	if err != nil {
 		return err
 	}
@@ -159,7 +158,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			},
 		}
 
-		taskId := util.NewTaskID(uuid.New())
+		taskId := util.NewTaskID(i.GetId())
 		task := &mesos.TaskInfo{
 			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
 			TaskId:   taskId,
@@ -174,6 +173,10 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 		tasks = append(tasks, task)
 		acceptIDs = append(acceptIDs, found.Id)
+
+		// Associate mesos Slave ID to the instance.
+		i.SlaveId = found.SlaveId.GetValue()
+		model.Instances(ctx).Update(i)
 	}
 	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	if err != nil {

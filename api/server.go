@@ -10,16 +10,15 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	sched "github.com/mesos/mesos-go/scheduler"
-	util "github.com/mesos/mesos-go/mesosutil"
 	log "github.com/Sirupsen/logrus"
+	util "github.com/mesos/mesos-go/mesosutil"
+	sched "github.com/mesos/mesos-go/scheduler"
 )
-
-var theDriver sched.SchedulerDriver
 
 type APIServer struct {
 	server         *grpc.Server
 	modelStoreAddr string
+	scheduler      sched.SchedulerDriver
 }
 
 func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
@@ -30,9 +29,8 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
 		modelStoreAddr: modelAddr,
+		scheduler:      driver,
 	}
-
-	theDriver = driver
 
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
 	RegisterResourceServer(s.server, &ResourceAPI{api: s})
@@ -42,40 +40,75 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
 
 	instanceID := in.InstanceId
-	sendCommand("stop", instanceID)
+	if err := s.sendCommand(ctx, "stop", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(stop)")
+		return nil, err
+	}
 
-	return &StopReply{InstanceId: instanceID + " stopped."}, nil
+	return &StopReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
-        instanceID := in.InstanceId
-        sendCommand("destroy", instanceID)
+	instanceID := in.InstanceId
+	if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(destroy)")
+		return nil, err
+	}
 
-        return &DestroyReply{InstanceId: instanceID + " destroyed."}, nil
+	return &DestroyReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
 
-        instanceID := in.InstanceId
-        sendCommand("console", instanceID)
+	instanceID := in.InstanceId
+	if err := s.sendCommand(ctx, "console", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(console)")
+		return nil, err
+	}
 
-        return &ConsoleReply{InstanceId: instanceID}, nil
+	return &ConsoleReply{InstanceId: instanceID}, nil
 }
 
-func sendCommand(cmd string, id string) {
-	
-	if os.Getenv("AGENT_ID") == "" {
-                log.Errorln("AGENT_ID env variable needs to be set. Example: AGENT_ID=81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0")
-        } else {
-                //There might be a better way to do this, but for now the AgentID is set through an environment variable.
-                //Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
-                theDriver.SendFrameworkMessage(
-                        util.NewExecutorID("vdc-hypervisor-null"),
-                        util.NewSlaveID(os.Getenv("AGENT_ID")),
-                        cmd + "_" + id,
-                )
-        }
+func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID string) error {
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		return err
+	}
+	// Fetch associated resource to the instance
+	res, err := inst.Resource(ctx)
+	if err != nil {
+		return err
+	}
+	//There might be a better way to do this, but for now the AgentID is set through an environment variable.
+	//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
+	slaveID, ok := os.LookupEnv("AGENT_ID")
+	if !ok {
+		slaveID = inst.SlaveId
+	}
+
+	_, err = s.api.scheduler.SendFrameworkMessage(
+		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", res.ResourceTemplate().ResourceName())),
+		util.NewSlaveID(slaveID),
+		fmt.Sprintf("%s_%s", cmd, instanceID),
+	)
+	return err
+}
+
+func (s *InstanceAPI) Show(ctx context.Context, in *InstanceIDRequest) (*InstanceReply, error) {
+	// in.Key takes nil possibly.
+	if in.GetKey() == nil {
+		log.Error("Invalid instance identifier")
+		return nil, fmt.Errorf("Invalid instance identifier")
+	}
+
+	// TODO: handle the case for in.GetName() is received.
+	instance, err := model.Instances(ctx).FindByID(in.GetID())
+	if err != nil {
+		log.WithError(err).WithField("key", in.GetID()).Error("Failed Instances.FindByID")
+		return nil, err
+	}
+	return &InstanceReply{ID: instance.GetId(), Instance: instance}, nil
 }
 
 func (s *APIServer) Serve(listen net.Listener) error {
@@ -117,9 +150,30 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	if in.GetInstanceId() == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
 	}
-	if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.Instance_QUEUED); err != nil {
-		log.WithError(err).Error()
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
+	}
+	lastState := inst.GetLastState()
+	switch lastState.GetState() {
+	case model.InstanceState_REGISTERED:
+		if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_QUEUED); err != nil {
+			log.WithError(err).Error()
+			return nil, err
+		}
+	case model.InstanceState_STOPPED:
+		if err := s.sendCommand(ctx, "start", in.GetInstanceId()); err != nil {
+			log.WithError(err).Error("Failed to sendCommand(start)")
+			return nil, err
+		}
+	default:
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error("Unexpected instance state")
+		// TODO: Investigate gRPC error response
+		return nil, fmt.Errorf("Unexpected instance state")
 	}
 	// TODO: Tell the scheduler there is a queued item to get next offer eagerly.
 	return &StartReply{InstanceId: in.GetInstanceId()}, nil

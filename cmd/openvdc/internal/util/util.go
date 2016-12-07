@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+
 	"github.com/axsh/openvdc/registry"
 	"google.golang.org/grpc"
 )

@@ -13,6 +13,7 @@ service Instance {
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
+  rpc Show (InstanceIDRequest) returns (InstanceReply){}
 }
 
 message RunReply {
@@ -53,6 +54,18 @@ message StartRequest {
 }
 message StartReply {
   string instance_id = 1;
+}
+
+message InstanceIDRequest {
+  oneof Key {
+    string ID = 1;
+    string Name = 2;
+  }
+}
+
+message InstanceReply {
+  string ID = 1;
+  model.Instance instance = 2;
 }
 
 service Resource {
