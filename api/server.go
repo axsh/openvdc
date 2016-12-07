@@ -39,6 +39,25 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
 
+	if in.GetInstanceId() == "" {
+                return nil, fmt.Errorf("Invalid Instance ID")
+        }
+
+        inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+        if err != nil {
+                log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+                return nil, err
+        }
+
+        if inst.GetLastState().GetState() != model.InstanceState_RUNNING {
+		log.WithFields(log.Fields{
+                	"instance_id": in.GetInstanceId(),
+                	"state":       inst.GetLastState().GetState(),
+		}).Error("Instance is not running")
+
+		return nil, fmt.Errorf("Instance is not running")
+	}
+       		
 	instanceID := in.InstanceId
 	if err := s.sendCommand(ctx, "stop", instanceID); err != nil {
 		log.WithError(err).Error("Failed sendCommand(stop)")
@@ -62,13 +81,21 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 		return nil, err
 	}
 
-	if inst.GetLastState().GetState() == model.InstanceState_TERMINATED {
-		return nil, fmt.Errorf("Instance already terminated")
-	}
+	lastState := inst.GetLastState()
+        switch lastState.GetState() {
+		case model.InstanceState_TERMINATED:
+                	log.WithFields(log.Fields{
+                		"instance_id": in.GetInstanceId(),
+                        	"state":       lastState.String(),
+                	}).Error("Instance is already terminated")
 
-	if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
-		log.WithError(err).Error("Failed sendCommand(destroy)")
-		return nil, err
+                	return nil, fmt.Errorf("Instance is already terminated")
+		default:
+
+			if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
+                		log.WithError(err).Error("Failed sendCommand(destroy)")
+                		return nil, err
+        		}
 	}
 
 	return &DestroyReply{InstanceId: instanceID}, nil
