@@ -224,6 +224,13 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return err
 	}
 
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.Errorln(err)
+	}
+
+	originalState := inst.GetLastState().GetState()
+
 	// Push back to the state below in case of error.
 	finState := model.InstanceState_RUNNING
 	defer func() {
@@ -245,12 +252,19 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return err
 	}
 
-	log.Infof("Shuttingdown instance")
-	err = hv.StopInstance()
-	if err != nil {
-		log.Error("Failed StopInstance")
-		return err
+
+	// Trying to stop an already stopped container results in an error
+	// causing the container to not get destroyed.
+
+	if originalState != model.InstanceState_STOPPED {
+		log.Infof("Shuttingdown instance")
+		err = hv.StopInstance()
+		if err != nil {
+			log.Error("Failed StopInstance")
+			return err
+		}
 	}
+
 	err = hv.DestroyInstance()
 	if err != nil {
 		log.Error("Failed DestroyInstance")
