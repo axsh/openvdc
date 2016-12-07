@@ -10,6 +10,12 @@ TMP_ROOT="${NODE_DIR}/tmp_root"
 IND_STEPS=(
     "box"
     "ssh"
+    "epel"
+    "lxc"
+    "mesosphere"
+    "mesos"
+    "zookeeper"
+    "openvdc"
 )
 
 build "${IND_STEPS[@]}"

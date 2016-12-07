@@ -10,6 +10,8 @@ TMP_ROOT="${NODE_DIR}/tmp_root"
 IND_STEPS=(
     "box"
     "ssh"
+    "mesosphere"
+    "mesos"
 )
 
 build "${IND_STEPS[@]}"
