@@ -167,9 +167,17 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 			log.WithError(err).Error("Failed to sendCommand(start)")
 			return nil, err
 		}
+
+	case model.InstanceState_TERMINATED:
+		log.WithFields(log.Fields{
+                "instance_id": in.GetInstanceId(),
+                        "state":       lastState.String(),
+                }).Error("Cannot start terminated instance")
+
+		return nil, fmt.Errorf("Cannot start terminated instance")
 	default:
 		log.WithFields(log.Fields{
-			"instance_id": in.GetInstanceId(),
+		"instance_id": in.GetInstanceId(),
 			"state":       lastState.String(),
 		}).Error("Unexpected instance state")
 		// TODO: Investigate gRPC error response
