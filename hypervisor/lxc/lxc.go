@@ -12,8 +12,6 @@ import (
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
-var currentLxcName string
-
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
 }
@@ -42,10 +40,6 @@ type LXCHypervisorDriver struct {
 	lxcpath   string
 	template  lxc.TemplateOptions
 	name      string
-}
-
-func (p *LXCHypervisorProvider) SetName(lxcName string) {
-        currentLxcName = lxcName
 }
 
 func (d *LXCHypervisorDriver) CreateInstance() error {

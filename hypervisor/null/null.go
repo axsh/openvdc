@@ -12,10 +12,6 @@ func init() {
 type NullHypervisorProvider struct {
 }
 
-func (n *NullHypervisorProvider) SetName(string) {
-
-}
-
 func (n *NullHypervisorProvider) Name() string {
 	return "null"
 }
