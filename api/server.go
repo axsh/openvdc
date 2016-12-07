@@ -168,6 +168,14 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 			return nil, err
 		}
 
+	case model.InstanceState_RUNNING:
+                log.WithFields(log.Fields{
+                "instance_id": in.GetInstanceId(),
+                        "state":       lastState.String(),
+                }).Error("Instance is already running")
+
+		return nil, fmt.Errorf("Instance is already running")
+
 	case model.InstanceState_TERMINATED:
 		log.WithFields(log.Fields{
                 "instance_id": in.GetInstanceId(),
