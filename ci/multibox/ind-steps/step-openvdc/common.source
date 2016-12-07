@@ -1,5 +1,5 @@
 scheduler=${scheduler:-false}
 git_revision=${git_revision:-( cd ${ENV_ROOTDIR} ; git rev-parse --verify HEAD )}
 
-mesos_maseter="${mesos_master:-10.0.100.11}"
+mesos_master="${mesos_master:-10.0.100.11}"
 zk="${zk:-10.0.100.10}"
