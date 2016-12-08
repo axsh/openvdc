@@ -9,14 +9,24 @@ import (
 )
 
 func init() {
-	handlers.RegisterHandler("vm/lxc", &LxcHandler{})
+	handlers.RegisterHandler(&LxcHandler{})
 }
 
 type LxcHandler struct {
 }
 
 func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
-	return &model.LxcTemplate{}, nil
+	tmpl := &model.LxcTemplate{}
+	if err := json.Unmarshal(in, tmpl); err != nil {
+		return nil, err
+	}
+	return tmpl, nil
+}
+
+func (h *LxcHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate) {
+	t.Item = &model.Template_Lxc{
+		Lxc: m.(*model.LxcTemplate),
+	}
 }
 
 func (h *LxcHandler) ShowHelp(out io.Writer) error {

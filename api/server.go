@@ -40,24 +40,24 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
 
 	if in.GetInstanceId() == "" {
-                return nil, fmt.Errorf("Invalid Instance ID")
-        }
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
 
-        inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
-        if err != nil {
-                log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
-                return nil, err
-        }
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
 
-        if inst.GetLastState().GetState() != model.InstanceState_RUNNING {
+	if inst.GetLastState().GetState() != model.InstanceState_RUNNING {
 		log.WithFields(log.Fields{
-                	"instance_id": in.GetInstanceId(),
-                	"state":       inst.GetLastState().GetState(),
+			"instance_id": in.GetInstanceId(),
+			"state":       inst.GetLastState().GetState(),
 		}).Error("Instance is not running")
 
 		return nil, fmt.Errorf("Instance is not running")
 	}
-       		
+
 	instanceID := in.InstanceId
 	if err := s.sendCommand(ctx, "stop", instanceID); err != nil {
 		log.WithError(err).Error("Failed sendCommand(stop)")
@@ -74,7 +74,7 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 	if instanceID == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
 	}
-	
+
 	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
 	if err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
@@ -82,20 +82,20 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 	}
 
 	lastState := inst.GetLastState()
-        switch lastState.GetState() {
-		case model.InstanceState_TERMINATED:
-                	log.WithFields(log.Fields{
-                		"instance_id": in.GetInstanceId(),
-                        	"state":       lastState.String(),
-                	}).Error("Instance is already terminated")
+	switch lastState.GetState() {
+	case model.InstanceState_TERMINATED:
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error("Instance is already terminated")
 
-                	return nil, fmt.Errorf("Instance is already terminated")
-		default:
+		return nil, fmt.Errorf("Instance is already terminated")
+	default:
 
-			if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
-                		log.WithError(err).Error("Failed sendCommand(destroy)")
-                		return nil, err
-        		}
+		if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
+			log.WithError(err).Error("Failed sendCommand(destroy)")
+			return nil, err
+		}
 	}
 
 	return &DestroyReply{InstanceId: instanceID}, nil
@@ -178,14 +178,14 @@ func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateRep
 		log.WithError(err).Error()
 		return nil, err
 	}
-	
+
 	if r.GetState() == model.Resource_UNREGISTERED {
 		log.WithFields(log.Fields{
-                "resource_id": in.GetResourceId(),
-                        "state":       r.GetState().String(),
-                }).Error("Cannot use unregistered resource")
+			"resource_id": in.GetResourceId(),
+			"state":       r.GetState().String(),
+		}).Error("Cannot use unregistered resource")
 
-                return nil, fmt.Errorf("Cannot use unregistered resource")
+		return nil, fmt.Errorf("Cannot use unregistered resource")
 	}
 
 	inst, err := model.Instances(ctx).Create(&model.Instance{
@@ -221,23 +221,23 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 		}
 
 	case model.InstanceState_RUNNING:
-                log.WithFields(log.Fields{
-                "instance_id": in.GetInstanceId(),
-                        "state":       lastState.String(),
-                }).Error("Instance is already running")
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error("Instance is already running")
 
 		return nil, fmt.Errorf("Instance is already running")
 
 	case model.InstanceState_TERMINATED:
 		log.WithFields(log.Fields{
-                "instance_id": in.GetInstanceId(),
-                        "state":       lastState.String(),
-                }).Error("Cannot start terminated instance")
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error("Cannot start terminated instance")
 
 		return nil, fmt.Errorf("Cannot start terminated instance")
 	default:
 		log.WithFields(log.Fields{
-		"instance_id": in.GetInstanceId(),
+			"instance_id": in.GetInstanceId(),
 			"state":       lastState.String(),
 		}).Error("Unexpected instance state")
 		// TODO: Investigate gRPC error response
@@ -276,25 +276,12 @@ var ErrTemplateUndefined = errors.New("Template is undefined")
 var ErrUnknownTemplate = errors.New("Unknown template type")
 
 func (s *ResourceAPI) Register(ctx context.Context, in *ResourceRequest) (*ResourceReply, error) {
-	r := &model.Resource{
-		TemplateUri: in.GetTemplateUri(),
-	}
-	switch x := in.Template.(type) {
-	case *ResourceRequest_None:
-		r.Type = model.ResourceType_RESOURCE_NONE
-		r.Template = &model.Resource_None{None: x.None}
-	case *ResourceRequest_Lxc:
-		r.Type = model.ResourceType_RESOURCE_LXC
-		r.Template = &model.Resource_Lxc{Lxc: x.Lxc}
-	case *ResourceRequest_Null:
-		r.Type = model.ResourceType_RESOURCE_NULL
-		r.Template = &model.Resource_Null{Null: x.Null}
-	case nil:
+	if in.GetTemplate() == nil {
 		log.WithError(ErrTemplateUndefined).Error("template parameter is nil")
 		return nil, ErrTemplateUndefined
-	default:
-		log.Error("Unsupported template type")
-		return nil, ErrUnknownTemplate
+	}
+	r := &model.Resource{
+		Template: in.GetTemplate(),
 	}
 	resource, err := model.Resources(ctx).Create(r)
 	if err != nil {

@@ -33,28 +33,19 @@ type ResourceTemplate interface {
 func (*NoneTemplate) isResourceTemplateKind() {}
 func (*NoneTemplate) ResourceName() string    { return "none" }
 func (*LxcTemplate) isResourceTemplateKind()  {}
-func (*LxcTemplate) ResourceName() string     { return "lxc" }
+func (*LxcTemplate) ResourceName() string     { return "vm/lxc" }
 func (*NullTemplate) isResourceTemplateKind() {}
-func (*NullTemplate) ResourceName() string    { return "null" }
-
-func NewTemplateByName(name string) ResourceTemplate {
-	switch ResourceType(ResourceType_value["RESOURCE_"+strings.ToUpper(name)]) {
-	case ResourceType_RESOURCE_NONE:
-		return &NoneTemplate{}
-	case ResourceType_RESOURCE_LXC:
-		return &LxcTemplate{}
-	case ResourceType_RESOURCE_NULL:
-		return &NullTemplate{}
-	}
-	return nil
-}
+func (*NullTemplate) ResourceName() string    { return "vm/null" }
 
 // ResourceTemplate resolves the assigned object type of
 // "Template" OneOf field and cast to ResourceTemplate interface.
 // So that you can get the resource name in string.
 func (r *Resource) ResourceTemplate() ResourceTemplate {
-	v := reflect.ValueOf(r.Template)
-	fieldName := strings.TrimPrefix(v.Type().String(), "*model.Resource_")
+	if r.Template == nil {
+		return nil
+	}
+	v := reflect.ValueOf(r.Template.Item)
+	fieldName := strings.TrimPrefix(v.Type().String(), "*model.Template_")
 	field := v.Elem().FieldByName(fieldName)
 	return field.Interface().(ResourceTemplate)
 }

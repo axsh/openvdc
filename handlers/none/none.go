@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	handlers.RegisterHandler("none", &NoneHandler{})
+	handlers.RegisterHandler(&NoneHandler{})
 }
 
 type NoneHandler struct {
@@ -21,6 +21,12 @@ func (h *NoneHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		return nil, err
 	}
 	return tmpl, nil
+}
+
+func (h *NoneHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate) {
+	t.Item = &model.Template_None{
+		None: m.(*model.NoneTemplate),
+	}
 }
 
 func (h *NoneHandler) ShowHelp(out io.Writer) error {

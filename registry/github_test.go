@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	// To pass TestFind
+	_ "github.com/axsh/openvdc/handlers/vm/lxc"
 )
 
 func TestNewGithubRegistry(t *testing.T) {

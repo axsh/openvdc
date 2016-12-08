@@ -6,7 +6,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
-	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/registry"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -24,21 +23,7 @@ func prepareRegisterAPICall(templateSlug string) *api.ResourceRequest {
 		}
 	}
 	req := &api.ResourceRequest{
-		TemplateUri: rt.LocationURI(),
-	}
-	// TODO: Define the factory method.
-	{
-		t := rt.Template.Template
-		switch t.(type) {
-		case *model.NullTemplate:
-			req.Template = &api.ResourceRequest_Null{
-				Null: t.(*model.NullTemplate),
-			}
-		case *model.LxcTemplate:
-			req.Template = &api.ResourceRequest_Lxc{
-				Lxc: t.(*model.LxcTemplate),
-			}
-		}
+		Template: rt.ToModel(),
 	}
 	log.Printf("Found template: %s", templateSlug)
 	return req

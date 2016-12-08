@@ -28,26 +28,23 @@ message InstanceState {
   google.protobuf.Timestamp created_at = 2;
 }
 
-enum ResourceType {
-  RESOURCE_NONE = 0;
-  RESOURCE_LXC = 1;
-  RESOURCE_NULL = 2;
-}
-
 message Resource {
   string id = 1;
-  ResourceType type = 2;
   enum State {
     REGISTERED = 0;
     UNREGISTERED = 1;
   }
   State state = 3;
-  oneof Template {
+  Template template = 4;
+}
+
+message Template {
+  string template_uri = 1;
+  oneof Item {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
   }
-  string template_uri = 4;
 }
 
 message NoneTemplate {}

@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	handlers.RegisterHandler("vm/null", &NullHandler{})
+	handlers.RegisterHandler(&NullHandler{})
 }
 
 type NullHandler struct {
@@ -21,6 +21,12 @@ func (h *NullHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		return nil, err
 	}
 	return tmpl, nil
+}
+
+func (h *NullHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate) {
+	t.Item = &model.Template_Null{
+		Null: m.(*model.NullTemplate),
+	}
 }
 
 func (h *NullHandler) ShowHelp(out io.Writer) error {

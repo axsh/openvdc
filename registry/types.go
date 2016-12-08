@@ -31,6 +31,29 @@ func (t *TemplateRoot) ResourceHandler() handlers.ResourceHandler {
 	return t.handler
 }
 
+func (t *TemplateRoot) parseTemplate() error {
+	// Delayed parse for "template" key
+	typeFind := struct {
+		Type string `json:"type"`
+	}{}
+	if err := json.Unmarshal(t.RawTemplate, &typeFind); err != nil {
+		return err
+	}
+	hnd, ok := handlers.FindByType(typeFind.Type)
+	if !ok {
+		return fmt.Errorf("Unknown template type: %s", typeFind.Type)
+	}
+	t.handler = hnd
+
+	var err error
+	t.Template, err = hnd.ParseTemplate(t.RawTemplate)
+	if err != nil {
+		return fmt.Errorf("Failed to parse template section in %s", t.Title)
+	}
+
+	return nil
+}
+
 type RegistryTemplate struct {
 	Name     string
 	Template *TemplateRoot
@@ -40,6 +63,14 @@ type RegistryTemplate struct {
 // Returns absolute URI for the original location of the resource template.
 func (r *RegistryTemplate) LocationURI() string {
 	return r.source.LocateURI(r.Name)
+}
+
+func (r *RegistryTemplate) ToModel() *model.Template {
+	t := &model.Template{
+		TemplateUri: r.LocationURI(),
+	}
+	r.Template.handler.SetTemplateItem(t, r.Template.Template)
+	return t
 }
 
 type TemplateFinder interface {
@@ -61,22 +92,10 @@ func parseResourceTemplate(in io.Reader) (*TemplateRoot, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Delayed parse for "template" key
-	typeFind := struct {
-		Type string `json:"type"`
-	}{}
-	if err := json.Unmarshal(root.RawTemplate, &typeFind); err != nil {
+
+	err = root.parseTemplate()
+	if err != nil {
 		return nil, err
 	}
-	hnd, ok := handlers.FindByType(typeFind.Type)
-	if !ok {
-		return nil, fmt.Errorf("Unknown template type: %s", typeFind.Type)
-	}
-	tmpl, err := hnd.ParseTemplate(root.RawTemplate)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse template section in %s", root.Title)
-	}
-	root.Template = tmpl
-	root.handler = hnd
 	return root, nil
 }
