@@ -1,4 +1,5 @@
 
+$ErrorActionPreference = "Stop"
 $VERSION="dev"
 $SHA=$(git rev-parse --verify HEAD)
 $BUILDDATE=Get-Date -Format "yyyy/MM/dd HH:mm:ss zzz"
