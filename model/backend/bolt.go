@@ -42,3 +42,23 @@ func (b *Bolt) Create(key string, value []byte) error {
 func (b *Bolt) Update(key string, value []byte) error {
 	return nil
 }
+
+func (b *Bolt) CreateWithID(key string, value []byte) (string, error) {
+	return "", nil
+}
+
+func (b *Bolt) Find(key string) ([]byte, error) {
+	return nil, nil
+}
+
+func (b *Bolt) Delete(key string) error {
+	return nil
+}
+
+func (b *Bolt) Keys(parentKey string) (KeyIterator, error) {
+	return nil, nil
+}
+
+func (b *Bolt) FindLastKey(prefixKey string) (string, error) {
+	return "", nil
+}
