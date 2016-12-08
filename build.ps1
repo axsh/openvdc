@@ -1,4 +1,5 @@
 
+$ErrorActionPreference = "Stop"
 $VERSION="dev"
 $SHA=$(git rev-parse --verify HEAD)
 $BUILDDATE=Get-Date -Format "yyyy/MM/dd HH:mm:ss zzz"
@@ -6,13 +7,13 @@ $GOVERSION=$(go version)
 $LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
 
 Invoke-Expression "$(Join-Path ${env:GOPATH}\bin govendor.exe -Resolve) sync"
-$modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/).split(" ", 1)
-Invoke-Expression "$(Join-Path ${env:GOPATH}\bin go-bindata.exe -Resolve) -modtime ${modtime} -pkg registry -o registry\schema.bindata.go schema"
+$modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/).split(" ", 2)[0]
+Invoke-Expression "$(Join-Path ${env:GOPATH}\bin go-bindata.exe -Resolve) -mode 420 -modtime ${modtime} -pkg registry -o registry\schema.bindata.go schema"
 
 # Determine the default branch reference for registry/github.go
 $SCHEMA_LAST_COMMIT=$(git log -n 1 --pretty=format:%H -- schema/ registry/schema.bindata.go)
-git rev-list origin/master | Select-String "${SCHEMA_LAST_COMMIT}"
-if ( $? -eq 0 ) {
+$f=$(git rev-list origin/master | Select-String "${SCHEMA_LAST_COMMIT}" -ErrorAction "Continue")
+if ( $f -ne $null ) {
   # Found no changes for resource template/schema on HEAD.
   # so that set preference to the master branch.
   $LDFLAGS="${LDFLAGS} -X 'registry.GithubDefaultRef=master'"
