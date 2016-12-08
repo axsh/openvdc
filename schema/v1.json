@@ -45,6 +45,12 @@
           "enum": [
             "none"
           ]
+        },
+        "param1": {
+          "type": "string"
+        },
+        "param2": {
+          "type": "string"
         }
       }
     },

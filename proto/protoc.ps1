@@ -28,5 +28,5 @@ if ($skip_goget_protoc -eq $False) {
 
 cd (Get-Item $MyInvocation.MyCommand.Path).DirectoryName
 # we set option "go_package" so the protoc puts files to the namespace.
-protoc -I . --go_out=plugins="grpc:${env:GOPATH}/src" v1.proto
-protoc -I . --go_out="${env:GOPATH}/src" model.proto
+protoc -I. -I"${env:GOPATH}/src" --go_out=plugins="grpc:${env:GOPATH}/src" v1.proto
+protoc -I. -I"${env:GOPATH}/src" --go_out="${env:GOPATH}/src" model.proto
