@@ -26,9 +26,10 @@ done
 create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
 
 for node in ${scheduled_nodes[@]} ; do
+
     (
         $starting_group "Building ${node%,*}"
-        sudo kill -0 $(sudo cat ${ENV_ROOTDIR}/${node}/${node}.pid 2> /dev/null) 2> /dev/null
+        sudo kill -0 $(sudo cat ${ENV_ROOTDIR}/${node}/*.pid 2> /dev/null) 2> /dev/null
         [[ "$?" == "0" ]]
         $skip_group_if_unnecessary
         "${ENV_ROOTDIR}/${node}/build.sh"
