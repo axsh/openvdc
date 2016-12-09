@@ -25,6 +25,7 @@ function destroy-vm() {
         [ ! -f "$(vm_image)" ]
         $skip_step_if_already_done;
         kill-vm
+        [[ -f "${NODE_DIR}/root@${vm_name}" ]] && sudo rm "${NODE_DIR}/root@${vm_name}*"
         set -ex; rm "$(vm_image)"
     ) ; $prev_cmd_failed
 }
