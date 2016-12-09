@@ -6,8 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	GithubDefaultRef = unittest.GithubDefaultRef
+}
 
 func TestNewGithubRegistry(t *testing.T) {
 	assert := assert.New(t)
