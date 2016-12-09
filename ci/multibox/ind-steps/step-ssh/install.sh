@@ -11,7 +11,8 @@
 
 (
     $starting_step "Install authorized ssh key for ${vm_name}"
-    sudo ls "${TMP_ROOT}/root/.ssh/authorized_keys" > /dev/null
+    sudo bash -c "[ -f ${TMP_ROOT}/root/.ssh/authorized_keys ]"
+
     $skip_step_if_already_done; set -ex
     sudo chroot ${TMP_ROOT} /bin/bash -e <<EOS
 mkdir -p -m 600 /root/.ssh
