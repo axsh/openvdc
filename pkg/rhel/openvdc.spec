@@ -18,6 +18,8 @@ BuildRequires: rpmdevtools
 
 Requires: lxc mesosphere-zookeeper mesos
 %{systemd_requires}
+Requires: openvdc-executor
+Requires: openvdc-scheduler
 
 %description
 This is an empty message to fulfill the requirement that this file has a "%description" header.
@@ -43,10 +45,32 @@ cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc
+%config(noreplace) /etc/sysconfig/openvdc
+
+%package executor
+Summary: openvdc executor
+
+%description executor
+This is a 'stub'. An appropriate message must be substituted at some point.
+
+%files executor
+%dir /opt/axsh/openvdc
+%dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-executor
+
+%package scheduler
+Summary: openvdc scheduler
+
+
+%description scheduler
+This is a 'stub'. An appropriate message must be substituted at some point.
+
+%files scheduler
+%dir /opt/axsh/openvdc
+%dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-scheduler
 %{_unitdir}/openvdc-scheduler.service
-%config(noreplace) /etc/sysconfig/openvdc
+
 
 %post
 %{systemd_post openvdc-scheduler.service}
