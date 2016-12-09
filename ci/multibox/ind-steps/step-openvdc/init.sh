@@ -7,7 +7,7 @@
     cat <<EOF >> /etc/yum.repos.d/openvdc.repo
 [openvdc]
 name=OpenVDc Repo - devrepo
-baseurl=http://ci.openvdc.org/repos/20161205100450git44bd030/
+baseurl=http://ci.openvdc.org/repos/${git_revision}/
 enabled=1
 gpgcheck=0
 EOF
