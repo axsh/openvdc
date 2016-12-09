@@ -40,10 +40,34 @@
 			"revisionTime": "2016-01-25T20:49:56Z"
 		},
 		{
-			"checksumSHA1": "SVXOQdpDBh0ihdZ5aIflgdA+Rpw=",
+			"checksumSHA1": "kBeNcaKk56FguvPSUCEaH6AxpRc=",
 			"path": "github.com/golang/protobuf/proto",
-			"revision": "98fa357170587e470c5f27d3c3ea0947b71eb455",
-			"revisionTime": "2016-10-12T20:53:35Z"
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "+hy2B6e5WWFIm6ch03jMFmrELhc=",
+			"path": "github.com/golang/protobuf/ptypes",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "lZFWy27Qo6+m/keDjNFYTxSmvZw=",
+			"path": "github.com/golang/protobuf/ptypes/any",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "8gDNKfvEupesDdOCXio3AK/XVaA=",
+			"path": "github.com/golang/protobuf/ptypes/duration",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "sfoot+dHmmOgWZS6GJ5X79ClZM0=",
+			"path": "github.com/golang/protobuf/ptypes/timestamp",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
 		},
 		{
 			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
@@ -261,6 +285,24 @@
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "976c720a22c8eb4eb6a0b4348ad85ad12491a506",
 			"revisionTime": "2016-09-25T22:06:09Z"
+		},
+		{
+			"checksumSHA1": "drSl/ipSHSsHWWTrp3WZw4LN/No=",
+			"path": "github.com/xeipuuv/gojsonpointer",
+			"revision": "e0fe6f68307607d540ed8eac07a342c33fa1b54a",
+			"revisionTime": "2015-10-27T08:21:46Z"
+		},
+		{
+			"checksumSHA1": "pSoUW+qY6LwIJ5lFwGohPU5HUpg=",
+			"path": "github.com/xeipuuv/gojsonreference",
+			"revision": "e02fc20de94c78484cd5ffb007f8af96be030a45",
+			"revisionTime": "2015-08-08T06:50:54Z"
+		},
+		{
+			"checksumSHA1": "vLmkhv7RXt4uOoS564cBIMzLT88=",
+			"path": "github.com/xeipuuv/gojsonschema",
+			"revision": "e18f0065e8c148fcf567ac43a3f8f5b66ac0720b",
+			"revisionTime": "2016-11-19T18:01:51Z"
 		},
 		{
 			"checksumSHA1": "dwOedwBJ1EIK9+S3t108Bx054Y8=",

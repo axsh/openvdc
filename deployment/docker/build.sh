@@ -86,8 +86,8 @@ fi
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
 
 # Build the yum repository
-docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/" 
-docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/" 
+docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/"
+docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/"
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/${RELEASE_SUFFIX}/ ; createrepo . "
 
 if [[ -n "$BUILD_CACHE_DIR" ]]; then
@@ -114,9 +114,4 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
 fi
 # Pull compiled yum repository
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
-#docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
-
 docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
-
-
-#Build rpm 

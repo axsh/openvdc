@@ -2,15 +2,9 @@ package cmd
 
 import (
 	log "github.com/Sirupsen/logrus"
-	util "github.com/axsh/openvdc/util"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
 )
-
-func init() {
-	// TODO: Remove --server option from sub-command.
-	destroyCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:5000", "gRPC API server address")
-	destroyCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-}
 
 var destroyCmd = &cobra.Command{
 	Use:   "destroy [Image ID]",
@@ -20,7 +14,7 @@ var destroyCmd = &cobra.Command{
 
 		if len(args) > 0 {
 			instanceID := args[0]
-			util.SendToApi(serverAddr, instanceID, "", "destroy")
+			util.SendToApi(util.ServerAddr, instanceID, "", "destroy")
 		} else {
 			log.Warn("OpenVDC: Please provide an Instance ID.  Usage: destroy [Image ID]")
 		}

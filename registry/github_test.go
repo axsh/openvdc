@@ -6,8 +6,19 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	GithubDefaultRef = unittest.GithubDefaultRef
+}
+
+func TestNewGithubRegistry(t *testing.T) {
+	assert := assert.New(t)
+	reg := NewGithubRegistry("xxx")
+	assert.Implements((*CachedRegistry)(nil), reg)
+}
 
 func TestGithubFetch(t *testing.T) {
 	assert := assert.New(t)
@@ -19,9 +30,9 @@ func TestGithubFetch(t *testing.T) {
 	reg := NewGithubRegistry(dir)
 	err = reg.Fetch()
 	assert.NoError(err)
-	_, err = os.Stat(filepath.Join(dir, "registry", "github.com-axsh-openvdc-images", reg.Branch))
+	_, err = os.Stat(filepath.Join(dir, "registry", "github.com-axsh-openvdc", reg.Branch))
 	assert.NoError(err)
-	_, err = os.Stat(filepath.Join(dir, "registry", "github.com-axsh-openvdc-images", reg.Branch+".sha"))
+	_, err = os.Stat(filepath.Join(dir, "registry", "github.com-axsh-openvdc", reg.Branch+".sha"))
 	assert.NoError(err)
 }
 
@@ -43,13 +54,14 @@ func TestFind(t *testing.T) {
 	reg := NewGithubRegistry(dir)
 	err = reg.Fetch()
 	assert.NoError(err)
-	// Try finding existing image name.
-	mi, err := reg.Find("centos-7")
+	// Try finding existing template name.
+	rt, err := reg.Find("centos/7/lxc")
 	assert.NoError(err)
-	assert.NotNil(mi)
+	assert.NotNil(rt)
+	assert.Equal(rt.source, reg)
 
-	// Try finding unknown image name.
-	mi, err = reg.Find("should-not-exist")
+	// Try finding unknown template name.
+	rt, err = reg.Find("should-not-exist")
 	assert.Error(err)
-	assert.Nil(mi)
+	assert.Nil(rt)
 }

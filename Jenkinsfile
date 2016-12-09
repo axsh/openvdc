@@ -51,6 +51,7 @@ def stage_test_rpm(label) {
 def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
+    checkout scm
     write_build_env(label)
     sh "./deployment/docker/unit-tests.sh ./build.env"
   }
@@ -79,7 +80,7 @@ if( BUILD_OS != "all" ){
 }
 // Using .each{} hits "a CPS-transformed closure is not yet supported (JENKINS-26481)"
 for( label in build_nodes) {
-//stage_unit_test(label)
+  stage_unit_test(label)
   stage_rpmbuild(label)
   stage_test_rpm(label)
   stage_integration(label)

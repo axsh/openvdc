@@ -44,4 +44,3 @@ docker cp . "${CID}:/var/tmp/go/src/github.com/axsh/openvdc"
 docker exec $CID /bin/bash -c "/usr/bin/env"
 docker exec $CID /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc;  govendor sync"
 docker exec $CID /bin/bash -c 'cd /var/tmp/go/src/github.com/axsh/openvdc;  ZK=127.0.0.1 go test $(go list ./... | grep -v /vendor/)'
-#docker exec $CID /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc;  ZK=127.0.0.1 go test -v ./... "

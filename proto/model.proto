@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+
 package model;
 
 option go_package = "github.com/axsh/openvdc/model";
@@ -8,32 +10,59 @@ message Instance {
   string id = 1;
   string executor_id = 2;
   string resource_id = 3;
+  InstanceState last_state = 4;
+}
+
+message InstanceState {
+  enum State {
+    REGISTERED = 0;
+    QUEUED = 1;
+    STARTING = 2;
+    RUNNING = 3;
+    STOPPING = 4;
+    STOPPED = 5;
+    SHUTTINGDOWN = 6;
+    TERMINATED = 7;
+  }
+  State state = 1;
+  google.protobuf.Timestamp created_at = 2;
 }
 
 enum ResourceType {
-  NONE = 0;
-  VM = 1;
-}
-
-enum ResourceState {
-  Registered = 0;
-  Unregistered = 1;
+  RESOURCE_NONE = 0;
+  RESOURCE_LXC = 1;
+  RESOURCE_NULL = 2;
 }
 
 message Resource {
   string id = 1;
   ResourceType type = 2;
-  ResourceState state = 3;
+  enum State {
+    REGISTERED = 0;
+    UNREGISTERED = 1;
+  }
+  State state = 3;
   oneof Template {
     NoneTemplate none = 500;
-    VMTemplate vm = 501;
+    LxcTemplate lxc = 501;
+    NullTemplate null = 502;
   }
+  string template_uri = 4;
 }
 
 message NoneTemplate {}
 
-message VMTemplate {
+message LxcTemplate {
   int32 vcpu = 1;
   int32 memory_gb = 2;
-  string image_template_uri = 3;
+  int32 min_vcpu = 3;
+  int32 min_memory_gb = 4;
+  message Image {
+    string download_url = 1;
+    string chksum_type = 2;
+    string chksum = 3;
+  }
+  Image lxc_image = 5;
 }
+
+message NullTemplate {}

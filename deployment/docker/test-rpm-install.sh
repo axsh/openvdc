@@ -63,4 +63,3 @@ docker exec $CID systemctl status zookeeper
 docker exec $CID systemctl status mesos-master
 #docker exec $CID systemctl status mesos-slave
 docker exec $CID systemctl status openvdc-scheduler
-

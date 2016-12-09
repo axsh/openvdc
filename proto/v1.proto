@@ -8,15 +8,11 @@ import "model.proto";
 
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
-	rpc Run (RunRequest) returns (RunReply){}
+  rpc Start (StartRequest) returns (StartReply){}
+	rpc Run (ResourceRequest) returns (RunReply){}
 	rpc StopTask (StopTaskRequest) returns (StopTaskReply){}
 }
 
-message RunRequest{
-	string imageName = 1;
-	string hostName = 2;
-	string taskType = 3;
-}
 message RunReply {
   string instance_id = 1;
   string resource_id = 2;
@@ -37,19 +33,30 @@ message CreateReply{
   string instance_id = 1;
 }
 
+message StartRequest {
+  string instance_id = 1;
+}
+message StartReply {
+  string instance_id = 1;
+}
+
 service Resource {
   rpc Register(ResourceRequest) returns (ResourceReply){}
   rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
+  rpc Show(ResourceIDRequest) returns (ResourceReply){}
 }
 
 message ResourceRequest {
+  string template_uri = 1;
   oneof Template {
     model.NoneTemplate none = 500;
-    model.VMTemplate vm = 501;
+    model.LxcTemplate lxc = 501;
+    model.NullTemplate null = 502;
   }
 }
 message ResourceReply {
   string ID = 1;
+  model.Resource resource = 2;
 }
 
 message ResourceIDRequest{
