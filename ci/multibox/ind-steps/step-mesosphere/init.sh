@@ -1,5 +1,4 @@
 
-
 (
     $starting_step "Download mesosphere repo"
     [[ -f "${TMP_ROOT}/etc/yum.repos.d/mesosphere.repo" ]]
