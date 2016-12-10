@@ -29,6 +29,6 @@ func (h *NoneHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplat
 	}
 }
 
-func (h *NoneHandler) ShowHelp(out io.Writer) error {
+func (h *NoneHandler) Usage(out io.Writer) error {
 	return nil
 }

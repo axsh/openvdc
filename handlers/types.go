@@ -17,10 +17,13 @@ var (
 
 type ResourceHandler interface {
 	ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error)
-	ShowHelp(out io.Writer) error
 	// Ugly method... due to the "oneof" protobuf type implementation in Go.
 	// https://developers.google.com/protocol-buffers/docs/reference/go-generated#oneof
 	SetTemplateItem(t *model.Template, m model.ResourceTemplate)
+}
+
+type CLIHandler interface {
+	Usage(out io.Writer) error
 }
 
 func RegisterHandler(p ResourceHandler) error {

@@ -29,6 +29,6 @@ func (h *LxcHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate
 	}
 }
 
-func (h *LxcHandler) ShowHelp(out io.Writer) error {
+func (h *LxcHandler) Usage(out io.Writer) error {
 	return nil
 }
