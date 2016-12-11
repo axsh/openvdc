@@ -15,6 +15,22 @@ var (
 	resourceHandlers = make(map[string]ResourceHandler)
 )
 
+func ErrInvalidTemplate(h ResourceHandler, msg string) error {
+	return fmt.Errorf("Invalid template %s: %s", ResourceName(h), msg)
+}
+
+func ErrMergeDstType(expected, dst model.ResourceTemplate) error {
+	ev := reflect.ValueOf(expected)
+	dv := reflect.ValueOf(dst)
+	return fmt.Errorf("Merge failed with destination type: expected type %s but %s", ev.Elem().Type(), dv.Elem().Type())
+}
+
+func ErrMergeSrcType(expected, src model.ResourceTemplate) error {
+	ev := reflect.ValueOf(expected)
+	sv := reflect.ValueOf(src)
+	return fmt.Errorf("Merge failed with source type: expected type %s but %s", ev.Elem().Type(), sv.Elem().Type())
+}
+
 type ResourceHandler interface {
 	ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error)
 	// Ugly method... due to the "oneof" protobuf type implementation in Go.
@@ -23,6 +39,7 @@ type ResourceHandler interface {
 }
 
 type CLIHandler interface {
+	MergeArgs(src model.ResourceTemplate, args []string) error
 	Usage(out io.Writer) error
 }
 
