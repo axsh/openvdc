@@ -43,4 +43,4 @@ docker cp . "${CID}:/var/tmp/go/src/github.com/axsh/openvdc"
 ## Run unit tests
 docker exec $CID /bin/bash -c "/usr/bin/env"
 docker exec $CID /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc;  govendor sync"
-docker exec $CID /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc;  ZK=127.0.0.1 go test -v ./..."
+docker exec $CID /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc;  ZK=127.0.0.1 GITHUB_DEFAULT_REF=${GIT_BRANCH} go test -v ./..."

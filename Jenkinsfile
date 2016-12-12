@@ -25,6 +25,9 @@ REPO_BASE_DIR=$REPO_BASE_DIR
 BUILD_CACHE_DIR=$BUILD_CACHE_DIR
 BUILD_OS=$label
 RELEASE_SUFFIX=$RELEASE_SUFFIX
+# https://issues.jenkins-ci.org/browse/JENKINS-30252
+GIT_BRANCH=${env.BRANCH_NAME}
+BRANCH_NAME=${env.BRANCH_NAME}
 """
   writeFile(file: "build.env", text: build_env)
 }
