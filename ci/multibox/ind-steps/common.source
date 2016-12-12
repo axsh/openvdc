@@ -101,8 +101,8 @@ function build () {
         for step in ${steps[@]} ; do
             [[ -d "${ENV_ROOTDIR}/ind-steps/step-${step}" ]] || continue
             [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]] && run_steps "${step}" "${stage}"
-            [[ $? == 255 ]] && exit
-        done
+            [[ $? == 255 ]] && { . "${ENV_ROOTDIR}/ind-steps/step-box/common.source" ; umount-seed-image ; exit 255 ; }
+        done 
     done
 
     unset -f ssh
