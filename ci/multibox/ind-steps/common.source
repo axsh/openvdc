@@ -87,13 +87,20 @@ function build () {
             $(type -P ssh) -i "${NODE_DIR}/root@${vm_name}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
     }
 
+    local stages=(
+        $(
+            $(sudo kill -0 $(sudo cat ${NODE_DIR}/${vm_name}.pid 2> /dev/null) 2> /dev/null) && { echo "postconfigure provide" ; return ; } 
+            echo "init install preconfigure boot postconfigure provide"
+        )
+    )
+
     # We first run init.sh for every step after which we run install.sh for every
     # step and so on. This is because some stages will need to happen before booting
     # the VM while others need to happen after boot.
-    for stage in init install preconfigure boot postconfigure provide ; do
+    for stage in ${stages[@]} ; do
         for step in ${steps[@]} ; do
             [[ -d "${ENV_ROOTDIR}/ind-steps/step-${step}" ]] || continue
-            [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]] && run_steps "${step}" "${stage}" || :
+            [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]] && run_steps "${step}" "${stage}"
         done
     done
 

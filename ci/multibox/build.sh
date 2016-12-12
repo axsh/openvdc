@@ -29,8 +29,7 @@ for node in ${scheduled_nodes[@]} ; do
 
     (
         $starting_group "Building ${node%,*}"
-        sudo kill -0 $(sudo cat ${ENV_ROOTDIR}/${node}/*.pid 2> /dev/null) 2> /dev/null
-        [[ "$?" == "0" ]]
+        false
         $skip_group_if_unnecessary
         "${ENV_ROOTDIR}/${node}/build.sh"
     ) ; prev_cmd_failed
