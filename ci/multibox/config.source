@@ -6,7 +6,6 @@ NODES=(
     "10.0.100.12-vdc-scheduler"
     "10.0.100.13-vdc-executor-null"
     "10.0.100.14-vdc-executor-lxc"
-    "10.0.100.15-jenkins"
 )
 
 NETWORK="10.0.100.0"
