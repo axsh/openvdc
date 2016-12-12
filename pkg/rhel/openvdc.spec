@@ -4,7 +4,7 @@
 %{?dev_release_suffix:%define release %{dev_release_suffix}}
 
 Name: openvdc
-Version: 0.9%{?dev_release_suffix:dev}
+Version: 0.1%{?dev_release_suffix:dev}
 Release: %{release}%{?dist}
 Summary: Metapackage that depends on all other OpenVDc packages.
 Vendor: Axsh Co. LTD <dev@axsh.net>
