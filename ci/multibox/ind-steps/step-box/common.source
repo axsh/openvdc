@@ -9,7 +9,7 @@ function vm_image () {
     echo "${NODE_DIR}/box-disk1.raw"
 }
 
-function kill-vm() {
+function kill_vm() {
     (
         $starting_step "Kill vm ${vm_name}"
         [[ ! -f "${NODE_DIR}/${vm_name}.pid" ]]
@@ -19,12 +19,12 @@ function kill-vm() {
     ) ; $prev_cmd_failed
 }
 
-function destroy-vm() {
+function destroy_vm() {
     (
         $starting_step "Destroy vm ${vm_name}"
         [ ! -f "$(vm_image)" ]
         $skip_step_if_already_done;
-        kill-vm
+        kill_vm
         [[ -f "${NODE_DIR}/root@${vm_name}" ]] && sudo rm "${NODE_DIR}/root@${vm_name}*"
         set -ex; rm "$(vm_image)"
     ) ; $prev_cmd_failed
