@@ -101,6 +101,7 @@ function build () {
         for step in ${steps[@]} ; do
             [[ -d "${ENV_ROOTDIR}/ind-steps/step-${step}" ]] || continue
             [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]] && run_steps "${step}" "${stage}"
+            [[ $? == 255 ]] && exit
         done
     done
 
