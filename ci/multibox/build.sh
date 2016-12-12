@@ -26,7 +26,6 @@ done
 create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
 
 for node in ${scheduled_nodes[@]} ; do
-
     (
         $starting_group "Building ${node%,*}"
         false
