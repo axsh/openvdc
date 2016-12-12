@@ -14,12 +14,14 @@ import (
 )
 
 var ErrInstanceMissingResource = errors.New("Resource is not associated")
+var ErrInvalidID = errors.New("ID is missing")
 
 type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
 	FindByID(string) (*Instance, error)
 	UpdateState(id string, next InstanceState_State) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
+	Update(*Instance) error
 }
 
 const instancesBaseKey = "instances"
@@ -89,6 +91,26 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	}
 
 	return n, nil
+}
+
+func (i *instances) Update(instance *Instance) error {
+	if instance.Id == "" {
+		return ErrInvalidID
+	}
+
+	buf, err := proto.Marshal(instance)
+	if err != nil {
+		return err
+	}
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	err = bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, instance.Id), buf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (i *instances) FindByID(id string) (*Instance, error) {

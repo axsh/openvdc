@@ -150,7 +150,6 @@ func (z *Zk) FindLastKey(prefixKey string) (string, error) {
 		return "", ErrConnectionNotReady
 	}
 	_, base := z.canonKey(prefixKey)
-	println(base)
 	buf, _, err := z.conn.Get(base)
 	if err != nil {
 		return "", ErrFindLastKey(err.Error())
