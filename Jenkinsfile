@@ -46,7 +46,6 @@ def stage_rpmbuild(label) {
 def stage_test_rpm(label) {
   node(label) {
     stage "RPM Install Test ${label}"
-    checkout scm
     write_build_env(label)
     sh "./deployment/docker/test-rpm-install.sh ./build.env"
   }
@@ -60,6 +59,15 @@ def stage_unit_test(label) {
     sh "./deployment/docker/unit-tests.sh ./build.env"
   }
 }
+
+def stage_integration(label) {
+  node(label) {
+    stage "Integration Test ${label}"
+    write_build_env(label)
+    sh "deployment/integration/run_integration.sh  ./build.env"
+  }
+}
+
 
 node() {
     stage "Checkout"
@@ -78,4 +86,6 @@ for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
   stage_test_rpm(label)
+  stage_integration(label)
 }
+
