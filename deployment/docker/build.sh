@@ -61,8 +61,7 @@ else
 fi
 
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
-RPM_ABSOLUTE=/var/www/html/openvdc-repos
-
+RPM_ABSOLUTE=/var/www/html/openvdc-repos/
 
 /usr/bin/env
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
@@ -83,10 +82,13 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   done
 fi
 # Run build script
+
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
 
 # Build the yum repository
-docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/rpmbuild/RPMS/x86_64/ ; createrepo . "
+docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/" 
+docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/" 
+docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/${RELEASE_SUFFIX}/ ; createrepo . "
 
 if [[ -n "$BUILD_CACHE_DIR" ]]; then
     if [[ ! -d "$BUILD_CACHE_DIR" || ! -w "$BUILD_CACHE_DIR" ]]; then
@@ -112,7 +114,9 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
 fi
 # Pull compiled yum repository
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
-docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
+#docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
+
+docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
 
 
 #Build rpm 
