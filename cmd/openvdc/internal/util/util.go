@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/axsh/openvdc/registry"
 	"google.golang.org/grpc"
@@ -69,4 +71,19 @@ func FetchTemplate(templateSlug string) (*registry.RegistryTemplate, error) {
 		}
 	}
 	return finder.Find(templateSlug)
+}
+
+// PreRunHelpFlagCheckAndQuit can use cobra.Command with "DisableFlagParsing=true"
+// to show usage and quit for -h or --help command line option.
+// &cobra.Command {
+//   DisableFlagParsing: true,
+// 	 PreRunE:            util.PreRunHelpFlagCheckAndQuit,
+// }
+func PreRunHelpFlagCheckAndQuit(cmd *cobra.Command, args []string) error {
+	cmd.Flags().Parse(args)
+	help, _ := cmd.Flags().GetBool("help")
+	if help {
+		return pflag.ErrHelp
+	}
+	return nil
 }

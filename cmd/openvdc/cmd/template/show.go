@@ -5,6 +5,7 @@ import (
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var ShowCmd = &cobra.Command{
@@ -16,9 +17,11 @@ var ShowCmd = &cobra.Command{
 	% openvdc template show ./templates/centos/7/null.json
 	% openvdc template show https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
 	` + exampleParameterOverwrite("openvdc template show"),
+	DisableFlagParsing: true,
+	PreRunE:            util.PreRunHelpFlagCheckAndQuit,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return cmd.Usage()
+			return pflag.ErrHelp
 		}
 		templateSlug := args[0]
 		rt, err := util.FetchTemplate(templateSlug)

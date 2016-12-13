@@ -14,6 +14,7 @@ import (
 	"github.com/axsh/openvdc/registry"
 	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func mergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.ResourceTemplate {
@@ -101,9 +102,10 @@ var ValidateCmd = &cobra.Command{
 	% openvdc template validate https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
 	` + exampleParameterOverwrite("openvdc template validate"),
 	DisableFlagParsing: true,
+	PreRunE:            util.PreRunHelpFlagCheckAndQuit,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return cmd.Usage()
+			return pflag.ErrHelp
 		}
 		templateSlug := args[0]
 		rt, err := util.FetchTemplate(templateSlug)
