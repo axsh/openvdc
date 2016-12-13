@@ -58,13 +58,6 @@ def stage_unit_test(label) {
   }
 }
 
-def env_test(label) {
-  node(label) {
-    stage "Environment test"
-    sh "env "
-  }
-}
-
 node() {
     stage "Checkout"
     checkout scm
@@ -80,8 +73,7 @@ if( BUILD_OS != "all" ){
 
 // Using .each{} hits "a CPS-transformed closure is not yet supported (JENKINS-26481)"
 for( label in build_nodes) {
-env_test(label)
-//stage_unit_test(label)
-//stage_rpmbuild(label)
-//stage_test_rpm(label)
+  stage_unit_test(label)
+  stage_rpmbuild(label)
+  stage_test_rpm(label)
 }
