@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
@@ -21,18 +22,37 @@ var showCmd = &cobra.Command{
 			log.Fatalf("Please provide a Resource ID.")
 		}
 
-		resourceID := args[0]
-		if len(resourceID) == 0 {
-			log.Fatalf("Invalid Resource ID: %s", resourceID)
+		type showTargetCb func(conn *grpc.ClientConn) (proto.Message, error)
+		var showTarget showTargetCb
+		id := args[0]
+		if strings.HasPrefix(id, "i-") {
+			showTarget = func(conn *grpc.ClientConn) (proto.Message, error) {
+				req := &api.InstanceIDRequest{
+					Key: &api.InstanceIDRequest_ID{
+						ID: id,
+					},
+				}
+
+				c := api.NewInstanceClient(conn)
+				return c.Show(context.Background(), req)
+			}
+		} else if strings.HasPrefix(id, "r-") {
+			showTarget = func(conn *grpc.ClientConn) (proto.Message, error) {
+				req := &api.ResourceIDRequest{
+					Key: &api.ResourceIDRequest_ID{
+						ID: id,
+					},
+				}
+
+				c := api.NewResourceClient(conn)
+				return c.Show(context.Background(), req)
+			}
+		} else {
+			log.Fatal("Invalid ID syntax:", id)
 		}
-		req := &api.ResourceIDRequest{
-			Key: &api.ResourceIDRequest_ID{
-				ID: resourceID,
-			},
-		}
+
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
-			c := api.NewResourceClient(conn)
-			res, err := c.Show(context.Background(), req)
+			res, err := showTarget(conn)
 			if err != nil {
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err

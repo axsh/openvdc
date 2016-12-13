@@ -1,9 +1,14 @@
 package model
 
 import (
+	"fmt"
 	"testing"
 
 	"golang.org/x/net/context"
+
+	"reflect"
+
+	"strings"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -57,4 +62,52 @@ func TestDestroyResource(t *testing.T) {
 		assert.NoError(err)
 		assert.Equal(Resource_UNREGISTERED, got2.State)
 	})
+}
+
+var res1 = &Resource{
+	Template: &Resource_Lxc{
+		Lxc: &LxcTemplate{
+			Vcpu:     1,
+			MemoryGb: 10,
+			LxcImage: &LxcTemplate_Image{
+				DownloadUrl: "http://example.com/image.raw",
+				Chksum:      "1234567890abcdef",
+			},
+		}}}
+
+func TestResource_ResourceTemplate(t *testing.T) {
+	assert := assert.New(t)
+	assert.Equal("lxc", res1.ResourceTemplate().ResourceName())
+}
+
+func ExampleResource_reflection() {
+	// Normal type assertion
+	rl, ok := res1.Template.(*Resource_Lxc)
+	fmt.Println(rl.Lxc, ok)
+	// Using reflection API
+	v := reflect.ValueOf(res1.Template)
+	fmt.Println(v.Kind())
+	fmt.Println(v.Type().String())
+	fmt.Println(
+		"ConvertibleTo(*Resource_Lxc) ->",
+		v.Type().ConvertibleTo(reflect.TypeOf((*Resource_Lxc)(nil))),
+	)
+	fmt.Println(
+		"ConvertibleTo(*Resource_None) ->",
+		v.Type().ConvertibleTo(reflect.TypeOf((*Resource_None)(nil))),
+	)
+	fieldName := strings.TrimPrefix(v.Type().String(), "*model.Resource_")
+	fmt.Println(fieldName)
+	f := v.Elem().FieldByName(fieldName)
+	fmt.Println(f.Type().String())
+	fmt.Println(f.MethodByName("ResourceName").Call([]reflect.Value{})[0])
+	// Output:
+	// vcpu:1 memory_gb:10 lxc_image:<download_url:"http://example.com/image.raw" chksum:"1234567890abcdef" >  true
+	// ptr
+	// *model.Resource_Lxc
+	// ConvertibleTo(*Resource_Lxc) -> true
+	// ConvertibleTo(*Resource_None) -> false
+	// Lxc
+	// *model.LxcTemplate
+	// lxc
 }

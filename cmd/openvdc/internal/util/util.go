@@ -7,9 +7,8 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc/api"
+
 	"github.com/axsh/openvdc/registry"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -70,30 +69,4 @@ func FetchTemplate(templateSlug string) (*registry.RegistryTemplate, error) {
 		}
 	}
 	return finder.Find(templateSlug)
-}
-
-func SendToApi(serverAddr string, hostName string, imageTitle string, taskType string) {
-
-	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-	}
-
-	defer conn.Close()
-
-	c := api.NewInstanceClient(conn)
-
-	switch taskType {
-	case "stop":
-		resp, err := c.StopTask(context.Background(), &api.StopTaskRequest{hostName, taskType})
-
-		if err != nil {
-			log.Fatalf("ERROR: Cannot connect to OpenVDC API: %v", err)
-		}
-
-		log.Println(resp)
-
-	default:
-		log.Fatalf("Unknown task type: %s", taskType)
-	}
 }

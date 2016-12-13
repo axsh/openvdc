@@ -28,7 +28,7 @@ func withConnect(t *testing.T, c func(context.Context)) error {
 func TestCreateInstance(t *testing.T) {
 	assert := assert.New(t)
 	n := &Instance{
-		ExecutorId: "xxx",
+		SlaveId: "xxx",
 	}
 
 	var err error
@@ -48,7 +48,7 @@ func TestCreateInstance(t *testing.T) {
 func TestFindInstance(t *testing.T) {
 	assert := assert.New(t)
 	n := &Instance{
-		ExecutorId: "xxx",
+		SlaveId:    "xxx",
 		ResourceId: "r-xxxx",
 	}
 	_, err := Instances(context.Background()).FindByID("i-xxxxx")
@@ -73,7 +73,7 @@ func TestUpdateStateInstance(t *testing.T) {
 
 	withConnect(t, func(ctx context.Context) {
 		n := &Instance{
-			ExecutorId: "xxx",
+			SlaveId:    "xxx",
 			ResourceId: "r-xxxx",
 		}
 		got, err := Instances(ctx).Create(n)
@@ -89,5 +89,29 @@ func TestUpdateStateInstance(t *testing.T) {
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_SHUTTINGDOWN))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))
+	})
+}
+
+func TestUpdateInstance(t *testing.T) {
+	assert := assert.New(t)
+	err := Instances(context.Background()).Update(&Instance{Id: "i-xxxx"})
+	assert.Equal(ErrBackendNotInContext, err)
+
+	withConnect(t, func(ctx context.Context) {
+		n := &Instance{
+			SlaveId:    "xxx",
+			ResourceId: "r-xxxx",
+		}
+		err = Instances(ctx).Update(n)
+		assert.Error(err)
+		assert.Equal(ErrInvalidID, err, "Empty ID object should get ErrInvalidID")
+
+		got, err := Instances(ctx).Create(n)
+		assert.NoError(err)
+		got.ResourceId = "r-yyyy"
+		err = Instances(ctx).Update(got)
+		got2, err := Instances(ctx).FindByID(got.Id)
+		assert.NoError(err)
+		assert.Equal(got.ResourceId, got2.ResourceId)
 	})
 }
