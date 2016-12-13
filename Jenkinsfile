@@ -58,14 +58,12 @@ def stage_unit_test(label) {
   }
 }
 
-
-def env_test(label) {
-  node(label) {
-    stage "Env test ${label}"
-    for(e in env){
-        echo e + " is " + ${e}
-     }
-  }
+def env_test(label){
+   node(label) {
+      for(e in env){
+         echo e + " is " + ${e}
+       }
+   }
 }
 
 node() {
