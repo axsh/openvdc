@@ -228,3 +228,24 @@ func (s *InstanceAPI) Show(ctx context.Context, in *InstanceIDRequest) (*Instanc
 	}
 	return &InstanceReply{ID: instance.GetId(), Instance: instance}, nil
 }
+
+type InstanceConsoleAPI struct {
+	api *APIServer
+}
+
+func (i *InstanceConsoleAPI) Attach(stream InstanceConsole_AttachServer) error {
+	in, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+	instanceID := in.GetInstanceId()
+	if instanceID == "" {
+		// Return error if no instance ID is set to the first request.
+		return fmt.Errorf("instance_id not found")
+	}
+	inst, err := model.Instances(stream.Context()).FindByID(instanceID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -28,6 +28,7 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
 	RegisterResourceServer(s.server, &ResourceAPI{api: s})
+	RegisterInstanceConsoleServer(s.server, &InstanceConsoleAPI{api: s})
 	return s
 }
 
