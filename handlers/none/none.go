@@ -29,6 +29,14 @@ func (h *NoneHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplat
 	}
 }
 
-func (h *NoneHandler) ShowHelp(out io.Writer) error {
+func (h *NoneHandler) MergeArgs(dst model.ResourceTemplate, args []string) error {
+	_, ok := dst.(*model.NoneTemplate)
+	if !ok {
+		return handlers.ErrMergeDstType(new(model.NoneTemplate), dst)
+	}
+	return nil
+}
+
+func (h *NoneHandler) Usage(out io.Writer) error {
 	return nil
 }
