@@ -60,8 +60,8 @@ def stage_unit_test(label) {
 
 def env_test(label){
    node(label) {
-      for(e in env){
-         echo e + " is " + ${e}
+         sh echo "xxxxxxENVIRONMENTxxxxxx"
+         sh env
        }
    }
 }
