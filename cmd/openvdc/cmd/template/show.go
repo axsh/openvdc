@@ -1,13 +1,9 @@
 package template
 
 import (
-	"fmt"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
-	"github.com/axsh/openvdc/handlers"
-	"github.com/axsh/openvdc/model"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 )
 
@@ -29,22 +25,15 @@ var ShowCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		clihn, ok := rt.Template.ResourceHandler().(handlers.CLIHandler)
-		if !ok {
-			return fmt.Errorf("%s does not support CLI interface", rt.Name)
-		}
-		pb := proto.Clone(rt.Template.Template.(proto.Message))
-		merged, ok := pb.(model.ResourceTemplate)
-		if !ok {
-			return fmt.Errorf("Failed to cast type")
-		}
 
-		err = clihn.MergeArgs(merged, args[1:])
-		if err != nil {
-			log.Fatalf("Failed to overwrite parameters for %s\n%s", rt.LocationURI(), err)
+		merged := rt.Template.Template
+		if len(args) > 1 {
+			merged = mergeTemplateParams(rt, args[1:])
 		}
-
 		//TODO: Show difference between rt.ToModel() and merged objects.
-		return clihn.Usage(cmd.OutOrStdout())
+		{
+			m := &proto.TextMarshaler{Compact: false}
+			return m.Marshal(cmd.OutOrStdout(), merged.(proto.Message))
+		}
 	},
 }

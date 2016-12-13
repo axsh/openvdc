@@ -1,16 +1,73 @@
 package template
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
-	"github.com/gogo/protobuf/proto"
+	"github.com/axsh/openvdc/registry"
+	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 )
 
+func mergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.ResourceTemplate {
+	if len(args) == 0 {
+		return rt.Template.Template
+	}
+
+	rh := rt.Template.ResourceHandler()
+	clihn, ok := rh.(handlers.CLIHandler)
+	if !ok {
+		log.Fatal("%s does not support CLI interface", rt.Name)
+	}
+
+	pb := proto.Clone(rt.Template.Template.(proto.Message))
+	merged, ok := pb.(model.ResourceTemplate)
+	if !ok {
+		log.Fatal("Failed to cast type")
+	}
+
+	subargs := args
+	// Process JSON input and merging.
+	{
+		var err error
+		var buf []byte
+		if strings.HasPrefix(args[0], "@") {
+			fpath := strings.TrimPrefix(args[0], "@")
+			buf, err = ioutil.ReadFile(fpath)
+			if err != nil {
+				log.Fatalf("Failed to read variables from file: %s", fpath)
+			}
+		} else if args[0] == "-" {
+			buf, err = ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				log.Fatalf("Failed to read variables from stdin")
+			}
+		} else if !strings.HasPrefix(args[0], "-") {
+			// Assume JSON string input
+			buf = []byte(args[0])
+		}
+
+		if len(buf) > 0 {
+			err = json.Unmarshal(buf, merged)
+			if err != nil {
+				log.Fatal("Invalid variable input:", err)
+			}
+			subargs = subargs[1:]
+		}
+	}
+
+	if err := clihn.MergeArgs(merged, subargs); err != nil {
+		log.Fatalf("Failed to overwrite parameters for %s\n%s", rt.LocationURI(), err)
+	}
+	return merged
+}
 var ValidateCmd = &cobra.Command{
 	Use:     "validate [Resource Template Path] [template options]",
 	Aliases: []string{"test"},
@@ -31,19 +88,9 @@ var ValidateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		rh := rt.Template.ResourceHandler()
-		clihn, ok := rh.(handlers.CLIHandler)
-		if !ok {
-			return fmt.Errorf("%s does not support CLI interface", rt.Name)
-		}
-		pb := proto.Clone(rt.Template.Template.(proto.Message))
-		merged, ok := pb.(model.ResourceTemplate)
-		if !ok {
-			return fmt.Errorf("Failed to cast type")
-		}
-		err = clihn.MergeArgs(merged, args[1:])
-		if err != nil {
-			log.Fatalf("Failed to overwrite parameters for %s\n%s", rt.LocationURI(), err)
+
+		if len(args) > 1 {
+			mergeTemplateParams(rt, args[1:])
 		}
 		return nil
 	},
