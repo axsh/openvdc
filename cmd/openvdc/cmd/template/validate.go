@@ -68,6 +68,28 @@ func mergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 	}
 	return merged
 }
+
+func exampleParameterOverwrite(baseCmd string) string {
+	return fmt.Sprintf(`
+	Overwrite template parameters:
+
+	Using CLI options:
+	%% %[1]s centos/7/lxc --vcpu=4 --memory_gb=4
+
+	Using JSON string:
+	%% %[1]s centos/7/lxc '{"vcpu":4, "memory_gb":4}'
+
+	Using variable file:
+	%% vi mylxc.json
+	{
+	  "vcpu": 4,
+	  "memory_gb": 4
+	}
+	%% %[1]s centos/7/lxc @mylxc.json
+	%% cat mylxc.json | %[1]s centos/7/lxc -
+	`, baseCmd)
+}
+
 var ValidateCmd = &cobra.Command{
 	Use:     "validate [Resource Template Path] [template options]",
 	Aliases: []string{"test"},
@@ -77,7 +99,7 @@ var ValidateCmd = &cobra.Command{
 	% openvdc template validate centos/7/lxc
 	% openvdc template validate ./templates/centos/7/null.json
 	% openvdc template validate https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
-	`,
+	` + exampleParameterOverwrite("openvdc template validate"),
 	DisableFlagParsing: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {

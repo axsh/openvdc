@@ -15,7 +15,7 @@ var ShowCmd = &cobra.Command{
 	% openvdc template show centos/7/lxc
 	% openvdc template show ./templates/centos/7/null.json
 	% openvdc template show https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
-	`,
+	` + exampleParameterOverwrite("openvdc template show"),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return cmd.Usage()
