@@ -249,3 +249,66 @@ func (i *InstanceState) validateStateTransition(next InstanceState_State) error 
 		next.String(),
 	)
 }
+
+type InstanceStateSlice []InstanceState_State
+
+func (s InstanceStateSlice) Contains(state InstanceState_State) bool {
+	for _, st := range s {
+		if st == state {
+			return true
+		}
+	}
+	return false
+}
+
+var instanceGoalStates = map[InstanceState_State]InstanceStateSlice{
+	InstanceState_REGISTERED: []InstanceState_State{
+		InstanceState_QUEUED,
+	},
+	InstanceState_QUEUED: []InstanceState_State{
+		InstanceState_STARTING,
+	},
+	InstanceState_STARTING: []InstanceState_State{
+		InstanceState_RUNNING,
+	},
+	InstanceState_RUNNING: []InstanceState_State{
+		InstanceState_STOPPED,
+		InstanceState_TERMINATED,
+	},
+	InstanceState_STOPPING: []InstanceState_State{
+		InstanceState_STOPPED,
+	},
+	InstanceState_STOPPED: []InstanceState_State{
+		InstanceState_RUNNING,
+		InstanceState_TERMINATED,
+	},
+	InstanceState_SHUTTINGDOWN: []InstanceState_State{
+		InstanceState_TERMINATED,
+	},
+}
+
+func (i *InstanceState) ValidateGoalState(goal InstanceState_State) error {
+	if i.GetState() == goal || i.GetState() == InstanceState_TERMINATED {
+		return fmt.Errorf("Instance is already %s", i.GetState().String())
+	}
+	goals, result := instanceGoalStates[i.GetState()]
+	if result && goals.Contains(goal) {
+		return nil
+	}
+
+	return fmt.Errorf("Invalid goal state: %s -> %s",
+		i.GetState().String(),
+		goal.String(),
+	)
+}
+
+var instanceConsoleStates InstanceStateSlice = []InstanceState_State{
+	InstanceState_RUNNING,
+}
+
+func (i *InstanceState) ReadyForConsole() error {
+	if instanceConsoleStates.Contains(i.GetState()) {
+		return nil
+	}
+	return errors.New("Instance is not active to return console")
+}
