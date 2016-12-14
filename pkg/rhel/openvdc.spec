@@ -53,10 +53,10 @@ cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 %package cli
 Summary: openvdc cli
 
-%description
+%description cli
 This is an empty message to fulfill the requirement that this file has a "%description" header.
 
-%files
+%files cli
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc
