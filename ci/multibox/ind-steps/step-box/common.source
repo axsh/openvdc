@@ -25,11 +25,18 @@ function kill_vm() {
 
 function destroy_vm() {
     (
-        $starting_step "Destroy vm ${vm_name}"
+        $starting_step "Remove SSH key"
+        [ ! -f ${NODE_DIR}/sshkey ]
+        $skip_step_if_already_done
+        sudo rm ${NODE_DIR}/sshkey
+    ) ; prev_cmd_failed
+
+    (
+        $starting_step "Remove vm ${vm_name}"
         [ ! -f "$(cache_image)" ]
         $skip_step_if_already_done; set -x
         kill_vm
-        [[ -f "${NODE_DIR}/root@${vm_name}" ]] && rm "${NODE_DIR}/root@${vm_name}"*
+        [[ -f "${cache_dir}/${branch}/sshkey_${vm_name}" ]] && sudo rm "${cache_dir}/${branch}/sshkey_${vm_name}"*
         sudo rm "$(cache_image)"
     ) ; $prev_cmd_failed
 }
