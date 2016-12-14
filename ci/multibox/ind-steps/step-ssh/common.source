@@ -13,4 +13,5 @@ function install_user_key () {
     sudo cp "${NODE_DIR}/sshkey.pub" "${TMP_ROOT}/root/.ssh/authorized_keys"
 }
 
-user="${user:-root}"
+ci_user="${user:-root}"
+cache_dir="${cache_dir}/${branch}"
