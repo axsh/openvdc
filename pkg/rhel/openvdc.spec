@@ -16,13 +16,20 @@ BuildArch: x86_64
 
 BuildRequires: rpmdevtools
 
-Requires: lxc mesosphere-zookeeper mesos
+Requires: lxc 
 %{systemd_requires}
+Requires: openvdc-cli
 Requires: openvdc-executor
 Requires: openvdc-scheduler
 
+Suggests: mesosphere-zookeeper mesos
+
 %description
-This is an empty message to fulfill the requirement that this file has a "%description" header.
+This is an empty metapackage that depends on all OpenVNet services and the vnctl client. Just a conventient way to install everything at once on a single machine.
+
+%files
+# Metapackage, so no files!
+
 
 %build
 cd "${GOPATH}/src/github.com/axsh/openvdc"
@@ -40,6 +47,12 @@ cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
+
+
+%package cli
+
+%description
+This is an empty message to fulfill the requirement that this file has a "%description" header.
 
 %files
 %dir /opt/axsh/openvdc
