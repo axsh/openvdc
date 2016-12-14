@@ -16,7 +16,7 @@ var ShowCmd = &cobra.Command{
 	% openvdc template show centos/7/lxc
 	% openvdc template show ./templates/centos/7/null.json
 	% openvdc template show https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
-	` + exampleParameterOverwrite("openvdc template show"),
+	` + util.ExampleMergeTemplateOptions("openvdc template show"),
 	DisableFlagParsing: true,
 	PreRunE:            util.PreRunHelpFlagCheckAndQuit,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -31,7 +31,7 @@ var ShowCmd = &cobra.Command{
 
 		merged := rt.Template.Template
 		if len(args) > 1 {
-			merged = mergeTemplateParams(rt, args[1:])
+			merged = util.MergeTemplateParams(rt, args[1:])
 		}
 		//TODO: Show difference between rt.ToModel() and merged objects.
 		{
