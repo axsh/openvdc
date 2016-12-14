@@ -23,7 +23,7 @@ Requires: openvdc-cli
 Requires: openvdc-executor
 Requires: openvdc-scheduler
 
-Suggests: mesosphere-zookeeper mesos
+Recommends: mesosphere-zookeeper mesos
 
 %description
 This is an empty metapackage that depends on all OpenVNet services and the vnctl client. Just a conventient way to install everything at once on a single machine.
