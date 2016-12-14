@@ -51,6 +51,7 @@ cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 
 
 %package cli
+Summary: openvdc cli
 
 %description
 This is an empty message to fulfill the requirement that this file has a "%description" header.
