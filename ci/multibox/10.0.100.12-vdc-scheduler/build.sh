@@ -17,7 +17,6 @@ IND_STEPS=(
     "mesosphere"
     "mesos"
     "zookeeper"
-    "openvdc"
 )
 
 build "${IND_STEPS[@]}"
