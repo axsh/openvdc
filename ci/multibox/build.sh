@@ -25,12 +25,19 @@ done
 
 create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
 
+(
+    $starting_step "Create cache folder"
+    sudo [ -d "/data/openvdc-ci/${BRANCH}" ]
+    $skip_step_if_already_done ; set -ex
+    sudo mkdir -p "/data/openvdc-ci/${BRANCH}"
+) ; prev_cmd_failed
+
 for node in ${scheduled_nodes[@]} ; do
     (
         $starting_group "Building ${node%,*}"
         false
         $skip_group_if_unnecessary
-        "${ENV_ROOTDIR}/${node}/build.sh"
+        branch="${BRANCH}" "${ENV_ROOTDIR}/${node}/build.sh"
     ) ; prev_cmd_failed
 done
 
