@@ -5,6 +5,10 @@ box=$"${box:-minimal}"
 distr_ver="${distr_ver:-7.2.1511}"
 arch="${arch:-x86_64}"
 
+function cache_image () {
+    echo "/data/openvdc-ci/${branch}/${vm_name}.qcow2"
+}
+
 function vm_image () {
     echo "${NODE_DIR}/box-disk1.raw"
 }
@@ -23,10 +27,17 @@ function destroy_vm() {
     (
         $starting_step "Destroy vm ${vm_name}"
         [ ! -f "$(vm_image)" ]
-        $skip_step_if_already_done;
+        $skip_step_if_already_done; set -ex;
         kill_vm
-        [[ -f "${NODE_DIR}/root@${vm_name}" ]] && sudo rm "${NODE_DIR}/root@${vm_name}*"
-        set -ex; rm "$(vm_image)"
+        [[ -f "${NODE_DIR}/root@${vm_name}" ]] && rm "${NODE_DIR}/root@${vm_name}*"
+        rm "$(vm_image)"
+    ) ; $prev_cmd_failed
+
+    (
+        $starting_step "Destroy cache ${vm_name}"
+        sudo [ ! -f "$(cache_image)" ]
+        $skip_step_if_already_done; set -ex;
+        sudo rm "$(cache_image)"
     ) ; $prev_cmd_failed
 }
 

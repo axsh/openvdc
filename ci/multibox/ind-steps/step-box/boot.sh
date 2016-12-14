@@ -3,6 +3,14 @@
 umount-seed-image
 
 (
+    $starting_step "Cache box for branch ${branch}"
+    sudo [ -f "$(cache_image)" ]
+    $skip_step_if_already_done ; set -ex
+    sudo qemu-img convert -c -O qcow2 "$(vm_image)" "/data/openvdc-ci/${branch}/${vm_name}.qcow2"
+    rm "$(vm_image)"
+) ; prev_cmd_failed
+
+(
     $starting_step "Start kvm for ${vm_name}"
     sudo kill -0 $(sudo cat "${NODE_DIR}/${vm_name}.pid" 2> /dev/null) 2> /dev/null
     $skip_step_if_already_done;
@@ -15,7 +23,7 @@ umount-seed-image
        -vnc ${vnc_addr}:${vnc_port} \
        -serial ${serial} \
        -serial pty \
-       -drive file=$(vm_image),media=disk,if=virtio,format=raw
+       -drive file=$(cache_image),media=disk,if=virtio,format=qcow2
        $(
          for (( i=0 ; i < ${#nics[@]} ; i++ )); do
              nic=(${nics[$i]})

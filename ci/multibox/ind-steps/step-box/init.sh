@@ -3,7 +3,6 @@
 if mount | grep -q "${TMP_ROOT}" ; then
     umount-seed-image
 fi
-
 (
     $starting_step "Deploy seed image for ${vm_name}"
     [ -f "$(vm_image)" ]
