@@ -82,15 +82,13 @@ function run_steps () {
 
 function build () {
     local steps="${@}"
-    function ssh () {
-        [[ -f ${NODE_DIR}/root@${vm_name} ]] &&
-            $(type -P ssh) -i "${NODE_DIR}/root@${vm_name}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
-    }
+
+    [[ ${branch} == "develop" || ${branch} == "master" ]] || clone_image
 
     local stages=(
         $(
             $(sudo kill -0 $(sudo cat ${NODE_DIR}/${vm_name}.pid 2> /dev/null) 2> /dev/null) && { echo "postconfigure provide" ; return ; }
-            $(sudo [ -f "/data/openvdc-ci/${branch}/${vm_name}.qcow2" ]) && { echo "boot postconfigure provide" ; return ; }
+            $(sudo [ -f "${cache_dir}/${branch}/${vm_name}.qcow2" ]) && { echo "boot postconfigure provide" ; return ; }
             echo "init install preconfigure boot postconfigure provide"
         )
     )
@@ -120,4 +118,20 @@ function disable_service () {
         ssh root@${IP_ADDR} "systemctl disable ${service}"
         ssh root@${IP_ADDR} "systemctl stop ${service}"
     ) ; prev_cmd_failed
+}
+
+function clone_image () {
+    (
+        $starting_step "Clone base images"
+        [ -f "${cache_dir}/${branch}/${vm_name}.qcow2" ]
+        $skip_step_if_already_done ; set -ex
+        sudo cp "${cache_dir}/develop/${vm_name}.qcow2" "${cache_dir}/${branch}/${vm_name}.qcow2"
+        sudo cp "${cache_dir}/develop/sshkey_${vm_name}" "${cache_dir}/${branch}/"
+    ) ; prev_cmd_failed
+}
+
+function ssh () {
+    local key="${NODE_DIR}/sshkey"
+    [[ -f ${key} ]] &&
+        $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
 }

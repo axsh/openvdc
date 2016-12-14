@@ -1,16 +1,16 @@
 function add_user_key () {
     local user="${1}"
 
-    ssh-keygen -t rsa -b 2048 -N "" -f ${NODE_DIR}/${user}@${vm_name}
-    chmod 600 ${NODE_DIR}/${user}@${vm_name}
-    chmod 600 ${NODE_DIR}/${user}@${vm_name}.pub
+    ssh-keygen -t rsa -b 2048 -N "" -f ${NODE_DIR}/sshkey
+    chmod 600 ${NODE_DIR}/sshkey
+    chmod 600 ${NODE_DIR}/sshkey.pub
 }
 
 function install_user_key () {
     local user="${1}"
 
     sudo chroot ${TMP_ROOT} /bin/bash -c "mkdir -p -m 600 /${user}/.ssh"
-    sudo cp "${NODE_DIR}/root@${vm_name}.pub" "${TMP_ROOT}/root/.ssh/authorized_keys"
+    sudo cp "${NODE_DIR}/sshkey.pub" "${TMP_ROOT}/root/.ssh/authorized_keys"
 }
 
 user="${user:-root}"
