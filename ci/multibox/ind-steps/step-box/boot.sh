@@ -16,7 +16,7 @@
         $starting_step "Delete raw image"
         [ ! -f "$(vm_image)" ]
         $skip_step_if_already_done ; set -ex
-        rm $(vm_iamge)
+        rm "$(vm_image)"
     ) ; prev_cmd_failed
 ) ; prev_cmd_failed
 
