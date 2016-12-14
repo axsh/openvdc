@@ -17,13 +17,16 @@ BuildArch: x86_64
 BuildRequires: rpmdevtools
 
 Requires: lxc 
-#Requires: mesosphere-zookeeper mesos
+Requires: mesosphere-zookeeper mesos
 %{systemd_requires}
 Requires: openvdc-cli
 Requires: openvdc-executor
 Requires: openvdc-scheduler
 
-Recommends: mesosphere-zookeeper mesos
+## This will not work with rpm v. 4.11 (which is what the jenkins vm has!)
+##  rpm -v --querytags will give a list of acceptable tags. Suggests: *is*
+## an acceptable tag for 4.12, apparently.
+#Suggests: mesosphere-zookeeper mesos
 
 %description
 This is an empty metapackage that depends on all OpenVNet services and the vnctl client. Just a conventient way to install everything at once on a single machine.
