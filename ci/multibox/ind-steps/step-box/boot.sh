@@ -1,13 +1,23 @@
 #!/bin/bash
 
-umount-seed-image
-
 (
-    $starting_step "Cache box for branch ${branch}"
-    sudo [ -f "$(cache_image)" ]
-    $skip_step_if_already_done ; set -ex
-    sudo qemu-img convert -c -O qcow2 "$(vm_image)" "/data/openvdc-ci/${branch}/${vm_name}.qcow2"
-    rm "$(vm_image)"
+    $starting_group "Cleanup build phase"
+    [ ! -f "$(vm_image)" ]
+    $skip_group_if_unnecessary
+    umount-seed-image
+    (
+        $starting_step "Cache box for branch ${branch}"
+        sudo [ -f "$(cache_image)" ]
+        $skip_step_if_already_done ; set -ex
+        sudo qemu-img convert -c -O qcow2 "$(vm_image)" "$(cache_image)"
+    ) ; prev_cmd_failed
+
+    (
+        $starting_step "Delete raw image"
+        [ ! -f "$(vm_image)" ]
+        $skip_step_if_already_done ; set -ex
+        rm $(vm_iamge)
+    ) ; prev_cmd_failed
 ) ; prev_cmd_failed
 
 (
