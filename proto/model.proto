@@ -60,6 +60,12 @@ message LxcTemplate {
     string chksum = 3;
   }
   Image lxc_image = 5;
+  message Interface {
+    string type = 1;
+    string macaddr = 2;
+    string ipv4addr = 3;
+  }
+  repeated Interface interfaces = 6;
 }
 
 message NullTemplate {}
