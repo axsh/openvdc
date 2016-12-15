@@ -31,12 +31,11 @@ function destroy_vm() {
         $skip_step_if_already_done
         sudo rm ${NODE_DIR}/sshkey
     ) ; prev_cmd_failed
-
+    kill_vm
     (
         $starting_step "Remove vm ${vm_name}"
         [ ! -f "$(cache_image)" ]
         $skip_step_if_already_done; set -x
-        kill_vm
         [[ -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}" ]] && sudo rm "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
         sudo rm "$(cache_image)"
     ) ; $prev_cmd_failed
