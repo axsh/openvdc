@@ -1,7 +1,7 @@
 version: build-{build}.{branch}
 
 clone_folder: C:\gopath\src\github.com\axsh\openvdc
-shallow_clone: true
+clone_depth: 10
 
 environment:
   GOPATH: C:\gopath
