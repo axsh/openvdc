@@ -75,12 +75,7 @@ service Resource {
 }
 
 message ResourceRequest {
-  string template_uri = 1;
-  oneof Template {
-    model.NoneTemplate none = 500;
-    model.LxcTemplate lxc = 501;
-    model.NullTemplate null = 502;
-  }
+  model.Template template = 1;
 }
 message ResourceReply {
   string ID = 1;

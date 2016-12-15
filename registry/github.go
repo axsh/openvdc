@@ -23,9 +23,8 @@ const (
 	mimeTypeGitUploadPack = "application/x-git-upload-pack-advertisement"
 )
 
-// Until 76f26d79b1be670 gets merged to master.
 // Build time flag
-var GithubDefaultRef = "generalize-template"
+var GithubDefaultRef = "resource-handler"
 
 type GithubRegistry struct {
 	confDir                 string
