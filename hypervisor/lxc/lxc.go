@@ -42,7 +42,7 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-func (d *LXCHypervisorDriver) CreateInstance() error {
+func (d *LXCHypervisorDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {

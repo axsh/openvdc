@@ -1,6 +1,10 @@
 package hypervisor
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/axsh/openvdc/model"
+)
 
 type testProvider struct{}
 
@@ -26,7 +30,7 @@ func (d *testDriver) InstanceConsole() error {
 	return nil
 }
 
-func (d *testDriver) CreateInstance() error {
+func (d *testDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
 	return nil
 }
 

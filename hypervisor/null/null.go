@@ -3,6 +3,7 @@ package null
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
 )
 
 func init() {
@@ -33,7 +34,7 @@ func (h *NullHypervisorDriver) StopInstance() error {
 	return nil
 }
 
-func (h *NullHypervisorDriver) CreateInstance() error {
+func (h *NullHypervisorDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
 	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("CreateInstance")
 	return nil
 }
