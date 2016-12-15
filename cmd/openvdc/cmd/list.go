@@ -30,7 +30,7 @@ var listCmd = &cobra.Command{
 				return err
 			}
 			for i, item := range res.Items {
-				fmt.Printf("%-5d %-10s %-10s\n", i, item.Id, item.State.String())
+				fmt.Printf("%-5d %-20s %-15s\n", i, item.Id, item.State.String())
 			}
 			return err
 		})
