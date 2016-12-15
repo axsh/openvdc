@@ -117,11 +117,15 @@
                   ]
                 },
                 "macaddr": {
-                  "type": "string"
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{2}[0-9a-fA-F:]+$"
                 },
                 "ipv4addr": {
                   "type": "string",
                   "format": "ipv4"
+                },
+                "bridge" : {
+                  "type": "string"
                 }
               }
             }

@@ -64,6 +64,7 @@ message LxcTemplate {
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
+    string bridge = 4;
   }
   repeated Interface interfaces = 6;
 }
