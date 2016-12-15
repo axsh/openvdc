@@ -10,6 +10,6 @@ copy_default_config
 scheduled_nodes=${NODES[@]}
 [[ -n "$1" ]] && scheduled_nodes="${@}"
 
-for node in "${NODES[@]}" ; do
+for node in "${scheduled_nodes[@]}" ; do
     ${ENV_ROOTDIR}/${node}/kill.sh ${kill_option}
 done
