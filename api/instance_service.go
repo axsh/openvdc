@@ -251,7 +251,7 @@ func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*Insta
 	return &InstanceListReply{
 		Page: &InstanceListReply_PageReply{
 			Total: int32(len(results)),
-			Limit: in.Page.Limit,
+			Limit: page.Limit,
 		},
 		Items: results,
 	}, nil
