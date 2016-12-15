@@ -2,10 +2,10 @@
 
 (
     $starting_step "Create the public key and setup ssh config for ${user}"
-    [[ -f ${cahe_dir}/sshkey_${vm_name} ]]
+    [[ -f ${CACHE_DIR}/${BRANCH}/sshkey_${vm_name} ]]
     $skip_step_if_already_done; set -ex
     add_user_key "${ci_user}"
-    sudo mv ${NODE_DIR}/sshkey ${cache_dir}/sshkey_${vm_name}
+    sudo mv ${NODE_DIR}/sshkey ${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}
 ) ; prev_cmd_failed
 
 

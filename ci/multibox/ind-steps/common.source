@@ -83,12 +83,10 @@ function run_steps () {
 function build () {
     local steps="${@}"
 
-    [[ ${branch} == "develop" || ${branch} == "master" ]] || clone_image
-
     local stages=(
         $(
             $(sudo kill -0 $(sudo cat ${NODE_DIR}/${vm_name}.pid 2> /dev/null) 2> /dev/null) && { echo "postconfigure provide" ; return ; }
-            $(sudo [ -f "${cache_dir}/${branch}/${vm_name}.qcow2" ]) && { echo "boot postconfigure provide" ; return ; }
+            $(sudo [ -f "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2" ]) && { echo "boot postconfigure provide" ; return ; }
             echo "init install preconfigure boot postconfigure provide"
         )
     )
@@ -122,11 +120,11 @@ function disable_service () {
 
 function clone_image () {
     (
-        $starting_step "Clone base images"
-        [ -f "${cache_dir}/${branch}/${vm_name}.qcow2" ]
+        $starting_step "Clone base images from ${base_branch}"
+        [ -f "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2" ]
         $skip_step_if_already_done ; set -ex
-        sudo cp "${cache_dir}/develop/${vm_name}.qcow2" "${cache_dir}/${branch}/${vm_name}.qcow2"
-        sudo cp "${cache_dir}/develop/sshkey_${vm_name}" "${cache_dir}/${branch}/"
+        sudo cp "${CACHE_DIR}/${BASE_BRANCH}/${vm_name}.qcow2" "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2"
+        sudo cp "${CACHE_DIR}/${BASE_BRANCH}/sshkey_${vm_name}" "${CACHE_DIR}/${BRANCH}/"
     ) ; prev_cmd_failed
 }
 

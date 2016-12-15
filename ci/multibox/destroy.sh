@@ -14,7 +14,7 @@ for node in ${scheduled_nodes[@]} ; do
         $starting_group "Destroy ${node%,*}"
         false
         $skip_group_if_unnecessary
-        branch="${BRANCH}" ${ENV_ROOTDIR}/${node}/destroy.sh
+        ${ENV_ROOTDIR}/${node}/destroy.sh
     ) ; prev_cmd_failed
 done
 

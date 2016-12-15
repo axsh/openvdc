@@ -37,8 +37,9 @@ for node in ${scheduled_nodes[@]} ; do
         $starting_group "Building ${node%,*}"
         false
         $skip_group_if_unnecessary
-        cache_dir="${CACHE_DIR}" branch="${BRANCH}" "${ENV_ROOTDIR}/${node}/build.sh"
+        . "${ENV_ROOTDIR}/${node}/build.sh"
     ) ; prev_cmd_failed
 done
 
 masquerade "${NETWORK}/${PREFIX}"
+

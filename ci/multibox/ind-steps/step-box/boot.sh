@@ -6,7 +6,7 @@
     $skip_group_if_unnecessary
     umount-seed-image
     (
-        $starting_step "Cache box for branch ${branch}"
+        $starting_step "Cache box for branch ${BRANCH}"
         sudo [ -f "$(cache_image)" ]
         $skip_step_if_already_done ; set -ex
         sudo qemu-img convert -c -O qcow2 "$(vm_image)" "$(cache_image)"

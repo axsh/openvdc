@@ -14,5 +14,5 @@ PREFIX="24"
 BOXES=(
     "minimal-7.2.1511-x86_64.kvm.box"
 )
-BRANCH="${GIT_BRANCH:-master}"
-CACHE_DIR="/data/openvdc/branches"
+BRANCH="${GIT_BRANCH:-develop}"
+CACHE_DIR="/data/openvdc-ci/branches"

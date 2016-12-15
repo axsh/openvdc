@@ -7,7 +7,7 @@ arch="${arch:-x86_64}"
 
 
 function cache_image () {
-    echo "${cache_dir}/${branch}/${vm_name}.qcow2"
+    echo "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2"
 }
 
 function vm_image () {
@@ -37,7 +37,7 @@ function destroy_vm() {
         [ ! -f "$(cache_image)" ]
         $skip_step_if_already_done; set -x
         kill_vm
-        [[ -f "${cache_dir}/${branch}/sshkey_${vm_name}" ]] && sudo rm "${cache_dir}/${branch}/sshkey_${vm_name}"*
+        [[ -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}" ]] && sudo rm "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
         sudo rm "$(cache_image)"
     ) ; $prev_cmd_failed
 }

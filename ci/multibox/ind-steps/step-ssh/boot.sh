@@ -4,7 +4,7 @@
     $starting_step "Import ssh key"
     [ -f ${NODE_DIR}/sshkey ]
     $skip_step_if_already_done
-    sudo cp ${cache_dir}/sshkey_${vm_name} ${NODE_DIR}/sshkey
+    sudo cp ${CACHE_DIR}/${BRANCH}/sshkey_${vm_name} ${NODE_DIR}/sshkey
     sudo chown ${USER}:${USER} ${NODE_DIR}/sshkey
 ) ; prev_cmd_failed
 
