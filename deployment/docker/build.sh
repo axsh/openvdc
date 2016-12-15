@@ -63,12 +63,14 @@ fi
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
 RPM_ABSOLUTE=/var/www/html/openvdc-repos/
 
-/usr/bin/env
+#/usr/bin/env
+
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
+
 # Upload checked out tree to the container.
-#####docker_cp . "${CID}:/var/tmp/openvdc"
 docker_cp . "${CID}:/var/tmp/go/src/github.com/axsh/openvdc"
+
 # Upload build cache if found.
 if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   for f in $(ls ${build_cache_base}); do
@@ -83,7 +85,9 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
 fi
 # Run build script
 
-docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
+# We'll need to wrap this into a condtional at some point: Are we building dev version or stable version?
+#docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
+docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" \"---define \"-dev_release_suffix ${RELEASE_SUFFIX}-1\"  pkg/rhel/openvdc.spec"
 
 # Build the yum repository
 docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/" 
