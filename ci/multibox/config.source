@@ -14,5 +14,14 @@ PREFIX="24"
 BOXES=(
     "minimal-7.2.1511-x86_64.kvm.box"
 )
-BRANCH="${GIT_BRANCH:-develop}"
 CACHE_DIR="/data/openvdc-ci/branches"
+
+# These variables should be supplied from jenkins.
+: "${REVISION:?"Revision is missing."}"
+: "${BRANCH:?"Github branch is missing"}"
+
+# These variables are set by default but can be overriden by jenkins.
+REBUILD="${REBUILD:-false}"
+# TODO: add function that calculates the parent branch of current branch
+# and assigns to $BASE_BRANCH
+BASE_BRANCH="${BASE_BRANCH:-develop}"
