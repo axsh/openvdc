@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
@@ -42,7 +43,7 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-func (d *LXCHypervisorDriver) CreateInstance() error {
+func (d *LXCHypervisorDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {

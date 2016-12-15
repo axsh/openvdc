@@ -2,8 +2,11 @@
 
 package lxc
 
-import "testing"
-import "github.com/axsh/openvdc/hypervisor"
+import (
+	"testing"
+	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
+)
 
 func TestProviderRegistration(t *testing.T) {
 	p, _ := hypervisor.FindProvider("lxc")
@@ -17,7 +20,7 @@ func TestLXCHypervisorDriver(t *testing.T) {
 
 	p, _ := hypervisor.FindProvider("lxc")
 	lxc, _ := p.CreateDriver("lxc-test")
-	err := lxc.CreateInstance()
+	err := lxc.CreateInstance(&model.Instance{}, &model.LxcTemplate{})
 	if err != nil {
 		t.Error(err)
 	}

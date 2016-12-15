@@ -26,8 +26,48 @@ type InstanceOps interface {
 
 const instancesBaseKey = "instances"
 
+type stateDef struct {
+	Nexts InstanceStateSlice
+	Goals InstanceStateSlice
+}
+
+var instanceStateDefs []*stateDef = make([]*stateDef, len(InstanceState_State_name))
+
 func init() {
 	schemaKeys = append(schemaKeys, instancesBaseKey)
+
+	instanceStateDefs[InstanceState_REGISTERED] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_QUEUED},
+		Goals: []InstanceState_State{InstanceState_QUEUED},
+	}
+	instanceStateDefs[InstanceState_QUEUED] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_STARTING},
+		Goals: []InstanceState_State{InstanceState_RUNNING, InstanceState_STOPPED},
+	}
+	instanceStateDefs[InstanceState_STARTING] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_RUNNING},
+		Goals: []InstanceState_State{InstanceState_RUNNING},
+	}
+	instanceStateDefs[InstanceState_RUNNING] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_STOPPING, InstanceState_SHUTTINGDOWN},
+		Goals: []InstanceState_State{InstanceState_STOPPED, InstanceState_TERMINATED},
+	}
+	instanceStateDefs[InstanceState_STOPPING] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_STOPPED},
+		Goals: []InstanceState_State{InstanceState_STOPPED},
+	}
+	instanceStateDefs[InstanceState_STOPPED] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_STARTING, InstanceState_SHUTTINGDOWN},
+		Goals: []InstanceState_State{InstanceState_RUNNING, InstanceState_TERMINATED},
+	}
+	instanceStateDefs[InstanceState_SHUTTINGDOWN] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_TERMINATED},
+		Goals: []InstanceState_State{InstanceState_TERMINATED},
+	}
+	instanceStateDefs[InstanceState_TERMINATED] = &stateDef{
+		Nexts: []InstanceState_State{},
+		Goals: []InstanceState_State{},
+	}
 }
 
 type instances struct {
@@ -158,7 +198,7 @@ func (i *instances) UpdateState(id string, next InstanceState_State) error {
 	if err != nil {
 		return err
 	}
-	if err := instance.LastState.validateStateTransition(next); err != nil {
+	if err := instance.LastState.ValidateNextState(next); err != nil {
 		return err
 	}
 	createdAt, err := ptypes.TimestampProto(time.Now())
@@ -217,35 +257,52 @@ func (i *Instance) Resource(ctx context.Context) (*Resource, error) {
 	return Resources(ctx).FindByID(i.GetResourceId())
 }
 
-func (i *InstanceState) validateStateTransition(next InstanceState_State) error {
-	result := func() bool {
-		switch i.State {
-		case InstanceState_REGISTERED:
-			return (next == InstanceState_QUEUED)
-		case InstanceState_QUEUED:
-			return (next == InstanceState_STARTING)
-		case InstanceState_STARTING:
-			return (next == InstanceState_RUNNING)
-		case InstanceState_RUNNING:
-			return (next == InstanceState_STOPPING ||
-				next == InstanceState_SHUTTINGDOWN)
-		case InstanceState_STOPPING:
-			return (next == InstanceState_STOPPED)
-		case InstanceState_STOPPED:
-			return (next == InstanceState_STARTING ||
-				next == InstanceState_SHUTTINGDOWN)
-		case InstanceState_SHUTTINGDOWN:
-			return (next == InstanceState_TERMINATED)
-		}
-		return false
-	}()
-
-	if result {
+func (i *InstanceState) ValidateNextState(next InstanceState_State) error {
+	if i.GetState() == next || i.GetState() == InstanceState_TERMINATED {
+		return fmt.Errorf("Instance is already %s", i.GetState().String())
+	}
+	if instanceStateDefs[i.GetState()].Nexts.Contains(next) {
 		return nil
 	}
 
-	return fmt.Errorf("Invalid state transition: %s -> %s",
+	return fmt.Errorf("Invalid next state: %s -> %s",
 		i.GetState().String(),
 		next.String(),
 	)
+}
+
+type InstanceStateSlice []InstanceState_State
+
+func (s InstanceStateSlice) Contains(state InstanceState_State) bool {
+	for _, st := range s {
+		if st == state {
+			return true
+		}
+	}
+	return false
+}
+
+func (i *InstanceState) ValidateGoalState(goal InstanceState_State) error {
+	if i.GetState() == goal || i.GetState() == InstanceState_TERMINATED {
+		return fmt.Errorf("Instance is already %s", i.GetState().String())
+	}
+	if instanceStateDefs[i.GetState()].Goals.Contains(goal) {
+		return nil
+	}
+
+	return fmt.Errorf("Invalid goal state: %s -> %s",
+		i.GetState().String(),
+		goal.String(),
+	)
+}
+
+var instanceConsoleStates InstanceStateSlice = []InstanceState_State{
+	InstanceState_RUNNING,
+}
+
+func (i *InstanceState) ReadyForConsole() error {
+	if instanceConsoleStates.Contains(i.GetState()) {
+		return nil
+	}
+	return errors.New("Instance is not active to return console")
 }
