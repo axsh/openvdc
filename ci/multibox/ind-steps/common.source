@@ -118,16 +118,6 @@ function disable_service () {
     ) ; prev_cmd_failed
 }
 
-function clone_image () {
-    (
-        $starting_step "Clone base images from ${base_branch}"
-        [ -f "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2" ]
-        $skip_step_if_already_done ; set -ex
-        sudo cp "${CACHE_DIR}/${BASE_BRANCH}/${vm_name}.qcow2" "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2"
-        sudo cp "${CACHE_DIR}/${BASE_BRANCH}/sshkey_${vm_name}" "${CACHE_DIR}/${BRANCH}/"
-    ) ; prev_cmd_failed
-}
-
 function ssh () {
     local key="${NODE_DIR}/sshkey"
     [[ -f ${key} ]] &&

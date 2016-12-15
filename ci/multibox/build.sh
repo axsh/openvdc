@@ -25,12 +25,22 @@ done
 
 create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
 
-(
-    $starting_step "Create cache folder"
-    sudo [ -d "${CACHE_DIR}/${BRANCH}" ]
-    $skip_step_if_already_done ; set -ex
-    sudo mkdir -p "${CACHE_DIR}/${BRANCH}"
-) ; prev_cmd_failed
+$REBUILD && {
+    (
+        $starting_step "Clone base images from ${base_branch}"
+        [ -d "${CACHE_DIR}/${BRANCH}" ]
+        $skip_step_if_already_done ; set -ex
+        sudo cp -r "${CACHE_DIR}/${BASE_BRANCH}" "${CACHE_DIR}/${BRANCH}"
+    ) ; prev_cmd_failed
+} || {
+    "${ENV_ROOTDIR}/destroy.sh"
+    (
+        $starting_step "Create cache folder"
+        sudo [ -d "${CACHE_DIR}/${BRANCH}" ]
+        $skip_step_if_already_done ; set -ex
+        sudo mkdir -p "${CACHE_DIR}/${BRANCH}"
+    ) ; prev_cmd_failed
+}
 
 for node in ${scheduled_nodes[@]} ; do
     (
