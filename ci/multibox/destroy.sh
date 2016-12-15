@@ -20,11 +20,5 @@ done
 
 [[ -z "${1}" ]] || exit 1
 
-(
-    $starting_group "Destroy bridges"
-    false
-    $skip_group_if_unnecessary
-    destroy_bridge "vdc_env_br0"
-) ; prev_cmd_failed
-
+destroy_bridge "vdc_env_br0"
 stop_masquerade "${NETWORK}/${PREFIX}"
