@@ -22,7 +22,7 @@
 
 (
     $starting_step "Generate copy-on-write image"
-    [ -f "${CACHE_DIR}/${BRANCH}/${vm_name}-cow.qcow2" ]
+    [ -f "${NODE_DIR}/${vm_name}.qcow2" ]
     $skip_step_if_already_done ; set -ex
     sudo qemu-img create -f qcow2 -b $(cache_image) "${NODE_DIR}/${vm_name}.qcow2"
 ) ; prev_cmd_failed
