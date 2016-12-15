@@ -63,8 +63,6 @@ fi
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
 RPM_ABSOLUTE=/var/www/html/openvdc-repos/
 
-#/usr/bin/env
-
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
 
@@ -93,6 +91,7 @@ docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc
 # Build the yum repository
 docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/" 
 docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/" 
+
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/${RELEASE_SUFFIX}/ ; createrepo . "
 
 if [[ -n "$BUILD_CACHE_DIR" ]]; then
@@ -119,9 +118,4 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
 fi
 # Pull compiled yum repository
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
-#docker cp "${CID}:/var/tmp/rpmbuild/RPMS/x86_64" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
-
 docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
-
-
-#Build rpm 
