@@ -20,19 +20,6 @@ done
 
 [[ -z "${1}" ]] || exit 1
 
-function destroy_bridge() {
-  local name="$1"
-
-  (
-    $starting_step "Destroy bridge ${name}"
-    brctl show | grep -q "${name}"
-    [ "$?" != "0" ]
-    $skip_step_if_already_done ; set -xe
-    sudo ip link set "${1}" down
-    sudo brctl delbr "${1}"
-  ) ; prev_cmd_failed
-}
-
 (
     $starting_group "Destroy bridges"
     false
