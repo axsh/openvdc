@@ -1,11 +1,14 @@
 # This is a little trick to allow the rpmbuild command to define a suffix for
 # development (non stable) versions.
 %define release 1
-%{?dev_release_suffix:%define release %{dev_release_suffix}}
+
+#%{?dev_release_suffix:%define release %{dev_release_suffix}}
+%{?dev_release_suffix:%define release_tag %{dev_release_suffix}}
 
 Name: openvdc
 Version: 0.1%{?dev_release_suffix:dev}
-Release: %{release}%{?dist}
+Release: %{?release_tag}%{release}%{?dist}
+#Release: %{release}%{?dist}
 Summary: Metapackage that depends on all other OpenVDc packages.
 Vendor: Axsh Co. LTD <dev@axsh.net>
 URL: http://openvdc.org
