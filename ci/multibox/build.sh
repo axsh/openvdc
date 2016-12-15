@@ -30,6 +30,7 @@ $REBUILD && {
         $starting_group "Cleanup old environment"
         sudo [ ! -d "${CACHE_DIR}/${BRANCH}" ]
         $skip_group_if_unnecessary
+        sudo rm -rf "${CACHE_DIR}/${BRANCH}"
         for node in ${scheduled_nodes[@]} ; do
             (
                 $starting_group "Destroying ${node%,*}"

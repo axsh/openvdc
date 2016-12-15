@@ -39,7 +39,6 @@ function destroy_vm() {
         $skip_step_if_already_done; set -x
         [[ -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}" ]] && sudo rm "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
         sudo rm "$(cache_image)"
-        sudo rm "${CACHE_DIR}/${BRANCH}"
     ) ; $prev_cmd_failed
 }
 
