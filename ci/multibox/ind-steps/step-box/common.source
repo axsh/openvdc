@@ -34,7 +34,7 @@ function destroy_vm() {
     ) ; prev_cmd_failed
     kill_vm
     (
-        $starting_step "Remove vm ${vm_name}"
+        $starting_step "Remove base image ${vm_name}"
         [ ! -f "$(cache_image)" ]
         $skip_step_if_already_done; set -x
         [[ -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}" ]] && sudo rm "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
