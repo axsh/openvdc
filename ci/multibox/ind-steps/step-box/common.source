@@ -20,6 +20,7 @@ function kill_vm() {
         [[ ! -f "${NODE_DIR}/${vm_name}.pid" ]]
         $skip_step_if_already_done; set -x
         sudo kill $(sudo cat "${NODE_DIR}/${vm_name}.pid")
+        sudo rm "${NODE_DIR}/${vm_name}.qcow2"
         sudo rm "${NODE_DIR}/${vm_name}.pid"
     ) ; $prev_cmd_failed
 }

@@ -21,9 +21,18 @@
 ) ; prev_cmd_failed
 
 (
+    $starting_step "Generate copy-on-write image"
+    [ -f "${CACHE_DIR}/${BRANCH}/${vm_name}-cow.qcow2" ]
+    $skip_step_if_already_done ; set -ex
+    sudo qemu-img create -f qcow2 -b $(cache_image) "${NODE_DIR}/${vm_name}.qcow2"
+) ; prev_cmd_failed
+
+(
     $starting_step "Start kvm for ${vm_name}"
     sudo kill -0 $(sudo cat "${NODE_DIR}/${vm_name}.pid" 2> /dev/null) 2> /dev/null
     $skip_step_if_already_done;
+    boot_img="${NODE_DIR}/${vm_name}.qcow2"
+
     sudo $(cat <<EOS
      qemu-system-x86_64 \
        -machine accel=kvm \
@@ -33,7 +42,7 @@
        -vnc ${vnc_addr}:${vnc_port} \
        -serial ${serial} \
        -serial pty \
-       -drive file=$(cache_image),media=disk,if=virtio,format=qcow2
+       -drive file=${boot_img},media=disk,if=virtio,format=qcow2
        $(
          for (( i=0 ; i < ${#nics[@]} ; i++ )); do
              nic=(${nics[$i]})
