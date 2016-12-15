@@ -56,6 +56,8 @@ $REBUILD && {
     ) ; prev_cmd_failed
 }
 
+masquerade "${NETWORK}/${PREFIX}"
+
 for node in ${scheduled_nodes[@]} ; do
     (
         $starting_group "Building ${node%,*}"
@@ -65,5 +67,5 @@ for node in ${scheduled_nodes[@]} ; do
     ) ; prev_cmd_failed
 done
 
-masquerade "${NETWORK}/${PREFIX}"
+
 
