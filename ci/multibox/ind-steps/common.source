@@ -33,9 +33,10 @@ function download_seed_image () {
 
     (
         $starting_step "Download ${box}"
-        [ -f "${ENV_ROOTDIR}/boxes/${box}" ]
+        [ -f "/data/openvdc-ci/boxes/${box}" ]
         $skip_step_if_already_done
-        #TODO: Download the image
+        sudo mkdir -p /data/openvdc-ci/boxes
+        wget "https://ci.openvdc.org/img/${box}" -P /data/openvdc-ci/boxes
     ) ; prev_cmd_failed
 }
 
