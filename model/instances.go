@@ -22,6 +22,7 @@ type InstanceOps interface {
 	UpdateState(id string, next InstanceState_State) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
 	Update(*Instance) error
+	Filter(limit int, cb func(*Instance) int) error
 }
 
 const instancesBaseKey = "instances"
@@ -232,25 +233,38 @@ func (i *instances) UpdateState(id string, next InstanceState_State) error {
 }
 
 func (i *instances) FilterByState(state InstanceState_State) ([]*Instance, error) {
-	bk, err := i.connection()
+	res := []*Instance{}
+	err := i.Filter(0, func(inst *Instance) int {
+		if inst.GetLastState().State == state {
+			res = append(res, inst)
+		}
+		return len(res)
+	})
 	if err != nil {
 		return nil, err
 	}
-	res := []*Instance{}
+	return res, nil
+}
+
+func (i *instances) Filter(limit int, cb func(*Instance) int) error {
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
 	keys, err := bk.Keys(fmt.Sprintf("/%s", instancesBaseKey))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for keys.Next() {
 		instance, err := i.FindByID(keys.Value())
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if instance.LastState.State == state {
-			res = append(res, instance)
+		if limit > 0 && cb(instance) > limit {
+			break
 		}
 	}
-	return res, nil
+	return nil
 }
 
 func (i *Instance) Resource(ctx context.Context) (*Resource, error) {
