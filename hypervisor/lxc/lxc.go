@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
