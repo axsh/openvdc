@@ -262,6 +262,8 @@ func (i *instances) Filter(limit int, cb func(*Instance) int) error {
 		}
 		if limit > 0 && cb(instance) > limit {
 			break
+		} else {
+			cb(instance)
 		}
 	}
 	return nil
