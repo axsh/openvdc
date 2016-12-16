@@ -17,7 +17,6 @@ BOXES=(
 CACHE_DIR="/data/openvdc-ci/branches"
 
 # These variables should be supplied from jenkins.
-: "${REVISION:?"Revision is missing."}"
 : "${BRANCH:?"Github branch is missing"}"
 
 # These variables are set by default but can be overriden by jenkins.
