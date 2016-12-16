@@ -8,6 +8,8 @@ properties ([[$class: 'ParametersDefinitionProperty',
   parameterDefinitions: [
     [$class: 'ChoiceParameterDefinition',
       choices: "all\n" + BUILD_OS_TARGETS.join("\n"), description: 'Target OS name', name: 'BUILD_OS'],
+    [$class: 'ChoiceParameterDefinition',
+      choices: "false\ntrue"), description: 'Rebuild cache image', name: 'REBUILD'],
     [$class: 'StringParameterDefinition',
       defaultValue: '0', description: 'Leave container after build for debugging.', name: 'LEAVE_CONTAINER'],
     [$class: 'StringParameterDefinition',
@@ -20,11 +22,13 @@ properties ([[$class: 'ParametersDefinitionProperty',
 def write_build_env(label) {
   def build_env="""# These parameters are read from bash and docker --env-file.
 # So do not use single or double quote for the value part.
-LEAVE_CONTAINER=$LEAVE_CONTAINER
-REPO_BASE_DIR=$REPO_BASE_DIR
-BUILD_CACHE_DIR=$BUILD_CACHE_DIR
-BUILD_OS=$label
-RELEASE_SUFFIX=$RELEASE_SUFFIX
+LEAVE_CONTAINER=${LEAVE_CONTAINER}
+REPO_BASE_DIR=${REPO_BASE_DIR}
+BUILD_CACHE_DIR=${BUILD_CACHE_DIR}
+BUILD_OS=${label}
+REBUILD=${REBUILD}
+RELEASE_SUFFIX=${RELEASE_SUFFIX}
+BRANCH=${env.BRANCH_NAME}
 """
   writeFile(file: "build.env", text: build_env)
 }
