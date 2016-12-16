@@ -243,7 +243,7 @@ func (i *InstanceConsoleAPI) Attach(stream InstanceConsole_AttachServer) error {
 		// Return error if no instance ID is set to the first request.
 		return fmt.Errorf("instance_id not found")
 	}
-	inst, err := model.Instances(stream.Context()).FindByID(instanceID)
+	_, err = model.Instances(stream.Context()).FindByID(instanceID)
 	if err != nil {
 		return err
 	}
