@@ -21,4 +21,4 @@
     :
 ) ; prev_cmd_failed
 
-ssh-keygen -R ${IP_ADDR}
+[[ -f ${USER}/.ssh/known_hosts ]] && ssh-keygen -R ${IP_ADDR}
