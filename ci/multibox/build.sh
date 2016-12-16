@@ -8,6 +8,7 @@ export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 
 copy_default_config
 . "${ENV_ROOTDIR}/config.source"
+export BRANCH
 
 scheduled_nodes=${NODES[@]}
 [[ -n "$1" ]] && scheduled_nodes="${@}"
