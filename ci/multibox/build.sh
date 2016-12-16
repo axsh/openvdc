@@ -40,13 +40,13 @@ $REBUILD && {
                 "${ENV_ROOTDIR}/${node}/destroy.sh"
             ) ; prev_cmd_failed
         done
+    ) ; prev_cmd_failed
 
-        (
-            $starting_step "Create cache folder"
+    (
+        $starting_step "Create cache folder"
             sudo [ -d "${CACHE_DIR}/${BRANCH}" ]
             $skip_step_if_already_done ; set -ex
             sudo mkdir -p "${CACHE_DIR}/${BRANCH}"
-        ) ; prev_cmd_failed
     ) ; prev_cmd_failed
 } || {
     (
