@@ -26,16 +26,26 @@ var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
+	ctxClusterBackend  context.Context
 }
 
 func newVDCExecutor(provider hypervisor.HypervisorProvider) *VDCExecutor {
 	return &VDCExecutor{
 		hypervisorProvider: provider,
+		ctxClusterBackend:  context.Background(),
 	}
 }
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
 	log.Infoln("Registered Executor on slave ", slaveInfo.GetHostname())
+	ctx, err := model.ClusterConnect(exec.ctxClusterBackend, []string{*zkAddr})
+	if err != nil {
+		log.Error(err)
+	}
+	model.Cluster(ctx).Register(&model.ClusterNode{
+		Id: slaveInfo.GetId().GetValue(),
+	})
+	exec.ctxClusterBackend = ctx
 }
 
 func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mesos.SlaveInfo) {
@@ -44,6 +54,10 @@ func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mes
 
 func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 	log.Infoln("Executor disconnected.")
+	err := model.ClusterClose(exec.ctxClusterBackend)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
