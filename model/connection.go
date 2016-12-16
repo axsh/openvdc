@@ -75,3 +75,39 @@ func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
 		return handler(ctx, req)
 	}
 }
+
+const ctxClusterBackendKey ctxKey = "cluster.backend"
+
+func withClusterBackendCtx(ctx context.Context, bk backend.ClusterBackend) context.Context {
+	return context.WithValue(ctx, ctxClusterBackendKey, bk)
+}
+
+func ClusterConnect(ctx context.Context, dest []string) (context.Context, error) {
+	bk := backend.NewZkClusterBackend()
+	err := bk.Connect(dest)
+	if err != nil {
+		return nil, err
+	}
+	return withClusterBackendCtx(ctx, bk), nil
+}
+
+func ClusterClose(ctx context.Context) error {
+	bk := GetClusterBackendCtx(ctx)
+	if bk == nil {
+		return ErrBackendNotInContext
+	}
+	return bk.Close()
+}
+
+func GetClusterBackendCtx(ctx context.Context) backend.ClusterBackend {
+	if ctx == nil {
+		_, file, line, _ := runtime.Caller(1)
+		log.Fatalf("BUGON: GetClusterBackendCtx() does not accept nil.: %s:%d", file, line)
+	}
+	bk, ok := ctx.Value(ctxClusterBackendKey).(backend.ClusterBackend)
+	// Assert returned type from ctx.
+	if !ok && bk != nil {
+		log.Fatalf("BUGON: Unexpected type to '%s' context value: %v", ctxClusterBackendKey, reflect.TypeOf(bk))
+	}
+	return bk
+}

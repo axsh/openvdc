@@ -32,3 +32,9 @@ type ModelSchema interface {
 type SchemaHandler interface {
 	Install(subkeys []string) error
 }
+
+type ClusterBackend interface {
+	Connect(dest []string) error
+	Close() error
+	Register(key string, value []byte) error
+}

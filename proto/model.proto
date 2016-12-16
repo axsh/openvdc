@@ -38,6 +38,11 @@ message Resource {
   Template template = 4;
 }
 
+message ClusterNode{
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+}
+
 message Template {
   string template_uri = 1;
   oneof Item {
