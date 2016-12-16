@@ -90,7 +90,7 @@ export CODEDIR="$LINKCODEDIR" # backwards compatibility
 
 # Put the current directory somewhere unwritable to force use
 # of the above variables.
-cd -P /proc/self
+# cd -P /proc/self
 
 ## More hints to understand the scripts that source this file:
 
