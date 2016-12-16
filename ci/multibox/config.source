@@ -27,7 +27,13 @@ if [[ -f $(git rev-parse --show-toplevel)/build.env ]] ; then
 fi
 
 # These variables should be supplied from jenkins.
-: "${BRANCH:?"Github branch is missing"}"
+if [[ -z "${BRANCH}" ]] ; then
+   exit 1
+fi
+BRANCH="${BRANCH}"
 
+if [[ -z "${REBUILD}" ]] ; then
+   exit 1
+fi
 # These variables are set by default but can be overriden by jenkins.
-REBUILD="${REBUILD:-false}"
+REBUILD="${REBUILD}"
