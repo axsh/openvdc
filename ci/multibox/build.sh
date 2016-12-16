@@ -29,9 +29,9 @@ create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
 $REBUILD && {
     (
         $starting_group "Cleanup old environment"
-        sudo [ ! -d "${CACHE_DIR}/${BRANCH}" ]
+        [ ! -d "${CACHE_DIR}/${BRANCH}" ]
         $skip_group_if_unnecessary
-        sudo rm -rf "${CACHE_DIR}/${BRANCH}"
+        rm -rf "${CACHE_DIR}/${BRANCH}"
         for node in ${scheduled_nodes[@]} ; do
             (
                 $starting_group "Destroying ${node%,*}"
@@ -44,16 +44,16 @@ $REBUILD && {
 
     (
         $starting_step "Create cache folder"
-            sudo [ -d "${CACHE_DIR}/${BRANCH}" ]
+            [ -d "${CACHE_DIR}/${BRANCH}" ]
             $skip_step_if_already_done ; set -ex
-            sudo mkdir -p "${CACHE_DIR}/${BRANCH}"
+            mkdir -p "${CACHE_DIR}/${BRANCH}"
     ) ; prev_cmd_failed
 } || {
     (
         $starting_step "Clone base images from ${BASE_BRANCH}"
         [ -d "${CACHE_DIR}/${BRANCH}" ]
         $skip_step_if_already_done ; set -ex
-        sudo cp -r "${CACHE_DIR}/${BASE_BRANCH}" "${CACHE_DIR}/${BRANCH}"
+        cp -r "${CACHE_DIR}/${BASE_BRANCH}" "${CACHE_DIR}/${BRANCH}"
     ) ; prev_cmd_failed
 }
 

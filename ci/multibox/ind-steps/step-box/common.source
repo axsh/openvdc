@@ -20,7 +20,7 @@ function kill_vm() {
         [[ ! -f "${NODE_DIR}/${vm_name}.pid" ]]
         $skip_step_if_already_done; set -x
         sudo kill $(sudo cat "${NODE_DIR}/${vm_name}.pid")
-        sudo rm "${NODE_DIR}/${vm_name}.qcow2"
+        rm "${NODE_DIR}/${vm_name}.qcow2"
         sudo rm "${NODE_DIR}/${vm_name}.pid"
     ) ; $prev_cmd_failed
 }
@@ -30,15 +30,15 @@ function destroy_vm() {
         $starting_step "Remove SSH key"
         [ ! -f ${NODE_DIR}/sshkey ]
         $skip_step_if_already_done
-        sudo rm ${NODE_DIR}/sshkey
+        rm ${NODE_DIR}/sshkey
     ) ; prev_cmd_failed
     kill_vm
     (
         $starting_step "Remove base image ${vm_name}"
         [ ! -f "$(cache_image)" ]
         $skip_step_if_already_done; set -x
-        [[ -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}" ]] && sudo rm "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
-        sudo rm "$(cache_image)"
+        [[ -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}" ]] && rm "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
+        rm "$(cache_image)"
     ) ; $prev_cmd_failed
 }
 
