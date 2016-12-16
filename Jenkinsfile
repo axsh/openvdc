@@ -62,13 +62,17 @@ def stage_unit_test(label) {
 }
 
 def stage_integration(label) {
-  node(label) {
-    stage "Integration Test ${label}"
+  node("multibox") {
+    checkout scm
+    stage "Build Integration Environment"
     write_build_env(label)
-    sh "deployment/integration/run_integration.sh  ./build.env"
+    sh "ci/multibox/build.sh  ./build.env"
+    stage "Run Tntegration Test"
+    // This is where the integration test will be run
+    stage "Cleanup Environment"
+    sh "ci/multibox/destroy.sh --kill  ./build.env"
   }
 }
-
 
 node() {
     stage "Checkout"
