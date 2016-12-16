@@ -76,6 +76,23 @@ func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
 	}
 }
 
+func GrpcStreamInterceptor(modelAddr string) grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx, err := Connect(ss.Context(), []string{modelAddr})
+		if err != nil {
+			log.WithError(err).Errorf("Failed to connect to model backend: %s", modelAddr)
+			return err
+		}
+		defer func() {
+			err := Close(ctx)
+			if err != nil {
+				log.WithError(err).Error("Failed to close connection to model backend.")
+			}
+		}()
+		return handler(srv, ss)
+	}
+}
+
 const ctxClusterBackendKey ctxKey = "cluster.backend"
 
 func withClusterBackendCtx(ctx context.Context, bk backend.ClusterBackend) context.Context {

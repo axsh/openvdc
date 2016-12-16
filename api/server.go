@@ -19,6 +19,7 @@ func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
 		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),
+		grpc.StreamInterceptor(model.GrpcStreamInterceptor(modelAddr)),
 	}
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
