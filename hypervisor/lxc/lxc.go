@@ -5,7 +5,7 @@ package lxc
 import (
 	"os"
 	"time"
-
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/axsh/openvdc/hypervisor"
@@ -43,21 +43,64 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-func (d *LXCHypervisorDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
+func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
+
+	lxcTmpl, ok := in.(*model.LxcTemplate)
+
+	if !ok {
+
+		log.Fatal("BUGON: Unsupported model type")
+
+	}
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
+
 	if err != nil {
+
 		d.log.Errorln(err)
+
 		return err
+
 	}
 
 	d.log.Infoln("Creating lxc-container...")
 
 	if err := c.Create(d.template); err != nil {
+
 		d.log.Errorln(err)
+
 		return err
+
 	}
+
+	var conf string
+
+	for _, i := range lxcTmpl.GetInterfaces() {
+
+		if i.GetIpv4Addr() == "" {
+
+			conf += fmt.Sprintf("lxc.network.ipv4=%s\n", i.GetIpv4Addr())
+
+		}
+
+		if i.GetMacaddr() == "" {
+
+			conf += fmt.Sprintf("lxc.network.hwaddr=%s\n", i.GetMacaddr())
+
+		}
+
+	}
+
+	path := c.ConfigFileName()
+
+	f, err := os.OpenFile(path, os.O_WRONLY, 0)
+
+	defer f.Close()
+
+	_, err = f.WriteString(conf)
+
 	return nil
+
 }
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {
