@@ -16,11 +16,18 @@ BOXES=(
 )
 CACHE_DIR="/data/openvdc-ci/branches"
 
+
+
+# TODO: add function that calculates the parent branch of current branch
+# and assigns to $BASE_BRANCH
+BASE_BRANCH="${BASE_BRANCH:-develop}"
+
+if [[ -f $(git rev-parse --show-toplevel)/build.env ]] ; then
+   . $(git rev-parse --show-toplevel)/build.env
+fi
+
 # These variables should be supplied from jenkins.
 : "${BRANCH:?"Github branch is missing"}"
 
 # These variables are set by default but can be overriden by jenkins.
 REBUILD="${REBUILD:-false}"
-# TODO: add function that calculates the parent branch of current branch
-# and assigns to $BASE_BRANCH
-BASE_BRANCH="${BASE_BRANCH:-develop}"
