@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/model"
 )
 
 type HypervisorProvider interface {
@@ -12,7 +13,7 @@ type HypervisorProvider interface {
 }
 
 type HypervisorDriver interface {
-	CreateInstance() error
+	CreateInstance(*model.Instance, model.ResourceTemplate) error
 	DestroyInstance() error
 	StartInstance() error
 	StopInstance() error

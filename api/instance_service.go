@@ -53,40 +53,33 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 		return nil, err
 	}
 	lastState := inst.GetLastState()
+	flog := log.WithFields(log.Fields{
+		"instance_id": in.GetInstanceId(),
+		"state":       lastState.String(),
+	})
 	switch lastState.GetState() {
 	case model.InstanceState_REGISTERED:
+		if err := lastState.ValidateGoalState(model.InstanceState_QUEUED); err != nil {
+			flog.Error(err)
+			// TODO: Investigate gRPC error response
+			return nil, err
+		}
 		if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_QUEUED); err != nil {
-			log.WithError(err).Error()
+			flog.Error(err)
 			return nil, err
 		}
 	case model.InstanceState_STOPPED:
-		if err := s.sendCommand(ctx, "start", in.GetInstanceId()); err != nil {
-			log.WithError(err).Error("Failed to sendCommand(start)")
+		if err := lastState.ValidateGoalState(model.InstanceState_RUNNING); err != nil {
+			flog.Error(err)
+			// TODO: Investigate gRPC error response
 			return nil, err
 		}
-
-	case model.InstanceState_RUNNING:
-		log.WithFields(log.Fields{
-			"instance_id": in.GetInstanceId(),
-			"state":       lastState.String(),
-		}).Error("Instance is already running")
-
-		return nil, fmt.Errorf("Instance is already running")
-
-	case model.InstanceState_TERMINATED:
-		log.WithFields(log.Fields{
-			"instance_id": in.GetInstanceId(),
-			"state":       lastState.String(),
-		}).Error("Cannot start terminated instance")
-
-		return nil, fmt.Errorf("Cannot start terminated instance")
+		if err := s.sendCommand(ctx, "start", in.GetInstanceId()); err != nil {
+			flog.WithError(err).Error("Failed to sendCommand(start)")
+			return nil, err
+		}
 	default:
-		log.WithFields(log.Fields{
-			"instance_id": in.GetInstanceId(),
-			"state":       lastState.String(),
-		}).Error("Unexpected instance state")
-		// TODO: Investigate gRPC error response
-		return nil, fmt.Errorf("Unexpected instance state")
+		flog.Fatal("BUGON: Detected un-handled state")
 	}
 	// TODO: Tell the scheduler there is a queued item to get next offer eagerly.
 	return &StartReply{InstanceId: in.GetInstanceId()}, nil
@@ -125,13 +118,13 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 		return nil, err
 	}
 
-	if inst.GetLastState().GetState() != model.InstanceState_RUNNING {
+	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
 		log.WithFields(log.Fields{
 			"instance_id": in.GetInstanceId(),
 			"state":       inst.GetLastState().GetState(),
-		}).Error("Instance is not running")
+		}).Error(err)
 
-		return nil, fmt.Errorf("Instance is not running")
+		return nil, err
 	}
 
 	instanceID := in.InstanceId
@@ -158,20 +151,16 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 	}
 
 	lastState := inst.GetLastState()
-	switch lastState.GetState() {
-	case model.InstanceState_TERMINATED:
+	if err := lastState.ValidateGoalState(model.InstanceState_TERMINATED); err != nil {
 		log.WithFields(log.Fields{
 			"instance_id": in.GetInstanceId(),
 			"state":       lastState.String(),
-		}).Error("Instance is already terminated")
-
-		return nil, fmt.Errorf("Instance is already terminated")
-	default:
-
-		if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
-			log.WithError(err).Error("Failed sendCommand(destroy)")
-			return nil, err
-		}
+		}).Error(err)
+		return nil, err
+	}
+	if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(destroy)")
+		return nil, err
 	}
 
 	return &DestroyReply{InstanceId: instanceID}, nil
@@ -227,6 +216,45 @@ func (s *InstanceAPI) Show(ctx context.Context, in *InstanceIDRequest) (*Instanc
 		return nil, err
 	}
 	return &InstanceReply{ID: instance.GetId(), Instance: instance}, nil
+}
+
+func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*InstanceListReply, error) {
+	page := &InstanceListRequest_PageRequest{
+		Limit:  1000,
+		Offset: 0,
+	}
+	if in.Page != nil {
+		page = in.Page
+	}
+
+	results := []*InstanceListReply_InstanceListItem{}
+	err := model.Instances(ctx).Filter(int(page.Limit), func(i *model.Instance) int {
+		found := false
+		if in.Filter == nil {
+			found = true
+		} else {
+			found = in.Filter.State == i.GetLastState().State
+		}
+
+		if found {
+			results = append(results, &InstanceListReply_InstanceListItem{
+				Id:    i.Id,
+				State: i.GetLastState().State,
+			})
+		}
+		return len(results)
+	})
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.Filter")
+		return nil, err
+	}
+	return &InstanceListReply{
+		Page: &InstanceListReply_PageReply{
+			Total: int32(len(results)),
+			Limit: page.Limit,
+		},
+		Items: results,
+	}, nil
 }
 
 type InstanceConsoleAPI struct {

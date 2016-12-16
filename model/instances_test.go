@@ -115,3 +115,50 @@ func TestUpdateInstance(t *testing.T) {
 		assert.Equal(got.ResourceId, got2.ResourceId)
 	})
 }
+
+func TestInstanceState_ValidateNextState(t *testing.T) {
+	assert := assert.New(t)
+
+	s := &InstanceState{
+		State: InstanceState_REGISTERED,
+	}
+	assert.NoError(s.ValidateNextState(InstanceState_QUEUED))
+	s.State = InstanceState_QUEUED
+	assert.NoError(s.ValidateNextState(InstanceState_STARTING))
+	s.State = InstanceState_STARTING
+	assert.NoError(s.ValidateNextState(InstanceState_RUNNING))
+	s.State = InstanceState_RUNNING
+	assert.NoError(s.ValidateNextState(InstanceState_SHUTTINGDOWN))
+	assert.NoError(s.ValidateNextState(InstanceState_STOPPING))
+	s.State = InstanceState_STOPPING
+	assert.NoError(s.ValidateNextState(InstanceState_STOPPED))
+	s.State = InstanceState_SHUTTINGDOWN
+	assert.NoError(s.ValidateNextState(InstanceState_TERMINATED))
+	s.State = InstanceState_TERMINATED
+	assert.Error(s.ValidateNextState(InstanceState_TERMINATED))
+	assert.Error(s.ValidateNextState(InstanceState_RUNNING))
+}
+
+func TestInstanceState_ValidateGoalState(t *testing.T) {
+	assert := assert.New(t)
+
+	s := &InstanceState{
+		State: InstanceState_REGISTERED,
+	}
+	assert.NoError(s.ValidateGoalState(InstanceState_QUEUED))
+	s.State = InstanceState_QUEUED
+	assert.NoError(s.ValidateGoalState(InstanceState_RUNNING))
+	assert.NoError(s.ValidateGoalState(InstanceState_STOPPED))
+	s.State = InstanceState_STARTING
+	assert.NoError(s.ValidateGoalState(InstanceState_RUNNING))
+	s.State = InstanceState_RUNNING
+	assert.NoError(s.ValidateGoalState(InstanceState_TERMINATED))
+	assert.NoError(s.ValidateGoalState(InstanceState_STOPPED))
+	s.State = InstanceState_STOPPING
+	assert.NoError(s.ValidateGoalState(InstanceState_STOPPED))
+	s.State = InstanceState_SHUTTINGDOWN
+	assert.NoError(s.ValidateGoalState(InstanceState_TERMINATED))
+	s.State = InstanceState_TERMINATED
+	assert.Error(s.ValidateGoalState(InstanceState_TERMINATED))
+	assert.Error(s.ValidateGoalState(InstanceState_RUNNING))
+}

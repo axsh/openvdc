@@ -107,9 +107,10 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		model.Close(ctx)
 	}()
 
+	log = log.WithField("state", model.InstanceState_STARTING.String())
 	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
 	if err != nil {
-		log.WithError(err).WithField("state", model.InstanceState_STARTING).Error("Failed Instances.UpdateState")
+		log.WithError(err).Error("Failed Instances.UpdateState")
 		return err
 	}
 
@@ -118,16 +119,27 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return err
 	}
 
-	log.Infof("Creating instance")
-	err = hv.CreateInstance()
+	inst, err := model.Instances(ctx).FindByID(instanceID)
 	if err != nil {
-		log.Error("Failed CreateInstance")
+		log.WithError(err).Error("Failed Instances.FindyByID")
+		return err
+	}
+	res, err := inst.Resource(ctx)
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.Resource")
+		return err
+	}
+
+	log.Infof("Creating instance")
+	err = hv.CreateInstance(inst, res.ResourceTemplate())
+	if err != nil {
+		log.WithError(err).Error("Failed CreateInstance")
 		return err
 	}
 	log.Infof("Starting instance")
 	err = hv.StartInstance()
 	if err != nil {
-		log.Error("Failed StartInstance")
+		log.WithError(err).Error("Failed StartInstance")
 		return err
 	}
 	log.Infof("Instance launched successfully")
@@ -265,7 +277,6 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		log.WithError(err).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.UpdateState")
 		return err
 	}
-
 
 	// Trying to stop an already stopped container results in an error
 	// causing the container to not get destroyed.

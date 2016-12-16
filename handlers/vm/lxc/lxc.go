@@ -8,7 +8,7 @@ import (
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 func init() {
