@@ -66,11 +66,12 @@ def stage_integration(label) {
     checkout scm
     stage "Build Integration Environment"
     write_build_env(label)
-    sh "ci/multibox/build.sh  ./build.env"
+    
+    sh "cd ci/multibox/ ; ./build.sh"
     stage "Run Tntegration Test"
     // This is where the integration test will be run
     stage "Cleanup Environment"
-    sh "ci/multibox/destroy.sh --kill  ./build.env"
+    sh "cd ci/multibox/ ; ./destroy.sh --kill"
   }
 }
 
