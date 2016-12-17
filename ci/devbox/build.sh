@@ -2,6 +2,10 @@
 
 set -e
 
+if ! type packer; then
+  echo "packer command not found. Please install from https://packer.io/" >&2
+  exit 1
+fi
 #box_url="${1:?ERROR: Require to set download .box URL}"
 box_url="http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_centos-7.2_chef-provisionerless.box"
 box_tmp="${2:-boxtemp/7.2}"
@@ -20,11 +24,4 @@ mkdir -p $box_tmp  || :
   tar -xzf t.box
 )
 
-if ! type packer; then
-  export PATH=".:$PATH"
-  if ! type packer; then
-    curl -L "https://releases.hashicorp.com/packer/0.10.2/packer_0.10.2_$(uname -s | tr '[:upper:]' '[:lower:]')_amd64.zip" | zcat > packer
-    chmod 755 ./packer
-  fi
-fi
-HOST_SWITCH=vboxnet0 packer build 1box-centos7.json
+HOST_SWITCH=vboxnet0 packer build devbox-centos7.json
