@@ -13,9 +13,10 @@ License: LGPLv3
 
 BuildArch: x86_64
 
-BuildRequires: rpmdevtools
+BuildRequires: rpmdevtools lxc-devel git
+BuildRequires: golang >= 1.6
 
-Requires: lxc 
+Requires: lxc
 Requires: mesosphere-zookeeper mesos
 %{systemd_requires}
 Requires: openvdc-cli
