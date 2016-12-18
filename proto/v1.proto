@@ -31,6 +31,7 @@ service Instance {
   rpc Run (ResourceRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
+  rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
 }
@@ -51,6 +52,13 @@ message DestroyRequest{
   string instance_id = 1;
 }
 message DestroyReply {
+  string instance_id = 1;
+}
+
+message ConsoleRequest{
+  string instance_id = 1;
+}
+message ConsoleReply {
   string instance_id = 1;
 }
 

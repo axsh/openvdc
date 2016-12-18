@@ -167,6 +167,17 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 	return &DestroyReply{InstanceId: instanceID}, nil
 }
 
+func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
+
+	instanceID := in.InstanceId
+	if err := s.sendCommand(ctx, "console", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(console)")
+		return nil, err
+	}
+
+	return &ConsoleReply{InstanceId: instanceID}, nil
+}
+
 func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID string) error {
 	inst, err := model.Instances(ctx).FindByID(instanceID)
 	if err != nil {
