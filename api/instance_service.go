@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
@@ -183,8 +184,9 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 		slaveID = inst.SlaveId
 	}
 
+	hypervisorName := strings.TrimPrefix(res.ResourceTemplate().ResourceName(), "vm/")
 	_, err = s.api.scheduler.SendFrameworkMessage(
-		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", res.ResourceTemplate().ResourceName())),
+		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 		util.NewSlaveID(slaveID),
 		fmt.Sprintf("%s_%s", cmd, instanceID),
 	)
