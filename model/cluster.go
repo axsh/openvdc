@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/axsh/openvdc/model/backend"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 )
@@ -18,6 +18,7 @@ func init() {
 
 type ClusterOps interface {
 	Register(*ClusterNode) error
+	Find(string) (*ClusterNode, error)
 }
 
 type cluster struct {
@@ -60,4 +61,22 @@ func (i *cluster) Register(n *ClusterNode) error {
 		return err
 	}
 	return nil
+}
+
+func (i *cluster) Find(nodeID string) (*ClusterNode, error) {
+	if nodeID == "" {
+		return nil, fmt.Errorf("ID is not set")
+	}
+
+	bk, err := i.connection()
+	if err != nil {
+		return nil, err
+	}
+	buf, err := bk.Find(fmt.Sprintf("%s/%s", clusterBaseKey, nodeID))
+	if err != nil {
+		return nil, err
+	}
+	in := &ClusterNode{}
+	err = proto.Unmarshal(buf, in)
+	return in, err
 }

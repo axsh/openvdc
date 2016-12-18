@@ -37,4 +37,5 @@ type ClusterBackend interface {
 	Connect(dest []string) error
 	Close() error
 	Register(key string, value []byte) error
+	Find(key string) ([]byte, error)
 }

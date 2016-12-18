@@ -114,3 +114,12 @@ func (z *ZkCluster) Register(key string, value []byte) error {
 	log.Errorf("Retry exceede.")
 	return fmt.Errorf("Retry exceeded")
 }
+
+func (z *ZkCluster) Find(key string) (value []byte, err error) {
+	if !z.isConnected() {
+		return nil, ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(key)
+	value, _, err = z.conn.Get(absKey)
+	return
+}
