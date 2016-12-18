@@ -1,9 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"flag"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -60,7 +60,18 @@ func setupDatabaseSchema() {
 
 func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
-	scheduler.Run(listenAddr, gRPCAddr, mesosMasterAddr, zkAddr)
+
+	ctx, err := model.ClusterConnect(context.Background(), []string{zkAddr})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		err := model.ClusterClose(ctx)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+	scheduler.Run(ctx, listenAddr, gRPCAddr, mesosMasterAddr, zkAddr)
 }
 
 func main() {

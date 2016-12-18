@@ -42,18 +42,29 @@ type VDCScheduler struct {
 	totalTasks    int
 	listenAddr    string
 	zkAddr        string
+	ctx           context.Context
 }
 
-func newVDCScheduler(listenAddr string, zkAddr string) *VDCScheduler {
+func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr string) *VDCScheduler {
 	return &VDCScheduler{
 		totalTasks: taskCount,
 		listenAddr: listenAddr,
 		zkAddr:     zkAddr,
+		ctx:        ctx,
 	}
 }
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
 	log.Println("Framework Registered with Master ", masterInfo)
+	node := &model.ClusterNode{
+		Id: "scheduler",
+	}
+	err := model.Cluster(sched.ctx).Register(node)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Infoln("Registered on OpenVDC cluster service: ", node)
 }
 
 func (sched *VDCScheduler) Reregistered(driver sched.SchedulerDriver, masterInfo *mesos.MasterInfo) {
@@ -239,18 +250,18 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func startAPIServer(laddr string, zkAddr string, driver sched.SchedulerDriver) *api.APIServer {
+func startAPIServer(ctx context.Context, laddr string, zkAddr string, driver sched.SchedulerDriver) *api.APIServer {
 	lis, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
 	}
 	log.Println("Listening gRPC API on: ", laddr)
-	s := api.NewAPIServer(zkAddr, driver)
+	s := api.NewAPIServer(zkAddr, driver, ctx)
 	go s.Serve(lis)
 	return s
 }
 
-func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr string) {
+func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr string) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
@@ -262,7 +273,7 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 		log.Fatalln("Invalid Address to -listen option: ", err)
 	}
 	config := sched.DriverConfig{
-		Scheduler:      newVDCScheduler(listenAddr, zkAddr),
+		Scheduler:      newVDCScheduler(ctx, listenAddr, zkAddr),
 		Framework:      FrameworkInfo,
 		Master:         mesosMasterAddr,
 		Credential:     cred,
@@ -278,7 +289,7 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
 	}
 
-	apiServer := startAPIServer(apiListenAddr, zkAddr, driver)
+	apiServer := startAPIServer(ctx, apiListenAddr, zkAddr, driver)
 	defer func() {
 		apiServer.GracefulStop()
 	}()
