@@ -88,6 +88,7 @@
         "echo 'hypervisor:lxc' > /etc/mesos-slave/attributes",
         "echo 'false' > /etc/mesos-slave/switch_user",
         "echo '{\"PATH\":\"/home/vagrant/go/src/github.com/axsh/openvdc:/usr/libexec/mesos:/usr/bin:/usr/sbin:/usr/local/bin\"}' > /etc/mesos-slave/executor_environment_variables",
+        "mv /etc/lxc/default.conf /etc/lxc/default.conf.disabled",
         "#firewall-cmd --permanent --zone=public --add-port=5050/tcp",
         "#firewall-cmd --permanent --zone=public --add-port=5051/tcp",
         "nmcli connection add type ethernet ifname eth1 save yes con-name eth1 ip4 {{user `nic2_ipv4`}}/24",
