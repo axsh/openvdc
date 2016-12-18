@@ -91,8 +91,8 @@
         "#firewall-cmd --permanent --zone=public --add-port=5050/tcp",
         "#firewall-cmd --permanent --zone=public --add-port=5051/tcp",
         "nmcli connection add type ethernet ifname eth1 save yes con-name eth1 ip4 {{user `nic2_ipv4`}}/24",
-        "nmcli connection add type bridge autoconnect yes con-name virbr0 ifname virbr0",
-        "nmcli connection modify virbr0 bridge.stp no",
+        "nmcli connection add type bridge autoconnect yes con-name lxcbr0 ifname lxcbr0",
+        "nmcli connection modify lxcbr0 bridge.stp no",
         "echo '{{user `nic2_ipv4`}} openvdc-devbox' >> /etc/hosts",
         "echo 'openvdc-devbox' > /etc/hostname",
         "yum clean all"
