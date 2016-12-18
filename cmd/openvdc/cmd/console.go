@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
+	"github.com/axsh/openvdc/model"
 
 	"github.com/axsh/openvdc/api"
 	"github.com/spf13/cobra"
@@ -22,8 +25,19 @@ var consoleCmd = &cobra.Command{
 		instanceID := args[0]
 
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
-			c := api.NewInstanceConsoleClient(conn)
-			stream, err := c.Attach(context.Background())
+			ic := api.NewInstanceClient(conn)
+			res, err := ic.Console(context.Background(), &api.ConsoleRequest{InstanceId: instanceID})
+			if err != nil {
+				log.WithError(err).Fatal("Failed request to Instance.Console API")
+				return err
+			}
+			switch res.Type {
+			case model.Console_SSH:
+				fmt.Printf("ssh %s\n", res.GetAddress())
+				return nil
+			}
+			cc := api.NewInstanceConsoleClient(conn)
+			stream, err := cc.Attach(context.Background())
 			if err != nil {
 				log.WithError(err).Fatal("Disconnected abnormally")
 				return err
