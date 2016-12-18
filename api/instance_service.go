@@ -170,12 +170,34 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
 
 	instanceID := in.InstanceId
-	if err := s.sendCommand(ctx, "console", instanceID); err != nil {
-		log.WithError(err).Error("Failed sendCommand(console)")
+	if instanceID == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+	lastState := inst.GetLastState()
+	if err := lastState.ReadyForConsole(); err != nil {
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error(err)
+		return nil, err
+	}
+	node, err := model.Cluster(ctx).Find(inst.GetSlaveId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
 
-	return &ConsoleReply{InstanceId: instanceID}, nil
+	return &ConsoleReply{
+		InstanceId: instanceID,
+		Type:       node.Console.Type,
+		Address:    node.Console.BindAddr,
+	}, nil
 }
 
 func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID string) error {

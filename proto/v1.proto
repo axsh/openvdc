@@ -60,6 +60,8 @@ message ConsoleRequest{
 }
 message ConsoleReply {
   string instance_id = 1;
+  model.Console.Type type = 2;
+  string address = 3;
 }
 
 message CreateRequest{
