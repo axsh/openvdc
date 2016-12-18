@@ -136,10 +136,10 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 		return err
 	}
 
-	d.log.Infoln("Waiting for lxc-container to start networking")
-	if _, err := c.WaitIPAddresses(30 * time.Second); err != nil {
-		d.log.Errorln(err)
-		return err
+	d.log.Infoln("Waiting for lxc-container to become RUNNING")
+	if ok := c.Wait(lxc.RUNNING, 30 * time.Second); !ok {
+		d.log.Errorln("Failed or timedout to wait for RUNNING")
+		return fmt.Errorf("Failed or timedout to wait for RUNNING")
 	}
 	return nil
 }
@@ -157,6 +157,12 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 		d.log.Errorln(err)
 		return err
 	}
+
+	d.log.Infoln("Waiting for lxc-container to become STOPPED")
+	if ok := c.Wait(lxc.STOPPED, 30 * time.Second); !ok {
+		d.log.Errorln("Failed or timedout to wait for STOPPED")
+		return fmt.Errorf("Failed or timedout to wait for STOPPED")
+	}
 	return nil
 }
 
@@ -166,6 +172,11 @@ func (d *LXCHypervisorDriver) InstanceConsole() error {
 	if err != nil {
 		d.log.Errorln(err)
 		return err
+	}
+
+	if c.State() != lxc.RUNNING {
+		d.log.Errorf("lxc-container can not perform console")
+		return fmt.Errorf("lxc-container can not perform console")
 	}
 
 	var options = lxc.ConsoleOptions{
