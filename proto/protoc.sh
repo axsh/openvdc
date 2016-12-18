@@ -23,3 +23,4 @@ fi
 # we set option "go_package" so the protoc puts files to the namespace.
 protoc -I. -I"${GOPATH}/src" --go_out=plugins=grpc:$GOPATH/src v1.proto
 protoc -I. -I"${GOPATH}/src" --go_out=$GOPATH/src model.proto
+protoc -I. -I"${GOPATH}/src" --go_out=plugins=grpc:$GOPATH/src executor.proto

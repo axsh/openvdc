@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package executor;
+
+option go_package = "github.com/axsh/openvdc/api/executor";
+
+import "v1.proto";
+
+service InstanceConsole {
+  rpc Attach(stream api.ConsoleIn) returns (stream api.ConsoleOut){}
+}
