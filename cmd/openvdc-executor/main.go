@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
+	"net"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 
+	"github.com/axsh/openvdc/api/executor"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
@@ -26,26 +28,35 @@ var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
-	ctxClusterBackend  context.Context
+	ctx                context.Context
+	executorAPI        *executor.ExecutorAPIServer
 }
 
-func newVDCExecutor(provider hypervisor.HypervisorProvider) *VDCExecutor {
+func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider, svr *executor.ExecutorAPIServer) *VDCExecutor {
 	return &VDCExecutor{
 		hypervisorProvider: provider,
-		ctxClusterBackend:  context.Background(),
+		ctx:                ctx,
+		executorAPI:        svr,
 	}
 }
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
 	log.Infoln("Registered Executor on slave ", slaveInfo.GetHostname())
-	ctx, err := model.ClusterConnect(exec.ctxClusterBackend, []string{*zkAddr})
+
+	node := &model.ClusterNode{
+		Id:       slaveInfo.GetId().GetValue(),
+		GrpcAddr: exec.executorAPI.Listener().Addr().String(),
+		Console: &model.Console{
+			Type:     model.Console_SSH,
+			BindAddr: "",
+		},
+	}
+	err := model.Cluster(exec.ctx).Register(node)
 	if err != nil {
 		log.Error(err)
+		return
 	}
-	model.Cluster(ctx).Register(&model.ClusterNode{
-		Id: slaveInfo.GetId().GetValue(),
-	})
-	exec.ctxClusterBackend = ctx
+	log.Infoln("Registered on OpenVDC cluster service: ", node)
 }
 
 func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mesos.SlaveInfo) {
@@ -54,10 +65,6 @@ func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mes
 
 func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 	log.Infoln("Executor disconnected.")
-	err := model.ClusterClose(exec.ctxClusterBackend)
-	if err != nil {
-		log.Error(err)
-	}
 }
 
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
@@ -364,6 +371,18 @@ var (
 	zkAddr         = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
 )
 
+func startExecutorAPIServer(ctx context.Context) *executor.ExecutorAPIServer {
+	laddr := "0.0.0.0:19372"
+	lis, err := net.Listen("tcp", laddr)
+	if err != nil {
+		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
+	}
+	log.Println("Listening gRPC API on: ", laddr)
+	s := executor.NewExecutorAPIServer(*zkAddr, ctx)
+	go s.Serve(lis)
+	return s
+}
+
 func init() {
 	flag.Parse()
 }
@@ -375,8 +394,22 @@ func main() {
 	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
+	ctx, err := model.ClusterConnect(context.Background(), []string{*zkAddr})
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	defer func() {
+		err := model.ClusterClose(ctx)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+	s := startExecutorAPIServer(ctx)
+	defer s.GracefulStop()
+
 	dconfig := exec.DriverConfig{
-		Executor: newVDCExecutor(provider),
+		Executor: newVDCExecutor(ctx, provider, s),
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {
