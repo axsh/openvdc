@@ -77,6 +77,16 @@ func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
 }
 
 func GrpcStreamInterceptor(modelAddr string) grpc.StreamServerInterceptor {
+// https://gist.github.com/shaxbee/a87e2c028a21c60e5aace593a23b27a1
+type serverStreamWithContext struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (ss *serverStreamWithContext) Context() context.Context {
+	return ss.ctx
+}
+
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx, err := Connect(ss.Context(), []string{modelAddr})
 		if err != nil {
@@ -89,7 +99,7 @@ func GrpcStreamInterceptor(modelAddr string) grpc.StreamServerInterceptor {
 				log.WithError(err).Error("Failed to close connection to model backend.")
 			}
 		}()
-		return handler(srv, ss)
+		return handler(srv, &serverStreamWithContext{ss, ctx})
 	}
 }
 
