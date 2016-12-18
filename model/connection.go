@@ -59,7 +59,7 @@ func GetBackendCtx(ctx context.Context) backend.ModelBackend {
 	return bk
 }
 
-func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
+func GrpcInterceptor(modelAddr string, clusterCtx context.Context) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		ctx, err := Connect(ctx, []string{modelAddr})
 		if err != nil {
@@ -72,11 +72,11 @@ func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
 				log.WithError(err).Error("Failed to close connection to model backend.")
 			}
 		}()
+		ctx = withClusterBackendCtx(ctx, GetClusterBackendCtx(clusterCtx))
 		return handler(ctx, req)
 	}
 }
 
-func GrpcStreamInterceptor(modelAddr string) grpc.StreamServerInterceptor {
 // https://gist.github.com/shaxbee/a87e2c028a21c60e5aace593a23b27a1
 type serverStreamWithContext struct {
 	grpc.ServerStream
@@ -87,6 +87,7 @@ func (ss *serverStreamWithContext) Context() context.Context {
 	return ss.ctx
 }
 
+func GrpcStreamInterceptor(modelAddr string, clusterCtx context.Context) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx, err := Connect(ss.Context(), []string{modelAddr})
 		if err != nil {
@@ -99,6 +100,7 @@ func (ss *serverStreamWithContext) Context() context.Context {
 				log.WithError(err).Error("Failed to close connection to model backend.")
 			}
 		}()
+		ctx = withClusterBackendCtx(ctx, GetClusterBackendCtx(clusterCtx))
 		return handler(srv, &serverStreamWithContext{ss, ctx})
 	}
 }

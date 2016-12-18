@@ -4,9 +4,9 @@ import (
 	"net"
 
 	"github.com/axsh/openvdc/model"
-	"google.golang.org/grpc"
-
 	sched "github.com/mesos/mesos-go/scheduler"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 type APIServer struct {
@@ -15,11 +15,14 @@ type APIServer struct {
 	scheduler      sched.SchedulerDriver
 }
 
-func NewAPIServer(modelAddr string, driver sched.SchedulerDriver) *APIServer {
+func NewAPIServer(modelAddr string, driver sched.SchedulerDriver, ctx context.Context) *APIServer {
+	// Assert the ctx has "cluster.backend" key
+	model.GetClusterBackendCtx(ctx)
+
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
-		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),
-		grpc.StreamInterceptor(model.GrpcStreamInterceptor(modelAddr)),
+		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr, ctx)),
+		grpc.StreamInterceptor(model.GrpcStreamInterceptor(modelAddr, ctx)),
 	}
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
