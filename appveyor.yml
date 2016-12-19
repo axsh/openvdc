@@ -1,0 +1,27 @@
+version: build-{build}.{branch}
+
+clone_folder: C:\gopath\src\github.com\axsh\openvdc
+clone_depth: 10
+
+environment:
+  GOPATH: C:\gopath
+
+cache:
+  - '%GOPATH%\.cache -> vendor\vendor.json'
+
+platform:
+  - x64
+
+install:
+  # some helpful output for debugging builds
+  - go version
+  - go env
+  - go get -u github.com/kardianos/govendor
+  - go get -u github.com/jteeuwen/go-bindata/...
+
+build_script:
+  - set PATH=C:\gopath\bin;%PATH%
+  - ps: .\build.ps1
+
+
+deploy: off
