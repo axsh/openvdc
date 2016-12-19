@@ -16,7 +16,6 @@ BuildArch: x86_64
 BuildRequires: rpmdevtools lxc-devel git
 BuildRequires: golang >= 1.6
 
-Requires: lxc
 Requires: mesosphere-zookeeper mesos
 %{systemd_requires}
 Requires: openvdc-cli
@@ -67,6 +66,7 @@ This is an empty message to fulfill the requirement that this file has a "%descr
 
 %package executor
 Summary: openvdc executor
+Requires: lxc
 
 %description executor
 This is a 'stub'. An appropriate message must be substituted at some point.
