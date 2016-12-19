@@ -22,12 +22,15 @@ def ask_build_parameter = { ->
     ])
 }
 
+// Environment variables supplied by Jenkins system configuration:
+// env.REPO_BASE_DIR
+// env.BUILD_CACHE_DIR
 def write_build_env(label) {
   def build_env="""# These parameters are read from bash and docker --env-file.
 # So do not use single or double quote for the value part.
 LEAVE_CONTAINER=${buildParams.LEAVE_CONTAINER}
-REPO_BASE_DIR=${env.REPO_BASE_DIR}
-BUILD_CACHE_DIR=${env.BUILD_CACHE_DIR}
+REPO_BASE_DIR=${env.REPO_BASE_DIR ?: ''}
+BUILD_CACHE_DIR=${env.BUILD_CACHE_DIR ?: ''}
 BUILD_OS=${label}
 REBUILD=${buildParams.REBUILD}
 RELEASE_SUFFIX=${RELEASE_SUFFIX}
