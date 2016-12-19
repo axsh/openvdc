@@ -1,0 +1,2 @@
+master=${mesos_master:-false}
+slave=${mesos_agent:-false}
