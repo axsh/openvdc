@@ -1,10 +1,15 @@
 #!groovy
 
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 // http://stackoverflow.com/questions/37425064/how-to-use-environment-variables-in-a-groovy-function-using-a-jenkinsfile
 import groovy.transform.Field
 @Field final BUILD_OS_TARGETS=['el7']
 
-@Field buildParams = [:]
+@Field buildParams = [
+  "BUILD_OS": "all",
+  "REBUILD": "false",
+  "LEAVE_CONTAINER": "0",
+]
 def ask_build_parameter = { ->
   return input(message: "Build Parameters", id: "build_params",
     parameters:[
@@ -75,8 +80,14 @@ def stage_integration(label) {
 
 node() {
     stage "Checkout"
+    try {
+      timeout(time: 10, unit :"SECONDS") {
+        buildParams = ask_build_parameter()
+      }
+    }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
+      // Only ignore errors for timeout.
+    }
     checkout scm
-    buildParams = ask_build_parameter()
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
