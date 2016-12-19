@@ -11,7 +11,7 @@ function install_user_key () {
 
     sudo chroot ${TMP_ROOT} /bin/bash -c "mkdir -p -m 600 /${user}/.ssh"
     sudo cp "${NODE_DIR}/sshkey.pub" "${TMP_ROOT}/${user}/.ssh/authorized_keys"
-    sudo rm "${NODE_DIR}/sshkey.pub"
+    rm "${NODE_DIR}/sshkey.pub"
 }
 
 ci_user="${user:-root}"

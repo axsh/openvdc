@@ -8,6 +8,7 @@ export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 
 copy_default_config
 . "${ENV_ROOTDIR}/config.source"
+export BRANCH
 
 scheduled_nodes=${NODES[@]}
 [[ -n "$1" ]] && scheduled_nodes="${@}"
@@ -28,9 +29,9 @@ create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
 $REBUILD && {
     (
         $starting_group "Cleanup old environment"
-        sudo [ ! -d "${CACHE_DIR}/${BRANCH}" ]
+        [ ! -d "${CACHE_DIR}/${BRANCH}" ]
         $skip_group_if_unnecessary
-        sudo rm -rf "${CACHE_DIR}/${BRANCH}"
+        rm -rf "${CACHE_DIR}/${BRANCH}"
         for node in ${scheduled_nodes[@]} ; do
             (
                 $starting_group "Destroying ${node%,*}"
@@ -39,22 +40,22 @@ $REBUILD && {
                 "${ENV_ROOTDIR}/${node}/destroy.sh"
             ) ; prev_cmd_failed
         done
-
-        (
-            $starting_step "Create cache folder"
-            sudo [ -d "${CACHE_DIR}/${BRANCH}" ]
-            $skip_step_if_already_done ; set -ex
-            sudo mkdir -p "${CACHE_DIR}/${BRANCH}"
-        ) ; prev_cmd_failed
     ) ; prev_cmd_failed
 } || {
     (
         $starting_step "Clone base images from ${BASE_BRANCH}"
-        [ -d "${CACHE_DIR}/${BRANCH}" ]
+        [ -d "${CACHE_DIR}/${BRANCH}" || ! -d "${CACHE_DIR}/${BASE_BRANCH}" ]
         $skip_step_if_already_done ; set -ex
-        sudo cp -r "${CACHE_DIR}/${BASE_BRANCH}" "${CACHE_DIR}/${BRANCH}"
+        cp -r "${CACHE_DIR}/${BASE_BRANCH}" "${CACHE_DIR}/${BRANCH}"
     ) ; prev_cmd_failed
 }
+
+(
+    $starting_step "Create cache folder"
+    [ -d "${CACHE_DIR}/${BRANCH}" ]
+    $skip_step_if_already_done ; set -ex
+    mkdir -p "${CACHE_DIR}/${BRANCH}"
+) ; prev_cmd_failed
 
 masquerade "${NETWORK}/${PREFIX}"
 

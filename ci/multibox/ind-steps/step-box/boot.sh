@@ -7,7 +7,7 @@
     umount-seed-image
     (
         $starting_step "Cache box for branch ${BRANCH}"
-        sudo [ -f "$(cache_image)" ]
+        [ -f "$(cache_image)" ]
         $skip_step_if_already_done ; set -ex
         sudo qemu-img convert -c -O qcow2 "$(vm_image)" "$(cache_image)"
     ) ; prev_cmd_failed
@@ -16,7 +16,7 @@
         $starting_step "Delete raw image"
         [ ! -f "$(vm_image)" ]
         $skip_step_if_already_done ; set -ex
-        sudo rm "$(vm_image)"
+        rm "$(vm_image)"
     ) ; prev_cmd_failed
 ) ; prev_cmd_failed
 

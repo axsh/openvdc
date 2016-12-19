@@ -8,6 +8,8 @@ properties ([[$class: 'ParametersDefinitionProperty',
   parameterDefinitions: [
     [$class: 'ChoiceParameterDefinition',
       choices: "all\n" + BUILD_OS_TARGETS.join("\n"), description: 'Target OS name', name: 'BUILD_OS'],
+    [$class: 'ChoiceParameterDefinition',
+      choices: "false\ntrue", description: 'Rebuild cache image', name: 'REBUILD'],
     [$class: 'StringParameterDefinition',
       defaultValue: '0', description: 'Leave container after build for debugging.', name: 'LEAVE_CONTAINER'],
     [$class: 'StringParameterDefinition',
@@ -20,11 +22,13 @@ properties ([[$class: 'ParametersDefinitionProperty',
 def write_build_env(label) {
   def build_env="""# These parameters are read from bash and docker --env-file.
 # So do not use single or double quote for the value part.
-LEAVE_CONTAINER=$LEAVE_CONTAINER
-REPO_BASE_DIR=$REPO_BASE_DIR
-BUILD_CACHE_DIR=$BUILD_CACHE_DIR
-BUILD_OS=$label
-RELEASE_SUFFIX=$RELEASE_SUFFIX
+LEAVE_CONTAINER=${LEAVE_CONTAINER}
+REPO_BASE_DIR=${REPO_BASE_DIR}
+BUILD_CACHE_DIR=${BUILD_CACHE_DIR}
+BUILD_OS=${label}
+REBUILD=${REBUILD}
+RELEASE_SUFFIX=${RELEASE_SUFFIX}
+BRANCH=${env.BRANCH_NAME}
 """
   writeFile(file: "build.env", text: build_env)
 }
@@ -58,13 +62,18 @@ def stage_unit_test(label) {
 }
 
 def stage_integration(label) {
-  node(label) {
-    stage "Integration Test ${label}"
+  node("multibox") {
+    checkout scm
+    stage "Build Integration Environment"
     write_build_env(label)
-    sh "deployment/integration/run_integration.sh  ./build.env"
+    
+    sh "cd ci/multibox/ ; ./build.sh"
+    stage "Run Tntegration Test"
+    // This is where the integration test will be run
+    stage "Cleanup Environment"
+    sh "cd ci/multibox/ ; ./destroy.sh --kill"
   }
 }
-
 
 node() {
     stage "Checkout"
@@ -73,6 +82,7 @@ node() {
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
 }
+
 
 build_nodes=BUILD_OS_TARGETS.clone()
 if( BUILD_OS != "all" ){
