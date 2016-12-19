@@ -1,0 +1,1 @@
+../10.0.100.10-zookeeper/kill.sh
