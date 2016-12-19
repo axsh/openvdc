@@ -21,6 +21,8 @@ i-0000001
 
 ## Setup Juniper SSG
 
+This feature is not functional currently.
+
 ```
 % openvdc register juniper/ssg16 '{"console_ip":"192.168.1.10/24"}'
 r-0000001
