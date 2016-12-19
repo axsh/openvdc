@@ -111,6 +111,10 @@ func withClusterBackendCtx(ctx context.Context, bk backend.ClusterBackend) conte
 	return context.WithValue(ctx, ctxClusterBackendKey, bk)
 }
 
+func WithMockClusterBackendCtx(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxClusterBackendKey, &backend.MockClusterBackend{})
+}
+
 func ClusterConnect(ctx context.Context, dest []string) (context.Context, error) {
 	bk := backend.NewZkClusterBackend()
 	err := bk.Connect(dest)
