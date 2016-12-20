@@ -3,6 +3,8 @@
 
 set -ex -o pipefail
 
+SCRIPT_DIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
+
 CID=
 TMPDIR=$(mktemp -d)
 function docker_rm() {
@@ -63,7 +65,7 @@ fi
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
 RPM_ABSOLUTE=/var/www/html/openvdc-repos/
 
-docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}.Dockerfile" .
+docker build -t "${img_tag}" -f "${SCRIPT_DIR}/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
 
 # Upload checked out tree to the container.
