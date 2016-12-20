@@ -14,7 +14,6 @@ service Instance {
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
-  rpc Log (LogRequest) returns (LogReply){}
 }
 
 message RunReply {
@@ -67,14 +66,6 @@ message InstanceIDRequest {
 message InstanceReply {
   string ID = 1;
   model.Instance instance = 2;
-}
-
-message LogRequest {
-  string instance_id = 1;
-}
-
-message LogReply {
-  string log = 1;
 }
 
 service Resource {
