@@ -41,21 +41,21 @@ BRANCH=${env.BRANCH_NAME}
 
 @Field RELEASE_SUFFIX=null
 
-def stage_rpmbuild(label) {
-  node(label) {
-    stage "Build ${label}"
-    checkout scm
-    write_build_env(label)
-    sh "./deployment/docker/build.sh ./build.env"
-  }
-}
-
 def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
     checkout scm
     write_build_env(label)
     sh "./deployment/docker/unit-tests.sh ./build.env"
+  }
+}
+
+def stage_rpmbuild(label) {
+  node(label) {
+    stage "Build ${label}"
+    checkout scm
+    write_build_env(label)
+    sh "./deployment/docker/build.sh ./build.env"
   }
 }
 
