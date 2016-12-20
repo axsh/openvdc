@@ -3,18 +3,16 @@ package cmd
 import (
 	"fmt"
 
+	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 )
 
 var logCmd = &cobra.Command{
-	Use:   "log [ResourceTemplate ID/URI]",
-	Short: "Get logs of an instance",
-	Long:  "Get logs of an instance",
+	Use:   "log [Instance ID]",
+	Short: "Print logs of an instance",
+	Long:  "Print logs of an instance",
 	Example: `
 	% openvdc log i-xxxxxxx
 	`,
@@ -22,22 +20,25 @@ var logCmd = &cobra.Command{
 	PreRunE:            util.PreRunHelpFlagCheckAndQuit,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-                        log.Fatalf("Please provide an Instance ID.")
-                }
+			log.Fatalf("Please provide an Instance ID.")
+		}
 
-                instanceID := args[0]
+		instanceID := "VDC_" + args[0]
 
-                req := &api.LogRequest{
-                        InstanceId: instanceID,
-                }
-                return util.RemoteCall(func(conn *grpc.ClientConn) error {
-                        c := api.NewInstanceClient(conn)
-                        res, err := c.Log(context.Background(), req)
-                        if err != nil {
-                                log.WithError(err).Fatal("Disconnected abnormally")
-                                return err
-                        }
-                        fmt.Println(res)
-                        return err
-                })
-	}}
+		cl, err := mlog.NewMesosClientWithOptions("127.0.0.1", 5050, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+		if err != nil {
+			log.Infoln(err)
+		}
+
+		result, err := cl.GetLog(instanceID, mlog.STDERR, "")
+		if err != nil {
+			log.Errorln("Error getting log")
+		}
+
+		for _, log := range result {
+			fmt.Printf(log.Log)
+		}
+
+		return err
+	},
+}
