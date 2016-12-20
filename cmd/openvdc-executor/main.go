@@ -408,6 +408,12 @@ func main() {
 	s := startExecutorAPIServer(ctx)
 	defer s.GracefulStop()
 
+	sshListener, err := net.Listen("tcp", "0.0.0.0:27631")
+	if err != nil {
+		log.Fatal(err)
+	}
+	go startSSHServer(sshListener)
+
 	dconfig := exec.DriverConfig{
 		Executor: newVDCExecutor(ctx, provider, s),
 	}
