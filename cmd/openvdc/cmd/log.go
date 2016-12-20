@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
@@ -25,7 +27,15 @@ var logCmd = &cobra.Command{
 
 		instanceID := "VDC_" + args[0]
 
-		cl, err := mlog.NewMesosClientWithOptions(util.MesosMasterAddr, 5050, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+		split := strings.Split(util.MesosMasterAddr, ":")
+		mesosMasterAddr := split[0]
+		mesosMasterPort, err := strconv.Atoi(split[1])
+
+		if err != nil {
+			log.Errorln("Couldn't convert string to int") //  <--- lol
+		}
+
+		cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
 		if err != nil {
 			log.Infoln(err)
 		}
