@@ -25,7 +25,7 @@ var logCmd = &cobra.Command{
 
 		instanceID := "VDC_" + args[0]
 
-		cl, err := mlog.NewMesosClientWithOptions("127.0.0.1", 5050, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+		cl, err := mlog.NewMesosClientWithOptions(util.MesosMasterAddr, 5050, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
 		if err != nil {
 			log.Infoln(err)
 		}
