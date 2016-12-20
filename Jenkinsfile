@@ -50,14 +50,6 @@ def stage_rpmbuild(label) {
   }
 }
 
-def stage_test_rpm(label) {
-  node(label) {
-    stage "RPM Install Test ${label}"
-    write_build_env(label)
-    sh "./deployment/docker/test-rpm-install.sh ./build.env"
-  }
-}
-
 def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
