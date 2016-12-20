@@ -29,12 +29,12 @@ fi
 
 # These variables should be supplied from jenkins.
 if [[ -z "${BRANCH}" ]] ; then
+   echo "the BRANCH variable needs to be set with the github branch to test."
    exit 1
 fi
-BRANCH="${BRANCH}"
 
 if [[ -z "${REBUILD}" ]] ; then
+   echo "The REBUILD variable needs to be set. 'true' if you wish to rebuild the environment completely. 'false' otherwise"
    exit 1
 fi
 # These variables are set by default but can be overriden by jenkins.
-REBUILD="${REBUILD}"
