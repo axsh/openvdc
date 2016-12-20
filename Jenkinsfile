@@ -55,7 +55,7 @@ def stage_rpmbuild(label) {
     stage "Build ${label}"
     checkout scm
     write_build_env(label)
-    sh "./deployment/docker/build.sh ./build.env"
+    sh "./deployment/docker/rpmbuild.sh ./build.env"
   }
 }
 
