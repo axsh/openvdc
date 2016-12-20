@@ -14,8 +14,9 @@ PREFIX="24"
 BOXES=(
     "minimal-7.2.1511-x86_64.kvm.box"
 )
-CACHE_DIR="/data/openvdc-ci/branches"
 
+BOXES_DIR="/data/openvdc-ci/boxes"
+CACHE_DIR="/data/openvdc-ci/branches"
 
 
 # TODO: add function that calculates the parent branch of current branch
