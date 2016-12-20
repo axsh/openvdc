@@ -40,15 +40,6 @@ function download_seed_image () {
     ) ; prev_cmd_failed
 }
 
-function copy_default_config() {
-  (
-    $starting_step "Put default config file in place"
-    [ -f "${ENV_ROOTDIR}/config.source" ]
-    $skip_step_if_already_done
-    cp "${ENV_ROOTDIR}/config.source.example" "${ENV_ROOTDIR}/config.source"
-  ) ; prev_cmd_failed
-}
-
 function masquerade() {
   local subnet="${1}"
 
