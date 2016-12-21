@@ -129,7 +129,7 @@ fi
 mkdir -p ${RPM_ABSOLUTE}
 docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
 
-if [[ -f "${RPM_REPO_DIR}/current" ]]; then
-  rm "${RPM_REPO_DIR}/current"
+if [[ -f "${RPM_ABSOLUTE}/current" ]]; then
+  rm "${RPM_ABSOLUTE}/current"
 fi
 ln -s "${RPM_ABSOLUTE}/${RELEASE_SUFFIX}" "${RPM_ABSOLUTE}/current"
