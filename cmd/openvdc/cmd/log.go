@@ -14,7 +14,7 @@ import (
 var tail bool
 
 func init() {
-	RootCmd.Flags().BoolVarP(&tail, "tail", "t", false, "Tail log output instead of just printing it once.")
+	logCmd.Flags().BoolVarP(&tail, "tail", "t", false, "Tail log output instead of just printing it once.")
 }
 
 var logCmd = &cobra.Command{
@@ -22,14 +22,14 @@ var logCmd = &cobra.Command{
 	Short: "Print logs of an instance",
 	Long:  "Print logs of an instance",
 	Example: `
-	% openvdc log i-xxxxxxx
+	% openvdc log i-xxxxxxx -t=true
 	`,
-	DisableFlagParsing: true,
-	PreRunE:            util.PreRunHelpFlagCheckAndQuit,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			log.Fatalf("Please provide an Instance ID.")
 		}
+
+		log.Infoln(tail)
 
 		instanceID := "VDC_" + args[0]
 
