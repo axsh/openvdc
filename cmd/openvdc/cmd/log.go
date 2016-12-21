@@ -22,14 +22,12 @@ var logCmd = &cobra.Command{
 	Short: "Print logs of an instance",
 	Long:  "Print logs of an instance",
 	Example: `
-	% openvdc log i-xxxxxxx -t=true
+	% openvdc log i-xxxxxxx
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			log.Fatalf("Please provide an Instance ID.")
 		}
-
-		log.Infoln(tail)
 
 		instanceID := "VDC_" + args[0]
 
@@ -41,20 +39,33 @@ var logCmd = &cobra.Command{
 			log.Errorln("Couldn't convert string to int") //  <--- lol
 		}
 
-		cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
-		if err != nil {
-			log.Errorln("Couldn't connect to Mesos master")
-		}
+		if tail == false {
+			cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+			if err != nil {
+				log.Errorln("Couldn't connect to Mesos master")
+			}
 
-		result, err := cl.GetLog(instanceID, mlog.STDERR, "")
-		if err != nil {
-			log.Errorln("Error getting log")
-		}
+			result, err := cl.GetLog(instanceID, mlog.STDERR, "")
+			if err != nil {
+				log.Errorln("Error getting log")
+			}
 
-		for _, log := range result {
-			fmt.Printf(log.Log)
-		}
+			for _, log := range result {
+				fmt.Printf(log.Log)
+			}
+		} else {
+			cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, nil)
 
+			if err != nil {
+				log.Errorln("Couldn't connect to Mesos master")
+			}
+
+			err = cl.TailLog(instanceID, mlog.STDOUT, 5)
+
+			if err != nil {
+				fmt.Printf("%s", err.Error())
+			}
+		}
 		return err
 	},
 }
