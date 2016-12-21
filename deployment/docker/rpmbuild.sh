@@ -3,7 +3,8 @@
 
 set -ex -o pipefail
 
-SCRIPT_DIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
+OPENVDC_ROOT="$(cd "$(dirname $(readlink -f "$0"))/../../" && pwd -P)"
+SCRIPT_DIR="${OPENVDC_ROOT}/deployment/docker"
 
 CID=
 TMPDIR=$(mktemp -d)
@@ -69,7 +70,7 @@ docker build -t "${img_tag}" -f "${SCRIPT_DIR}/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
 
 # Upload checked out tree to the container.
-docker_cp . "${CID}:/var/tmp/go/src/github.com/axsh/openvdc"
+docker_cp "${OPENVDC_ROOT}/." "${CID}:/var/tmp/go/src/github.com/axsh/openvdc"
 
 # Upload build cache if found.
 if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
@@ -104,7 +105,7 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
     if [[ ! -d "${build_cache_base}" ]]; then
       mkdir -p "${build_cache_base}"
     fi
-    docker cp './deployment/docker/build-cache.list' "${CID}:/var/tmp/build-cache.list"
+    docker cp "${SCRIPT_DIR}/build-cache.list" "${CID}:/var/tmp/build-cache.list"
     docker exec "${CID}" tar cO --directory=/ --files-from=/var/tmp/build-cache.list > "${build_cache_base}/${COMMIT_ID}.tar"
     # Clear build cache files which no longer referenced from Git ref names (branch, tags)
     git show-ref --head --dereference | awk '{print $1}' > "${TMPDIR}/sha.a"
