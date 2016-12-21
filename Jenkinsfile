@@ -52,7 +52,7 @@ def stage_unit_test(label) {
 
 def stage_rpmbuild(label) {
   node(label) {
-    stage "Build ${label}"
+    stage "RPM Build ${label}"
     checkout scm
     write_build_env(label)
     sh "./deployment/docker/rpmbuild.sh ./build.env"
