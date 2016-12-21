@@ -11,6 +11,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var tail bool
+
+func init() {
+	RootCmd.Flags().BoolVarP(&tail, "tail", "t", false, "Tail log output instead of just printing it once.")
+}
+
 var logCmd = &cobra.Command{
 	Use:   "log [Instance ID]",
 	Short: "Print logs of an instance",
