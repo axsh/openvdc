@@ -34,6 +34,9 @@ BUILD_CACHE_DIR=${env.BUILD_CACHE_DIR ?: ''}
 BUILD_OS=${label}
 REBUILD=${buildParams.REBUILD}
 RELEASE_SUFFIX=${RELEASE_SUFFIX}
+# https://issues.jenkins-ci.org/browse/JENKINS-30252
+GIT_BRANCH=${env.BRANCH_NAME}
+BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
 """
   writeFile(file: "build.env", text: build_env)
