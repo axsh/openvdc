@@ -126,10 +126,12 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
 fi
 # Pull compiled yum repository
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
-mkdir -p ${RPM_ABSOLUTE}
+$SSH_REMOTE mkdir -p ${RPM_ABSOLUTE}
 docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
 
+$SSH_REMOTE /bin/bash <<EOS
 if [[ -f "${RPM_ABSOLUTE}/current" ]]; then
   rm "${RPM_ABSOLUTE}/current"
 fi
 ln -s "${RPM_ABSOLUTE}/${RELEASE_SUFFIX}" "${RPM_ABSOLUTE}/current"
+EOS
