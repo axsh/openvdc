@@ -37,7 +37,7 @@ var logCmd = &cobra.Command{
 
 		cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
 		if err != nil {
-			log.Infoln(err)
+			log.Errorln("Couldn't connect to Mesos master")
 		}
 
 		result, err := cl.GetLog(instanceID, mlog.STDERR, "")
