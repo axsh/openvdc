@@ -29,34 +29,27 @@ var log = logrus.WithField("context", "vdc-executor")
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
 	ctx                context.Context
-	executorAPI        *executor.ExecutorAPIServer
+	nodeInfo           *model.ClusterNode
 }
 
-func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider, svr *executor.ExecutorAPIServer) *VDCExecutor {
+func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider, node *model.ClusterNode) *VDCExecutor {
 	return &VDCExecutor{
 		hypervisorProvider: provider,
 		ctx:                ctx,
-		executorAPI:        svr,
+		nodeInfo:           node,
 	}
 }
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
 	log.Infoln("Registered Executor on slave ", slaveInfo.GetHostname())
 
-	node := &model.ClusterNode{
-		Id:       slaveInfo.GetId().GetValue(),
-		GrpcAddr: exec.executorAPI.Listener().Addr().String(),
-		Console: &model.Console{
-			Type:     model.Console_SSH,
-			BindAddr: "",
-		},
-	}
-	err := model.Cluster(exec.ctx).Register(node)
+	exec.nodeInfo.Id = slaveInfo.GetId().GetValue()
+	err := model.Cluster(exec.ctx).Register(exec.nodeInfo)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	log.Infoln("Registered on OpenVDC cluster service: ", node)
+	log.Infoln("Registered on OpenVDC cluster service: ", exec.nodeInfo)
 }
 
 func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mesos.SlaveInfo) {
@@ -367,19 +360,18 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 }
 
 var (
-	hypervisorName = flag.String("hypervisor", "null", "")
-	zkAddr         = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
+	hypervisorName        = flag.String("hypervisor", "null", "")
+	zkAddr                = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
+	sshListenAddr         = flag.String("ssh", defaultSSHListenAddr, "SSH Listen Address")
+	executorAPIListenAddr = flag.String("listen", defaultExecutorAPIListenAddr, "Executor API Listen Address")
 )
 
-func startExecutorAPIServer(ctx context.Context) *executor.ExecutorAPIServer {
-	laddr := "0.0.0.0:19372"
-	lis, err := net.Listen("tcp", laddr)
-	if err != nil {
-		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
-	}
-	log.Println("Listening gRPC API on: ", laddr)
+const defaultSSHListenAddr = "0.0.0.0:37631"
+const defaultExecutorAPIListenAddr = "0.0.0.0:19372"
+
+func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executor.ExecutorAPIServer {
 	s := executor.NewExecutorAPIServer(*zkAddr, ctx)
-	go s.Serve(lis)
+	go s.Serve(listener)
 	return s
 }
 
@@ -396,8 +388,7 @@ func main() {
 
 	ctx, err := model.ClusterConnect(context.Background(), []string{*zkAddr})
 	if err != nil {
-		log.Fatal(err)
-		return
+		log.WithError(err).Fatalf("Failed to connect to cluster service %s", *zkAddr)
 	}
 	defer func() {
 		err := model.ClusterClose(ctx)
@@ -405,17 +396,32 @@ func main() {
 			log.Error(err)
 		}
 	}()
-	s := startExecutorAPIServer(ctx)
-	defer s.GracefulStop()
 
-	sshListener, err := net.Listen("tcp", "0.0.0.0:27631")
+	executorAPIListener, err := net.Listen("tcp", *executorAPIListenAddr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln("Faild to bind address for Executor gRPC API: ", *executorAPIListenAddr)
 	}
-	go startSSHServer(sshListener)
+	s := startExecutorAPIServer(ctx, executorAPIListener)
+	defer s.GracefulStop()
+	log.Infof("Listening Executor gRPC API on %s", *sshListenAddr)
 
+	sshListener, err := net.Listen("tcp", *sshListenAddr)
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to listen SSH on %s", *sshListenAddr)
+	}
+	defer sshListener.Close()
+	go startSSHServer(sshListener)
+	log.Infof("Listening SSH on %s", *sshListenAddr)
+
+	node := &model.ClusterNode{
+		GrpcAddr: executorAPIListener.Addr().String(),
+		Console: &model.Console{
+			Type:     model.Console_SSH,
+			BindAddr: *sshListenAddr,
+		},
+	}
 	dconfig := exec.DriverConfig{
-		Executor: newVDCExecutor(ctx, provider, s),
+		Executor: newVDCExecutor(ctx, provider, node),
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {
