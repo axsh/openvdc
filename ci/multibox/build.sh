@@ -5,8 +5,6 @@ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
 export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
-
-copy_default_config
 . "${ENV_ROOTDIR}/config.source"
 export BRANCH
 
