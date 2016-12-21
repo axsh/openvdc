@@ -3,8 +3,8 @@
 
 set -ex -o pipefail
 
-OPENVDC_ROOT="$(cd "$(dirname $(readlink -f "$0"))/../../" && pwd -P)"
-SCRIPT_DIR="${OPENVDC_ROOT}/deployment/docker"
+OPENVDC_ROOT_HOST="$(cd "$(dirname $(readlink -f "$0"))/../../" && pwd -P)"
+SCRIPT_DIR="${OPENVDC_ROOT_HOST}/deployment/docker"
 
 CID=
 TMPDIR=$(mktemp -d)
@@ -65,12 +65,13 @@ fi
 
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
 RPM_ABSOLUTE="/var/www/html/openvdc-repos/${BRANCH}"
+OPENVDC_ROOT_DOCKER="/var/tmp/go/src/github.com/axsh/openvdc"
 
 docker build -t "${img_tag}" -f "${SCRIPT_DIR}/${BUILD_OS}.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} -d "${img_tag}")
 
 # Upload checked out tree to the container.
-docker_cp "${OPENVDC_ROOT}/." "${CID}:/var/tmp/go/src/github.com/axsh/openvdc"
+docker_cp "${OPENVDC_ROOT_HOST}/." "${CID}:${OPENVDC_ROOT_DOCKER}"
 
 # Upload build cache if found.
 if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
@@ -84,12 +85,16 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
     fi
   done
 fi
+
+# Install build dependencies
+docker exec -t "${CID}" /bin/bash -c "yum-builddep -y ${OPENVDC_ROOT_DOCKER}/pkg/rhel/openvdc.spec"
+
 # Run build script
 
 # We'll need to wrap this into a condtional at some point: Are we building dev version or stable version?
-#docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
+#docker exec -t "${CID}" /bin/bash -c "cd ${OPENVDC_ROOT_DOCKER} ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\" pkg/rhel/openvdc.spec"
 
-docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/go/src/github.com/axsh/openvdc ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\"  --define \"dev_release_suffix ${RELEASE_SUFFIX}\"  pkg/rhel/openvdc.spec"
+docker exec -t "${CID}" /bin/bash -c "cd ${OPENVDC_ROOT_DOCKER} ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\"  --define \"dev_release_suffix ${RELEASE_SUFFIX}\"  pkg/rhel/openvdc.spec"
 
 # Build the yum repository
 docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/" 

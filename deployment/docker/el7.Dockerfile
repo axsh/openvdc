@@ -1,11 +1,9 @@
 FROM centos:7
 WORKDIR /var/tmp
 ENTRYPOINT ["/sbin/init"]
-RUN yum install -y yum-utils createrepo rpm-build rpmdevtools rsync sudo
+RUN yum install -y yum-utils go git epel-release createrepo
 
 
-RUN yum install -y make git go epel-release
-RUN yum install -y lxc lxc-devel
 ENV GOPATH=/var/tmp/go PATH=$PATH:$GOPATH/bin
 RUN mkdir $GOPATH
 RUN go get -u github.com/kardianos/govendor
