@@ -2,8 +2,9 @@
 
 export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
-
 . "${ENV_ROOTDIR}/config.source"
+
+require_branch_variable
 
 kill_option="false"
 [[ "$1" == "--kill" ]] && { kill_option="true" ; shift ; }

@@ -6,6 +6,10 @@ export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 . "${ENV_ROOTDIR}/config.source"
+
+require_branch_variable
+require_rebuild_variable
+
 export BRANCH
 
 scheduled_nodes=${NODES[@]}

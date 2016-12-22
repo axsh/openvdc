@@ -128,3 +128,17 @@ function destroy_bridge() {
     sudo brctl delbr "${1}"
   ) ; prev_cmd_failed
 }
+
+function require_branch_variable() {
+  if [[ -z "${BRANCH}" ]] ; then
+     echo "the BRANCH variable needs to be set with the github branch to test."
+     exit 1
+  fi
+}
+
+function require_rebuild_variable() {
+  if [[ -z "${REBUILD}" ]] ; then
+     echo "The REBUILD variable needs to be set. 'true' if you wish to rebuild the environment completely. 'false' otherwise"
+     exit 1
+  fi
+}
