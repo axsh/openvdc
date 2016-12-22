@@ -43,13 +43,6 @@ if [[ "$REBUILD" == "true" ]]; then
             ) ; prev_cmd_failed
         done
     ) ; prev_cmd_failed
-else
-    (
-        $starting_step "Clone base images from ${BASE_BRANCH}"
-        [ -d "${CACHE_DIR}/${BRANCH}" -o ! -d "${CACHE_DIR}/${BASE_BRANCH}" ]
-        $skip_step_if_already_done ; set -ex
-        cp -r "${CACHE_DIR}/${BASE_BRANCH}" "${CACHE_DIR}/${BRANCH}"
-    ) ; prev_cmd_failed
 fi
 
 (
