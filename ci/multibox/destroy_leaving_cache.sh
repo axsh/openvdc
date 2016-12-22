@@ -12,3 +12,6 @@ scheduled_nodes=${NODES[@]}
 for node in ${scheduled_nodes[@]} ; do
     ${ENV_ROOTDIR}/${node}/kill.sh ${kill_option}
 done
+
+destroy_bridge "vdc_env_br0"
+stop_masquerade "${NETWORK}/${PREFIX}"
