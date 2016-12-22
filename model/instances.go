@@ -56,15 +56,14 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 		return nil, err
 	}
 	initState := &InstanceState{
-		State:     InstanceState_REGISTERED,
-		CreatedAt: createdAt,
+		State: InstanceState_REGISTERED,
 	}
 	n.LastState = initState
-	data1, err := proto.Marshal(n)
+	data1, err := proto.Marshal(FilterCreatedAt(n, createdAt))
 	if err != nil {
 		return nil, err
 	}
-	data2, err := proto.Marshal(initState)
+	data2, err := proto.Marshal(FilterCreatedAt(initState, createdAt))
 	if err != nil {
 		return nil, err
 	}

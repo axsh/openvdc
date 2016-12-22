@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 )
 
 type ResourceOps interface {
@@ -78,7 +80,11 @@ func (i *resources) connection() (backend.ModelBackend, error) {
 
 func (i *resources) Create(n *Resource) (*Resource, error) {
 	n.State = Resource_REGISTERED
-	data, err := proto.Marshal(n)
+	createdAt, err := ptypes.TimestampProto(time.Now())
+	if err != nil {
+		return nil, err
+	}
+	data, err := proto.Marshal(FilterCreatedAt(n, createdAt))
 	if err != nil {
 		return nil, err
 	}

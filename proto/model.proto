@@ -11,6 +11,7 @@ message Instance {
   string slave_id = 2;
   string resource_id = 3;
   InstanceState last_state = 4;
+  google.protobuf.Timestamp created_at = 5;
 }
 
 message InstanceState {
@@ -48,6 +49,7 @@ message Resource {
     NullTemplate null = 502;
   }
   string template_uri = 4;
+  google.protobuf.Timestamp created_at = 5;
 }
 
 message NoneTemplate {}
