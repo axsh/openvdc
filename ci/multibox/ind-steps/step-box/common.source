@@ -38,7 +38,7 @@ function destroy_vm_cache() {
         $skip_step_if_already_done
         rm ${NODE_DIR}/sshkey
     ) ; prev_cmd_failed
-    kill_vm
+
     (
         $starting_step "Remove base image ${vm_name}"
         [ ! -f "$(cache_image)" ]
