@@ -9,6 +9,15 @@ export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 
 require_branch_variable
 require_rebuild_variable
+#TODO: require release suffix
+
+repo_url="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
+curl -fs --head "${repo_url}" > /dev/null
+if [[ "$?" != "0" ]]; then
+  echo "Unable to reach '${repo_url}'."
+  echo "Are the BRANCH and RELEASE_SUFFIX set correctly?"
+  exit 1
+fi
 
 export BRANCH
 
@@ -62,6 +71,3 @@ for node in ${scheduled_nodes[@]} ; do
         "${ENV_ROOTDIR}/${node}/build.sh"
     ) ; prev_cmd_failed
 done
-
-
-
