@@ -7,7 +7,7 @@ $GOVERSION=$(go version)
 $LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
 
 Invoke-Expression "$(Join-Path ${env:GOPATH}\bin govendor.exe -Resolve) sync"
-$modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/).split(" ", 2)[0]
+$modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/).split(" ")[0]
 Invoke-Expression "$(Join-Path ${env:GOPATH}\bin go-bindata.exe -Resolve) -mode 420 -modtime ${modtime} -pkg registry -o registry\schema.bindata.go schema"
 
 $branch="master"
