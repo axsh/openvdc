@@ -7,7 +7,7 @@
   "builders": [
     {
       "type": "virtualbox-ovf",
-      "source_path": "boxtemp/7.2/box.ovf",
+      "source_path": "boxtemp/7.3/box.ovf",
       "ssh_password": "vagrant",
       "ssh_username": "vagrant",
       "shutdown_command": "echo 'vagrant' | sudo -S /sbin/halt -h -p",
@@ -79,6 +79,8 @@
         "yum-builddep -y /tmp/openvdc.spec",
         "yum install -y bridge-utils lsof bind-utils iproute tree tmux screen",
         "curl -L https://storage.googleapis.com/golang/go1.7.linux-amd64.tar.gz | tar -C /usr/local -xzf -",
+        "yum install -y java-1.8.0-openjdk-devel",
+        "cd /usr/local; (curl -L https://github.com/google/protobuf/releases/download/v3.1.0/protoc-3.1.0-linux-x86_64.zip | jar xvf /dev/stdin)",
         "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm",
         "yum install -y mesosphere-zookeeper mesos",
         "echo 'mesos' > /etc/mesos-slave/containerizers",
