@@ -130,8 +130,6 @@ $SSH_REMOTE mkdir -p ${RPM_ABSOLUTE}
 docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
 
 $SSH_REMOTE /bin/bash <<EOS
-if [[ -f "${RPM_ABSOLUTE}/current" ]]; then
-  rm "${RPM_ABSOLUTE}/current"
-fi
+rm -f "${RPM_ABSOLUTE}/current"
 ln -s "${RPM_ABSOLUTE}/${RELEASE_SUFFIX}" "${RPM_ABSOLUTE}/current"
 EOS
