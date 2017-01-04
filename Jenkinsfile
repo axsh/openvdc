@@ -41,29 +41,21 @@ BRANCH=${env.BRANCH_NAME}
 
 @Field RELEASE_SUFFIX=null
 
-def stage_rpmbuild(label) {
-  node(label) {
-    stage "Build ${label}"
-    checkout scm
-    write_build_env(label)
-    sh "./deployment/docker/build.sh ./build.env"
-  }
-}
-
-def stage_test_rpm(label) {
-  node(label) {
-    stage "RPM Install Test ${label}"
-    write_build_env(label)
-    sh "./deployment/docker/test-rpm-install.sh ./build.env"
-  }
-}
-
 def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
     checkout scm
     write_build_env(label)
     sh "./deployment/docker/unit-tests.sh ./build.env"
+  }
+}
+
+def stage_rpmbuild(label) {
+  node(label) {
+    stage "RPM Build ${label}"
+    checkout scm
+    write_build_env(label)
+    sh "./deployment/docker/rpmbuild.sh ./build.env"
   }
 }
 
@@ -106,6 +98,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_test_rpm(label)
   stage_integration(label)
 }
