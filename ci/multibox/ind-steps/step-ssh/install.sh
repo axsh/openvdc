@@ -15,3 +15,11 @@
     $skip_step_if_already_done; set -ex
     install_user_key "${ci_user}"
 ) ; prev_cmd_failed
+
+# Quick hack for now. Should be changed in the seed image instead
+(
+    $starting_step "Disable DNS on sshd"
+    grep -qw "UseDNS yes" "${TMP_ROOT}/etc/ssh/sshd_config"
+    $skip_step_if_already_done; set -ex
+    sed -i 's/UseDNS yes/UseDNS no/g' "${TMP_ROOT}/etc/ssh/sshd_config"
+) ; prev_cmd_failed
