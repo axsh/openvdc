@@ -2,15 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
-
-var tail bool
 
 var rebootCmd = &cobra.Command{
 	Use:   "reboot [Instance ID]",
@@ -26,5 +25,18 @@ var rebootCmd = &cobra.Command{
 
 		instanceID := args[0]
 
+		req := &api.RebootRequest{
+			InstanceId: instanceID,
+		}
+		return util.RemoteCall(func(conn *grpc.ClientConn) error {
+			c := api.NewInstanceClient(conn)
+			res, err := c.Reboot(context.Background(), req)
+			if err != nil {
+				log.WithError(err).Fatal("Disconnected abnormaly")
+				return err
+			}
+			fmt.Println(res)
+			return err
+		})
 	},
 }
