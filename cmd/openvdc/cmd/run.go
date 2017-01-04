@@ -7,6 +7,7 @@ import (
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -18,14 +19,34 @@ var runCmd = &cobra.Command{
 	Example: `
 	% openvdc run centos/7/lxc
 	% openvdc run https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
-	`,
+	` + util.ExampleMergeTemplateOptions("openvdc run"),
+	DisableFlagParsing: true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		err := util.PreRunHelpFlagCheckAndQuit(cmd, args)
+		if err != nil {
+			return err
+		}
+		err = cmd.ParseFlags(args)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			log.Fatal("Missing resource file path")
+		left := cmd.Flags().Args()
+		if len(left) < 1 {
+			return pflag.ErrHelp
 		}
 
-		templateSlug := args[0]
-		req := prepareRegisterAPICall(templateSlug)
+		templateSlug := left[0]
+		for i, a := range args {
+			if a == templateSlug {
+				left = args[i:]
+				break
+			}
+		}
+		fmt.Println(left)
+		req := prepareRegisterAPICall(templateSlug, left)
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 			res, err := c.Run(context.Background(), req)

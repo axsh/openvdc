@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -xe
 
 VERSION="dev"
 SHA=$(git rev-parse --verify HEAD)

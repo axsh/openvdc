@@ -9,10 +9,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
-
-var currentLxcName string
 
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
@@ -25,11 +24,11 @@ func (p *LXCHypervisorProvider) Name() string {
 	return "lxc"
 }
 
-func (p *LXCHypervisorProvider) CreateDriver() (hypervisor.HypervisorDriver, error) {
+func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
 	return &LXCHypervisorDriver{
 		log:     log.WithField("hypervisor", "lxc"),
 		lxcpath: lxc.DefaultConfigPath(),
-		name:    "lxc-test",
+		name:    containerName,
 		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
 		template: lxc.DownloadTemplateOptions,
 	}, nil
@@ -44,11 +43,7 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-func (p *LXCHypervisorProvider) SetName(lxcName string) {
-        currentLxcName = lxcName
-}
-
-func (d *LXCHypervisorDriver) CreateInstance() error {
+func (d *LXCHypervisorDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
