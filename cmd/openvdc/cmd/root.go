@@ -34,6 +34,7 @@ func Execute() {
 	RootCmd.AddCommand(showCmd)
 	RootCmd.AddCommand(TemplateCmd)
 	RootCmd.AddCommand(logCmd)
+	RootCmd.AddCommand(rebootCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -49,7 +50,7 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	RootCmd.PersistentFlags().StringVarP(&util.MesosMasterAddr, "master", "", "127.0.0.1:5050", "Mesos Master node address")
-	RootCmd.PersistentFlags().StringVarP(&util.ServerAddr, "server", "s", "127.0.0.1:5000", "gRPC API server address")
+	RootCmd.PersistentFlags().StringVarP(&util.MesosMasterAddr, "master", "", "192.168.1.224:5050", "Mesos Master node address")
+	RootCmd.PersistentFlags().StringVarP(&util.ServerAddr, "server", "s", "192.168.1.224:5000", "gRPC API server address")
 	RootCmd.PersistentFlags().SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 }
