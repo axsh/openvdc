@@ -219,3 +219,42 @@ func (s *InstanceAPI) Show(ctx context.Context, in *InstanceIDRequest) (*Instanc
 	}
 	return &InstanceReply{ID: instance.GetId(), Instance: instance}, nil
 }
+
+func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*InstanceListReply, error) {
+	page := &InstanceListRequest_PageRequest{
+		Limit:  1000,
+		Offset: 0,
+	}
+	if in.Page != nil {
+		page = in.Page
+	}
+
+	results := []*InstanceListReply_InstanceListItem{}
+	err := model.Instances(ctx).Filter(int(page.Limit), func(i *model.Instance) int {
+		found := false
+		if in.Filter == nil {
+			found = true
+		} else {
+			found = in.Filter.State == i.GetLastState().State
+		}
+
+		if found {
+			results = append(results, &InstanceListReply_InstanceListItem{
+				Id:    i.Id,
+				State: i.GetLastState().State,
+			})
+		}
+		return len(results)
+	})
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.Filter")
+		return nil, err
+	}
+	return &InstanceListReply{
+		Page: &InstanceListReply_PageReply{
+			Total: int32(len(results)),
+			Limit: page.Limit,
+		},
+		Items: results,
+	}, nil
+}
