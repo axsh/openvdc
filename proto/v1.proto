@@ -56,6 +56,13 @@ message StartReply {
   string instance_id = 1;
 }
 
+message RebootRequest {
+  string instance_id = 1;
+}
+message RebootReply {
+  string instance_id = 1;
+}
+
 message InstanceIDRequest {
   oneof Key {
     string ID = 1;
