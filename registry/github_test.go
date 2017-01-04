@@ -8,6 +8,9 @@ import (
 
 	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/stretchr/testify/assert"
+
+	// To pass TestFind
+	_ "github.com/axsh/openvdc/handlers/vm/lxc"
 )
 
 func init() {

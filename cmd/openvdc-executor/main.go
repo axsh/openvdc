@@ -93,27 +93,39 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		model.Close(ctx)
 	}()
 
+	log = log.WithField("state", model.InstanceState_STARTING.String())
 	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
 	if err != nil {
-		log.WithError(err).WithField("state", model.InstanceState_STARTING).Error("Failed Instances.UpdateState")
+		log.WithError(err).Error("Failed Instances.UpdateState")
 		return err
 	}
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
+		return err
+	}
+
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.FindyByID")
+		return err
+	}
+	res, err := inst.Resource(ctx)
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.Resource")
 		return err
 	}
 
 	log.Infof("Creating instance")
-	err = hv.CreateInstance()
+	err = hv.CreateInstance(inst, res.ResourceTemplate())
 	if err != nil {
-		log.Error("Failed CreateInstance")
+		log.WithError(err).Error("Failed CreateInstance")
 		return err
 	}
 	log.Infof("Starting instance")
 	err = hv.StartInstance()
 	if err != nil {
-		log.Error("Failed StartInstance")
+		log.WithError(err).Error("Failed StartInstance")
 		return err
 	}
 	log.Infof("Instance launched successfully")
@@ -144,7 +156,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
@@ -189,7 +201,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
@@ -224,6 +236,13 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return err
 	}
 
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.Errorln(err)
+	}
+
+	originalState := inst.GetLastState().GetState()
+
 	// Push back to the state below in case of error.
 	finState := model.InstanceState_RUNNING
 	defer func() {
@@ -234,7 +253,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver()
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
@@ -245,12 +264,18 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return err
 	}
 
-	log.Infof("Shuttingdown instance")
-	err = hv.StopInstance()
-	if err != nil {
-		log.Error("Failed StopInstance")
-		return err
+	// Trying to stop an already stopped container results in an error
+	// causing the container to not get destroyed.
+
+	if originalState != model.InstanceState_STOPPED {
+		log.Infof("Shuttingdown instance")
+		err = hv.StopInstance()
+		if err != nil {
+			log.Error("Failed StopInstance")
+			return err
+		}
 	}
+
 	err = hv.DestroyInstance()
 	if err != nil {
 		log.Error("Failed DestroyInstance")

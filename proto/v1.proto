@@ -14,6 +14,7 @@ service Instance {
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
+  rpc List (InstanceListRequest) returns (InstanceListReply){}
 }
 
 message RunReply {
@@ -68,6 +69,32 @@ message InstanceReply {
   model.Instance instance = 2;
 }
 
+message InstanceListRequest {
+  message PageRequest {
+    int32 offset = 1;
+    int32 limit = 2;
+  }
+  PageRequest page = 1;
+  message Filter {
+    model.InstanceState.State state = 1;
+  }
+  Filter filter = 2;
+}
+
+message InstanceListReply {
+  message PageReply {
+    int32 total = 1;
+    int32 current = 2;
+    int32 limit = 3;
+  }
+  PageReply page = 1;
+  message InstanceListItem {
+    string id = 1;
+    model.InstanceState.State state = 2;
+  }
+  repeated InstanceListItem items = 2;
+}
+
 service Resource {
   rpc Register(ResourceRequest) returns (ResourceReply){}
   rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
@@ -75,12 +102,7 @@ service Resource {
 }
 
 message ResourceRequest {
-  string template_uri = 1;
-  oneof Template {
-    model.NoneTemplate none = 500;
-    model.LxcTemplate lxc = 501;
-    model.NullTemplate null = 502;
-  }
+  model.Template template = 1;
 }
 message ResourceReply {
   string ID = 1;
