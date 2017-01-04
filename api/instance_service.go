@@ -149,13 +149,22 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 		return nil, err
 	}
 
+	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       inst.GetLastState().GetState(),
+		}).Error(err)
+
+		return nil, err
+	}
+
 	instanceID := in.InstanceId
 	if err := s.sendCommand(ctx, "reboot", instanceID); err != nil {
 		log.WithError(err).Error("Failed sendCommand(reboot)")
 		return nil, err
 	}
 
-	return &rebootReply{InstanceId: instanceID}, nil
+	return &RebootReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
