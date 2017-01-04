@@ -18,10 +18,16 @@ install:
   - go env
   - go get -u github.com/kardianos/govendor
   - go get -u github.com/jteeuwen/go-bindata/...
+  - cinst jdk8
+  - ps: New-Item C:\ZooKeeper -type directory
+  - powershell -ExecutionPolicy Bypass .\ci\appveyor\install-zk.ps1 C:\ZooKeeper
+  - ps: $ZkProcess = Start-Process C:\ZooKeeper\bin\zkServer -PassThru
 
 build_script:
   - set PATH=C:\gopath\bin;%PATH%
-  - ps: .\build.ps1
+  - powershell -ExecutionPolicy Bypass .\build.ps1
 
+on_finish:
+  - ps: Stop-Process -Id $ZkProcess.Id -ErrorAction Ignore
 
 deploy: off
