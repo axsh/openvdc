@@ -12,6 +12,7 @@ service Instance {
   rpc Run (ResourceRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
+  rpc Reboot (RebootRequest) returns (RebootReply){}
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
 }
