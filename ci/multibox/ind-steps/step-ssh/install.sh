@@ -21,5 +21,5 @@
     $starting_step "Disable DNS on sshd"
     grep -qw "UseDNS yes" "${TMP_ROOT}/etc/ssh/sshd_config"
     $skip_step_if_already_done; set -ex
-    sed -i 's/UseDNS yes/UseDNS no/g' "${TMP_ROOT}/etc/ssh/sshd_config"
+    sudo sed -i 's/UseDNS yes/UseDNS no/g' "${TMP_ROOT}/etc/ssh/sshd_config"
 ) ; prev_cmd_failed
