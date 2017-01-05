@@ -33,20 +33,11 @@ function download_seed_image () {
 
     (
         $starting_step "Download ${box}"
-        [ -f "/data/openvdc-ci/boxes/${box}" ]
+        [ -f "${BOXES_DIR}/${box}" ]
         $skip_step_if_already_done
-        mkdir -p /data/openvdc-ci/boxes
-        wget "https://ci.openvdc.org/img/${box}" -P /data/openvdc-ci/boxes
+        mkdir -p "${BOXES_DIR}"
+        wget "https://ci.openvdc.org/img/${box}" -P "${BOXES_DIR}/${box}"
     ) ; prev_cmd_failed
-}
-
-function copy_default_config() {
-  (
-    $starting_step "Put default config file in place"
-    [ -f "${ENV_ROOTDIR}/config.source" ]
-    $skip_step_if_already_done
-    cp "${ENV_ROOTDIR}/config.source.example" "${ENV_ROOTDIR}/config.source"
-  ) ; prev_cmd_failed
 }
 
 function masquerade() {

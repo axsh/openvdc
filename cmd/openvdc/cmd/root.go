@@ -34,6 +34,7 @@ func Execute() {
 	RootCmd.AddCommand(showCmd)
 	RootCmd.AddCommand(TemplateCmd)
 	RootCmd.AddCommand(logCmd)
+	RootCmd.AddCommand(listCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
