@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +35,7 @@ func Execute() {
 	RootCmd.AddCommand(showCmd)
 	RootCmd.AddCommand(TemplateCmd)
 	RootCmd.AddCommand(listCmd)
+	RootCmd.AddCommand(openvdc.VersionCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
