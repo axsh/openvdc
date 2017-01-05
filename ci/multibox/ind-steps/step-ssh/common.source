@@ -1,6 +1,9 @@
+#!/bin/bash
+
 function add_user_key () {
     local user="${1}"
 
+    rm -f ${NODE_DIR}/sshkey
     ssh-keygen -t rsa -b 2048 -N "" -f ${NODE_DIR}/sshkey
     chmod 600 ${NODE_DIR}/sshkey
     chmod 600 ${NODE_DIR}/sshkey.pub
