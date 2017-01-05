@@ -1,6 +1,11 @@
+[CmdletBinding()]
+param(
+    [parameter(Mandatory=$False,Position=1)]
+    [string]$VERSION = "dev"
+)
 
 $ErrorActionPreference = "Stop"
-$VERSION="dev"
+
 $SHA=$(git rev-parse --verify HEAD)
 $BUILDDATE=Get-Date -Format "yyyy/MM/dd HH:mm:ss zzz"
 $GOVERSION=$(go version)
