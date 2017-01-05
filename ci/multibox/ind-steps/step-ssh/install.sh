@@ -6,8 +6,8 @@
     $skip_step_if_already_done; set -ex
     add_user_key "${ci_user}"
     mv ${NODE_DIR}/sshkey ${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}
+    mv ${NODE_DIR}/sshkey.pub ${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}.pub
 ) ; prev_cmd_failed
-
 
 (
     $starting_step "Install authorized ssh key for ${user} on ${vm_name}"
