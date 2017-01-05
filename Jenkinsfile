@@ -34,6 +34,9 @@ BUILD_CACHE_DIR=${env.BUILD_CACHE_DIR ?: ''}
 BUILD_OS=${label}
 REBUILD=${buildParams.REBUILD}
 RELEASE_SUFFIX=${RELEASE_SUFFIX}
+# https://issues.jenkins-ci.org/browse/JENKINS-30252
+GIT_BRANCH=${env.BRANCH_NAME}
+BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
 """
   writeFile(file: "build.env", text: build_env)
@@ -98,5 +101,8 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_integration(label)
+  //The integration test build currently have a few issues that cause the build
+  //to take very long and actual tests aren't written yet.
+  //Better to skip it for now while we fix those issues ASAP
+  //stage_integration(label)
 }

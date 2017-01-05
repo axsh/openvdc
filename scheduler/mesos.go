@@ -120,12 +120,13 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 				}).Error("Failed to retrieve resource object")
 				continue
 			}
-			switch t := r.GetTemplate(); t.(type) {
-			case *model.Resource_Lxc:
+			// TODO: Avoid type switch to find template types.
+			switch t := r.GetTemplate().GetItem(); t.(type) {
+			case *model.Template_Lxc:
 				if hypervisorName == "lxc" {
 					return offer
 				}
-			case *model.Resource_Null:
+			case *model.Template_Null:
 				if hypervisorName == "null" {
 					return offer
 				}
