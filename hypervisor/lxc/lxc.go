@@ -180,11 +180,6 @@ func (d *LXCHypervisorDriver) RebootInstance() error {
 		return err
 	}
 
-	d.log.Infoln("Waiting for lxc-container to become RUNNING")
-	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
-		d.log.Errorln("Failed or timedout to wait for RUNNING")
-		return fmt.Errorf("Failed or timedout to wait for RUNNING")
-	}
 	return nil
 }
 
