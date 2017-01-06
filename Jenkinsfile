@@ -67,6 +67,7 @@ def stage_integration(label) {
     checkout scm
     stage "Build Integration Environment"
     write_build_env(label)
+    sh "source ./build.env"
 
     sh "cd ci/multibox/ ; ./build.sh"
     stage "Run Integration Test"
