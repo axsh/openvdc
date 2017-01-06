@@ -24,7 +24,7 @@ const (
 )
 
 // Build time flag
-var GithubDefaultRef = "resource-handler"
+var GithubDefaultRef = "master"
 
 type GithubRegistry struct {
 	confDir                 string
