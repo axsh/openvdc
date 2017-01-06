@@ -11,6 +11,11 @@ export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 . "${ENV_ROOTDIR}/config.source"
 
+# Jenkins writes its environment variables to a build.env file in OpenVDC root
+if [[ -f "${ENV_ROOTDIR}/../../build.env" ]]; then
+  . "${ENV_ROOTDIR}/../../build.env"
+fi
+
 require_branch_variable
 require_rebuild_variable
 #TODO: require release suffix

@@ -67,7 +67,6 @@ def stage_integration(label) {
     checkout scm
     stage "Build Integration Environment"
     write_build_env(label)
-    sh "source ./build.env; export BRANCH; export RELEASE_SUFFIX; export REBUILD"
 
     sh "cd ci/multibox/ ; ./build.sh"
     stage "Run Integration Test"
