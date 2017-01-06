@@ -23,6 +23,10 @@ if [[ "$?" != "0" ]]; then
   echo "Are the BRANCH and RELEASE_SUFFIX set correctly?"
   exit 1
 fi
+
+export BRANCH
+export REBUILD
+export RELEASE_SUFFIX
 export YUM_REPO_URL
 
 scheduled_nodes=${NODES[@]}
