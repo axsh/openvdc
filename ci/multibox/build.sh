@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "The environment variables in the script"
+echo "======================================="
+env
+
 # Set the PATH variable so chrooted centos will know where to find stuff
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 
