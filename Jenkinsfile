@@ -52,7 +52,7 @@ def checkout_and_merge() {
 def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
-    checkout_and_merge
+    checkout_and_merge()
     write_build_env(label)
     sh "./deployment/docker/unit-tests.sh ./build.env"
   }
@@ -61,7 +61,7 @@ def stage_unit_test(label) {
 def stage_rpmbuild(label) {
   node(label) {
     stage "RPM Build ${label}"
-    checkout_and_merge
+    checkout_and_merge()
     write_build_env(label)
     sh "./deployment/docker/rpmbuild.sh ./build.env"
   }
@@ -69,7 +69,7 @@ def stage_rpmbuild(label) {
 
 def stage_integration(label) {
   node("multibox") {
-    checkout_and_merge
+    checkout_and_merge()
     stage "Build Integration Environment"
     write_build_env(label)
 
@@ -90,7 +90,7 @@ node() {
     }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
       // Only ignore errors for timeout.
     }
-    checkout_and_merge
+    checkout_and_merge()
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
