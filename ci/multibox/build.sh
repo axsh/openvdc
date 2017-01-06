@@ -7,10 +7,6 @@ export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 . "${ENV_ROOTDIR}/config.source"
 
-export BRANCH
-export REBUILD
-export RELEASE_SUFFIX
-
 require_branch_variable
 require_rebuild_variable
 #TODO: require release suffix
