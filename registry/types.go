@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
 )
 
@@ -22,6 +23,35 @@ type TemplateRoot struct {
 	// https://golang.org/pkg/encoding/json/#RawMessage
 	RawTemplate json.RawMessage        `json:"template"`
 	Template    model.ResourceTemplate `json:"-"`
+
+	handler handlers.ResourceHandler
+}
+
+func (t *TemplateRoot) ResourceHandler() handlers.ResourceHandler {
+	return t.handler
+}
+
+func (t *TemplateRoot) parseTemplate() error {
+	// Delayed parse for "template" key
+	typeFind := struct {
+		Type string `json:"type"`
+	}{}
+	if err := json.Unmarshal(t.RawTemplate, &typeFind); err != nil {
+		return err
+	}
+	hnd, ok := handlers.FindByType(typeFind.Type)
+	if !ok {
+		return fmt.Errorf("Unknown template type: %s", typeFind.Type)
+	}
+	t.handler = hnd
+
+	var err error
+	t.Template, err = hnd.ParseTemplate(t.RawTemplate)
+	if err != nil {
+		return fmt.Errorf("Failed to parse template section in %s", t.Title)
+	}
+
+	return nil
 }
 
 type RegistryTemplate struct {
@@ -33,6 +63,14 @@ type RegistryTemplate struct {
 // Returns absolute URI for the original location of the resource template.
 func (r *RegistryTemplate) LocationURI() string {
 	return r.source.LocateURI(r.Name)
+}
+
+func (r *RegistryTemplate) ToModel() *model.Template {
+	t := &model.Template{
+		TemplateUri: r.LocationURI(),
+	}
+	r.Template.handler.SetTemplateItem(t, r.Template.Template)
+	return t
 }
 
 type TemplateFinder interface {
@@ -54,21 +92,10 @@ func parseResourceTemplate(in io.Reader) (*TemplateRoot, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Delayed parse for "template" key
-	typeFind := struct {
-		Type string `json:"type"`
-	}{}
-	if err := json.Unmarshal(root.RawTemplate, &typeFind); err != nil {
+
+	err = root.parseTemplate()
+	if err != nil {
 		return nil, err
 	}
-	tmpl := model.NewTemplateByName(typeFind.Type)
-	if tmpl == nil {
-		return nil, fmt.Errorf("Unknown template name: %s", typeFind.Type)
-	}
-	err = json.Unmarshal(root.RawTemplate, tmpl)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse JSON in template key")
-	}
-	root.Template = tmpl
 	return root, nil
 }

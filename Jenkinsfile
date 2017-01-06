@@ -34,6 +34,9 @@ BUILD_CACHE_DIR=${env.BUILD_CACHE_DIR ?: ''}
 BUILD_OS=${label}
 REBUILD=${buildParams.REBUILD}
 RELEASE_SUFFIX=${RELEASE_SUFFIX}
+# https://issues.jenkins-ci.org/browse/JENKINS-30252
+GIT_BRANCH=${env.BRANCH_NAME}
+BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
 """
   writeFile(file: "build.env", text: build_env)
@@ -41,29 +44,21 @@ BRANCH=${env.BRANCH_NAME}
 
 @Field RELEASE_SUFFIX=null
 
-def stage_rpmbuild(label) {
-  node(label) {
-    stage "Build ${label}"
-    checkout scm
-    write_build_env(label)
-    sh "./deployment/docker/build.sh ./build.env"
-  }
-}
-
-def stage_test_rpm(label) {
-  node(label) {
-    stage "RPM Install Test ${label}"
-    write_build_env(label)
-    sh "./deployment/docker/test-rpm-install.sh ./build.env"
-  }
-}
-
 def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
     checkout scm
     write_build_env(label)
     sh "./deployment/docker/unit-tests.sh ./build.env"
+  }
+}
+
+def stage_rpmbuild(label) {
+  node(label) {
+    stage "RPM Build ${label}"
+    checkout scm
+    write_build_env(label)
+    sh "./deployment/docker/rpmbuild.sh ./build.env"
   }
 }
 
@@ -106,6 +101,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_test_rpm(label)
   stage_integration(label)
 }
