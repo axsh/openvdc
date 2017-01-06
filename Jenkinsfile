@@ -101,8 +101,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  //The integration test build currently have a few issues that cause the build
-  //to take very long and actual tests aren't written yet.
-  //Better to skip it for now while we fix those issues ASAP
-  //stage_integration(label)
+  stage_integration(label)
 }
