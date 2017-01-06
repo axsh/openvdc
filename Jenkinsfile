@@ -69,7 +69,7 @@ def stage_integration(label) {
     write_build_env(label)
 
     sh "cd ci/multibox/ ; ./build.sh"
-    stage "Run Tntegration Test"
+    stage "Run Integration Test"
     // This is where the integration test will be run
     stage "Cleanup Environment"
     sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
