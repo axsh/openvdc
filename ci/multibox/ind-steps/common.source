@@ -110,7 +110,7 @@ function disable_service () {
     ) ; prev_cmd_failed
 }
 
-function ssh () {
+function ssh() {
     local key="${NODE_DIR}/sshkey"
     [[ -f ${key} ]] &&
         $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
@@ -141,4 +141,20 @@ function require_rebuild_variable() {
      echo "The REBUILD variable needs to be set. 'true' if you wish to rebuild the environment completely. 'false' otherwise"
      exit 1
   fi
+}
+
+function install_openvdc_yum_repo() {
+  (
+    $starting_step "Install OpenVDC yum repository"
+    false # Just overwrite it if it exists.
+    $skip_step_if_already_done
+    ssh root@${IP_ADDR} "cat > /etc/yum.repos.d/openvdc.repo" << EOS
+[openvdc]
+name=OpenVDC
+failovermethod=priority
+baseurl=${YUM_REPO_URL}
+enabled=1
+gpgcheck=0
+EOS
+  ) ; prev_cmd_failed
 }

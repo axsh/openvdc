@@ -21,3 +21,5 @@ IND_STEPS=(
 )
 
 build "${IND_STEPS[@]}"
+
+install_openvdc_yum_repo

@@ -11,13 +11,14 @@ require_branch_variable
 require_rebuild_variable
 #TODO: require release suffix
 
-repo_url="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
-curl -fs --head "${repo_url}" > /dev/null
+YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
+curl -fs --head "${YUM_REPO_URL}" > /dev/null
 if [[ "$?" != "0" ]]; then
-  echo "Unable to reach '${repo_url}'."
+  echo "Unable to reach '${YUM_REPO_URL}'."
   echo "Are the BRANCH and RELEASE_SUFFIX set correctly?"
   exit 1
 fi
+export YUM_REPO_URL
 
 scheduled_nodes=${NODES[@]}
 [[ -n "$1" ]] && scheduled_nodes="${@}"
