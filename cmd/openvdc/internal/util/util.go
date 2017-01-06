@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+var MesosMasterAddr string
 var ServerAddr string
 var UserConfDir string
 
