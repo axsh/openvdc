@@ -42,7 +42,7 @@ BRANCH=${env.BRANCH_NAME}
   writeFile(file: "build.env", text: build_env)
 }
 
-def checkout_and_merge {
+def checkout_and_merge() {
     checkout scm
     sh "git merge origin/master"
 }
