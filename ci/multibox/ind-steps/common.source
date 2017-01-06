@@ -93,8 +93,6 @@ function build () {
             [[ $? == 255 ]] && { . "${ENV_ROOTDIR}/ind-steps/step-box/common.source" ; umount-seed-image ; exit 255 ; }
         done 
     done
-
-    unset -f ssh
 }
 
 function disable_service () {
@@ -102,15 +100,15 @@ function disable_service () {
 
     (
         $starting_step "Disable service: ${service}"
-        ssh root@${IP_ADDR} "systemctl status ${service} | grep -q running"
+        run_ssh root@${IP_ADDR} "systemctl status ${service} | grep -q running"
         [[ $? == 1 ]]
         $skip_step_if_already_done ; set -ex
-        ssh root@${IP_ADDR} "systemctl disable ${service}"
-        ssh root@${IP_ADDR} "systemctl stop ${service}"
+        run_ssh root@${IP_ADDR} "systemctl disable ${service}"
+        run_ssh root@${IP_ADDR} "systemctl stop ${service}"
     ) ; prev_cmd_failed
 }
 
-function ssh() {
+function run_ssh() {
     local key="${NODE_DIR}/sshkey"
     [[ -f ${key} ]] &&
         $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
@@ -148,7 +146,7 @@ function install_openvdc_yum_repo() {
     $starting_step "Install OpenVDC yum repository"
     false # Just overwrite it if it exists.
     $skip_step_if_already_done
-    ssh root@${IP_ADDR} "cat > /etc/yum.repos.d/openvdc.repo" << EOS
+    run_ssh root@${IP_ADDR} "cat > /etc/yum.repos.d/openvdc.repo" << EOS
 [openvdc]
 name=OpenVDC
 failovermethod=priority
