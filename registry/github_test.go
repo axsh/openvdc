@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/stretchr/testify/assert"
 
@@ -14,7 +15,7 @@ import (
 )
 
 func init() {
-	GithubDefaultRef = unittest.GithubDefaultRef
+	openvdc.GithubDefaultRef = unittest.GithubDefaultRef
 }
 
 func TestNewGithubRegistry(t *testing.T) {

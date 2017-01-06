@@ -10,14 +10,6 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 )
 
-// Build time constant variables from -ldflags
-var (
-	version   string
-	sha       string
-	builddate string
-	goversion string
-)
-
 func setupDefaultUserConfig(dir string) error {
 	stat, err := os.Stat(dir)
 	if os.IsExist(err) && !stat.IsDir() {

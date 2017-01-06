@@ -1,10 +1,16 @@
+[CmdletBinding()]
+param(
+    [parameter(Mandatory=$False,Position=1)]
+    [string]$VERSION = "dev"
+)
 
 $ErrorActionPreference = "Stop"
-$VERSION="dev"
+
 $SHA=$(git rev-parse --verify HEAD)
 $BUILDDATE=Get-Date -Format "yyyy/MM/dd HH:mm:ss zzz"
 $GOVERSION=$(go version)
-$LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
+$BUILDSTAMP="github.com/axsh/openvdc"
+$LDFLAGS="-X '${BUILDSTAMP}.Version=${VERSION}' -X '${BUILDSTAMP}.Sha=${SHA}' -X '${BUILDSTAMP}.Builddate=${BUILDDATE}' -X '${BUILDSTAMP}.Goversion=${GOVERSION}'"
 
 Invoke-Expression "$(Join-Path ${env:GOPATH}\bin govendor.exe -Resolve) sync"
 $modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/).split(" ")[0]
@@ -31,7 +37,7 @@ if( $env:APPVEYOR_REPO_BRANCH ){
         }
     }
 }
-$LDFLAGS="${LDFLAGS} -X 'registry.GithubDefaultRef=${branch}'"
+$LDFLAGS="${LDFLAGS} -X '${BUILDSTAMP}.GithubDefaultRef=${branch}'"
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-scheduler

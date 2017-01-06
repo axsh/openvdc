@@ -37,7 +37,7 @@ This is an empty metapackage that depends on all OpenVNet services and the vnctl
 %build
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
-  ./build.sh
+  VERSION=%{version} ./build.sh
 )
 
 %install
