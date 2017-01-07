@@ -39,7 +39,7 @@ func init() {
 }
 
 func RemoteCall(c func(*grpc.ClientConn) error) error {
-	serverAddr := viper.GetString("api.address")
+	serverAddr := viper.GetString("api.endpoint")
 	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
 		log.WithField("endpoint", serverAddr).Fatalf("Cannot connect to OpenVDC gRPC endpoint: %v", err)

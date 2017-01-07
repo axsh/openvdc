@@ -52,15 +52,15 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 	viper.SetDefault("mesos.master", "127.0.0.1:5050")
-	viper.SetDefault("api.address", "127.0.0.1:5000")
+	viper.SetDefault("api.endpoint", "127.0.0.1:5000")
 
 	pfs := RootCmd.PersistentFlags()
 	pfs.String("config", filepath.Join(util.UserConfDir, "config.toml"), "Load config file from the path")
 	pfs.String("master", viper.GetString("mesos.master"), "Mesos Master node address")
 	viper.BindPFlag("mesos.master", pfs.Lookup("master"))
-	pfs.String("server", viper.GetString("api.address"), "gRPC API server address")
+	pfs.String("server", viper.GetString("api.endpoint"), "gRPC API server address")
 	pfs.SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
-	viper.BindPFlag("api.address", pfs.Lookup("server"))
+	viper.BindPFlag("api.endpoint", pfs.Lookup("server"))
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
