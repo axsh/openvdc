@@ -7,8 +7,8 @@ import (
 
 	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var tail bool
@@ -31,7 +31,7 @@ var logCmd = &cobra.Command{
 
 		instanceID := "VDC_" + args[0]
 
-		split := strings.Split(util.MesosMasterAddr, ":")
+		split := strings.Split(viper.GetString("mesos.master"), ":")
 		mesosMasterAddr := split[0]
 		mesosMasterPort, err := strconv.Atoi(split[1])
 

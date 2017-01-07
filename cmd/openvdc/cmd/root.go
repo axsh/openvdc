@@ -56,9 +56,9 @@ func init() {
 
 	pfs := RootCmd.PersistentFlags()
 	pfs.String("config", filepath.Join(util.UserConfDir, "config.toml"), "Load config file from the path")
-	pfs.StringVar(&util.MesosMasterAddr, "master", viper.GetString("mesos.master"), "Mesos Master node address")
+	pfs.String("master", viper.GetString("mesos.master"), "Mesos Master node address")
 	viper.BindPFlag("mesos.master", pfs.Lookup("master"))
-	pfs.StringVar(&util.ServerAddr, "server", viper.GetString("api.address"), "gRPC API server address")
+	pfs.String("server", viper.GetString("api.address"), "gRPC API server address")
 	pfs.SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 	viper.BindPFlag("api.address", pfs.Lookup("server"))
 	// Cobra also supports local flags, which will only run

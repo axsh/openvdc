@@ -16,6 +16,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
@@ -23,8 +24,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var MesosMasterAddr string
-var ServerAddr string
 var UserConfDir string
 
 func init() {
@@ -40,9 +39,10 @@ func init() {
 }
 
 func RemoteCall(c func(*grpc.ClientConn) error) error {
-	conn, err := grpc.Dial(ServerAddr, grpc.WithInsecure())
+	serverAddr := viper.GetString("api.address")
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 	if err != nil {
-		log.WithField("endpoint", ServerAddr).Fatalf("Cannot connect to OpenVDC gRPC endpoint: %v", err)
+		log.WithField("endpoint", serverAddr).Fatalf("Cannot connect to OpenVDC gRPC endpoint: %v", err)
 	}
 	defer conn.Close()
 	return c(conn)
