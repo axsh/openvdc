@@ -8,10 +8,12 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -24,6 +26,18 @@ import (
 var MesosMasterAddr string
 var ServerAddr string
 var UserConfDir string
+
+func init() {
+	// UserConfDir variable is referenced from init() in cmd/root.go
+	// so that it has to be initialized eagerly.
+	//http://stackoverflow.com/questions/7922270/obtain-users-home-directory
+	path, err := homedir.Dir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to locate user home path: %v", err)
+		os.Exit(1)
+	}
+	UserConfDir = filepath.Join(path, ".openvdc")
+}
 
 func RemoteCall(c func(*grpc.ClientConn) error) error {
 	conn, err := grpc.Dial(ServerAddr, grpc.WithInsecure())

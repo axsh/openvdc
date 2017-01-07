@@ -7,7 +7,6 @@ import (
 
 	"github.com/axsh/openvdc/cmd/openvdc/cmd"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 func setupDefaultUserConfig(dir string) error {
@@ -34,14 +33,7 @@ func setupDefaultUserConfig(dir string) error {
 }
 
 func main() {
-	//http://stackoverflow.com/questions/7922270/obtain-users-home-directory
-	path, err := homedir.Dir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to get $HOME")
-		os.Exit(1)
-	}
-	util.UserConfDir = filepath.Join(path, ".openvdc")
-	err = setupDefaultUserConfig(util.UserConfDir)
+	err := setupDefaultUserConfig(util.UserConfDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to setup %s\n", util.UserConfDir)
 		os.Exit(1)
