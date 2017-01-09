@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -57,15 +58,9 @@ var showCmd = &cobra.Command{
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err
 			}
-			/*
-				buf, err := json.MarshalIndent(res, "", "  ")
-				if err != nil {
-					log.WithError(err).Fatal("Faild to format to pretty JSON.")
-				}
-				fmt.Println(string(buf))
-			*/
-			m := &proto.TextMarshaler{Compact: false}
-			m.Marshal(os.Stdout, res)
+			if err := (&jsonpb.Marshaler{Indent: "  "}).Marshal(os.Stdout, res); err != nil {
+				log.WithError(err).Fatal("Faild to format to pretty JSON.")
+			}
 			return err
 		})
 	},
