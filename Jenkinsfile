@@ -38,7 +38,7 @@ RELEASE_SUFFIX=${RELEASE_SUFFIX}
 GIT_BRANCH=${env.BRANCH_NAME}
 BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
-SHA=${env.SHA}
+SHA=${SHA}
 """
   writeFile(file: "build.env", text: build_env)
 }
