@@ -20,7 +20,7 @@ function remove_dir {
     for no_rm in "master" "devel"; do
        if [[ "${dead_dir}" = "${no_rm}" ]]; then
            echo "Cannot remove \"${no_rm}\". Ignoring."
-           exit 0
+           return 0
        fi
     done
 
