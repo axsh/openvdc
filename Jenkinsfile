@@ -38,6 +38,7 @@ RELEASE_SUFFIX=${RELEASE_SUFFIX}
 GIT_BRANCH=${env.BRANCH_NAME}
 BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
+SHA=${env.SHA}
 """
   writeFile(file: "build.env", text: build_env)
 }
@@ -90,10 +91,11 @@ node() {
     }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
       // Only ignore errors for timeout.
     }
-    checkout_and_merge()
+    checkout scm
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
+    SHA=sh(returnStdout: true, "git rev-parse --verify HEAD").trim()
 }
 
 
