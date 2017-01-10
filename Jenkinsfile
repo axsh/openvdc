@@ -45,7 +45,7 @@ SHA=${SHA}
 
 def checkout_and_merge() {
     checkout scm
-    sh "git merge origin/master"
+    sh "git -c \"user.name=Axsh Bot\" -c \"user.email=dev@axsh.net\" merge origin/master"
 }
 
 @Field RELEASE_SUFFIX=null
