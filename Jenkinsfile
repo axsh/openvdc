@@ -81,6 +81,12 @@ def stage_integration(label) {
   }
 }
 
+def stage_clean_rpms(label) {
+  node(label) {
+    sh "cd repo_cleanups ; ./run_remove_stale_rpm.sh"
+  }
+}
+
 node() {
     stage "Checkout"
     try {
@@ -104,7 +110,8 @@ if( buildParams.BUILD_OS != "all" ){
 
 // Using .each{} hits "a CPS-transformed closure is not yet supported (JENKINS-26481)"
 for( label in build_nodes) {
-  stage_unit_test(label)
-  stage_rpmbuild(label)
-  stage_integration(label)
+//stage_unit_test(label)
+//stage_rpmbuild(label)
+//stage_integration(label)
+  stage_clean_rpms(label)
 }
