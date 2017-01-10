@@ -49,6 +49,7 @@ def checkout_and_merge() {
 }
 
 @Field RELEASE_SUFFIX=null
+@Field SHA=null
 
 def stage_unit_test(label) {
   node(label) {
