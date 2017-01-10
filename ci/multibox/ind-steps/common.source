@@ -156,3 +156,14 @@ gpgcheck=0
 EOS
   ) ; prev_cmd_failed
 }
+
+function install_yum_package() {
+  local package="$1"
+
+  (
+    $starting_step "Install package: ${package}"
+    rpm -q "${package}" >> /dev/null
+    $skip_step_if_already_done; set -xe
+    run_ssh root@${IP_ADDR} "yum install -y ${package}"
+  ) ; prev_cmd_failed
+}
