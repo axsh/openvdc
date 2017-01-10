@@ -23,3 +23,9 @@ IND_STEPS=(
 build "${IND_STEPS[@]}"
 
 install_openvdc_yum_repo
+
+# This is not part of the ind-steps because we don't want OpenVDC installed in
+# the cached images. We want a clean cache without OpenVDC so we can install a
+# different version to test every the CI runs.
+install_openvdc_yum_repo
+install_yum_package "openvdc-executor"
