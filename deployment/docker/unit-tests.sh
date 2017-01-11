@@ -33,6 +33,9 @@ if [[ -n "$JENKINS_HOME" ]]; then
 else
   img_tag="unit-tests.openvdc.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
 fi
+# Docker 1.10 fails with uppercase image tag name. need letter case translation.
+# https://github.com/docker/docker/issues/20056
+img_tag="${img_tag,,}"
 
 docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}-unit-tests.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} "${img_tag}")
