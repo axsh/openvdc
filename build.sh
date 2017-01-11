@@ -3,7 +3,9 @@
 set -xe
 
 VERSION=${VERSION:-"dev"}
-SHA=$(git rev-parse --verify HEAD)
+if [[ -z "${SHA}" ]]; then
+  SHA=${SHA:-(git rev-parse --verify HEAD)}
+fi
 BUILDDATE=$(date '+%Y/%m/%d %H:%M:%S %Z')
 GOVERSION=$(go version)
 BUILDSTAMP="github.com/axsh/openvdc"
