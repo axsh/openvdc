@@ -150,6 +150,13 @@ function require_rebuild_variable() {
   fi
 }
 
+function require_release_suffix {
+  if [[ -z "${RELEASE_SUFFIX}" ]] ; then
+     echo "the RELEASE_SUFFIX variable needs to be set with the release suffix in the yum repo we're testing. Usually looks similar to: '20170111063228git2d0dc08'."
+     exit 1
+  fi
+}
+
 function install_openvdc_yum_repo() {
   (
     $starting_step "Install OpenVDC yum repository"

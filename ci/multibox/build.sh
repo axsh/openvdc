@@ -14,7 +14,7 @@ fi
 
 require_branch_variable
 require_rebuild_variable
-#TODO: require release suffix
+require_release_suffix
 
 YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
 curl -fs --head "${YUM_REPO_URL}" > /dev/null
