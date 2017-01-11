@@ -12,10 +12,11 @@ type base struct {
 }
 
 func (i *base) connection() (backend.ProtoModelBackend, error) {
-	bk := backend.NewProtoWrapper(GetBackendCtx(i.ctx))
+	bk := GetBackendCtx(i.ctx)
 	if bk == nil {
 		return nil, ErrBackendNotInContext
 	}
-	bk.AddFilter(&backend.TimestampFilter{time.Now().UTC()})
-	return bk, nil
+	wrapper := backend.NewProtoWrapper(bk)
+	wrapper.AddFilter(&backend.TimestampFilter{time.Now().UTC()})
+	return wrapper, nil
 }
