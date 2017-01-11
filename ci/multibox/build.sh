@@ -32,8 +32,6 @@ export YUM_REPO_URL
 scheduled_nodes=${NODES[@]}
 [[ -n "$1" ]] && scheduled_nodes="${@}"
 
-#TODO: Change wget to curl
-check_dep "wget"
 check_dep "tar"
 check_dep "rsync"
 check_dep "brctl"

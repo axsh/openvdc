@@ -36,7 +36,7 @@ function download_seed_image () {
         [ -f "${BOXES_DIR}/${box}" ]
         $skip_step_if_already_done; set -xe
         mkdir -p "${BOXES_DIR}"
-        wget "https://ci.openvdc.org/img/${box}" -P "${BOXES_DIR}"
+        curl -o "${BOXES_DIR}/${box}" "https://ci.openvdc.org/img/${box}"
     ) ; prev_cmd_failed
 }
 
