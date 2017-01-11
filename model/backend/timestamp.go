@@ -32,7 +32,7 @@ func (f *TimestampFilter) OnUpdate(v proto.Message) error {
 }
 
 func setTimestampField(pb proto.Message, field string, tnow *timestamp.Timestamp) error {
-	Filter(pb, "CreatedAt", func(v reflect.Value) {
+	Filter(pb, field, func(v reflect.Value) {
 		if !v.IsNil() {
 			return
 		}
