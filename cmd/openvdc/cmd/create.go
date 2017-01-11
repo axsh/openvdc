@@ -38,7 +38,7 @@ var createCmd = &cobra.Command{
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err
 			}
-			fmt.Println(res)
+			fmt.Println(res.GetInstanceId())
 			return err
 		})
 	},

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"golang.org/x/net/context"
 
 	log "github.com/Sirupsen/logrus"
@@ -27,12 +25,11 @@ var unregisterCmd = &cobra.Command{
 		}
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewResourceClient(conn)
-			res, err := c.Unregister(context.Background(), &api.ResourceIDRequest{Key: &api.ResourceIDRequest_ID{ID: resourceID}})
+			_, err := c.Unregister(context.Background(), &api.ResourceIDRequest{Key: &api.ResourceIDRequest_ID{ID: resourceID}})
 			if err != nil {
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err
 			}
-			fmt.Println(res)
 			return err
 		})
 	},
