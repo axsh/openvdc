@@ -62,6 +62,7 @@ def stage_rpmbuild(label) {
   }
 }
 
+//TODO: rename to acceptance
 def stage_integration(label) {
   node("multibox") {
     checkout scm
@@ -70,7 +71,7 @@ def stage_integration(label) {
 
     sh "cd ci/multibox/ ; ./build.sh"
     stage "Run Integration Test"
-    // This is where the integration test will be run
+    sh "cd ci/tests ; go test -v --tags=acceptance"
     stage "Cleanup Environment"
     sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
   }
