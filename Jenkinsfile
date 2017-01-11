@@ -83,7 +83,8 @@ def stage_integration(label) {
 
 def stage_clean_rpms(label) {
   node(label) {
-    sh "cd repo_cleanups ; ./remove_stale_rpm.sh"
+//  sh "cd repo_cleanups ; ./remove_stale_rpm.sh"
+    sh "cd repo_cleanups ; ./run_remove_stale_rpm.sh"
   }
 }
 

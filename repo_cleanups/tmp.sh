@@ -1,14 +1,3 @@
-#!/bin/bash 
-
-
-function run_git {
-    git for-each-ref --sort=-committerdate refs/remotes --format='%(HEAD)%(refname:short), %(committerdate:relative)'
-}
-
-
-function write_script {
-
-    var=$(cat <<"EOF"
 
     declare -A  git_branches    ## Store the list of git branches in a hash
     stale_weeks=3               ## Any git branches which have not been pushed
@@ -49,7 +38,16 @@ function write_script {
     
         ### Find all gitbranches with update times older than x weeks
 #       run_git | while IFS= read -r branch_info; do
-        echo -e "_STUB_" | while IFS= read -r branch_info; do
+        echo -e " origin/rpm_cleanup, 4 minutes ago
+ origin/fix-cli-print, 27 hours ago
+ origin/user-config, 2 days ago
+ origin/master, 5 days ago
+ origin/HEAD, 5 days ago
+ origin/multibox-openvdc-install, 5 days ago
+ origin/reboot-command, 5 days ago
+ origin/appveyor-unit-test, 7 days ago
+ origin/console-service, 3 weeks ago
+ origin/code_cleaning, 5 weeks ago/" | while IFS= read -r branch_info; do
            bname=$(echo ${branch_info} | cut -d, -f1)
            time_info=$(echo ${branch_info} | cut -d, -f2)
     
@@ -123,20 +121,3 @@ function write_script {
     done
      
     cd ${origin}
-
-EOF
-)
-
-    echo "${var}"
-
-}
-
-#########################################################################################
-git_branches="$(run_git)"
-
-script=$(write_script)
-
-echo -e "${script/_STUB_/${git_branches}/}" > tmp.sh
-#echo -e "${script/_STUB_/${git_branches}/}" | $SSH_REMOTE /usr/bin/bash 
-
-
