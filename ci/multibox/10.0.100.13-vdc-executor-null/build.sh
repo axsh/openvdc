@@ -29,3 +29,8 @@ install_openvdc_yum_repo
 # different version to test every the CI runs.
 install_openvdc_yum_repo
 install_yum_package "openvdc-executor"
+
+# The CLI could be installed in any node but let's do it here. This is the best
+# place because we want to make sure everything works with other addresses than
+# 127.0.0.1
+install_yum_package "openvdc-cli"
