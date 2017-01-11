@@ -9,6 +9,8 @@ import (
 	sched "github.com/mesos/mesos-go/scheduler"
 )
 
+//go:generate protoc -I../proto -I${GOPATH}/src --go_out=plugins=grpc:${GOPATH}/src ../proto/v1.proto
+
 type APIServer struct {
 	server         *grpc.Server
 	modelStoreAddr string
