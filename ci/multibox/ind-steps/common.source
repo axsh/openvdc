@@ -89,7 +89,16 @@ function build () {
     for stage in ${stages[@]} ; do
         for step in ${steps[@]} ; do
             [[ -d "${ENV_ROOTDIR}/ind-steps/step-${step}" ]] || continue
-            [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]] && run_steps "${step}" "${stage}" || continue
+
+            # Continue if the stage isn't defined so that we don't get a non-zero exit status
+            # Using if instead of the above oneliner notation because the above will also call
+            # continue if the run_steps function fails which is not what we want.
+            if [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]]; then
+              run_steps "${step}" "${stage}";
+            else
+              continue
+            fi
+
             [[ $? == 255 ]] && { . "${ENV_ROOTDIR}/ind-steps/step-box/common.source" ; umount-seed-image ; exit 255 ; }
         done 
     done
