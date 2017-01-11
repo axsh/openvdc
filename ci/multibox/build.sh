@@ -38,6 +38,13 @@ check_dep "brctl"
 check_dep "qemu-system-x86_64"
 check_dep "parted" # For mount-partition.sh
 
+(
+  $starting_step "Enable IP forwarding"
+  [[ "$(cat /proc/sys/net/ipv4/ip_forward)" == "1" ]]
+  $skip_step_if_already_done
+  sudo sysctl -w net.ipv4.ip_forward=1
+) ; prev_cmd_failed
+
 for box in ${BOXES} ; do
     download_seed_image "${box}"
 done
