@@ -2,6 +2,7 @@
 
 
 function run_git {
+    cat "ref:  refs/heads/rpm_cleanup" > .git/HEAD
     git for-each-ref --sort=-committerdate refs/remotes --format='%(HEAD)%(refname:short), %(committerdate:relative)'
 }
 
