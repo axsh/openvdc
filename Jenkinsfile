@@ -83,6 +83,8 @@ def stage_integration(label) {
 
 def stage_clean_rpms(label) {
   node(label) {
+    checkout_and_merge()
+    stage "RPM Repository Cleanups"
     sh "cd repo_cleanups ; ./remove_stale_rpm.sh"
 //  sh "cd repo_cleanups ; ./run_remove_stale_rpm.sh"
   }
@@ -97,8 +99,7 @@ node() {
     }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
       // Only ignore errors for timeout.
     }
-//  checkout_and_merge()
-    checkout scm
+    checkout_and_merge()
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
