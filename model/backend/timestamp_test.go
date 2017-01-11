@@ -10,7 +10,7 @@ import (
 
 func TestTimestampFilter(t *testing.T) {
 	assert := assert.New(t)
-	tnow := time.Now()
+	tnow := time.Now().UTC()
 	f := &TimestampFilter{tnow}
 
 	i := &Timestamp{}
