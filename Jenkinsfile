@@ -34,42 +34,42 @@ BUILD_CACHE_DIR=${env.BUILD_CACHE_DIR ?: ''}
 BUILD_OS=${label}
 REBUILD=${buildParams.REBUILD}
 RELEASE_SUFFIX=${RELEASE_SUFFIX}
+# https://issues.jenkins-ci.org/browse/JENKINS-30252
+GIT_BRANCH=${env.BRANCH_NAME}
+BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
 """
   writeFile(file: "build.env", text: build_env)
 }
 
-@Field RELEASE_SUFFIX=null
-
-def stage_rpmbuild(label) {
-  node(label) {
-    stage "Build ${label}"
+def checkout_and_merge() {
     checkout scm
-    write_build_env(label)
-    sh "./deployment/docker/build.sh ./build.env"
-  }
+    sh "git merge origin/master"
 }
 
-def stage_test_rpm(label) {
-  node(label) {
-    stage "RPM Install Test ${label}"
-    write_build_env(label)
-    sh "./deployment/docker/test-rpm-install.sh ./build.env"
-  }
-}
+@Field RELEASE_SUFFIX=null
 
 def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
-    checkout scm
+    checkout_and_merge()
     write_build_env(label)
     sh "./deployment/docker/unit-tests.sh ./build.env"
   }
 }
 
+def stage_rpmbuild(label) {
+  node(label) {
+    stage "RPM Build ${label}"
+    checkout_and_merge()
+    write_build_env(label)
+    sh "./deployment/docker/rpmbuild.sh ./build.env"
+  }
+}
+
 def stage_integration(label) {
   node("multibox") {
-    checkout scm
+    checkout_and_merge()
     stage "Build Integration Environment"
     write_build_env(label)
 
@@ -90,7 +90,7 @@ node() {
     }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
       // Only ignore errors for timeout.
     }
-    checkout scm
+    checkout_and_merge()
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
@@ -106,6 +106,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_test_rpm(label)
   stage_integration(label)
 }

@@ -29,27 +29,24 @@ message InstanceState {
   google.protobuf.Timestamp created_at = 2;
 }
 
-enum ResourceType {
-  RESOURCE_NONE = 0;
-  RESOURCE_LXC = 1;
-  RESOURCE_NULL = 2;
-}
-
 message Resource {
   string id = 1;
-  ResourceType type = 2;
   enum State {
     REGISTERED = 0;
     UNREGISTERED = 1;
   }
   State state = 3;
-  oneof Template {
+  Template template = 4;
+}
+
+message Template {
+  string template_uri = 1;
+  oneof Item {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
   }
-  string template_uri = 4;
-  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp created_at = 2;
 }
 
 message NoneTemplate {}
@@ -65,6 +62,13 @@ message LxcTemplate {
     string chksum = 3;
   }
   Image lxc_image = 5;
+  message Interface {
+    string type = 1;
+    string macaddr = 2;
+    string ipv4addr = 3;
+    string bridge = 4;
+  }
+  repeated Interface interfaces = 6;
 }
 
 message NullTemplate {}

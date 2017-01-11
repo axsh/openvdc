@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var imageName string
 var hostName string
 
 func init() {
