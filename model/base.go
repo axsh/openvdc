@@ -16,6 +16,6 @@ func (i *base) connection() (backend.ProtoModelBackend, error) {
 	if bk == nil {
 		return nil, ErrBackendNotInContext
 	}
-	bk.AddFilter(&backend.TimestampFilter{time.Now()})
+	bk.AddFilter(&backend.TimestampFilter{time.Now().UTC()})
 	return bk, nil
 }
