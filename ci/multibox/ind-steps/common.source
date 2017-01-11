@@ -166,12 +166,14 @@ EOS
   ) ; prev_cmd_failed
 }
 
-function install_yum_package() {
+function install_yum_package_over_ssh() {
   local package="$1"
 
   (
-    $starting_step "Install package: ${package}"
-    rpm -q "${package}" >> /dev/null
+    $starting_step "Install package (over SSH): ${package}"
+    # No need to make an extra ssh connection to check if it's installed already
+    # Yum will notice and just not do anything.
+    false
     $skip_step_if_already_done; set -xe
     run_ssh root@${IP_ADDR} "yum install -y ${package}"
   ) ; prev_cmd_failed
