@@ -13,9 +13,9 @@ import (
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
-type networkSettings struct {
-	bridgeType string
-	bridgeName string
+type NetworkSettings struct {
+	BridgeType string
+	BridgeName string
 }
 
 func init() {
@@ -48,6 +48,18 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
+func handleNetworkSettings(nws NetworkSettings) {
+
+	switch nws.BridgeType {
+		case "linux":
+
+		case "ovs":
+
+		default:
+	}
+
+}
+
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
 
 	lxcTmpl, ok := in.(*model.LxcTemplate)
@@ -77,6 +89,13 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		return err
 
 	}
+
+	var nws = NetworkSettings{
+		BridgeName: "br0",
+		BridgeType: "linux",
+	}
+
+	handleNetworkSettings(nws)
 
 	var conf string
 
