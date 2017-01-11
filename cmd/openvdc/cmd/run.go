@@ -12,6 +12,14 @@ import (
 	"google.golang.org/grpc"
 )
 
+var bridgeType string
+var bridgeName string
+          
+func init() {
+	runCmd.Flags().StringVarP(&bridgeType, "bridge_type", "t", "", "Bridge type")
+	runCmd.Flags().StringVarP(&bridgeType, "bridge_name", "b", "", "Bridge name")
+}
+
 var runCmd = &cobra.Command{
 	Use:   "run [ResourceTemplate ID/URI]",
 	Short: "Run an instance",
