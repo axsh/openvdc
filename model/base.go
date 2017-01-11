@@ -1,10 +1,10 @@
 package model
 
 import (
-	"context"
 	"time"
 
 	"github.com/axsh/openvdc/model/backend"
+	"golang.org/x/net/context"
 )
 
 type base struct {
