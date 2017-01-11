@@ -44,7 +44,7 @@ BRANCH=${env.BRANCH_NAME}
 
 def checkout_and_merge() {
     checkout scm
-    sh "git merge origin/master"
+//  sh "git merge origin/master"
 }
 
 @Field RELEASE_SUFFIX=null
@@ -83,7 +83,7 @@ def stage_integration(label) {
 
 def stage_clean_rpms(label) {
   node(label) {
-    sh "echo 'ref:  refs/heads/rpm_cleanup' > .git/HEAD"
+//  sh "echo 'ref:  refs/heads/rpm_cleanup' > .git/HEAD"
     sh "cd repo_cleanups ; ./remove_stale_rpm.sh"
 //  sh "cd repo_cleanups ; ./run_remove_stale_rpm.sh"
   }
