@@ -44,6 +44,8 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
+mkdir -p "$RPM_BUILD_ROOT"/usr/bin
+ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
