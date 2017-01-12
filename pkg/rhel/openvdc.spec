@@ -28,7 +28,7 @@ Requires: openvdc-scheduler
 #Suggests: mesosphere-zookeeper mesos
 
 %description
-This is an empty metapackage that depends on all OpenVNet services and the vnctl client. Just a conventient way to install everything at once on a single machine.
+An empty metapackage that depends on all OpenVDC services. Just a conventient way to install everything at once on a single machine.
 
 %files
 # Metapackage, so no files!
@@ -56,7 +56,7 @@ cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 Summary: openvdc cli
 
 %description cli
-This is an empty message to fulfill the requirement that this file has a "%description" header.
+The openvdc commandline interface.
 
 %files cli
 %dir /opt/axsh/openvdc
