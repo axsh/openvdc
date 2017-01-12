@@ -135,9 +135,6 @@ EOF
 #########################################################################################
 git_branches="$(run_git)"
 
-echo "Here they are:"
-echo -e "${git_branches}"
-
 script=$(write_script)
 
 #echo -e "${script/_STUB_/${git_branches}/}" > tmp.sh
