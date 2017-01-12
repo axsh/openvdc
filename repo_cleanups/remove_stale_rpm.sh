@@ -2,7 +2,8 @@
 
 
 function run_git {
-    git for-each-ref --sort=-committerdate refs/remotes --format='%(HEAD)%(refname:short), %(committerdate:relative)'
+#   git for-each-ref --sort=-committerdate refs/remotes --format='%(HEAD)%(refname:short), %(committerdate:relative)'
+    git for-each-ref --sort=-committerdate refs/remotes --format='%(refname:short), %(committerdate:relative)'
 }
 
 
