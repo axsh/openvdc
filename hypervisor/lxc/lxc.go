@@ -5,7 +5,9 @@ package lxc
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/axsh/openvdc/hypervisor"
@@ -13,7 +15,16 @@ import (
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
+const (
+	ScriptPath      = "/etc/lxc/"
+	LinuxUpScript   = "linux-bridge-up.sh"
+	LinuxDownScript = "linux-bridge-down.sh"
+	OvsUpScript     = "ovs-up.sh"
+	OvsDownScript   = "ovs-down.sh"
+)
+
 type NetworkSettings struct {
+	ConfigFile string
 	BridgeType string
 	BridgeName string
 }
@@ -48,16 +59,51 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
+func modifyConf(scriptUp string, scriptDown string, configFile string) {
+	f, err := ioutil.ReadFile(configFile)
+
+	if err != nil {
+		log.Fatalf("Failed loading lxc default.conf: ", err)
+	}
+
+	// Give a warning if script doesn't exist.
+	_, err = ioutil.ReadFile(scriptUp)
+	if err != nil {
+		log.Warn("File not found: "+scriptUp, err)
+	}
+
+	// Give a warning if script doesn't exist.
+	_, err = ioutil.ReadFile(scriptDown)
+	if err != nil {
+		log.Warn("File not found: " + scriptDown, err)
+	}
+
+	l := strings.Split(string(f), "\n")
+	scripts := "lxc.network.script.up = " + ScriptPath + scriptUp + "\nlxc.network.script.down = " + ScriptPath + scriptDown
+
+	for i, line := range l {
+		if strings.Contains(line, "lxc.network.link") {
+			l[i] = ""
+		}
+	}
+
+	result := strings.Join(l, "\n")
+	result = strings.Join([]string{result, scripts}, "")
+	err = ioutil.WriteFile(configFile, []byte(result), 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func handleNetworkSettings(nws NetworkSettings) {
 
 	switch nws.BridgeType {
-		case "linux":
-
-		case "ovs":
-
-		default:
+	case "linux":
+		modifyConf(LinuxUpScript, LinuxDownScript, nws.ConfigFile)
+	case "ovs":
+		modifyConf(OvsUpScript, OvsDownScript, nws.ConfigFile)
+	default:
 	}
-
 }
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
@@ -91,8 +137,9 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	}
 
 	var nws = NetworkSettings{
+		ConfigFile: c.ConfigFileName(),
 		BridgeName: "br0",
-		BridgeType: "linux",
+		BridgeType: "ovs",
 	}
 
 	handleNetworkSettings(nws)
@@ -115,9 +162,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	}
 
-	path := c.ConfigFileName()
-
-	f, err := os.OpenFile(path, os.O_WRONLY, 0)
+	f, err := os.OpenFile(nws.ConfigFile, os.O_WRONLY, 0)
 
 	defer f.Close()
 
