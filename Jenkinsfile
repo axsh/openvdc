@@ -81,7 +81,7 @@ def stage_integration(label) {
       // This is where the integration test will be run
     } finally {
       stage "Cleanup Environment"
-      sh "cd ci/multibox/ ; ./destroy.sh --kill"
+      sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
     }
   }
 }

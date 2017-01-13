@@ -14,37 +14,20 @@ function vm_image () {
     echo "${NODE_DIR}/box-disk1.raw"
 }
 
-function kill_vm() {
+function destroy_vm() {
     (
         $starting_step "Kill vm ${vm_name}"
         [[ ! -f "${NODE_DIR}/${vm_name}.pid" ]]
         $skip_step_if_already_done; set -x +e
         sudo kill $(sudo cat "${NODE_DIR}/${vm_name}.pid")
-        sudo rm "${NODE_DIR}/${vm_name}.pid"
+        sudo rm -f "${NODE_DIR}/${vm_name}.pid"
     )
 
     (
         $starting_step "Remove copy-on-write image"
         [ ! -f "${NODE_DIR}/${vm_name}.qcow2" ]
         $skip_step_if_already_done ; set -x +e
-        rm "${NODE_DIR}/${vm_name}.qcow2"
-    )
-}
-
-function destroy_vm() {
-    (
-        $starting_step "Remove SSH key"
-        [ ! -f ${NODE_DIR}/sshkey ]
-        $skip_step_if_already_done
-        rm ${NODE_DIR}/sshkey
-    )
-    kill_vm
-    (
-        $starting_step "Remove base image ${vm_name}"
-        [ ! -f "$(cache_image)" ]
-        $skip_step_if_already_done; set -x +e
-        [[ -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}" ]] && rm "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
-        rm "$(cache_image)"
+        rm -f "${NODE_DIR}/${vm_name}.qcow2"
     )
     local i
     for (( i=0 ; i < ${#nics[@]} ; i++ )) ; do
@@ -67,6 +50,23 @@ function destroy_vm() {
         sudo ip link delete dev "${ifname}"
       )
     done
+}
+
+function destroy_vm_cache() {
+    (
+        $starting_step "Remove SSH key"
+        [ ! -f ${NODE_DIR}/sshkey ]
+        $skip_step_if_already_done
+        rm ${NODE_DIR}/sshkey
+    )
+
+    (
+        $starting_step "Remove base image ${vm_name}"
+        [ ! -f "$(cache_image)" ]
+        $skip_step_if_already_done; set -x +e
+        rm -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
+        rm -f "$(cache_image)"
+    )
 }
 
 function umount-seed-image() {
