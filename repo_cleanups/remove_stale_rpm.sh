@@ -15,7 +15,7 @@ function write_script {
     stale_weeks=3               ## Any git branches which have not been pushed
                                 ## to within $stale_weeks weeks will be considered
                                 ## "stale".
-    #rpm_repo_dir=/home/chris/Misc/RpmCleanup/var/www/html/openvdc-repos
+
     rpm_repo_dir=/var/www/html/openvdc-repos
     
     function remove_dir {
@@ -35,7 +35,7 @@ function write_script {
            fi
         done
     
-        echo "rm -rf ${dead_dir}  (command not executed)"
+        echo "rm -rf ${dead_dir}  (((command not executed)))"
     
     }
     
@@ -88,7 +88,39 @@ function write_script {
         esac
     
     }
-    
+   
+    function get_doy {
+        yyyymmdd=$1
+
+        dt=${yyyymmdd:0:8}
+        date -d "${dt}"  +"%_j"
+
+    }
+
+    function today {
+        date +"%Y%m%d"
+    }
+
+    # Compare two dates and subtract one (the first arg.) from the other. Answer is given in days.
+    function delta_dates {
+        ## The date formate must be: yyyymmdd
+        date1=$1
+        date2=$2
+
+        yr1=${date1:0:4}
+        yr2=${date2:0:4}
+
+        doy1=$(get_doy ${date1})
+        doy2=$(get_doy ${date2})
+
+        deltaY=$(($yr2 - $yr1))
+        days_to_add=$((365*${deltaY}))   ## Ignore leap year extra day!
+
+        echo $(( ${doy2} - ${doy1} + ${days_to_add}))
+
+    }
+
+ 
     ###################################################################################
     # Get the list (has) of git branches that are still "live"
     for key in `git_branch_info`; do
@@ -122,7 +154,30 @@ function write_script {
        fi
     
     done
-     
+    
+    ## Now delete superfluous rpm's from the master directory
+    cd master
+
+    if [[ $? -ne 0 ]]; then
+        exit 0                # There's a problem here, but we won't worry about it 
+    fi
+    
+    current=$(readlink current)
+    if [[ -z ${current} ]]; then
+        exit 0                # There is no "current" symlink. Don't remove anything!
+    fi
+
+    now=$(today)
+    for dt in $(ls -d 2*); do
+        rpmdate=${dt:0:8}     # yyyymmdd is the format
+
+        ndays=$(delta_dates ${rpmdate} ${now})
+
+        if [[ ${ndays} > 14 ]; then
+            echo "rm -rf  ./${dt}   (((command not executed)))"
+        fi
+    done
+
     cd ${origin}
 
 EOF
