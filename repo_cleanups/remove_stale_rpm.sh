@@ -190,8 +190,9 @@ function write_script {
 
         if [[ ${ndays} -gt 0 ]]; then
             ## Just in case the continue command does not work as I think it should...
+            echo "${dt}  and ${current} "
             if [[ "${dt}" = "${current}" ]]; then
-               echo "Will not delete 'current' (${current})"
+               echo "Will not delete current (${current})"
             else
                echo "rm -rf  ./${dt}   (((command not executed)))"
             fi
