@@ -184,15 +184,14 @@ function write_script {
 
         ndays=$(delta_dates ${rpmdate} ${now})
 
-        if [[ "${dt} = "${current}" ]]; then
+        if [[ "${dt}" = "${current}" ]]; then
             continue
         fi
 
         if [[ ${ndays} -gt 0 ]]; then
             ## Just in case the continue command does not work as I think it should...
-            echo "${dt}  and ${current} "
             if [[ "${dt}" = "${current}" ]]; then
-               echo "Will not delete current (${current})"
+               echo "Will not delete 'current' (${current})"
             else
                echo "rm -rf  ./${dt}   (((command not executed)))"
             fi
@@ -214,6 +213,6 @@ git_branches="$(run_git)"
 script=$(write_script)
 
 #echo -e "${script/_STUB_/${git_branches}/}" > tmp.sh
-echo -e "${script/_STUB_/${git_branches}/}" | $SSH_REMOTE /usr/bin/bash -x
+echo -e "${script/_STUB_/${git_branches}/}" | $SSH_REMOTE /usr/bin/bash 
 
 
