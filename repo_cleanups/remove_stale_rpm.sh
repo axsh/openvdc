@@ -173,7 +173,7 @@ function write_script {
 
         ndays=$(delta_dates ${rpmdate} ${now})
 
-        if [[ ${ndays} > 14 ]]; then
+        if [[ ${ndays} -gt 14 ]]; then
             echo "rm -rf  ./${dt}   (((command not executed)))"
         fi
     done
