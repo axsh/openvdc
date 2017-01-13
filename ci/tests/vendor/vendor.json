@@ -1,0 +1,49 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "bytes",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "w/JBm+t07FyIOU+D59XtzI3/QQA=",
+			"path": "github.com/axsh/openvdc/ci/tests",
+			"revision": "98d96071dd3ba725ea4f73293b09d02be0832941",
+			"revisionTime": "2017-01-13T07:02:54Z"
+		},
+		{
+			"checksumSHA1": "dwOedwBJ1EIK9+S3t108Bx054Y8=",
+			"path": "golang.org/x/crypto/curve25519",
+			"revision": "7c6cc321c680f03b9ef0764448e780704f486b51",
+			"revisionTime": "2017-01-09T14:19:37Z"
+		},
+		{
+			"checksumSHA1": "wGb//LjBPNxYHqk+dcLo7BjPXK8=",
+			"path": "golang.org/x/crypto/ed25519",
+			"revision": "7c6cc321c680f03b9ef0764448e780704f486b51",
+			"revisionTime": "2017-01-09T14:19:37Z"
+		},
+		{
+			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
+			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
+			"revision": "7c6cc321c680f03b9ef0764448e780704f486b51",
+			"revisionTime": "2017-01-09T14:19:37Z"
+		},
+		{
+			"checksumSHA1": "yuMgDB+LFecMY90/UYq58IUR3qU=",
+			"path": "golang.org/x/crypto/ssh",
+			"revision": "7c6cc321c680f03b9ef0764448e780704f486b51",
+			"revisionTime": "2017-01-09T14:19:37Z"
+		},
+		{
+			"path": "strings",
+			"revision": ""
+		},
+		{
+			"path": "testing",
+			"revision": ""
+		}
+	],
+	"rootPath": "github.com/axsh/openvdc/ci/tests"
+}
