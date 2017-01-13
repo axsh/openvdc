@@ -24,3 +24,7 @@ fi
 protoc -I. -I"${GOPATH}/src" --go_out=plugins=grpc:$GOPATH/src v1.proto
 protoc -I. -I"${GOPATH}/src" --go_out=$GOPATH/src model.proto
 protoc -I. -I"${GOPATH}/src" --go_out=plugins=grpc:$GOPATH/src executor.proto
+(
+  cd ../model/backend
+  protoc -I. -I"${GOPATH}/src" --go_out=. test.proto
+)

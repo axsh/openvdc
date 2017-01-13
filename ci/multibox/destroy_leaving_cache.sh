@@ -10,5 +10,8 @@ scheduled_nodes=${NODES[@]}
 [[ -n "$1" ]] && scheduled_nodes="${@}"
 
 for node in ${scheduled_nodes[@]} ; do
-    ${ENV_ROOTDIR}/${node}/kill.sh ${kill_option}
+    ${ENV_ROOTDIR}/${node}/destroy.sh
 done
+
+destroy_bridge "vdc_env_br0"
+stop_masquerade "${NETWORK}/${PREFIX}"

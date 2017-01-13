@@ -7,6 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/scheduler"
@@ -76,6 +77,7 @@ func execute(cmd *cobra.Command, args []string) {
 
 func main() {
 	flag.CommandLine.Parse([]string{})
+	rootCmd.AddCommand(openvdc.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

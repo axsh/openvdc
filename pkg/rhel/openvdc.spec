@@ -5,7 +5,7 @@
 Name: openvdc
 Version: 0.1%{?dev_release_suffix:dev.%{dev_release_suffix}}
 Release: %{release}%{?dist}
-Summary: Metapackage that depends on all other OpenVDc packages.
+Summary: Metapackage that depends on all other OpenVDC packages.
 Vendor: Axsh Co. LTD <dev@axsh.net>
 URL: http://openvdc.org
 Source: https://github.com/axsh/openvdc
@@ -37,7 +37,7 @@ This is an empty metapackage that depends on all OpenVNet services and the vnctl
 %build
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
-  ./build.sh
+  VERSION=%{version} ./build.sh
 )
 
 %install

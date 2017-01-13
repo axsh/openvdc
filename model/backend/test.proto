@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+
+package backend;
+
+//option go_package = "github.com/axsh/openvdc/model/backend";
+
+message Timestamp {
+  google.protobuf.Timestamp created_at = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}

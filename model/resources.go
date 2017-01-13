@@ -7,9 +7,6 @@ import (
 	"strings"
 
 	"golang.org/x/net/context"
-
-	"github.com/axsh/openvdc/model/backend"
-	"github.com/golang/protobuf/proto"
 )
 
 type ResourceOps interface {
@@ -51,32 +48,20 @@ func (r *Resource) ResourceTemplate() ResourceTemplate {
 }
 
 type resources struct {
-	ctx context.Context
+	base
 }
 
 func Resources(ctx context.Context) ResourceOps {
-	return &resources{ctx: ctx}
-}
-
-func (i *resources) connection() (backend.ModelBackend, error) {
-	bk := GetBackendCtx(i.ctx)
-	if bk == nil {
-		return nil, ErrBackendNotInContext
-	}
-	return bk, nil
+	return &resources{base{ctx: ctx}}
 }
 
 func (i *resources) Create(n *Resource) (*Resource, error) {
 	n.State = Resource_REGISTERED
-	data, err := proto.Marshal(n)
-	if err != nil {
-		return nil, err
-	}
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
 	}
-	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/r-", resourcesBaseKey), data)
+	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/r-", resourcesBaseKey), n)
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +74,8 @@ func (i *resources) FindByID(id string) (*Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	v, err := bk.Find(fmt.Sprintf("/%s/%s", resourcesBaseKey, id))
-	if err != nil {
-		return nil, err
-	}
 	n := &Resource{}
-	err = proto.Unmarshal(v, n)
-	if err != nil {
+	if err := bk.Find(fmt.Sprintf("/%s/%s", resourcesBaseKey, id), n); err != nil {
 		return nil, err
 	}
 	n.Id = id
@@ -115,11 +95,7 @@ func (i *resources) Destroy(id string) error {
 		return err
 	}
 	n.State = Resource_UNREGISTERED
-	data, err := proto.Marshal(n)
-	if err != nil {
-		return err
-	}
-	return bk.Update(fmt.Sprintf("/%s/%s", resourcesBaseKey, id), data)
+	return bk.Update(fmt.Sprintf("/%s/%s", resourcesBaseKey, id), n)
 }
 
 func (r *Resource) validateStateTransition(next Resource_State) error {

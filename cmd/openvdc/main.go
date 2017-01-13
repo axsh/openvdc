@@ -2,56 +2,44 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/axsh/openvdc/cmd/openvdc/cmd"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
-// Build time constant variables from -ldflags
-var (
-	version   string
-	sha       string
-	builddate string
-	goversion string
-)
+const defaultTomlConfig = `
+[api]
+# endpoint = 127.0.0.1:5000
+[mesos]
+# address = 127.0.0.1:5050
+`
 
 func setupDefaultUserConfig(dir string) error {
 	stat, err := os.Stat(dir)
-	if os.IsExist(err) && !stat.IsDir() {
-		return fmt.Errorf("")
-	} else if os.IsNotExist(err) {
-		err = os.Mkdir(dir, 0755)
-		if err != nil {
-			return err
+	if err == nil {
+		if stat.IsDir() {
+			// nothing to do
+			return nil
+		} else {
+			return fmt.Errorf("%s is not directory", dir)
 		}
 	}
-	// Install default configuration file here.
-	confPath := filepath.Join(dir, "config")
-	_, err = os.Open(confPath)
-	if os.IsNotExist(err) {
-		f, err := os.Create(confPath)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
+	err = os.Mkdir(dir, 0755)
+	if err != nil {
+		return err
 	}
-	return nil
+	confPath := filepath.Join(dir, "config.toml")
+	// Install default configuration file.
+	return ioutil.WriteFile(confPath, []byte(defaultTomlConfig), 0644)
 }
 
 func main() {
-	//http://stackoverflow.com/questions/7922270/obtain-users-home-directory
-	path, err := homedir.Dir()
+	err := setupDefaultUserConfig(util.UserConfDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to get $HOME")
-		os.Exit(1)
-	}
-	util.UserConfDir = filepath.Join(path, ".openvdc")
-	err = setupDefaultUserConfig(util.UserConfDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to setup %s\n", util.UserConfDir)
+		fmt.Fprintf(os.Stderr, "Failed to setup %s: %v\n", util.UserConfDir, err)
 		os.Exit(1)
 	}
 	cmd.Execute()

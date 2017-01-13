@@ -31,3 +31,6 @@ cd (Get-Item $MyInvocation.MyCommand.Path).DirectoryName
 protoc -I. -I"${env:GOPATH}/src" --go_out=plugins="grpc:${env:GOPATH}/src" v1.proto
 protoc -I. -I"${env:GOPATH}/src" --go_out="${env:GOPATH}/src" model.proto
 protoc -I. -I"${env:GOPATH}/src" --go_out=plugins="grpc:${env:GOPATH}/src" executor.proto
+Push-Location ..\model\backend
+protoc -I. -I"${env:GOPATH}/src" --go_out=. test.proto
+Pop-Location

@@ -1,12 +1,13 @@
 #!/bin/bash
 
-set -e
+set -xe
 
-VERSION="dev"
-SHA=$(git rev-parse --verify HEAD)
+VERSION=${VERSION:-"dev"}
+SHA=${SHA:-$(git rev-parse --verify HEAD)}
 BUILDDATE=$(date '+%Y/%m/%d %H:%M:%S %Z')
 GOVERSION=$(go version)
-LDFLAGS="-X 'main.version=${VERSION}' -X 'main.sha=${SHA}' -X 'main.builddate=${BUILDDATE}' -X 'main.goversion=${GOVERSION}'"
+BUILDSTAMP="github.com/axsh/openvdc"
+LDFLAGS="-X '${BUILDSTAMP}.Version=${VERSION}' -X '${BUILDSTAMP}.Sha=${SHA}' -X '${BUILDSTAMP}.Builddate=${BUILDDATE}' -X '${BUILDSTAMP}.Goversion=${GOVERSION}'"
 
 if [[ ! -x $GOPATH/bin/govendor ]]; then
   go get -u github.com/kardianos/govendor
@@ -24,11 +25,11 @@ SCHEMA_LAST_COMMIT=${SCHEMA_LAST_COMMIT:-$(git log -n 1 --pretty=format:%H -- sc
 if (git rev-list origin/master | grep "${SCHEMA_LAST_COMMIT}") > /dev/null; then
   # Found no changes for resource template/schema on HEAD.
   # so that set preference to the master branch.
-  LDFLAGS="${LDFLAGS} -X 'registry.GithubDefaultRef=master'"
+  LDFLAGS="${LDFLAGS} -X '${BUILDSTAMP}.GithubDefaultRef=master'"
 else
   # Found resource template/schema changes on this HEAD. Switch the default reference branch.
   # Check if $GIT_BRANCH has something once in case of running in Jenkins.
-  LDFLAGS="${LDFLAGS} -X 'registry.GithubDefaultRef=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}'"
+  LDFLAGS="${LDFLAGS} -X '${BUILDSTAMP}.GithubDefaultRef=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}'"
 fi
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
