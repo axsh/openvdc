@@ -163,8 +163,18 @@ function write_script {
     fi
     
     current=$(readlink current)
+    echo "'current' is ${current}"
+
     if [[ -z ${current} ]]; then
+        echo "No 'current' symlink in master! "
         exit 0                # There is no "current" symlink. Don't remove anything!
+    fi
+
+    ## Just to be safe! We'll do the same 
+    readlink current
+    if [[ $? -ne 0 [; then
+        echo "No 'current' symlink in master! "
+        exit 0
     fi
 
     now=$(today)
@@ -173,8 +183,17 @@ function write_script {
 
         ndays=$(delta_dates ${rpmdate} ${now})
 
-        if [[ ${ndays} -gt 4 ]]; then
-            echo "rm -rf  ./${dt}   (((command not executed)))"
+        if [[ "${dt} = "${current}" ]]; then
+            continue
+        fi
+
+        if [[ ${ndays} -gt 14 ]]; then
+            ## Just in case the continue command does not work as I think it should...
+            if [[ "${dt}" != "${current}" ]]; then
+               echo "rm -rf  ./${dt}   (((command not executed)))"
+            else
+               echo "Will not delete 'current' (${current})"
+            fi
         fi
     done
 
