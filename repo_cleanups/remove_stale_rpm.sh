@@ -188,7 +188,7 @@ function write_script {
             continue
         fi
 
-        if [[ ${ndays} -gt 0 ]]; then
+        if [[ ${ndays} -gt 14 ]]; then
             ## Just in case the continue command does not work as I think it should...
             if [[ "${dt}" = "${current}" ]]; then
                echo "Will not delete 'current' (${current})"
