@@ -172,7 +172,7 @@ function write_script {
 
     ## Just to be safe! We'll do the same 
     readlink current
-    if [[ $? -ne 0 [; then
+    if [[ $? -ne 0 ]]; then
         echo "No 'current' symlink in master! "
         exit 0
     fi
@@ -187,7 +187,7 @@ function write_script {
             continue
         fi
 
-        if [[ ${ndays} -gt 14 ]]; then
+        if [[ ${ndays} -gt 0 ]]; then
             ## Just in case the continue command does not work as I think it should...
             if [[ "${dt}" != "${current}" ]]; then
                echo "rm -rf  ./${dt}   (((command not executed)))"
