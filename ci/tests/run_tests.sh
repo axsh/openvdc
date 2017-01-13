@@ -12,10 +12,11 @@ function cleanup_symlink {
 }
 trap cleanup_symlink EXIT
 
-if [[ "${PWD##$GOPATH}" != "${PWD}"  ]]; then
+if [ "${PWD##$GOPATH}" == "${PWD}"  ]; then
   mkdir -p "${GOPATH}/src/github.com/axsh/"
   ln -s "${OPENVDC_ROOT}" "${OPENVDC_LINKNAME}"
 fi
+cd "${OPENVDC_LINKNAME}/ci/tests"
 # End of temporary hacks
 
 if [[ ! -x $GOPATH/bin/govendor ]]; then
