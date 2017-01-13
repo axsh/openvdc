@@ -37,7 +37,7 @@ An empty metapackage that depends on all OpenVDC services. Just a conventient wa
 %build
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
-  ./build.sh
+  VERSION=%{version} ./build.sh
 )
 
 %install

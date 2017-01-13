@@ -45,7 +45,6 @@ var runCmd = &cobra.Command{
 				break
 			}
 		}
-		fmt.Println(left)
 		req := prepareRegisterAPICall(templateSlug, left)
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
@@ -54,7 +53,7 @@ var runCmd = &cobra.Command{
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err
 			}
-			fmt.Println(res)
+			fmt.Println(res.GetInstanceId())
 			return err
 		})
 	}}

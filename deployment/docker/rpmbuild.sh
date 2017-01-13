@@ -62,6 +62,9 @@ else
   img_tag="openvdc.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
   build_cache_base="${BUILD_CACHE_DIR}"
 fi
+# Docker 1.10 fails with uppercase image tag name. need letter case translation.
+# https://github.com/docker/docker/issues/20056
+img_tag="${img_tag,,}"
 
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
 RPM_ABSOLUTE="/var/www/html/openvdc-repos/${BRANCH}"
@@ -97,8 +100,8 @@ docker exec -t "${CID}" /bin/bash -c "yum-builddep -y ${OPENVDC_ROOT_DOCKER}/pkg
 docker exec -t "${CID}" /bin/bash -c "cd ${OPENVDC_ROOT_DOCKER} ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\"  --define \"dev_release_suffix ${RELEASE_SUFFIX}\"  pkg/rhel/openvdc.spec"
 
 # Build the yum repository
-docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/" 
-docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/" 
+docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/"
+docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/"
 
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/${RELEASE_SUFFIX}/ ; createrepo . "
 
