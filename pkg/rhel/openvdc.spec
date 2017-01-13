@@ -63,6 +63,7 @@ The openvdc commandline interface.
 %files cli
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
+/usr/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc
 %config(noreplace) /etc/sysconfig/openvdc
 
