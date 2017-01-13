@@ -34,9 +34,9 @@ function download_seed_image () {
     (
         $starting_step "Download ${box}"
         [ -f "${BOXES_DIR}/${box}" ]
-        $skip_step_if_already_done
+        $skip_step_if_already_done; set -xe
         mkdir -p "${BOXES_DIR}"
-        wget "https://ci.openvdc.org/img/${box}" -P "${BOXES_DIR}/${box}"
+        curl -o "${BOXES_DIR}/${box}" "https://ci.openvdc.org/img/${box}"
     ) ; prev_cmd_failed
 }
 
@@ -89,12 +89,19 @@ function build () {
     for stage in ${stages[@]} ; do
         for step in ${steps[@]} ; do
             [[ -d "${ENV_ROOTDIR}/ind-steps/step-${step}" ]] || continue
-            [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]] && run_steps "${step}" "${stage}"
+
+            # Continue if the stage isn't defined so that we don't get a non-zero exit status
+            # Using if instead of the above oneliner notation because the above will also call
+            # continue if the run_steps function fails which is not what we want.
+            if [[ -f "${ENV_ROOTDIR}/ind-steps/step-${step}/${stage}.sh" ]]; then
+              run_steps "${step}" "${stage}";
+            else
+              continue
+            fi
+
             [[ $? == 255 ]] && { . "${ENV_ROOTDIR}/ind-steps/step-box/common.source" ; umount-seed-image ; exit 255 ; }
         done 
     done
-
-    unset -f ssh
 }
 
 function disable_service () {
@@ -102,15 +109,15 @@ function disable_service () {
 
     (
         $starting_step "Disable service: ${service}"
-        ssh root@${IP_ADDR} "systemctl status ${service} | grep -q running"
+        run_ssh root@${IP_ADDR} "systemctl status ${service} | grep -q running"
         [[ $? == 1 ]]
         $skip_step_if_already_done ; set -ex
-        ssh root@${IP_ADDR} "systemctl disable ${service}"
-        ssh root@${IP_ADDR} "systemctl stop ${service}"
+        run_ssh root@${IP_ADDR} "systemctl disable ${service}"
+        run_ssh root@${IP_ADDR} "systemctl stop ${service}"
     ) ; prev_cmd_failed
 }
 
-function ssh () {
+function run_ssh() {
     local key="${NODE_DIR}/sshkey"
     [[ -f ${key} ]] &&
         $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
@@ -126,5 +133,48 @@ function destroy_bridge() {
     $skip_step_if_already_done ; set -xe
     sudo ip link set "${1}" down
     sudo brctl delbr "${1}"
+  ) ; prev_cmd_failed
+}
+
+function require_branch_variable() {
+  if [[ -z "${BRANCH}" ]] ; then
+     echo "the BRANCH variable needs to be set with the github branch to test."
+     exit 1
+  fi
+}
+
+function require_rebuild_variable() {
+  if [[ -z "${REBUILD}" ]] ; then
+     echo "The REBUILD variable needs to be set. 'true' if you wish to rebuild the environment completely. 'false' otherwise"
+     exit 1
+  fi
+}
+
+function install_openvdc_yum_repo() {
+  (
+    $starting_step "Install OpenVDC yum repository"
+    false # Just overwrite it if it exists.
+    $skip_step_if_already_done
+    run_ssh root@${IP_ADDR} "cat > /etc/yum.repos.d/openvdc.repo" << EOS
+[openvdc]
+name=OpenVDC
+failovermethod=priority
+baseurl=${YUM_REPO_URL}
+enabled=1
+gpgcheck=0
+EOS
+  ) ; prev_cmd_failed
+}
+
+function install_yum_package_over_ssh() {
+  local package="$1"
+
+  (
+    $starting_step "Install package (over SSH): ${package}"
+    # No need to make an extra ssh connection to check if it's installed already
+    # Yum will notice and just not do anything.
+    false
+    $skip_step_if_already_done; set -xe
+    run_ssh root@${IP_ADDR} "yum install -y ${package}"
   ) ; prev_cmd_failed
 }

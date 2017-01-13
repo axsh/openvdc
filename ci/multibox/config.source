@@ -17,24 +17,3 @@ BOXES=(
 
 BOXES_DIR="/data2/openvdc-ci/boxes"
 CACHE_DIR="/data2/openvdc-ci/branches"
-
-
-# TODO: add function that calculates the parent branch of current branch
-# and assigns to $BASE_BRANCH
-BASE_BRANCH="${BASE_BRANCH:-develop}"
-
-if [[ -f $(git rev-parse --show-toplevel)/build.env ]] ; then
-   . $(git rev-parse --show-toplevel)/build.env
-fi
-
-# These variables should be supplied from jenkins.
-if [[ -z "${BRANCH}" ]] ; then
-   echo "the BRANCH variable needs to be set with the github branch to test."
-   exit 1
-fi
-
-if [[ -z "${REBUILD}" ]] ; then
-   echo "The REBUILD variable needs to be set. 'true' if you wish to rebuild the environment completely. 'false' otherwise"
-   exit 1
-fi
-# These variables are set by default but can be overriden by jenkins.

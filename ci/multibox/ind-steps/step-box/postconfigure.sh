@@ -1,1 +1,1 @@
-ssh root@${IP_ADDR} "iptables -F"
+run_ssh root@${IP_ADDR} "iptables -F"
