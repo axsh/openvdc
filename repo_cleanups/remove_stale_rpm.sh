@@ -177,6 +177,7 @@ function write_script {
         exit 0
     fi
 
+    current=${current##*\/}
     now=$(today)
     for dt in $(ls -d 2*); do
         rpmdate=${dt:0:8}     # yyyymmdd is the format
