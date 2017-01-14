@@ -29,10 +29,10 @@ var log = logrus.WithField("context", "vdc-executor")
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
 	ctx                context.Context
-	nodeInfo           *model.ClusterNode
+	nodeInfo           *model.ExecutorNode
 }
 
-func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider, node *model.ClusterNode) *VDCExecutor {
+func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider, node *model.ExecutorNode) *VDCExecutor {
 	return &VDCExecutor{
 		hypervisorProvider: provider,
 		ctx:                ctx,
@@ -413,7 +413,7 @@ func main() {
 	go startSSHServer(sshListener)
 	log.Infof("Listening SSH on %s", *sshListenAddr)
 
-	node := &model.ClusterNode{
+	node := &model.ExecutorNode{
 		GrpcAddr: executorAPIListener.Addr().String(),
 		Console: &model.Console{
 			Type:     model.Console_SSH,

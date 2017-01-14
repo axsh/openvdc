@@ -56,7 +56,7 @@ func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr string) *VDC
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
 	log.Println("Framework Registered with Master ", masterInfo)
-	node := &model.ClusterNode{
+	node := &model.SchedulerNode{
 		Id: "scheduler",
 	}
 	err := model.Cluster(sched.ctx).Register(node)

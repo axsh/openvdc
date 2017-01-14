@@ -187,8 +187,8 @@ func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*Console
 		}).Error(err)
 		return nil, err
 	}
-	node, err := model.Cluster(ctx).Find(inst.GetSlaveId())
-	if err != nil {
+	node := &model.ExecutorNode{}
+	if err := model.Cluster(ctx).Find(inst.GetSlaveId(), node); err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
