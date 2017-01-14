@@ -36,6 +36,6 @@ type SchemaHandler interface {
 type ClusterBackend interface {
 	Connect(dest []string) error
 	Close() error
-	Register(key string, value []byte) error
-	Find(key string) ([]byte, error)
+	Register(nodeID string, value []byte) error
+	Find(nodeID string) ([]byte, error)
 }

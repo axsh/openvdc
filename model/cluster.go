@@ -2,11 +2,9 @@ package model
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 )
 
@@ -16,9 +14,20 @@ func init() {
 	schemaKeys = append(schemaKeys, clusterBaseKey)
 }
 
+// ClusterNode is a marker interface. Protobuf object implements this
+// is allowed to store in /cluster key space.
+type ClusterNode interface {
+	proto.Message
+	isClusterNode()
+	GetId() string
+}
+
+func (ExecutorNode) isClusterNode()  {}
+func (SchedulerNode) isClusterNode() {}
+
 type ClusterOps interface {
-	Register(*ClusterNode) error
-	Find(string) (*ClusterNode, error)
+	Register(node ClusterNode) error
+	Find(nodeID string, node ClusterNode) error
 }
 
 type cluster struct {
@@ -29,54 +38,41 @@ func Cluster(ctx context.Context) ClusterOps {
 	return &cluster{ctx: ctx}
 }
 
-func (i *cluster) connection() (backend.ClusterBackend, error) {
+func (i *cluster) connection() (backend.ProtoClusterBackend, error) {
 	bk := GetClusterBackendCtx(i.ctx)
 	if bk == nil {
 		return nil, ErrBackendNotInContext
 	}
-	return bk, nil
+	wrapper := backend.NewProtoClusterWrapper(bk)
+	return wrapper, nil
 }
 
-func (i *cluster) Register(n *ClusterNode) error {
-	if n.Id == "" {
+func (i *cluster) Register(n ClusterNode) error {
+	if n.GetId() == "" {
 		return fmt.Errorf("ID is not set")
-	}
-
-	createdAt, err := ptypes.TimestampProto(time.Now())
-	if err != nil {
-		return err
-	}
-	n.CreatedAt = createdAt
-	data, err := proto.Marshal(n)
-	if err != nil {
-		return err
 	}
 
 	bk, err := i.connection()
 	if err != nil {
 		return err
 	}
-	err = bk.Register(fmt.Sprintf("%s/%s", clusterBaseKey, n.Id), data)
-	if err != nil {
+	if err := bk.Register(fmt.Sprintf("%s/%s", clusterBaseKey, n.GetId()), n); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (i *cluster) Find(nodeID string) (*ClusterNode, error) {
+func (i *cluster) Find(nodeID string, in ClusterNode) error {
 	if nodeID == "" {
-		return nil, fmt.Errorf("ID is not set")
+		return fmt.Errorf("ID is not set")
 	}
 
 	bk, err := i.connection()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	buf, err := bk.Find(fmt.Sprintf("%s/%s", clusterBaseKey, nodeID))
-	if err != nil {
-		return nil, err
+	if err := bk.Find(fmt.Sprintf("%s/%s", clusterBaseKey, nodeID), in); err != nil {
+		return err
 	}
-	in := &ClusterNode{}
-	err = proto.Unmarshal(buf, in)
-	return in, err
+	return nil
 }
