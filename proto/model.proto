@@ -39,21 +39,6 @@ message Resource {
   Template template = 4;
 }
 
-message Console {
-  enum Type {
-    SSH = 0;
-  }
-  Type type = 1;
-  string bind_addr = 2;
-}
-
-message ClusterNode{
-  string id = 1;
-  google.protobuf.Timestamp created_at = 2;
-  Console console = 3;
-  string grpc_addr = 4;
-}
-
 message Template {
   string template_uri = 1;
   oneof Item {
