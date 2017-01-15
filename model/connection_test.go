@@ -16,3 +16,12 @@ func TestConnect(t *testing.T) {
 	err = Close(ctx)
 	assert.NoError(err)
 }
+
+func TestClusterConnect(t *testing.T) {
+	assert := assert.New(t)
+	ctx, err := ClusterConnect(context.Background(), []string{unittest.TestZkServer})
+	assert.NoError(err)
+	assert.NotNil(ctx)
+	err = ClusterClose(ctx)
+	assert.NoError(err)
+}

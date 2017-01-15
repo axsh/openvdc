@@ -2,8 +2,6 @@ package backend
 
 import (
 	"fmt"
-	"path"
-	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -11,75 +9,16 @@ import (
 )
 
 type ZkCluster struct {
-	conn     *zk.Conn
-	basePath string
-	ev       <-chan zk.Event
+	zkConnection
 	// TODO: Add mutex
 }
 
 func NewZkClusterBackend() *ZkCluster {
 	return &ZkCluster{
-		basePath: "/openvdc",
+		zkConnection: zkConnection{
+			basePath: "/openvdc",
+		},
 	}
-}
-
-func (z *ZkCluster) Connect(servers []string) error {
-	if z.isConnected() {
-		return ErrConnectionExists
-	}
-	c, ev, err := zk.Connect(servers, 10*time.Second)
-	if err != nil {
-		return err
-	}
-
-	for e := range ev {
-		switch e.State {
-		case zk.StateHasSession:
-			// Set members if connected successfully.
-			z.conn = c
-			z.ev = ev
-			return nil
-		case zk.StateConnecting, zk.StateConnected, zk.StateConnectedReadOnly:
-			// Pass
-		default:
-			log.Errorf(e.State.String())
-		}
-	}
-
-	return nil
-}
-
-func (z *ZkCluster) Close() error {
-	if z.conn == nil {
-		return ErrConnectionNotReady
-	}
-	defer func() {
-		z.conn = nil
-		z.ev = nil
-	}()
-	z.conn.Close()
-	for ev := range z.ev {
-		if ev.State == zk.StateDisconnected {
-			return nil
-		} else {
-			log.Warn("ZK disconnecting... ", ev.State.String())
-		}
-	}
-	return nil
-}
-
-func (z *ZkCluster) isConnected() bool {
-	if z.conn == nil {
-		return false
-	}
-	return z.conn.State() == zk.StateHasSession
-}
-
-func (z *ZkCluster) canonKey(key string) (absKey string, dir string) {
-	absKey = path.Clean(path.Join(z.basePath, key))
-	dir, _ = path.Split(absKey)
-	dir = strings.TrimSuffix(dir, "/")
-	return absKey, dir
 }
 
 func (z *ZkCluster) Register(key string, value []byte) error {
@@ -91,7 +30,7 @@ func (z *ZkCluster) Register(key string, value []byte) error {
 	var errRetry = fmt.Errorf("")
 
 	doRegist := func() error {
-		_, err := z.conn.Create(absKey, value, zk.FlagEphemeral, defaultACL)
+		_, err := z.connection().Create(absKey, value, zk.FlagEphemeral, defaultACL)
 		if err != nil {
 			if err == zk.ErrNodeExists {
 				return errRetry
@@ -120,6 +59,6 @@ func (z *ZkCluster) Find(key string) (value []byte, err error) {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
-	value, _, err = z.conn.Get(absKey)
+	value, _, err = z.connection().Get(absKey)
 	return
 }

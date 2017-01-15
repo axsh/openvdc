@@ -14,8 +14,7 @@ type KeyIterator interface {
 }
 
 type ModelBackend interface {
-	Connect(dest []string) error
-	Close() error
+	BackendConnection
 	Create(key string, value []byte) error
 	CreateWithID(key string, value []byte) (string, error)
 	Update(key string, value []byte) error
@@ -34,8 +33,12 @@ type SchemaHandler interface {
 }
 
 type ClusterBackend interface {
-	Connect(dest []string) error
-	Close() error
+	BackendConnection
 	Register(nodeID string, value []byte) error
 	Find(nodeID string) ([]byte, error)
+}
+
+type BackendConnection interface {
+	Connect(dest []string) error
+	Close() error
 }
