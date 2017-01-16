@@ -107,9 +107,10 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %{systemd_preun openvdc-scheduler.service}
 
 %package acceptance-test
+Summary: The OpenVDC acceptance test used in its CI process.
 
 %description
-An acceptance test designed to run on a specifically designed environment. The environment building scripts can be found in the OpenVDC source code repository.
+An acceptance test designed to run on a specifically designed environment. The environment building scripts can be found in the OpenVDC source code repository. The average OpenVDC user will not need to install this.
 
 %files
 %dir /opt/axsh/openvdc
