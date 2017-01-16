@@ -15,7 +15,7 @@ import (
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
-var ConfigFile string
+var LxcConfigFile string
 
 const (
 	ScriptPath      = "/etc/lxc/"
@@ -65,34 +65,54 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-func modifyConf(scriptUp string, scriptDown string) {
-	f, err := ioutil.ReadFile(ConfigFile)
+func modifyConf() {
+	f, err := ioutil.ReadFile(LxcConfigFile)
 
 	if err != nil {
 		log.Fatalf("Failed loading lxc default.conf: ", err)
 	}
 
-	// Give a warning if script doesn't exist.
-	_, err = ioutil.ReadFile(scriptUp)
-	if err != nil {
-		log.Warn("File not found: "+scriptUp, err)
-	}
-
-	// Give a warning if script doesn't exist.
-	_, err = ioutil.ReadFile(scriptDown)
-	if err != nil {
-		log.Warn("File not found: " + scriptDown, err)
-	}
-
-	scripts := "lxc.network.script.up = " + ScriptPath + scriptUp + "\nlxc.network.script.down = " + ScriptPath + scriptDown
-
 	cf := cleanConfigFile(string(f))
 
-	result := strings.Join([]string{cf, scripts}, "")
-	err = ioutil.WriteFile(ConfigFile, []byte(result), 0644)
+	var newSettings string
+	for i, _ := range interfaces {
+		newSettings = updateSettings(interfaces[i], newSettings)		
+	}
+
+	result := strings.Join([]string{cf, newSettings}, "")
+	err = ioutil.WriteFile(LxcConfigFile, []byte(result), 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func updateSettings(nwi NetworkInterface, input string) string {
+	output := input + "\n" 
+
+	if nwi.BridgeName != "" {
+		output += fmt.Sprintf("#---- %s ----\n", nwi.BridgeName)
+	}
+
+	if nwi.Ipv4Addr != "" {
+		output += fmt.Sprintf("lxc.network.ipv4=%s\n", nwi.Ipv4Addr)
+	}
+
+	if nwi.MacAddr != "" {
+                output += fmt.Sprintf("lxc.network.hwaddr=%s\n", nwi.MacAddr)
+        }
+
+	switch nwi.Type {
+        case "linux":
+                output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + LinuxUpScript)
+		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + LinuxDownScript)
+        case "ovs":
+                output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + OvsUpScript)
+                output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + OvsDownScript)
+        default:
+	
+        }
+	
+	return output
 }
 
 func cleanConfigFile(input string) string {
@@ -109,16 +129,6 @@ func cleanConfigFile(input string) string {
 	return output
 }
 
-func handleNetworkSettings(nwi NetworkInterface) {
-
-	switch nwi.Type {
-	case "linux":
-		modifyConf(LinuxUpScript, LinuxDownScript)
-	case "ovs":
-		modifyConf(OvsUpScript, OvsDownScript)
-	default:
-	}
-}
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
 
@@ -131,8 +141,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	}
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
-
-	ConfigFile = c.ConfigFileName()
+	LxcConfigFile = c.ConfigFileName()
 
 	if err != nil {
 
@@ -174,7 +183,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
         	)
 	}
 
-        handleNetworkSettings(interfaces[0])
+        modifyConf()
 
 	return nil
 
