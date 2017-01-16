@@ -61,11 +61,14 @@ func (z *zkConnection) Close() error {
 	}()
 	z.conn.Close()
 	for ev := range z.ev {
+		if ev.Type != zk.EventSession {
+			// Ignore Node events.
+			continue
+		}
 		if ev.State == zk.StateDisconnected {
 			return nil
-		} else {
-			log.Warn("ZK disconnecting... ", ev.State.String())
 		}
+		log.Warn("ZK disconnecting... ", ev.State)
 	}
 	return nil
 }
