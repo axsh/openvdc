@@ -28,6 +28,7 @@ func (SchedulerNode) isClusterNode() {}
 type ClusterOps interface {
 	Register(node ClusterNode) error
 	Find(nodeID string, node ClusterNode) error
+	Unregister(nodeID string) error
 }
 
 type cluster struct {
@@ -72,6 +73,21 @@ func (i *cluster) Find(nodeID string, in ClusterNode) error {
 		return err
 	}
 	if err := bk.Find(fmt.Sprintf("%s/%s", clusterBaseKey, nodeID), in); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *cluster) Unregister(nodeID string) error {
+	if nodeID == "" {
+		return fmt.Errorf("ID is not set")
+	}
+
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	if err := bk.Unregister(fmt.Sprintf("%s/%s", clusterBaseKey, nodeID)); err != nil {
 		return err
 	}
 	return nil

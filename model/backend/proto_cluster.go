@@ -13,6 +13,7 @@ type ProtoClusterBackend interface {
 	Close() error
 	Register(nodeID string, value proto.Message) error
 	Find(nodeID string, value proto.Message) error
+	Unregister(nodeID string) error
 }
 
 type ProtoClusterWrapper struct {
@@ -50,4 +51,8 @@ func (p *ProtoClusterWrapper) Find(nodeID string, v proto.Message) error {
 		return errors.Wrapf(err, "Find to %s", nodeID)
 	}
 	return proto.Unmarshal(buf, v)
+}
+
+func (p *ProtoClusterWrapper) Unregister(nodeID string) error {
+	return p.backend.UnRegister(nodeID)
 }

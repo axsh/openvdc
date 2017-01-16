@@ -62,3 +62,12 @@ func (z *ZkCluster) Find(key string) (value []byte, err error) {
 	value, _, err = z.connection().Get(absKey)
 	return
 }
+
+func (z *ZkCluster) UnRegister(key string) error {
+	if !z.isConnected() {
+		return ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(key)
+
+	return z.connection().Delete(absKey, versionAny)
+}

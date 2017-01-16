@@ -48,6 +48,10 @@ func TestCluster_Register(t *testing.T) {
 	withClusterConnect(t, func(ctx context.Context) {
 		err := Cluster(ctx).Register(n)
 		assert.NoError(err)
+		defer func() {
+			err := Cluster(ctx).Unregister("executor1")
+			assert.NoError(err)
+		}()
 		err = Cluster(ctx).Register(n)
 		assert.Error(err, "Should fail the registration for duplicated node")
 	})
@@ -66,6 +70,10 @@ func TestCluster_Find(t *testing.T) {
 	withClusterConnect(t, func(ctx context.Context) {
 		err := Cluster(ctx).Register(n)
 		assert.NoError(err)
+		defer func() {
+			err := Cluster(ctx).Unregister("executor1")
+			assert.NoError(err)
+		}()
 		n2 := &ExecutorNode{}
 		err = Cluster(ctx).Find("executor1", n2)
 		assert.NoError(err)

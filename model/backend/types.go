@@ -36,6 +36,7 @@ type ClusterBackend interface {
 	BackendConnection
 	Register(nodeID string, value []byte) error
 	Find(nodeID string) ([]byte, error)
+	UnRegister(nodeID string) error
 }
 
 type BackendConnection interface {
