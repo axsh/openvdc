@@ -21,14 +21,14 @@ function destroy_vm() {
         $skip_step_if_already_done; set -x +e
         sudo kill $(sudo cat "${NODE_DIR}/${vm_name}.pid")
         sudo rm -f "${NODE_DIR}/${vm_name}.pid"
-    )
+    ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 
     (
         $starting_step "Remove copy-on-write image"
         [ ! -f "${NODE_DIR}/${vm_name}.qcow2" ]
         $skip_step_if_already_done ; set -x +e
         rm -f "${NODE_DIR}/${vm_name}.qcow2"
-    )
+    ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
     local i
     for (( i=0 ; i < ${#nics[@]} ; i++ )) ; do
       nic=(${nics[$i]})
@@ -39,7 +39,7 @@ function destroy_vm() {
               ! (brctl show ${nic[2]#*=} | grep -wq ${nic[0]#*=})
               $skip_step_if_already_done; set -x +e
               sudo brctl delif ${nic[2]#*=} ${nic[0]#*=}
-          )
+          ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
       }
       (
         ifname="${nic[0]#*=}"
@@ -48,7 +48,7 @@ function destroy_vm() {
         $skip_step_if_already_done; set -x +e
         sudo ip link set dev "${ifname}" down
         sudo ip link delete dev "${ifname}"
-      )
+      ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
     done
 }
 
@@ -58,7 +58,7 @@ function destroy_vm_cache() {
         [ ! -f ${NODE_DIR}/sshkey ]
         $skip_step_if_already_done
         rm ${NODE_DIR}/sshkey
-    )
+    ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 
     (
         $starting_step "Remove base image ${vm_name}"
@@ -66,7 +66,7 @@ function destroy_vm_cache() {
         $skip_step_if_already_done; set -x +e
         rm -f "${CACHE_DIR}/${BRANCH}/sshkey_${vm_name}"*
         rm -f "$(cache_image)"
-    )
+    ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 }
 
 function umount-seed-image() {

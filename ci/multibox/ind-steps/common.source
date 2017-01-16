@@ -60,7 +60,7 @@ function stop_masquerade() {
     [ "$?" != "0" ]
     $skip_step_if_already_done; set +e
     sudo iptables -t nat -D POSTROUTING -s "${subnet}" -j MASQUERADE
-  )
+  ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 }
 
 function run_steps () {
@@ -134,7 +134,7 @@ function destroy_bridge() {
     # Ignore errors for complete teardown.
     sudo ip link set "${1}" down
     sudo brctl delbr "${1}"
-  )
+  ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 }
 
 function require_branch_variable() {
