@@ -38,16 +38,18 @@ RELEASE_SUFFIX=${RELEASE_SUFFIX}
 GIT_BRANCH=${env.BRANCH_NAME}
 BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
+SHA=${SHA}
 """
   writeFile(file: "build.env", text: build_env)
 }
 
 def checkout_and_merge() {
     checkout scm
-    sh "git merge origin/master"
+    sh "git -c \"user.name=Axsh Bot\" -c \"user.email=dev@axsh.net\" merge origin/master"
 }
 
 @Field RELEASE_SUFFIX=null
+@Field SHA=null
 
 def stage_unit_test(label) {
   node(label) {
@@ -74,10 +76,10 @@ def stage_integration(label) {
     write_build_env(label)
 
     sh "cd ci/multibox/ ; ./build.sh"
-    stage "Run Tntegration Test"
+    stage "Run Integration Test"
     // This is where the integration test will be run
     stage "Cleanup Environment"
-    sh "cd ci/multibox/ ; ./destroy.sh --kill"
+    sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
   }
 }
 
@@ -90,10 +92,11 @@ node() {
     }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
       // Only ignore errors for timeout.
     }
-    checkout_and_merge()
+    checkout scm
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
+    SHA=sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
 }
 
 
