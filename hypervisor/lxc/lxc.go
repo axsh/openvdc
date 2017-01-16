@@ -150,34 +150,22 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	for _, i := range lxcTmpl.GetInterfaces() {
 
 		if i.GetIpv4Addr() == "" {
-
 			conf += fmt.Sprintf("lxc.network.ipv4=%s\n", i.GetIpv4Addr())
-
 		}
 
 		if i.GetMacaddr() == "" {
-
 			conf += fmt.Sprintf("lxc.network.hwaddr=%s\n", i.GetMacaddr())
-
 		}
 
-		interfacetype = i.GetType()
-
+		interfaces = append(interfaces,
+               		NetworkInterface{
+                        	BridgeName: "br0",
+                        	Type: i.getType(),
+				Ipv4Addr: i.GetIpv4Addr()
+        			MacAddr: i.GetMacaddr()
+                	},
+        	)
 	}
-
-	interfaces = append(interfaces, 
-		NetworkInterface{
-			BridgeName: "br0",
-			Type: interfacetype,
-		},
-	)
-
-	//f, err := os.OpenFile(ConfigFile, os.O_WRONLY, 0)
-
-	//defer f.Close()
-
-	//_, err = f.WriteString(conf)
-
 
         handleNetworkSettings(interfaces[0])
 
