@@ -84,21 +84,29 @@ func modifyConf(scriptUp string, scriptDown string) {
 		log.Warn("File not found: " + scriptDown, err)
 	}
 
-	l := strings.Split(string(f), "\n")
 	scripts := "lxc.network.script.up = " + ScriptPath + scriptUp + "\nlxc.network.script.down = " + ScriptPath + scriptDown
 
-	for i, line := range l {
-		if strings.Contains(line, "lxc.network.link") {
-			l[i] = ""
-		}
-	}
+	cf := cleanConfigFile(string(f))
 
-	result := strings.Join(l, "\n")
-	result = strings.Join([]string{result, scripts}, "")
+	result := strings.Join([]string{cf, scripts}, "")
 	err = ioutil.WriteFile(ConfigFile, []byte(result), 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func cleanConfigFile(input string) string {
+	lines := strings.Split(input, "\n")
+
+	for i, line := range lines {
+                if strings.Contains(line, "lxc.network.link") {
+                        lines[i] = ""
+                }
+        }
+
+	output := strings.Join(lines, "\n")
+
+	return output
 }
 
 func handleNetworkSettings(nwi NetworkInterface) {
@@ -145,7 +153,6 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	}
 
 	var conf string
-	var interfacetype string
 
 	for _, i := range lxcTmpl.GetInterfaces() {
 
@@ -160,9 +167,9 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		interfaces = append(interfaces,
                		NetworkInterface{
                         	BridgeName: "br0",
-                        	Type: i.getType(),
-				Ipv4Addr: i.GetIpv4Addr()
-        			MacAddr: i.GetMacaddr()
+                        	Type: i.GetType(),
+				Ipv4Addr: i.GetIpv4Addr(),
+        			MacAddr: i.GetMacaddr(),
                 	},
         	)
 	}
