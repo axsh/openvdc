@@ -41,6 +41,8 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
   VERSION=%{version} ./build.sh
 )
+cd "${GOPATH}/src/github.com/axsh/openvdc/ci/tests"
+go test -tags=acceptance -c -o openvdc-acceptance-test
 
 %install
 cd "${GOPATH}/src/github.com/axsh/openvdc"
@@ -51,6 +53,7 @@ ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp ci/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
@@ -84,7 +87,6 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %package scheduler
 Summary: openvdc scheduler
 
-
 %description scheduler
 This is a 'stub'. An appropriate message must be substituted at some point.
 
@@ -103,3 +105,13 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 
 %preun
 %{systemd_preun openvdc-scheduler.service}
+
+%package acceptance-test
+
+%description
+An acceptance test designed to run on a specifically designed environment. The environment building scripts can be found in the OpenVDC source code repository.
+
+%files
+%dir /opt/axsh/openvdc
+%dir /opt/axsh/openvdc/bin
+/opt/axsh/openvdc/bin/openvdc-acceptance-test
