@@ -35,7 +35,7 @@ function write_script {
            fi
         done
     
-        echo "rm -rf ${dead_dir}  (((command not executed)))"
+        echo "rm -rf ./${dead_dir}  (((command not executed)))"
     
     }
     
@@ -144,9 +144,9 @@ function write_script {
        if [[ "${branch_name}" = "develop" ]]; then
            continue
        fi
-    
+   
+       ## If the branch name is *not* in the git_branches hash, remove it! 
        if [[ -z ${branch_name} ]]; then
-    #       echo "$dr will be REMOVED."
             remove_dir ${dr}
             if [ $? -ne 0 ]; then
                 exit 1
