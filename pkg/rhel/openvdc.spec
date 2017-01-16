@@ -60,10 +60,10 @@ cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 
 
 %package cli
-Summary: openvdc cli
+Summary: OpenVDC cli
 
 %description cli
-The openvdc commandline interface.
+The OpenVDC commandline interface.
 
 %files cli
 %dir /opt/axsh/openvdc
@@ -73,7 +73,7 @@ The openvdc commandline interface.
 %config(noreplace) /etc/sysconfig/openvdc
 
 %package executor
-Summary: openvdc executor
+Summary: OpenVDC executor
 Requires: lxc
 
 %description executor
@@ -85,7 +85,7 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-executor
 
 %package scheduler
-Summary: openvdc scheduler
+Summary: OpenVDC scheduler
 
 %description scheduler
 This is a 'stub'. An appropriate message must be substituted at some point.
