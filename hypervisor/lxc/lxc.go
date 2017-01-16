@@ -15,6 +15,8 @@ import (
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
+var ConfigFile string
+
 const (
 	ScriptPath      = "/etc/lxc/"
 	LinuxUpScript   = "linux-bridge-up.sh"
@@ -23,11 +25,15 @@ const (
 	OvsDownScript   = "ovs-down.sh"
 )
 
-type NetworkSettings struct {
-	ConfigFile string
-	BridgeType string
+type Interface struct {
+	Type string
 	BridgeName string
+	Ipv4Addr   string
+	MacAddr    string
 }
+
+//interfaces := Interface{}
+
 
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
@@ -59,8 +65,8 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-func modifyConf(scriptUp string, scriptDown string, configFile string) {
-	f, err := ioutil.ReadFile(configFile)
+func modifyConf(scriptUp string, scriptDown string) {
+	f, err := ioutil.ReadFile(ConfigFile)
 
 	if err != nil {
 		log.Fatalf("Failed loading lxc default.conf: ", err)
@@ -89,19 +95,19 @@ func modifyConf(scriptUp string, scriptDown string, configFile string) {
 
 	result := strings.Join(l, "\n")
 	result = strings.Join([]string{result, scripts}, "")
-	err = ioutil.WriteFile(configFile, []byte(result), 0644)
+	err = ioutil.WriteFile(ConfigFile, []byte(result), 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
-func handleNetworkSettings(nws NetworkSettings) {
+func handleNetworkSettings(i Interface) {
 
-	switch nws.BridgeType {
+	switch i.Type {
 	case "linux":
-		modifyConf(LinuxUpScript, LinuxDownScript, nws.ConfigFile)
+		modifyConf(LinuxUpScript, LinuxDownScript)
 	case "ovs":
-		modifyConf(OvsUpScript, OvsDownScript, nws.ConfigFile)
+		modifyConf(OvsUpScript, OvsDownScript)
 	default:
 	}
 }
@@ -117,6 +123,8 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	}
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
+
+	ConfigFile = c.ConfigFileName()
 
 	if err != nil {
 
@@ -136,15 +144,8 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	}
 
-	var nws = NetworkSettings{
-		ConfigFile: c.ConfigFileName(),
-		BridgeName: "br0",
-		BridgeType: "ovs",
-	}
-
-	handleNetworkSettings(nws)
-
 	var conf string
+	var interfacetype string
 
 	for _, i := range lxcTmpl.GetInterfaces() {
 
@@ -160,13 +161,23 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 		}
 
+		interfacetype = i.GetType()
+
 	}
 
-	f, err := os.OpenFile(nws.ConfigFile, os.O_WRONLY, 0)
+	var intf = Interface{
+		BridgeName: "br0",
+		Type: interfacetype,
+	}
 
-	defer f.Close()
+	//f, err := os.OpenFile(ConfigFile, os.O_WRONLY, 0)
 
-	_, err = f.WriteString(conf)
+	//defer f.Close()
+
+	//_, err = f.WriteString(conf)
+
+
+        handleNetworkSettings(intf)
 
 	return nil
 
