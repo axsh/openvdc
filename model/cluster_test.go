@@ -24,6 +24,12 @@ func withClusterConnect(t *testing.T, c func(context.Context)) error {
 	return err
 }
 
+func TestClusterNode(t *testing.T) {
+	assert := assert.New(t)
+	assert.Implements((*ClusterNode)(nil), &ExecutorNode{})
+	assert.Implements((*ClusterNode)(nil), &SchedulerNode{})
+}
+
 func TestCluster_Register(t *testing.T) {
 	assert := assert.New(t)
 	n := &ExecutorNode{

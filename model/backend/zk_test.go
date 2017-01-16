@@ -30,7 +30,17 @@ func TestNewZkBackend(t *testing.T) {
 	assert := assert.New(t)
 
 	z := NewZkBackend()
+	assert.Implements((*BackendConnection)(nil), z)
 	assert.Implements((*ModelBackend)(nil), z)
+	assert.Implements((*ModelSchema)(nil), z)
+}
+
+func TestNewZkClusterBackend(t *testing.T) {
+	assert := assert.New(t)
+
+	z := NewZkClusterBackend()
+	assert.Implements((*BackendConnection)(nil), z)
+	assert.Implements((*ClusterBackend)(nil), z)
 	assert.Implements((*ModelSchema)(nil), z)
 }
 
