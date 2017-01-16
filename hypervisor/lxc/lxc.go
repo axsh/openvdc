@@ -185,6 +185,8 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
         modifyConf()
 
+	interfaces = nil
+
 	return nil
 
 }
