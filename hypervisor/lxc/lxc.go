@@ -25,14 +25,14 @@ const (
 	OvsDownScript   = "ovs-down.sh"
 )
 
-type Interface struct {
+type NetworkInterface struct {
 	Type string
 	BridgeName string
 	Ipv4Addr   string
 	MacAddr    string
 }
 
-//interfaces := Interface{}
+var interfaces []NetworkInterface
 
 
 func init() {
@@ -101,9 +101,9 @@ func modifyConf(scriptUp string, scriptDown string) {
 	}
 }
 
-func handleNetworkSettings(i Interface) {
+func handleNetworkSettings(nwi NetworkInterface) {
 
-	switch i.Type {
+	switch nwi.Type {
 	case "linux":
 		modifyConf(LinuxUpScript, LinuxDownScript)
 	case "ovs":
@@ -165,10 +165,12 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	}
 
-	var intf = Interface{
-		BridgeName: "br0",
-		Type: interfacetype,
-	}
+	interfaces = append(interfaces, 
+		NetworkInterface{
+			BridgeName: "br0",
+			Type: interfacetype,
+		},
+	)
 
 	//f, err := os.OpenFile(ConfigFile, os.O_WRONLY, 0)
 
@@ -177,7 +179,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	//_, err = f.WriteString(conf)
 
 
-        handleNetworkSettings(intf)
+        handleNetworkSettings(interfaces[0])
 
 	return nil
 
