@@ -1,12 +1,12 @@
 package model
 
 import (
-	"context"
 	"testing"
 
 	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
 
 func withClusterConnect(t *testing.T, c func(context.Context)) error {
