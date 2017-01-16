@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [parameter(Mandatory=$False,Position=1)]
-    [string]$VERSION = "dev"
+    [string]$VERSION = "dev",
+    [parameter(Mandatory=$False)]
+    [switch]$WITH_GOGEN
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,9 +14,32 @@ $GOVERSION=$(go version)
 $BUILDSTAMP="github.com/axsh/openvdc"
 $LDFLAGS="-X '${BUILDSTAMP}.Version=${VERSION}' -X '${BUILDSTAMP}.Sha=${SHA}' -X '${BUILDSTAMP}.Builddate=${BUILDDATE}' -X '${BUILDSTAMP}.Goversion=${GOVERSION}'"
 
-Invoke-Expression "$(Join-Path ${env:GOPATH}\bin govendor.exe -Resolve) sync"
-$modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/).split(" ")[0]
-Invoke-Expression "$(Join-Path ${env:GOPATH}\bin go-bindata.exe -Resolve) -mode 420 -modtime ${modtime} -pkg registry -o registry\schema.bindata.go schema"
+if( $WITH_GOGEN ) {
+    try{
+        Get-Command -Name protoc | Out-Null
+    } catch [System.Management.Automation.CommandNotFoundException] {
+        Write-Error "Can not find protoc. Download pre-compiled binary from https://github.com/google/protobuf/releases"
+        Exit 1
+    }
+    try{
+        Get-Command -Name protoc-gen-go | Out-Null
+    } catch [System.Management.Automation.CommandNotFoundException] {
+       go get -u -v github.com/golang/protobuf/protoc-gen-go
+    }
+    try{
+        Get-Command -Name go-bindata | Out-Null
+    } catch [System.Management.Automation.CommandNotFoundException] {
+        go get -u github.com/jteeuwen/go-bindata/...
+    }
+    go generate -v ./api ./model ./registry
+}
+
+try{
+    Get-Command -Name govendor | Out-Null
+} catch [System.Management.Automation.CommandNotFoundException] {
+    go get -u github.com/kardianos/govendor
+}
+govendor sync
 
 $branch="master"
 if( $env:APPVEYOR_REPO_BRANCH ){

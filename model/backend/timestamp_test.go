@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//go:generate protoc -I. -I${GOPATH}/src --go_out=. test.proto
 func TestTimestampFilter(t *testing.T) {
 	assert := assert.New(t)
 	tnow := time.Now().UTC()

@@ -9,16 +9,24 @@ GOVERSION=$(go version)
 BUILDSTAMP="github.com/axsh/openvdc"
 LDFLAGS="-X '${BUILDSTAMP}.Version=${VERSION}' -X '${BUILDSTAMP}.Sha=${SHA}' -X '${BUILDSTAMP}.Builddate=${BUILDDATE}' -X '${BUILDSTAMP}.Goversion=${GOVERSION}'"
 
-if [[ ! -x $GOPATH/bin/govendor ]]; then
-  go get -u github.com/kardianos/govendor
-fi
-$GOPATH/bin/govendor sync
-if [[ ! -x $GOPATH/bin/go-bindata ]]; then
-  go get -u github.com/jteeuwen/go-bindata/...
+if [[ -n "$WITH_GOGEN" ]]; then
+  if ! type protoc ; then
+    echo "Can not find protoc. Download pre-compiled binary from https://github.com/google/protobuf/releases" >&2
+    exit 1
+  fi
+  if ! type protoc-gen-go; then
+    go get -u -v github.com/golang/protobuf/protoc-gen-go
+  fi
+  if ! type go-bindata; then
+    go get -u github.com/jteeuwen/go-bindata/...
+  fi
+  go generate -v ./api ./model ./registry
 fi
 
-modtime=$(git log -n 1 --date=raw --pretty=format:%cd -- schema/ | cut -d' ' -f1)
-$GOPATH/bin/go-bindata -modtime "${modtime}" -pkg registry -o registry/schema.bindata.go schema
+if ! type govendor; then
+  go get -u github.com/kardianos/govendor
+fi
+govendor sync
 
 # Determine the default branch reference for registry/github.go
 SCHEMA_LAST_COMMIT=${SCHEMA_LAST_COMMIT:-$(git log -n 1 --pretty=format:%H -- schema/ registry/schema.bindata.go)}

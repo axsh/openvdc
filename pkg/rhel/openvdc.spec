@@ -35,6 +35,8 @@ This is an empty metapackage that depends on all OpenVNet services and the vnctl
 
 
 %build
+# rpmbuild resets $PATH so ensure to have "$GOPATH/bin".
+export PATH="$PATH:${GOPATH}/bin"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
   VERSION=%{version} ./build.sh

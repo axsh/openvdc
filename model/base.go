@@ -7,6 +7,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+//go:generate protoc -I../proto -I${GOPATH}/src --go_out=${GOPATH}/src ../proto/model.proto
+
 type base struct {
 	ctx context.Context
 }
