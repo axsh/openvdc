@@ -69,19 +69,18 @@ def stage_rpmbuild(label) {
   }
 }
 
-//TODO: rename to acceptance
-def stage_integration(label) {
+def stage_acceptance(label) {
   node("multibox") {
     checkout_and_merge()
-    stage "Build Integration Environment"
+    stage "Build acceptance test environment"
     write_build_env(label)
 
     sh "cd ci/multibox/ ; ./build.sh"
-    stage "Run Integration Test"
+    stage "Run acceptance test"
     // This runs a non-login /bin/sh shell which doesn't execute .bashrc etc.
     // Therefore we use this golang.env file to set GOPATH
     sh "source ~/golang.env ; cd ci/tests ; ./run_tests.sh"
-    stage "Cleanup Environment"
+    stage "Cleanup environment"
     sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
   }
 }
@@ -112,5 +111,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_integration(label)
+  stage_acceptance(label)
 }
