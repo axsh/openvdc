@@ -2,9 +2,11 @@ package model
 
 import (
 	"testing"
+	"time"
 
 	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/axsh/openvdc/model/backend"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 )
@@ -65,8 +67,18 @@ func TestCluster_Register(t *testing.T) {
 
 func TestCluster_Find(t *testing.T) {
 	assert := assert.New(t)
+	createdAt, _ := ptypes.TimestampProto(time.Now())
 	n := &ExecutorNode{
-		Id: "executor1",
+		Id:       "executor1",
+		GrpcAddr: "127.0.0.1:9999",
+		Console: &Console{
+			Type: Console_SSH,
+		},
+		LastState: &NodeState{
+			State:     NodeState_REGISTERED,
+			CreatedAt: createdAt,
+		},
+		CreatedAt: createdAt,
 	}
 
 	var err error
@@ -85,9 +97,22 @@ func TestCluster_Find(t *testing.T) {
 		assert.NoError(err)
 		assert.Equal("executor1", n2.Id)
 
-		n3 := &SchedulerNode{}
-		err = Cluster(ctx).Find("executor1", n3)
-		assert.Error(err, "Should fail to marshall incompatible type")
+		/*
+			 "proto: bad wiretype for field ..." error is expected here.
+				However Protobuf Unmarshaller does not fail with the messages
+				have same type fields.
+
+				message A { int32 field1 = 1; }
+				message B { int32 myfield = 1; }
+
+				They are recognized as same message because Marshaller generates
+				same byte sequence and there is no type info in wireformat.
+		*/
+		/*
+			n3 := &SchedulerNode{}
+			err = Cluster(ctx).Find("executor1", n3)
+			assert.Error(err, "Should fail to marshall incompatible type")
+		*/
 
 		err = Cluster(ctx).Find("unknownXXXX", n2)
 		assert.Error(err, "Should fail to find unknown node")
