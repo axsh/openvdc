@@ -53,7 +53,13 @@ func TestCluster_Register(t *testing.T) {
 			assert.NoError(err)
 		}()
 		err = Cluster(ctx).Register(n)
-		assert.Error(err, "Should fail the registration for duplicated node")
+		assert.NoError(err, "Should not fail the registration becase here continues session")
+
+		// New cluster connection to run checks from different node.
+		withClusterConnect(t, func(ctx context.Context) {
+			err := Cluster(ctx).Register(n)
+			assert.Error(err, "Should fail the regitration for the same nodeID from different session")
+		})
 	})
 }
 

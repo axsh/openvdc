@@ -30,7 +30,38 @@ func (z *ZkCluster) Register(key string, value []byte) error {
 	var errRetry = fmt.Errorf("")
 
 	doRegist := func() error {
-		_, err := z.connection().Create(absKey, value, zk.FlagEphemeral, defaultACL)
+		exists, stat, wa, err := z.connection().ExistsW(absKey)
+		if exists {
+			if z.connection().SessionID() == stat.EphemeralOwner {
+				// Same owner we can reuse the zNode.
+				_, err = z.connection().Set(absKey, value, stat.Version)
+				if err != nil {
+					log.WithError(err).WithField("zNode", absKey).Error("Failed to reuse the key")
+					return err
+				}
+				return nil
+			} else {
+				// There are two possible cases here:
+				//  1. The zNode has lost owner. will be cleared after session timeout.
+				//     => Wait for NodeDeleted event.
+				//  2. Someone still owns the zNode.
+				//     => Give up sometime later.
+				var errTout = fmt.Errorf("Timed out for node registration")
+
+			Done:
+				for {
+					select {
+					case ev := <-wa:
+						if ev.Type == zk.EventNodeDeleted {
+							break Done
+						}
+					case <-time.After(10 * time.Second):
+						return errTout
+					}
+				}
+			}
+		}
+		_, err = z.connection().Create(absKey, value, zk.FlagEphemeral, defaultACL)
 		if err != nil {
 			if err == zk.ErrNodeExists {
 				return errRetry
