@@ -7,10 +7,10 @@ package model;
 option go_package = "github.com/axsh/openvdc/model";
 
 message Console {
-  enum Type {
+  enum Transport {
     SSH = 0;
   }
-  Type type = 1;
+  Transport type = 1;
   string bind_addr = 2;
 }
 
