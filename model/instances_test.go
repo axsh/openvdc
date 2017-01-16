@@ -16,7 +16,12 @@ func withConnect(t *testing.T, c func(context.Context)) error {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer Close(ctx)
+	defer func() {
+		err := Close(ctx)
+		if err != nil {
+			t.Error("Failed to Close:", err)
+		}
+	}()
 	err = InstallSchemas(GetBackendCtx(ctx).(backend.ModelSchema))
 	if err != nil {
 		t.Fatal(err)

@@ -15,7 +15,12 @@ func withClusterConnect(t *testing.T, c func(context.Context)) error {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ClusterClose(ctx)
+	defer func() {
+		err := ClusterClose(ctx)
+		if err != nil {
+			t.Error("Failed ClusterClose:", err)
+		}
+	}()
 	err = InstallSchemas(GetClusterBackendCtx(ctx).(backend.ModelSchema))
 	if err != nil {
 		t.Fatal(err)
