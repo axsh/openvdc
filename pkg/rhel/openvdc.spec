@@ -35,6 +35,8 @@ An empty metapackage that depends on all OpenVDC services. Just a conventient wa
 
 
 %build
+# rpmbuild resets $PATH so ensure to have "$GOPATH/bin".
+export PATH="$PATH:${GOPATH}/bin"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
   VERSION=%{version} ./build.sh

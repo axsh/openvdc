@@ -21,8 +21,10 @@ func (e *ErrInvalidTemplate) Dump(out io.Writer) {
 	}
 }
 
+//go:generate go-bindata -mode 420 -pkg registry -o schema.bindata.go ../schema
+
 func ValidateTemplate(in []byte) error {
-	buf, err := Asset("schema/v1.json")
+	buf, err := Asset("../schema/v1.json")
 	if err != nil {
 		return err
 	}
