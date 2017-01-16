@@ -78,7 +78,7 @@ def stage_integration(label) {
 
     sh "cd ci/multibox/ ; ./build.sh"
     stage "Run Integration Test"
-    sh "cd ci/tests ; go test -v --tags=acceptance"
+    sh "cd ci/tests ; ./run_tests.sh"
     stage "Cleanup Environment"
     sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
   }
