@@ -37,6 +37,9 @@ check_dep "rsync"
 check_dep "brctl"
 check_dep "qemu-system-x86_64"
 check_dep "parted" # For mount-partition.sh
+check_dep "sudo"
+check_dep "ssh"
+check_dep "nc"
 
 (
   $starting_step "Enable IP forwarding"
