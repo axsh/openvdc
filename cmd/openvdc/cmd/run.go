@@ -12,12 +12,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+
 var bridgeType string
-var bridgeName string
           
 func init() {
 	runCmd.Flags().StringVarP(&bridgeType, "bridge_type", "t", "", "Bridge type")
-	runCmd.Flags().StringVarP(&bridgeType, "bridge_name", "b", "", "Bridge name")
 }
 
 var runCmd = &cobra.Command{
@@ -30,6 +29,7 @@ var runCmd = &cobra.Command{
 	` + util.ExampleMergeTemplateOptions("openvdc run"),
 	DisableFlagParsing: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+
 		err := util.PreRunHelpFlagCheckAndQuit(cmd, args)
 		if err != nil {
 			return err
@@ -48,6 +48,7 @@ var runCmd = &cobra.Command{
 
 		templateSlug := left[0]
 		for i, a := range args {
+			
 			if a == templateSlug {
 				left = args[i:]
 				break
