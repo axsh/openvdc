@@ -75,13 +75,14 @@ def stage_acceptance(label) {
     stage "Build acceptance test environment"
     write_build_env(label)
 
-    sh "cd ci/multibox/ ; ./build.sh"
-    stage "Run acceptance test"
-    // This runs a non-login /bin/sh shell which doesn't execute .bashrc etc.
-    // Therefore we use this golang.env file to set GOPATH
-    sh "source ~/golang.env ; cd ci/tests ; ./run_tests.sh"
-    stage "Cleanup environment"
-    sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
+    try {
+      sh "cd ci/acceptance-test/multibox/ ; ./build.sh"
+      stage "Run acceptance Test"
+      // This is where the integration test will be run
+    } finally {
+      stage "Cleanup Environment"
+      sh "cd ci/acceptance-test/multibox/ ; ./destroy_leaving_cache.sh"
+    }
   }
 }
 
