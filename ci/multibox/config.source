@@ -1,3 +1,4 @@
+#!/bin/bash
 # The nodes to build. If any of these are replaced by a physical device,
 # comment it out here.
 NODES=(

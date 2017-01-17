@@ -1,3 +1,4 @@
+#!/bin/bash
 scheduler=${scheduler:-false}
 mesos_master="${mesos_master:-10.0.100.11}"
 zk="${zk:-10.0.100.10}"
