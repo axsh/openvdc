@@ -212,6 +212,7 @@ git_branches="$(run_git)"
 
 script=$(write_script)
 
+## Send the script generated above to the dh machine
 echo -e "${script/_STUB_/${git_branches}/}" | $SSH_REMOTE /usr/bin/bash 
 
 
