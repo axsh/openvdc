@@ -41,7 +41,7 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
   VERSION=%{version} ./build.sh
 )
-cd "${GOPATH}/src/github.com/axsh/openvdc/ci/tests"
+cd "${GOPATH}/src/github.com/axsh/openvdc/ci/acceptance-test/tests"
 go test -tags=acceptance -c -o openvdc-acceptance-test
 
 %install
@@ -53,7 +53,7 @@ ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
-cp ci/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
