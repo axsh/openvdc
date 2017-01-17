@@ -111,5 +111,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_acceptance(label)
+  //stage_acceptance(label)
 }
