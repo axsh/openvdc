@@ -212,7 +212,6 @@ git_branches="$(run_git)"
 
 script=$(write_script)
 
-#echo -e "${script/_STUB_/${git_branches}/}" > tmp.sh
 echo -e "${script/_STUB_/${git_branches}/}" | $SSH_REMOTE /usr/bin/bash 
 
 
