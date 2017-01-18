@@ -85,7 +85,7 @@ func modifyConf() {
 	result := strings.Join([]string{cf, newSettings}, "")
 	err = ioutil.WriteFile(LxcConfigFile, []byte(result), 0644)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("Couldn't save lxc config file", err)
 	}
 }
 
@@ -133,6 +133,33 @@ func cleanConfigFile(input string) string {
 	output := strings.Join(lines, "\n")
 
 	return output
+}
+
+func resetConfigFile() {
+	f, err := ioutil.ReadFile(LxcConfigFile)
+
+        if err != nil {
+                log.Fatalf("Failed loading lxc default.conf: ", err)
+        }
+
+	lines := strings.Split(string(f), "\n")
+
+        for i, line := range lines {
+                if strings.Contains(line, "hwaddr") || 
+		   strings.Contains(line, "ipv4") ||
+		   strings.Contains(line, "script.up") ||
+		   strings.Contains(line, "script.down") ||
+		   strings.Contains(line, "veth.pair") {
+                        lines[i] = ""
+                }
+        }
+
+        output := strings.Join(lines, "\n")
+
+        err = ioutil.WriteFile(LxcConfigFile, []byte(output), 0644)
+        if err != nil {
+                log.Fatalln("Couldn't restore lxc config file", err)
+        }
 }
 
 
@@ -228,12 +255,14 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 	d.log.Infoln("Starting lxc-container...")
 	if err := c.Start(); err != nil {
 		d.log.Errorln(err)
+		resetConfigFile()
 		return err
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
 	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
 		d.log.Errorln("Failed or timedout to wait for RUNNING")
+		resetConfigFile()
 		return fmt.Errorf("Failed or timedout to wait for RUNNING")
 	}
 	return nil
