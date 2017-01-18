@@ -121,14 +121,27 @@ func HandleArgs(args []string) []string {
 	return args
 }
 
+func IsFlagProvided(args []string, flagName string, flagShortName string) bool {
+	
+	result := false
+	
+	for i, _ := range args {
+		trimmedArg := strings.Replace(args[i], "-", "", -1)
+		if(trimmedArg == flagName || trimmedArg == flagShortName) {
+			result = true
+			break
+		}
+	}
+
+	return result
+}
+
 // MergeTemplateParams returns the value merged resource template. The value source is
 // read from JSON string, file, stdin or command line options.
 func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.ResourceTemplate {
 	if len(args) == 0 {
 		return rt.Template.Template
 	}
-
-	args = HandleArgs(args)
 
 	rh := rt.Template.ResourceHandler()
 	clihn, ok := rh.(handlers.CLIHandler)
