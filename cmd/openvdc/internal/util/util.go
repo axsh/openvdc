@@ -21,15 +21,11 @@ import (
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/registry"
+	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	"google.golang.org/grpc"
 )
 
 var UserConfDir string
-
-const (
-        Bridge_Linux  = "bridge-linux"
-        Bridge_Ovs    = "bridge-ovs"
-)
 
 func init() {
 	// UserConfDir variable is referenced from init() in cmd/root.go
@@ -122,9 +118,9 @@ func HandleArgs(args []string) []string {
 			
 			switch (strings.ToLower(args[i+1])) {
 				case "linux":
-					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, Bridge_Linux)
+					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, constants.BRIDGE_LINUX)
 				case "ovs":
-					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, Bridge_Ovs)
+					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, constants.BRIDGE_OVS)
 				default:
 					log.Fatalf("Unrecognized bridge type.")
 			}

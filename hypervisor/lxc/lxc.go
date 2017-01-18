@@ -12,6 +12,7 @@ import (
 
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
@@ -105,14 +106,14 @@ func updateSettings(nwi NetworkInterface, input string) string {
 
 
 	switch nwi.Type {
-        case "bridge-linux":
+        case constants.BRIDGE_LINUX:
                 output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + LinuxUpScript)
 		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + LinuxDownScript)
-        case "bridge-ovs":
+        case constants.BRIDGE_OVS:
                 output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + OvsUpScript)
                 output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + OvsDownScript)
         default:
-	
+		log.Fatalf("Unrecognized bridge type.")	
         }
 	
 	return output
