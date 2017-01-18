@@ -114,7 +114,7 @@ func PreRunHelpFlagCheckAndQuit(cmd *cobra.Command, args []string) error {
 func HandleArgs(args []string) []string {
 	for i, _ := range args {
 		arg := strings.Replace(args[i], "-", "", -1)
-                if arg == "bridge_type" || arg == "t" {
+                if arg == "bridge-type" || arg == "t" {
 			
 			switch (strings.ToLower(args[i+1])) {
 				case "linux":
