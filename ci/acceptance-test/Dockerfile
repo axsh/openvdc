@@ -3,7 +3,6 @@ FROM centos:7
 MAINTAINER "Axsh Co. LTD"
 
 #TODO: Install openvdc-cli in the container... openvdc-acceptance-test should depend on it
-#TODO: Set up local docker repository
 
 VOLUME /data
 
