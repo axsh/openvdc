@@ -15,8 +15,21 @@ set -a
 set +a
 
 DATA_DIR="${DATA_DIR:-/data2}"
-
 repo_and_tag="openvdc/acceptance-test:${BRANCH}.${RELEASE_SUFFIX}"
+
+function cleanup() {
+  if [[ -z "${LEAVE_CONTAINER}" || "${LEAVE_CONTAINER}" == "0" ]]; then
+    # Clean up containers
+    # Images don't need to be cleaned up. Removing them immediately would slow down
+    # builds and they can be garbage collected later.
+    for CID in $(sudo docker ps -af ancestor="${repo_and_tag}" --format "{{.ID}}"); do
+      sudo docker rm "${CID}"
+    done
+  else
+    echo "LEAVE_CONTAINER was set and not 0. Skip container cleanup."
+  fi
+}
+trap "cleanup" EXIT
 
 sudo docker build -t "${repo_and_tag}" --build-arg BRANCH="${BRANCH}" \
                                   --build-arg RELEASE_SUFFIX="${RELEASE_SUFFIX}" \
