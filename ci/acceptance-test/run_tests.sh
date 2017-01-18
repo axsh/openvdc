@@ -1,6 +1,13 @@
 #!/bin/bash
-#TODO: Require a commandline option and output a usage is not supplied
-#      Just stopping people from running this locally without thinking. :p
+
+if [[ "$1" != "RUN" ]]; then
+  echo "This script is designed to be run inside of the Docker container provided"\
+  "by the Dockerfile in this directory. You most probably don't want to be running"\
+  "this manually. Use the 'build_and_run_in_docker.sh' script instead."
+
+  exit 1
+fi
+
 set -xe
 
 cat | sudo tee /etc/yum.repos.d/openvdc.repo << EOS
