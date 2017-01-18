@@ -1,5 +1,7 @@
 FROM centos:7
 
+MAINTAINER "Axsh Co. LTD"
+
 #TODO: Set name
 #TODO: Set labels
 #TODO: Install openvdc-cli in the container... openvdc-acceptance-test should depend on it
