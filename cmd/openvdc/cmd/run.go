@@ -29,23 +29,28 @@ var runCmd = &cobra.Command{
 	` + util.ExampleMergeTemplateOptions("openvdc run"),
 	DisableFlagParsing: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-
 		err := util.PreRunHelpFlagCheckAndQuit(cmd, args)
 		if err != nil {
 			return err
 		}
 		err = cmd.ParseFlags(args)
+
 		if err != nil {
 			fmt.Println(err)
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+			
 		left := cmd.Flags().Args()
 		if len(left) < 1 {
 			return pflag.ErrHelp
 		}
-
+	
+		if util.IsFlagProvided(args,"bridge_type","t") != true {
+			log.Fatalf("Please specify a bridge type.")
+		}
+		
 		templateSlug := left[0]
 		for i, a := range args {
 			
@@ -54,6 +59,7 @@ var runCmd = &cobra.Command{
 				break
 			}
 		}
+
 		req := prepareRegisterAPICall(templateSlug, left)
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
