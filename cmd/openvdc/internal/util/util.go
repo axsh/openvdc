@@ -110,12 +110,25 @@ func PreRunHelpFlagCheckAndQuit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func HandleArgs(args []string) []string {
+	for i, _ := range args {
+                if args[i] == "--bridge_type" || args[i] == "-bridge_type" || args[i] == "--t" {
+                        args[i] = `{"interfaces":[{"type":"ovs"}]}`
+                        args[i+1] = ""
+                }
+        }
+
+	return args
+}
+
 // MergeTemplateParams returns the value merged resource template. The value source is
 // read from JSON string, file, stdin or command line options.
 func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.ResourceTemplate {
 	if len(args) == 0 {
 		return rt.Template.Template
 	}
+
+	args = HandleArgs(args)
 
 	rh := rt.Template.ResourceHandler()
 	clihn, ok := rh.(handlers.CLIHandler)
