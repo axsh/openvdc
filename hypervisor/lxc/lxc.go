@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"strconv"
 
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
@@ -31,6 +32,7 @@ type NetworkInterface struct {
 	BridgeName string
 	Ipv4Addr   string
 	MacAddr    string
+	TapName    string
 }
 
 var interfaces []NetworkInterface
@@ -94,7 +96,7 @@ func updateSettings(nwi NetworkInterface, input string) string {
 		output += fmt.Sprintf("#---- %s ----\n", nwi.BridgeName)
 	}
 
-	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", "test")
+	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", nwi.TapName)
 
 	if nwi.Ipv4Addr != "" {
 		output += fmt.Sprintf("lxc.network.ipv4=%s\n", nwi.Ipv4Addr)
@@ -167,7 +169,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	var conf string
 
-	for _, i := range lxcTmpl.GetInterfaces() {
+	for x, i := range lxcTmpl.GetInterfaces() {
 
 		if i.GetIpv4Addr() == "" {
 			conf += fmt.Sprintf("lxc.network.ipv4=%s\n", i.GetIpv4Addr())
@@ -183,6 +185,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
                         	Type: i.GetType(),
 				Ipv4Addr: i.GetIpv4Addr(),
         			MacAddr: i.GetMacaddr(),
+				TapName: d.name + "-" + strconv.Itoa(x),
                 	},
         	)
 	}
