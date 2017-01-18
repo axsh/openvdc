@@ -1,6 +1,0 @@
-[openvdc]
-name=OpenVDC
-failovermethod=priority
-baseurl=https://ci.openvdc.org/repos/acceptance-test/current
-enabled=1
-gpgcheck=0
