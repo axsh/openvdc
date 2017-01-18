@@ -3,9 +3,9 @@ FROM centos:7
 MAINTAINER "Axsh Co. LTD"
 
 #TODO: Install openvdc-cli in the container... openvdc-acceptance-test should depend on it
-#TODO: Rename /data2 to /data in the container
+#TODO: Set up local docker repository
 
-VOLUME /data2
+VOLUME /data
 
 RUN ["yum", "install", "-y", "epel-release"]
 RUN ["yum", "install", "-y", "rsync", "bridge-utils", "qemu-kvm", "qemu-system-x86", "parted", "sudo", "openssh-clients", "nmap-ncat"]
