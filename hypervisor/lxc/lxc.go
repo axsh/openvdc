@@ -93,6 +93,8 @@ func updateSettings(nwi NetworkInterface, input string) string {
 		output += fmt.Sprintf("#---- %s ----\n", nwi.BridgeName)
 	}
 
+	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", "test")
+
 	if nwi.Ipv4Addr != "" {
 		output += fmt.Sprintf("lxc.network.ipv4=%s\n", nwi.Ipv4Addr)
 	}
@@ -101,11 +103,12 @@ func updateSettings(nwi NetworkInterface, input string) string {
                 output += fmt.Sprintf("lxc.network.hwaddr=%s\n", nwi.MacAddr)
         }
 
+
 	switch nwi.Type {
-        case "linux":
+        case "bridge-linux":
                 output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + LinuxUpScript)
 		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + LinuxDownScript)
-        case "ovs":
+        case "bridge-ovs":
                 output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + OvsUpScript)
                 output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + OvsDownScript)
         default:

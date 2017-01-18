@@ -50,6 +50,8 @@ var runCmd = &cobra.Command{
 		if util.IsFlagProvided(args,"bridge_type","t") != true {
 			log.Fatalf("Please specify a bridge type.")
 		}
+
+		args = util.HandleArgs(args)
 		
 		templateSlug := left[0]
 		for i, a := range args {

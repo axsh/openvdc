@@ -26,6 +26,11 @@ import (
 
 var UserConfDir string
 
+const (
+        Bridge_Linux  = "bridge-linux"
+        Bridge_Ovs    = "bridge-ovs"
+)
+
 func init() {
 	// UserConfDir variable is referenced from init() in cmd/root.go
 	// so that it has to be initialized eagerly.
@@ -112,8 +117,18 @@ func PreRunHelpFlagCheckAndQuit(cmd *cobra.Command, args []string) error {
 
 func HandleArgs(args []string) []string {
 	for i, _ := range args {
-                if args[i] == "--bridge_type" || args[i] == "-bridge_type" || args[i] == "--t" {
-                        args[i] = `{"interfaces":[{"type":"ovs"}]}`
+		arg := strings.Replace(args[i], "-", "", -1)
+                if arg == "bridge_type" || arg == "t" {
+			
+			switch (strings.ToLower(args[i+1])) {
+				case "linux":
+					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, Bridge_Linux)
+				case "ovs":
+					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, Bridge_Ovs)
+				default:
+					log.Fatalf("Unrecognized bridge type.")
+			}
+
                         args[i+1] = ""
                 }
         }
