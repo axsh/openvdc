@@ -15,4 +15,6 @@ EOS
 sudo yum install -y openvdc-acceptance-test
 
 /multibox/build.sh
-/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v
+
+# Run the actual tests as axsh user. Root should never be required to run the openvdc command
+su axsh -c "/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v"
