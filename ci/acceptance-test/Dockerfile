@@ -2,9 +2,8 @@ FROM centos:7
 
 MAINTAINER "Axsh Co. LTD"
 
-#TODO: Set name
-#TODO: Set labels
 #TODO: Install openvdc-cli in the container... openvdc-acceptance-test should depend on it
+#TODO: Rename /data2 to /data in the container
 
 VOLUME /data2
 
@@ -20,6 +19,12 @@ ARG REBUILD
 
 # Set the ARGs to ENV because otherwise they're not visible to the run_tests.sh script
 ENV BRANCH=${BRANCH:-master} RELEASE_SUFFIX=${RELEASE_SUFFIX:-current} REBUILD=${REBUILD:-false}
+
+LABEL "jp.axsh.vendor"="Axsh Co. LTD"  \
+      "jp.axsh.project"="OpenVDC" \
+      "jp.axsh.task"="acceptance test" \
+      "jp.axsh.branch"="$BRANCH" \
+      "jp.axsh.release_suffix"="$RELEASE_SUFFIX"
 
 COPY ["multibox", "/multibox"]
 COPY ["run_tests.sh", "run_tests.sh"]
