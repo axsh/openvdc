@@ -32,4 +32,4 @@ install_openvdc_yum_repo
 # place because we want to make sure everything works with other addresses than
 # 127.0.0.1
 install_openvdc_yum_repo
-install_yum_package_over_ssh "openvdc-executor openvdc-cli"
+install_yum_package_over_ssh "openvdc-executor"

@@ -108,6 +108,7 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 
 %package acceptance-test
 Summary: The OpenVDC acceptance test used in its CI process.
+Requires: openvdc-cli
 
 %description acceptance-test
 An acceptance test designed to run on a specifically designed environment. The environment building scripts can be found in the OpenVDC source code repository. The average OpenVDC user will not need to install this.
