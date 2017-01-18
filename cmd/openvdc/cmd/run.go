@@ -14,9 +14,13 @@ import (
 
 
 var bridgeType string
+var ipv4 string
+var macAddr string
           
 func init() {
 	runCmd.Flags().StringVarP(&bridgeType, "bridge_type", "t", "", "Bridge type")
+	runCmd.Flags().StringVarP(&ipv4, "ip_addr", "i", "", "Ipv4 Address")
+	runCmd.Flags().StringVarP(&macAddr, "mac_addr", "m", "", "Mac Address")
 }
 
 var runCmd = &cobra.Command{
