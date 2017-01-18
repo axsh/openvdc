@@ -71,17 +71,10 @@ def stage_rpmbuild(label) {
 
 def stage_acceptance(label) {
   node("multibox") {
-    checkout_and_merge()
-    stage "Build acceptance test environment"
-    write_build_env(label)
-
-    try {
-      sh "cd ci/acceptance-test/multibox/ ; ./build.sh"
-      stage "Run acceptance Test"
-      // This is where the integration test will be run
-    } finally {
-      stage "Cleanup Environment"
-      sh "cd ci/acceptance-test/multibox/ ; ./destroy_leaving_cache.sh"
+    stage "Acceptance Test" {
+      checkout_and_merge()
+      write_build_env(label)
+      sh "./ci/acceptance-test/build_and_run_in_docker.sh ./build.env"
     }
   }
 }
