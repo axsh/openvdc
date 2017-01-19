@@ -19,7 +19,7 @@ import (
 
 var LxcConfigFile string
 
-const (
+const ( 
 	ScriptPath      = "/etc/lxc/"
 	LinuxUpScript   = "linux-bridge-up.sh"
 	LinuxDownScript = "linux-bridge-down.sh"
@@ -162,6 +162,31 @@ func resetConfigFile() {
         }
 }
 
+func checkScript(script string) {
+	_, err := os.Stat(script)
+	
+        if err != nil {
+                log.Infoln("Script not found.", err)
+		createScript(script)
+        }
+}
+
+func createScript(script string) {
+	log.Infoln("Creating script '%s'...", script) 
+	f, err := os.Create(script)
+    	
+	if err != nil {
+		log.Fatalf("Failed creating script.", err)
+	}
+
+	err = os.Chmod(script, 666)
+	if err != nil {
+     		log.Fatalf("Failed to set file permissions.", err)
+ 	}
+
+	defer f.Close()
+}
+
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
 
@@ -216,6 +241,11 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
                 	},
         	)
 	}
+	
+	checkScript(LinuxUpScript)
+	checkScript(LinuxDownScript)
+	checkScript(OvsUpScript)
+	checkScript(OvsDownScript)
 
         modifyConf()
 
