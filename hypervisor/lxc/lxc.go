@@ -111,9 +111,17 @@ func updateSettings(nwi NetworkInterface, input string) string {
         case constants.BRIDGE_LINUX:
                 output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + LinuxUpScript)
 		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + LinuxDownScript)
+		
+		scriptInput := fmt.Sprintf("brctl addif br0 %s", nwi.TapName)	
+		updateScript(LinuxUpScript, scriptInput)
+
         case constants.BRIDGE_OVS:
                 output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + OvsUpScript)
+
                 output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + OvsDownScript)
+
+		scriptInput := fmt.Sprintf("ovs-vsctl add-port br0 %s", nwi.TapName)
+                updateScript(OvsUpScript, scriptInput)
         default:
 		log.Fatalf("Unrecognized bridge type.")	
         }
@@ -187,6 +195,12 @@ func createScript(script string) {
 	defer f.Close()
 }
 
+func updateScript(script string, input string) {
+	err := ioutil.WriteFile(ScriptPath + script, []byte(input), 0666)
+	if err != nil {
+		log.Fatalf("Failed to update script: ", err)
+	}
+}
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
 
