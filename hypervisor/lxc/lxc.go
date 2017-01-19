@@ -7,19 +7,19 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 
+	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
-	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 var LxcConfigFile string
 
-const ( 
+const (
 	ScriptPath      = "/etc/lxc/"
 	LinuxUpScript   = "linux-bridge-up.sh"
 	LinuxDownScript = "linux-bridge-down.sh"
@@ -28,7 +28,7 @@ const (
 )
 
 type NetworkInterface struct {
-	Type string
+	Type       string
 	BridgeName string
 	Ipv4Addr   string
 	MacAddr    string
@@ -36,7 +36,6 @@ type NetworkInterface struct {
 }
 
 var interfaces []NetworkInterface
-
 
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
@@ -79,7 +78,7 @@ func modifyConf() {
 
 	var newSettings string
 	for i, _ := range interfaces {
-		newSettings = updateSettings(interfaces[i], newSettings)		
+		newSettings = updateSettings(interfaces[i], newSettings)
 	}
 
 	result := strings.Join([]string{cf, newSettings}, "")
@@ -90,7 +89,7 @@ func modifyConf() {
 }
 
 func updateSettings(nwi NetworkInterface, input string) string {
-	output := input + "\n" 
+	output := input + "\n"
 
 	if nwi.BridgeName != "" {
 		output += fmt.Sprintf("#---- %s ----\n", nwi.BridgeName)
@@ -103,29 +102,28 @@ func updateSettings(nwi NetworkInterface, input string) string {
 	}
 
 	if nwi.MacAddr != "" {
-                output += fmt.Sprintf("lxc.network.hwaddr=%s\n", nwi.MacAddr)
-        }
-
+		output += fmt.Sprintf("lxc.network.hwaddr=%s\n", nwi.MacAddr)
+	}
 
 	switch nwi.Type {
-        case constants.BRIDGE_LINUX:
-                output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + LinuxUpScript)
-		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + LinuxDownScript)
-		
-		scriptInput := fmt.Sprintf("brctl addif br0 %s", nwi.TapName)	
+	case constants.BRIDGE_LINUX:
+		output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath+LinuxUpScript)
+		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath+LinuxDownScript)
+
+		scriptInput := fmt.Sprintf("brctl addif br0 %s", nwi.TapName)
 		updateScript(LinuxUpScript, scriptInput)
 
-        case constants.BRIDGE_OVS:
-                output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath + OvsUpScript)
+	case constants.BRIDGE_OVS:
+		output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath+OvsUpScript)
 
-                output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath + OvsDownScript)
+		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath+OvsDownScript)
 
 		scriptInput := fmt.Sprintf("ovs-vsctl add-port br0 %s", nwi.TapName)
-                updateScript(OvsUpScript, scriptInput)
-        default:
-		log.Fatalf("Unrecognized bridge type.")	
-        }
-	
+		updateScript(OvsUpScript, scriptInput)
+	default:
+		log.Fatalf("Unrecognized bridge type.")
+	}
+
 	return output
 }
 
@@ -133,10 +131,10 @@ func cleanConfigFile(input string) string {
 	lines := strings.Split(input, "\n")
 
 	for i, line := range lines {
-                if strings.Contains(line, "lxc.network.link") {
-                        lines[i] = ""
-                }
-        }
+		if strings.Contains(line, "lxc.network.link") {
+			lines[i] = ""
+		}
+	}
 
 	output := strings.Join(lines, "\n")
 
@@ -146,57 +144,57 @@ func cleanConfigFile(input string) string {
 func resetConfigFile() {
 	f, err := ioutil.ReadFile(LxcConfigFile)
 
-        if err != nil {
-                log.Fatalf("Failed loading lxc default.conf: ", err)
-        }
+	if err != nil {
+		log.Fatalf("Failed loading lxc default.conf: ", err)
+	}
 
 	lines := strings.Split(string(f), "\n")
 
-        for i, line := range lines {
-                if strings.Contains(line, "hwaddr") || 
-		   strings.Contains(line, "ipv4") ||
-		   strings.Contains(line, "script.up") ||
-		   strings.Contains(line, "script.down") ||
-		   strings.Contains(line, "veth.pair") {
-                        lines[i] = ""
-                }
-        }
+	for i, line := range lines {
+		if strings.Contains(line, "hwaddr") ||
+			strings.Contains(line, "ipv4") ||
+			strings.Contains(line, "script.up") ||
+			strings.Contains(line, "script.down") ||
+			strings.Contains(line, "veth.pair") {
+			lines[i] = ""
+		}
+	}
 
-        output := strings.Join(lines, "\n")
+	output := strings.Join(lines, "\n")
 
-        err = ioutil.WriteFile(LxcConfigFile, []byte(output), 0644)
-        if err != nil {
-                log.Fatalln("Couldn't restore lxc config file", err)
-        }
+	err = ioutil.WriteFile(LxcConfigFile, []byte(output), 0644)
+	if err != nil {
+		log.Fatalln("Couldn't restore lxc config file", err)
+	}
 }
 
 func checkScript(script string) {
-	_, err := os.Stat(ScriptPath+script)
-	
-        if err != nil {
-                log.Infoln("Script not found.", err)
-		createScript(ScriptPath+script)
-        }
+	_, err := os.Stat(ScriptPath + script)
+
+	if err != nil {
+		log.Infoln("Script not found.", err)
+		createScript(ScriptPath + script)
+	}
 }
 
 func createScript(script string) {
-	log.Infoln("Creating script '%s'...", script) 
+	log.Infoln("Creating script '%s'...", script)
 	f, err := os.Create(script)
-    	
+
 	if err != nil {
 		log.Fatalf("Failed creating script.", err)
 	}
 
 	err = os.Chmod(script, 666)
 	if err != nil {
-     		log.Fatalf("Failed to set file permissions.", err)
- 	}
+		log.Fatalf("Failed to set file permissions.", err)
+	}
 
 	defer f.Close()
 }
 
 func updateScript(script string, input string) {
-	err := ioutil.WriteFile(ScriptPath + script, []byte(input), 0666)
+	err := ioutil.WriteFile(ScriptPath+script, []byte(input), 0666)
 	if err != nil {
 		log.Fatalf("Failed to update script: ", err)
 	}
@@ -246,22 +244,22 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		}
 
 		interfaces = append(interfaces,
-               		NetworkInterface{
-                        	BridgeName: "br0",
-                        	Type: i.GetType(),
-				Ipv4Addr: i.GetIpv4Addr(),
-        			MacAddr: i.GetMacaddr(),
-				TapName: d.name + "-" + strconv.Itoa(x),
-                	},
-        	)
+			NetworkInterface{
+				BridgeName: "br0",
+				Type:       i.GetType(),
+				Ipv4Addr:   i.GetIpv4Addr(),
+				MacAddr:    i.GetMacaddr(),
+				TapName:    d.name + "-" + strconv.Itoa(x),
+			},
+		)
 	}
-	
+
 	checkScript(LinuxUpScript)
 	checkScript(LinuxDownScript)
 	checkScript(OvsUpScript)
 	checkScript(OvsDownScript)
 
-        modifyConf()
+	modifyConf()
 
 	interfaces = nil
 
