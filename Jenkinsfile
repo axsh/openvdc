@@ -71,11 +71,10 @@ def stage_rpmbuild(label) {
 
 def stage_acceptance(label) {
   node("multibox") {
-    stage "Acceptance Test" {
-      checkout_and_merge()
-      write_build_env(label)
-      sh "./ci/acceptance-test/build_and_run_in_docker.sh ./build.env"
-    }
+    stage "Acceptance Test ${label}"
+    checkout_and_merge()
+    write_build_env(label)
+    sh "./ci/acceptance-test/build_and_run_in_docker.sh ./build.env"
   }
 }
 
