@@ -91,10 +91,6 @@ func modifyConf() {
 func updateSettings(nwi NetworkInterface, input string) string {
 	output := input + "\n"
 
-	if nwi.BridgeName != "" {
-		output += fmt.Sprintf("#---- %s ----\n", nwi.BridgeName)
-	}
-
 	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", nwi.TapName)
 
 	if nwi.Ipv4Addr != "" {
