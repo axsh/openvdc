@@ -163,11 +163,11 @@ func resetConfigFile() {
 }
 
 func checkScript(script string) {
-	_, err := os.Stat(script)
+	_, err := os.Stat(ScriptPath+script)
 	
         if err != nil {
                 log.Infoln("Script not found.", err)
-		createScript(script)
+		createScript(ScriptPath+script)
         }
 }
 
