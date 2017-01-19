@@ -18,10 +18,10 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/registry"
-	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	"google.golang.org/grpc"
 )
 
@@ -113,32 +113,43 @@ func PreRunHelpFlagCheckAndQuit(cmd *cobra.Command, args []string) error {
 
 func HandleArgs(args []string) []string {
 	for i, _ := range args {
-		arg := strings.Replace(args[i], "-", "", -1)
-                if arg == "bridge-type" || arg == "t" {
-			
-			switch (strings.ToLower(args[i+1])) {
-				case "linux":
-					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, constants.BRIDGE_LINUX)
-				case "ovs":
-					args[i] = fmt.Sprintf(`{"interfaces":[{"type":"%s"}]}`, constants.BRIDGE_OVS)
-				default:
-					log.Fatalf("Unrecognized bridge type.")
-			}
+		arg := strings.Replace(args[i], "-", "", 2)
 
-                        args[i+1] = ""
-                }
-        }
+		var bridgetype string
+		//var ipaddr     string
+		//var macaddr    string
+
+		switch arg {
+		case "bridge-type", "t":
+			switch strings.ToLower(args[i+1]) {
+			case "linux":
+				bridgetype = fmt.Sprintf(`"type":"%s"`, constants.BRIDGE_LINUX)
+			case "ovs":
+				bridgetype = fmt.Sprintf(`"type":"%s"`, constants.BRIDGE_OVS)
+			default:
+				log.Fatalf("Unrecognized bridge type.")
+			}
+			
+			args[i] = fmt.Sprintf(`{"interfaces":[{%s}]}`, bridgetype)
+			args[i+1] = ""
+
+		case "ip-addr", "i":
+
+		case "mac-addr", "m":
+
+		}
+	}
 
 	return args
 }
 
 func IsFlagProvided(args []string, flagName string, flagShortName string) bool {
-	
+
 	result := false
-	
+
 	for i, _ := range args {
-		trimmedArg := strings.Replace(args[i], "-", "", -1)
-		if(trimmedArg == flagName || trimmedArg == flagShortName) {
+		trimmedArg := strings.Replace(args[i], "-", "", 2)
+		if trimmedArg == flagName || trimmedArg == flagShortName {
 			result = true
 			break
 		}
