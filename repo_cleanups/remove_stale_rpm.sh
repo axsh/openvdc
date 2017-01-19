@@ -35,7 +35,11 @@ function write_script {
            fi
         done
     
-        echo "rm -rf ./${dead_dir}  (((command not executed)))"
+        echo "rm -rf ./${dead_dir} "
+        rm -rf ./${dead_dir}
+        if [ $? -ne 0 ]; then
+           echo "       rm FAILED for ./${dead_dir} "
+        fi
     
     }
     
@@ -157,28 +161,33 @@ function write_script {
     
     ## Now delete superfluous rpm's from the master directory
     cd master
-
     if [[ $? -ne 0 ]]; then
         exit 0                # There's a problem here, but we won't worry about it 
     fi
-    
+   
+    nrepos=$(ls -1 . | wc -l)
+    if [[ ${nrepos} -lt 2 ]]; then
+        echo "Something is wrong. The master directory contains one or less repos. Quitting."
+        exit 1
+    fi
+ 
     current=$(readlink current)
-    echo "'current' is ${current}"
-
     if [[ -z ${current} ]]; then
         echo "No 'current' symlink in master! "
-        exit 0                # There is no "current" symlink. Don't remove anything!
+        exit 1                # There is no "current" symlink. Don't remove anything!
     fi
+    echo "'current' rpm repo is ${current}"
 
     ## Just to be safe! We'll do the same 
     readlink current
     if [[ $? -ne 0 ]]; then
         echo "No 'current' symlink in master! "
-        exit 0
+        exit 1
     fi
 
     current=${current##*\/}
     now=$(today)
+    echo "Checking for stale rpm repos under master..."
     for dt in $(ls -d 2*); do
         rpmdate=${dt:0:8}     # yyyymmdd is the format
 
@@ -193,7 +202,11 @@ function write_script {
             if [[ "${dt}" = "${current}" ]]; then
                echo "Will not delete 'current' (${current})"
             else
-               echo "rm -rf  ./${dt}   (((command not executed)))"
+               echo "rm -rf  master/${dt} "
+               rm -rf  ./${dt}  
+               if [ $? -ne 0 ]; then
+                   echo "       rm FAILED for master/${dt} "
+               fi
             fi
         fi
     done
