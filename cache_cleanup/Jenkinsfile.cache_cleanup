@@ -12,7 +12,7 @@ def checkout_and_merge() {
 }
 
 
-def stage_cleanup_cache(label) {
+def stage_cleanup_cache() {
   node("multibox") {
     stage "Cleanup cache"
     checkout scm
@@ -31,4 +31,4 @@ node() {
 }
 
 
-stage_cleanup_cache(label)
+stage_cleanup_cache()
