@@ -28,9 +28,20 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "openvdc-scheduler",
-	Short: "",
+	Short: "Run openvdc-scheduler process",
 	Long:  ``,
-	Run:   execute,
+	Example: `
+	"--zk" and "--master" may be one of:
+	  "host:port"
+		"zk://host1:port1,host2:port2,.../path"
+
+	Auto detect mesos cluster from Zookeeper.
+	% openvdc-scheduler --master=zk://localhost/mesos --zk=zk://192.168.1.10
+
+  Explicitly specify the mesos master address.
+	% openvdc-scheduler --master=localhost:5050 --zk=localhost:2181
+	`,
+	Run: execute,
 }
 var gRPCAddr string
 var mesosMasterAddr string
