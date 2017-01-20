@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -11,6 +10,8 @@ import (
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 )
 
@@ -23,6 +24,12 @@ var (
 )
 
 var log = logrus.WithField("context", "vdc-executor")
+
+var RootCmd = &cobra.Command{
+	Use:   "openvdc-executor",
+	Short: "",
+	Long:  ``,
+}
 
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
@@ -77,7 +84,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{zkAddr})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -140,7 +147,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{zkAddr})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -185,7 +192,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{zkAddr})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -230,7 +237,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{zkAddr})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -345,17 +352,32 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 	log.Errorln("Got error message:", err)
 }
 
-var (
-	hypervisorName = flag.String("hypervisor", "null", "")
-	zkAddr         = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
-)
+var hypervisorName string
+var zkAddr string
 
 func init() {
-	flag.Parse()
+
+	RootCmd.PersistentFlags().StringVarP(&hypervisorName, "hypervisor-name", "", "null", "Hypervisor name")
+	RootCmd.PersistentFlags().StringVarP(&zkAddr, "zk", "", "127.0.0.1:2181", "Zookeeper address")
+
+	cobra.OnInitialize(initConfig)
+	pfs := RootCmd.PersistentFlags()
+
+	pfs.String("config", "/root/.openvdc/executor-config.toml", "")
+	pfs.String("hypervisorName", viper.GetString("hypervisor.name"), "Hypervisor name")
+	viper.BindPFlag("hypervisor.name", pfs.Lookup("hypervisorName"))
+
+	pfs.String("zkAddr", viper.GetString("zk.addr"), "Zk Addr")
+	viper.BindPFlag("hypervisor.name", pfs.Lookup("hypervisorName"))
+
 }
 
 func main() {
-	provider, ok := hypervisor.FindProvider(*hypervisorName)
+
+	//hypervisorName = viper.GetString("hypervisorName")
+	//zkAddr = viper.GetString("zkAddr")
+
+	provider, ok := hypervisor.FindProvider(hypervisorName)
 	if ok == false {
 		log.Fatalln("Unknown hypervisor name:", hypervisorName)
 	}
@@ -380,4 +402,19 @@ func main() {
 		log.Fatalln("Something went wrong with the driver: ", err)
 	}
 	log.Infoln("Executor shutting down")
+}
+
+func initConfig() {
+	f := RootCmd.PersistentFlags().Lookup("config")
+	if f.Changed {
+		viper.SetConfigFile(f.Value.String())
+	}
+
+	viper.SetConfigName("executor-config")
+	viper.AddConfigPath("/root/.openvdc/")
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+	}
 }
