@@ -56,6 +56,7 @@ def stage_cleanup_cache(label) {
   node("multibox") {
     stage "Cleanup cache"
     write_build_env(label)
+    checkout scm
 //  sh "git remote prune origin"
     sh "cd cache_cleanup/ ; ./remove_stale_branches.sh"
   }
@@ -70,7 +71,7 @@ node() {
     }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
       // Only ignore errors for timeout.
     }
-    checkout scm
+//  checkout scm
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
     RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
