@@ -10,7 +10,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-
+	"github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -86,7 +86,7 @@ func (z *Zk) Connect(dest ConnectionAddress) error {
 	z.basePath = zkAddr.Path
 	c, ev, err := zk.Connect(zkAddr.Hosts, 10*time.Second)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed zk.Connect")
 	}
 
 	for e := range ev {
@@ -139,7 +139,7 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 	absKey, _ := z.canonKey(key)
 	nkey, err := z.conn.Create(absKey, value, zk.FlagSequence, defaultACL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Failed zk.Create with sequence %s", absKey)
 	}
 
 	// Treat the parent key as the sequence store to save the last ID
@@ -149,7 +149,7 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 	if err != nil {
 		// Rollback by deleting new key node.
 		z.conn.Delete(nkey, versionAny)
-		return "", err
+		return "", errors.Wrapf(err, "Failed updating last sequence ID zk.Set %s", seqNode)
 	}
 	return nkey[len(z.basePath):], nil
 }
@@ -161,7 +161,7 @@ func (z *Zk) Create(key string, value []byte) error {
 	absKey, _ := z.canonKey(key)
 	_, err := z.conn.Create(absKey, value, int32(0), defaultACL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed zk.Create %s", absKey)
 	}
 	return nil
 }
@@ -180,17 +180,22 @@ func (z *Zk) Update(key string, value []byte) error {
 	if !ok {
 		return ErrUnknownKey(absKey)
 	}
-	_, err = z.conn.Set(absKey, value, stat.Version)
-	return err
+	if _, err := z.conn.Set(absKey, value, stat.Version); err != nil {
+		return errors.Wrapf(err, "Failed zk.Set %s", absKey)
+	}
+	return nil
 }
 
-func (z *Zk) Find(key string) (value []byte, err error) {
+func (z *Zk) Find(key string) ([]byte, error) {
 	if !z.isConnected() {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
-	value, _, err = z.conn.Get(absKey)
-	return
+	value, _, err := z.conn.Get(absKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed zk.Get %s", absKey)
+	}
+	return value, nil
 }
 
 func (z *Zk) FindLastKey(prefixKey string) (string, error) {
@@ -221,7 +226,7 @@ func (z *Zk) Delete(key string) error {
 		return ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
-	return z.conn.Delete(absKey, 1)
+	return errors.Wrapf(z.conn.Delete(absKey, 1), "Failed zk.Delete %s", absKey)
 }
 
 // TODO: Add mutex for thread safety.
@@ -253,7 +258,7 @@ func (z *Zk) Keys(parentKey string) (KeyIterator, error) {
 	absKey, _ := z.canonKey(parentKey)
 	children, _, err := z.conn.Children(absKey)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Failed zk.Children %s", absKey)
 	}
 	// Sort keys in client side.
 	sort.Strings(children)
@@ -277,7 +282,7 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 		// Install the root key if not exists.
 		ok, _, err := conn.Exists(z.zk.basePath)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed zk.Exists %s", z.zk.basePath)
 		}
 		if !ok {
 			// TODO: Set the current schema version to the root key node.
@@ -285,7 +290,7 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 			_, err = conn.Create(z.zk.basePath, []byte{}, int32(0), defaultACL)
 			if err != nil {
 				log.WithError(err).Error("Failed to setup the root key.")
-				return err
+				return errors.Wrapf(err, "Failed zk.Create %s", z.zk.basePath)
 			}
 		}
 	}
@@ -293,13 +298,13 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 		absKey, _ := z.zk.canonKey(key)
 		ok, _, err := conn.Exists(absKey)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed zk.Exists %s", absKey)
 		}
 		if !ok {
 			_, err := conn.Create(absKey, []byte{}, int32(0), defaultACL)
 			if err != nil {
 				log.WithError(err).Errorf("Failed to setup the schema key: %s (%s)", key, absKey)
-				return err
+				return errors.Wrapf(err, "Failed zk.Create %s", absKey)
 			}
 		}
 	}
