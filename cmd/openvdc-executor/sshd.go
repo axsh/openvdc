@@ -2,35 +2,50 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 
+	"github.com/pkg/errors"
+
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
 
-func startSSHServer(listener net.Listener) {
+type SSHServer struct {
+	config   *ssh.ServerConfig
+	listener net.Listener
+}
+
+func NewSSHServer() *SSHServer {
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
 
-	privateBytes, err := ioutil.ReadFile("id_rsa")
-	if err != nil {
-		log.Fatal("Failed to load private key (./id_rsa)")
+	return &SSHServer{
+		config: config,
 	}
+}
 
-	private, err := ssh.ParsePrivateKey(privateBytes)
+func (sshd *SSHServer) Setup() error {
+	_, priv, err := ed25519.GenerateKey(nil)
 	if err != nil {
-		log.Fatal("Failed to parse private key")
+		return errors.Wrap(err, "Failed to generate host key")
 	}
+	sshSigner, err := ssh.NewSignerFromSigner(priv)
+	if err != nil {
+		return errors.Wrap(err, "Failed to convert to ssh.Signer")
+	}
+	sshd.config.AddHostKey(sshSigner)
+	return nil
+}
 
-	config.AddHostKey(private)
+func (sshd *SSHServer) Run(listener net.Listener) {
 	for {
 		tcpConn, err := listener.Accept()
 		if err != nil {
 			log.Error("Failed to accept incoming connection:", err)
 			continue
 		}
-		sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, config)
+		sshConn, chans, reqs, err := ssh.NewServerConn(tcpConn, sshd.config)
 		if err != nil {
 			log.Error("Failed to handshake:", err)
 			continue
