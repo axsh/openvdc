@@ -38,9 +38,9 @@ var listenAddr string
 var zkAddr ZkEndpoint
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "localhost:5050", "Mesos Master node address")
 	zkAddr = ZkEndpoint{Hosts: []string{"localhost"}, Path: "/openvdc"}
 
+	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "zk://localhost/mesos", "Mesos Master node address")
 	rootCmd.PersistentFlags().StringVarP(&gRPCAddr, "api", "a", "localhost:5000", "gRPC API bind address")
 	rootCmd.PersistentFlags().StringVarP(&listenAddr, "listen", "l", "0.0.0.0", "Local bind address")
 	rootCmd.PersistentFlags().VarP(&zkAddr, "zk", "", "Zookeeper node address")
