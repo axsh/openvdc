@@ -18,8 +18,8 @@ def stage_clean_rpms() {
 }
 
 node() {
-    stage "Clean RPM repos"
-    checkout scm
+    stage "Checkout"
+    checkout_and_merge()
     stage_clean_rpms()
 }
 
