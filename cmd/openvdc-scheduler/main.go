@@ -6,7 +6,6 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-
 	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
@@ -25,25 +24,38 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "openvdc-scheduler",
-	Short: "",
+	Short: "Run openvdc-scheduler process",
 	Long:  ``,
-	Run:   execute,
+	Example: `
+	"--zk" and "--master" may be one of:
+	  "host:port"
+		"zk://host1:port1,host2:port2,.../path"
+
+	Auto detect mesos cluster from Zookeeper.
+	% openvdc-scheduler --master=zk://localhost/mesos --zk=zk://192.168.1.10
+
+  Explicitly specify the mesos master address.
+	% openvdc-scheduler --master=localhost:5050 --zk=localhost:2181
+	`,
+	Run: execute,
 }
 var gRPCAddr string
 var mesosMasterAddr string
 var listenAddr string
-var zkAddr string
+var zkAddr backend.ZkEndpoint
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "localhost:5050", "Mesos Master node address")
+	zkAddr = backend.ZkEndpoint{Hosts: []string{"localhost"}, Path: "/openvdc"}
+
+	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "zk://localhost/mesos", "Mesos Master node address")
 	rootCmd.PersistentFlags().StringVarP(&gRPCAddr, "api", "a", "localhost:5000", "gRPC API bind address")
 	rootCmd.PersistentFlags().StringVarP(&listenAddr, "listen", "l", "0.0.0.0", "Local bind address")
-	rootCmd.PersistentFlags().StringVarP(&zkAddr, "zk", "", "127.0.0.1", "Zookeeper node address")
+	rootCmd.PersistentFlags().VarP(&zkAddr, "zk", "", "Zookeeper node address")
 	rootCmd.PersistentFlags().SetAnnotation("master", cobra.BashCompSubdirsInDir, []string{})
 }
 
 func setupDatabaseSchema() {
-	ctx, err := model.Connect(context.Background(), []string{zkAddr})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Fatalf("Could not connect to database: %s", zkAddr)
 	}

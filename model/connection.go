@@ -14,7 +14,7 @@ import (
 
 var ErrBackendNotInContext = errors.New("Given context does not have the backend object")
 
-func Connect(ctx context.Context, dest []string) (context.Context, error) {
+func Connect(ctx context.Context, dest backend.ConnectionAddress) (context.Context, error) {
 	bk := backend.NewZkBackend()
 	err := bk.Connect(dest)
 	if err != nil {
@@ -59,9 +59,9 @@ func GetBackendCtx(ctx context.Context) backend.ModelBackend {
 	return bk
 }
 
-func GrpcInterceptor(modelAddr string, clusterCtx context.Context) grpc.UnaryServerInterceptor {
+func GrpcInterceptor(modelAddr backend.ConnectionAddress, clusterCtx context.Context) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		ctx, err := Connect(ctx, []string{modelAddr})
+		ctx, err := Connect(ctx, modelAddr)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to connect to model backend: %s", modelAddr)
 			return nil, err
