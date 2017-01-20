@@ -9,8 +9,6 @@ import (
 // that accepts proto.Message instead of raw bytes.
 type ProtoClusterBackend interface {
 	Backend() ClusterBackend
-	Connect(dest []string) error
-	Close() error
 	Register(nodeID string, value proto.Message) error
 	Find(nodeID string, value proto.Message) error
 	Unregister(nodeID string) error
@@ -26,14 +24,6 @@ func NewProtoClusterWrapper(bk ClusterBackend) ProtoClusterBackend {
 
 func (p *ProtoClusterWrapper) Backend() ClusterBackend {
 	return p.backend
-}
-
-func (p *ProtoClusterWrapper) Connect(dest []string) error {
-	return p.backend.Connect(dest)
-}
-
-func (p *ProtoClusterWrapper) Close() error {
-	return p.backend.Close()
 }
 
 func (p *ProtoClusterWrapper) Register(key string, value proto.Message) error {
