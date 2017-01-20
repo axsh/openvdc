@@ -2,8 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"math/rand"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	exec "github.com/mesos/mesos-go/executor"
@@ -363,11 +367,14 @@ var (
 	hypervisorName        = flag.String("hypervisor", "null", "")
 	zkAddr                = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
 	sshListenAddr         = flag.String("ssh", defaultSSHListenAddr, "SSH Listen Address")
+	sshPortRangeStr       = flag.String("ssh-port-range", fmt.Sprintf("%d-%d", defaultSSHPortRange[0], defaultSSHPortRange[1]), "SSH Listen Port range")
 	executorAPIListenAddr = flag.String("listen", defaultExecutorAPIListenAddr, "Executor API Listen Address")
 )
 
-const defaultSSHListenAddr = "0.0.0.0:37631"
-const defaultExecutorAPIListenAddr = "0.0.0.0:19372"
+const defaultSSHListenAddr = "127.0.0.1"
+const defaultExecutorAPIListenAddr = "127.0.0.1:19372"
+
+var defaultSSHPortRange = [2]int{29876, 39876}
 
 func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executor.ExecutorAPIServer {
 	s := executor.NewExecutorAPIServer(*zkAddr, ctx)
@@ -377,6 +384,11 @@ func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executo
 
 func init() {
 	flag.Parse()
+}
+
+func randomPort(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max-min) + min
 }
 
 func main() {
@@ -405,19 +417,34 @@ func main() {
 	defer s.GracefulStop()
 	log.Infof("Listening Executor gRPC API on %s", *sshListenAddr)
 
-	sshListener, err := net.Listen("tcp", *sshListenAddr)
+	minmax := strings.SplitN(*sshPortRangeStr, "-", 2)
+	minPort, err := strconv.Atoi(minmax[0])
+	if err != nil {
+		log.WithError(err).Fatal("Failed to get min port number")
+	}
+	maxPort, err := strconv.Atoi(minmax[1])
+	if err != nil {
+		log.WithError(err).Fatal("Failed to get max port number")
+	}
+	sshListenAddrPort := net.JoinHostPort(*sshListenAddr, strconv.Itoa(randomPort(minPort, maxPort)))
+	sshListener, err := net.Listen("tcp", sshListenAddrPort)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to listen SSH on %s", *sshListenAddr)
 	}
 	defer sshListener.Close()
-	go startSSHServer(sshListener)
-	log.Infof("Listening SSH on %s", *sshListenAddr)
+
+	sshd := NewSSHServer()
+	if err := sshd.Setup(); err != nil {
+		log.WithError(err).Fatal("Failed to setup SSH Server")
+	}
+	go sshd.Run(sshListener)
+	log.Infof("Listening SSH on %s", sshListenAddrPort)
 
 	node := &model.ExecutorNode{
 		GrpcAddr: executorAPIListener.Addr().String(),
 		Console: &model.Console{
 			Type:     model.Console_SSH,
-			BindAddr: *sshListenAddr,
+			BindAddr: sshListenAddrPort,
 		},
 	}
 	dconfig := exec.DriverConfig{
