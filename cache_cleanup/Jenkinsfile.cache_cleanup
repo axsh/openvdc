@@ -10,17 +10,6 @@ import groovy.transform.Field
   "REBUILD": "false",
   "LEAVE_CONTAINER": "0",
 ]
-def ask_build_parameter = { ->
-  return input(message: "Build Parameters", id: "build_params",
-    parameters:[
-      [$class: 'ChoiceParameterDefinition',
-        choices: "all\n" + BUILD_OS_TARGETS.join("\n"), description: 'Target OS name', name: 'BUILD_OS'],
-      [$class: 'ChoiceParameterDefinition',
-        choices: "false\ntrue", description: 'Rebuild cache image', name: 'REBUILD'],
-      [$class: 'ChoiceParameterDefinition',
-        choices: "0\n1", description: 'Leave container after build for debugging.', name: 'LEAVE_CONTAINER'],
-    ])
-}
 
 // Environment variables supplied by Jenkins system configuration:
 // env.REPO_BASE_DIR
@@ -48,29 +37,19 @@ def checkout_and_merge() {
     sh "git -c \"user.name=Axsh Bot\" -c \"user.email=dev@axsh.net\" merge origin/master"
 }
 
-@Field RELEASE_SUFFIX=null
-@Field SHA=null
-
 
 def stage_cleanup_cache(label) {
   node("multibox") {
     stage "Cleanup cache"
     write_build_env(label)
     checkout scm
-//  sh "git remote prune origin"
+    sh "git remote prune origin"
     sh "cd cache_cleanup/ ; ./remove_stale_branches.sh"
   }
 }
 
 node() {
     stage "Checkout"
-    try {
-      timeout(time: 10, unit :"SECONDS") {
-        buildParams = ask_build_parameter()
-      }
-    }catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException err) {
-      // Only ignore errors for timeout.
-    }
 //  checkout scm
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
@@ -79,12 +58,4 @@ node() {
 }
 
 
-build_nodes=BUILD_OS_TARGETS.clone()
-if( buildParams.BUILD_OS != "all" ){
-  build_nodes=[BUILD_OS]
-}
-
-// Using .each{} hits "a CPS-transformed closure is not yet supported (JENKINS-26481)"
-for( label in build_nodes) {
-  stage_cleanup_cache(label)
-}
+stage_cleanup_cache(label)
