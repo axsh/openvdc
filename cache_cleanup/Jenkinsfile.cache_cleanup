@@ -3,34 +3,8 @@
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 // http://stackoverflow.com/questions/37425064/how-to-use-environment-variables-in-a-groovy-function-using-a-jenkinsfile
 import groovy.transform.Field
+
 @Field final BUILD_OS_TARGETS=['el7']
-
-@Field buildParams = [
-  "BUILD_OS": "all",
-  "REBUILD": "false",
-  "LEAVE_CONTAINER": "0",
-]
-
-// Environment variables supplied by Jenkins system configuration:
-// env.REPO_BASE_DIR
-// env.BUILD_CACHE_DIR
-def write_build_env(label) {
-  def build_env="""# These parameters are read from bash and docker --env-file.
-# So do not use single or double quote for the value part.
-LEAVE_CONTAINER=${buildParams.LEAVE_CONTAINER}
-REPO_BASE_DIR=${env.REPO_BASE_DIR ?: ''}
-BUILD_CACHE_DIR=${env.BUILD_CACHE_DIR ?: ''}
-BUILD_OS=${label}
-REBUILD=${buildParams.REBUILD}
-RELEASE_SUFFIX=${RELEASE_SUFFIX}
-# https://issues.jenkins-ci.org/browse/JENKINS-30252
-GIT_BRANCH=${env.BRANCH_NAME}
-BRANCH_NAME=${env.BRANCH_NAME}
-BRANCH=${env.BRANCH_NAME}
-SHA=${SHA}
-"""
-  writeFile(file: "build.env", text: build_env)
-}
 
 def checkout_and_merge() {
     checkout scm
@@ -41,7 +15,6 @@ def checkout_and_merge() {
 def stage_cleanup_cache(label) {
   node("multibox") {
     stage "Cleanup cache"
-    write_build_env(label)
     checkout scm
     sh "git remote prune origin"
     sh "cd cache_cleanup/ ; ./remove_stale_branches.sh"
@@ -53,7 +26,7 @@ node() {
 //  checkout scm
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
-    RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
+//  RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
     SHA=sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
 }
 
