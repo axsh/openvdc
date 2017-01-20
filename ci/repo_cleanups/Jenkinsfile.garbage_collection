@@ -12,6 +12,7 @@ def checkout_and_merge() {
 def stage_clean_rpms() {
   node() {
     stage "RPM Repository Cleanups"
+    checkout scm
     sh "git remote prune origin"
     sh "cd ci/repo_cleanups ; ./remove_stale_rpm.sh"
   }
@@ -19,7 +20,7 @@ def stage_clean_rpms() {
 
 node() {
     stage "Checkout"
-    checkout_and_merge()
+//  checkout_and_merge()
     stage_clean_rpms()
 }
 
