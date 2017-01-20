@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	"google.golang.org/grpc"
 
 	sched "github.com/mesos/mesos-go/scheduler"
@@ -13,11 +14,11 @@ import (
 
 type APIServer struct {
 	server         *grpc.Server
-	modelStoreAddr []string
+	modelStoreAddr backend.ConnectionAddress
 	scheduler      sched.SchedulerDriver
 }
 
-func NewAPIServer(modelAddr []string, driver sched.SchedulerDriver) *APIServer {
+func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDriver) *APIServer {
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
 		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),

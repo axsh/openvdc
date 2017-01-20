@@ -8,6 +8,7 @@ import (
 
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
 	"github.com/mesos/mesos-go/auth/sasl"
@@ -42,10 +43,10 @@ type VDCScheduler struct {
 	tasksErrored  int
 	totalTasks    int
 	listenAddr    string
-	zkAddr        []string
+	zkAddr        backend.ZkEndpoint
 }
 
-func newVDCScheduler(listenAddr string, zkAddr []string) *VDCScheduler {
+func newVDCScheduler(listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
 	return &VDCScheduler{
 		totalTasks: taskCount,
 		listenAddr: listenAddr,
@@ -240,7 +241,7 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func startAPIServer(laddr string, zkAddr []string, driver sched.SchedulerDriver) *api.APIServer {
+func startAPIServer(laddr string, zkAddr backend.ZkEndpoint, driver sched.SchedulerDriver) *api.APIServer {
 	lis, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
@@ -251,7 +252,7 @@ func startAPIServer(laddr string, zkAddr []string, driver sched.SchedulerDriver)
 	return s
 }
 
-func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr []string) {
+func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),

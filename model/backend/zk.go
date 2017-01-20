@@ -2,6 +2,8 @@ package backend
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"path"
 	"sort"
 	"strings"
@@ -19,6 +21,49 @@ var ErrFindLastKey = func(key string) error {
 	return fmt.Errorf("Unable to find znode with last key: %s", key)
 }
 
+const DefaultBasePath = "/openvdc"
+
+// Implements pflag.Value and backend.ConnectionAddress
+type ZkEndpoint struct {
+	Path  string
+	Hosts []string // "host" or "host:port"
+}
+
+func (ZkEndpoint) isConnectionAddress() {}
+
+func (ze *ZkEndpoint) String() string {
+	return fmt.Sprintf("zk://%s%s", strings.Join(ze.Hosts, ","), ze.Path)
+}
+
+func (ze *ZkEndpoint) Set(value string) error {
+	if strings.HasPrefix(value, "zk://") {
+		zkurl, err := url.Parse(value)
+		if err != nil {
+			return errors.Wrap(err, "Invalid zk URL")
+		}
+		ze.Hosts = strings.Split(zkurl.Host, ",")
+		ze.Path = zkurl.Path
+	} else {
+		host, port, err := net.SplitHostPort(value)
+		if err != nil {
+			host = value
+			port = "2181"
+		}
+		if host == "" {
+			host = "localhost"
+		}
+		ze.Hosts = []string{net.JoinHostPort(host, port)}
+	}
+	if ze.Path == "" {
+		ze.Path = DefaultBasePath
+	}
+	return nil
+}
+
+func (ZkEndpoint) Type() string {
+	return "ZkEndpoint"
+}
+
 type Zk struct {
 	conn     *zk.Conn
 	basePath string
@@ -27,16 +72,19 @@ type Zk struct {
 }
 
 func NewZkBackend() *Zk {
-	return &Zk{
-		basePath: "/openvdc",
-	}
+	return &Zk{}
 }
 
-func (z *Zk) Connect(servers []string) error {
+func (z *Zk) Connect(dest ConnectionAddress) error {
 	if z.isConnected() {
 		return ErrConnectionExists
 	}
-	c, ev, err := zk.Connect(servers, 10*time.Second)
+	zkAddr, ok := dest.(*ZkEndpoint)
+	if !ok {
+		return fmt.Errorf("Invalid connection address type: %T", dest)
+	}
+	z.basePath = zkAddr.Path
+	c, ev, err := zk.Connect(zkAddr.Hosts, 10*time.Second)
 	if err != nil {
 		return err
 	}
