@@ -14,11 +14,7 @@ type ZkCluster struct {
 }
 
 func NewZkClusterBackend() *ZkCluster {
-	return &ZkCluster{
-		zkConnection: zkConnection{
-			basePath: "/openvdc",
-		},
-	}
+	return &ZkCluster{}
 }
 
 func (z *ZkCluster) Register(key string, value []byte) error {

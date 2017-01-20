@@ -5,7 +5,6 @@ import (
 
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
-	"google.golang.org/grpc"
 	sched "github.com/mesos/mesos-go/scheduler"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

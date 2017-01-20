@@ -378,7 +378,7 @@ const defaultExecutorAPIListenAddr = "127.0.0.1:19372"
 var defaultSSHPortRange = [2]int{29876, 39876}
 
 func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executor.ExecutorAPIServer {
-	s := executor.NewExecutorAPIServer(*zkAddr, ctx)
+	s := executor.NewExecutorAPIServer(&zkAddr, ctx)
 	go s.Serve(listener)
 	return s
 }
@@ -401,9 +401,9 @@ func main() {
 	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
-	ctx, err := model.ClusterConnect(context.Background(), []string{*zkAddr})
+	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to connect to cluster service %s", *zkAddr)
+		log.WithError(err).Fatalf("Failed to connect to cluster service %s", zkAddr.String())
 	}
 	defer func() {
 		err := model.ClusterClose(ctx)

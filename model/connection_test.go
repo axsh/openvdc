@@ -25,7 +25,12 @@ func TestConnect(t *testing.T) {
 
 func TestClusterConnect(t *testing.T) {
 	assert := assert.New(t)
-	ctx, err := ClusterConnect(context.Background(), []string{unittest.TestZkServer})
+
+	ze := &backend.ZkEndpoint{}
+	if err := ze.Set(unittest.TestZkServer); err != nil {
+		t.Fatal("Invalid zookeeper address:", unittest.TestZkServer)
+	}
+	ctx, err := ClusterConnect(context.Background(), ze)
 	assert.NoError(err)
 	assert.NotNil(ctx)
 	err = ClusterClose(ctx)

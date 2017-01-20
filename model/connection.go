@@ -87,9 +87,9 @@ func (ss *serverStreamWithContext) Context() context.Context {
 	return ss.ctx
 }
 
-func GrpcStreamInterceptor(modelAddr string, clusterCtx context.Context) grpc.StreamServerInterceptor {
+func GrpcStreamInterceptor(modelAddr backend.ConnectionAddress, clusterCtx context.Context) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		ctx, err := Connect(ss.Context(), []string{modelAddr})
+		ctx, err := Connect(ss.Context(), modelAddr)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to connect to model backend: %s", modelAddr)
 			return err
@@ -115,7 +115,7 @@ func WithMockClusterBackendCtx(ctx context.Context) context.Context {
 	return context.WithValue(ctx, ctxClusterBackendKey, &backend.MockClusterBackend{})
 }
 
-func ClusterConnect(ctx context.Context, dest []string) (context.Context, error) {
+func ClusterConnect(ctx context.Context, dest backend.ConnectionAddress) (context.Context, error) {
 	bk := backend.NewZkClusterBackend()
 	err := bk.Connect(dest)
 	if err != nil {

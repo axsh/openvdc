@@ -74,7 +74,7 @@ func setupDatabaseSchema() {
 func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
 
-	ctx, err := model.ClusterConnect(context.Background(), []string{zkAddr})
+	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -5,6 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -14,10 +15,10 @@ import (
 type ExecutorAPIServer struct {
 	server         *grpc.Server
 	listener       net.Listener
-	modelStoreAddr string
+	modelStoreAddr backend.ConnectionAddress
 }
 
-func NewExecutorAPIServer(modelAddr string, ctx context.Context) *ExecutorAPIServer {
+func NewExecutorAPIServer(modelAddr backend.ConnectionAddress, ctx context.Context) *ExecutorAPIServer {
 	// Assert the ctx has "cluster.backend" key
 	model.GetClusterBackendCtx(ctx)
 

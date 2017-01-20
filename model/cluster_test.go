@@ -12,8 +12,11 @@ import (
 )
 
 func withClusterConnect(t *testing.T, c func(context.Context)) error {
-
-	ctx, err := ClusterConnect(context.Background(), []string{unittest.TestZkServer})
+	ze := &backend.ZkEndpoint{}
+	if err := ze.Set(unittest.TestZkServer); err != nil {
+		t.Fatal("Invalid zookeeper address:", unittest.TestZkServer)
+	}
+	ctx, err := ClusterConnect(context.Background(), ze)
 	if err != nil {
 		t.Fatal(err)
 	}
