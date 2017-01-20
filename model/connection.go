@@ -59,9 +59,9 @@ func GetBackendCtx(ctx context.Context) backend.ModelBackend {
 	return bk
 }
 
-func GrpcInterceptor(modelAddr string) grpc.UnaryServerInterceptor {
+func GrpcInterceptor(modelAddr []string) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		ctx, err := Connect(ctx, []string{modelAddr})
+		ctx, err := Connect(ctx, modelAddr)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to connect to model backend: %s", modelAddr)
 			return nil, err

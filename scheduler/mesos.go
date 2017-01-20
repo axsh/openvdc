@@ -41,10 +41,10 @@ type VDCScheduler struct {
 	tasksErrored  int
 	totalTasks    int
 	listenAddr    string
-	zkAddr        string
+	zkAddr        []string
 }
 
-func newVDCScheduler(listenAddr string, zkAddr string) *VDCScheduler {
+func newVDCScheduler(listenAddr string, zkAddr []string) *VDCScheduler {
 	return &VDCScheduler{
 		totalTasks: taskCount,
 		listenAddr: listenAddr,
@@ -67,9 +67,9 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	log := log.WithFields(log.Fields{"offers": len(offers)})
 
-	ctx, err := model.Connect(context.Background(), []string{sched.zkAddr})
+	ctx, err := model.Connect(context.Background(), sched.zkAddr)
 	if err != nil {
-		log.WithError(err).Error("Failed to connecto to datasource: ", sched.zkAddr)
+		log.WithError(err).Error("Failed to connect to datasource")
 	} else {
 		defer model.Close(ctx)
 		err = sched.processOffers(driver, offers, ctx)
@@ -239,7 +239,7 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func startAPIServer(laddr string, zkAddr string, driver sched.SchedulerDriver) *api.APIServer {
+func startAPIServer(laddr string, zkAddr []string, driver sched.SchedulerDriver) *api.APIServer {
 	lis, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
@@ -250,7 +250,7 @@ func startAPIServer(laddr string, zkAddr string, driver sched.SchedulerDriver) *
 	return s
 }
 
-func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr string) {
+func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr []string) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),

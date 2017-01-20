@@ -3,14 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
-
 	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/scheduler"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 )
@@ -32,18 +35,20 @@ var rootCmd = &cobra.Command{
 var gRPCAddr string
 var mesosMasterAddr string
 var listenAddr string
-var zkAddr string
+var zkAddr ZkEndpoint
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "localhost:5050", "Mesos Master node address")
+	zkAddr = ZkEndpoint{Hosts: []string{"localhost"}, Path: "/openvdc"}
+
 	rootCmd.PersistentFlags().StringVarP(&gRPCAddr, "api", "a", "localhost:5000", "gRPC API bind address")
 	rootCmd.PersistentFlags().StringVarP(&listenAddr, "listen", "l", "0.0.0.0", "Local bind address")
-	rootCmd.PersistentFlags().StringVarP(&zkAddr, "zk", "", "127.0.0.1", "Zookeeper node address")
+	rootCmd.PersistentFlags().VarP(&zkAddr, "zk", "", "Zookeeper node address")
 	rootCmd.PersistentFlags().SetAnnotation("master", cobra.BashCompSubdirsInDir, []string{})
 }
 
 func setupDatabaseSchema() {
-	ctx, err := model.Connect(context.Background(), []string{zkAddr})
+	ctx, err := model.Connect(context.Background(), zkAddr.Hosts)
 	if err != nil {
 		log.WithError(err).Fatalf("Could not connect to database: %s", zkAddr)
 	}
@@ -59,9 +64,44 @@ func setupDatabaseSchema() {
 	}
 }
 
+type ZkEndpoint struct {
+	Path  string
+	Hosts []string // "host" or "host:port"
+}
+
+func (ze *ZkEndpoint) String() string {
+	return fmt.Sprintf("zk://%s%s", strings.Join(ze.Hosts, ","), ze.Path)
+}
+
+func (ze *ZkEndpoint) Set(value string) error {
+	if strings.HasPrefix(value, "zk://") {
+		zkurl, err := url.Parse(value)
+		if err != nil {
+			return errors.Wrap(err, "Invalid zk URL")
+		}
+		ze.Hosts = strings.Split(zkurl.Host, ",")
+		ze.Path = zkurl.Path
+	} else {
+		host, port, err := net.SplitHostPort(value)
+		if err != nil {
+			host = value
+			port = "2181"
+		}
+		if host == "" {
+			host = "localhost"
+		}
+		ze.Hosts = []string{net.JoinHostPort(host, port)}
+	}
+	return nil
+}
+
+func (ZkEndpoint) Type() string {
+	return "ZkEndpoint"
+}
+
 func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
-	scheduler.Run(listenAddr, gRPCAddr, mesosMasterAddr, zkAddr)
+	scheduler.Run(listenAddr, gRPCAddr, mesosMasterAddr, zkAddr.Hosts)
 }
 
 func main() {
