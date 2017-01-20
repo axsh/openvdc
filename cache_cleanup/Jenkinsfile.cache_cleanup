@@ -22,13 +22,15 @@ def stage_cleanup_cache() {
 }
 
 node() {
-    stage "Checkout"
-    checkout scm
+    stage "Cleanup caches"
+    stage_cleanup_cache()
+//  stage "Checkout"
+//  checkout scm
     // http://stackoverflow.com/questions/36507410/is-it-possible-to-capture-the-stdout-from-the-sh-dsl-command-in-the-pipeline
     // https://issues.jenkins-ci.org/browse/JENKINS-26133
 //  RELEASE_SUFFIX=sh(returnStdout: true, script: "./deployment/packagebuild/gen-dev-build-tag.sh").trim()
-    SHA=sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
+//  SHA=sh(returnStdout: true, script: "git rev-parse --verify HEAD").trim()
 }
 
 
-stage_cleanup_cache()
+//stage_cleanup_cache()
