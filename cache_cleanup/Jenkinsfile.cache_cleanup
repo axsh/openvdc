@@ -51,38 +51,13 @@ def checkout_and_merge() {
 @Field RELEASE_SUFFIX=null
 @Field SHA=null
 
-def stage_unit_test(label) {
-  node(label) {
-    stage "Units Tests ${label}"
-    checkout_and_merge()
-    write_build_env(label)
-    sh "./deployment/docker/unit-tests.sh ./build.env"
-  }
-}
 
-def stage_rpmbuild(label) {
-  node(label) {
-    stage "RPM Build ${label}"
-    checkout_and_merge()
-    write_build_env(label)
-    sh "./deployment/docker/rpmbuild.sh ./build.env"
-  }
-}
-
-def stage_integration(label) {
+def stage_cleanup_cache(label) {
   node("multibox") {
-    checkout_and_merge()
-    stage "Build Integration Environment"
+    stage "Cleanup cache"
     write_build_env(label)
-
-    try {
-      sh "cd ci/multibox/ ; ./build.sh"
-      stage "Run Tntegration Test"
-      // This is where the integration test will be run
-    } finally {
-      stage "Cleanup Environment"
-      sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
-    }
+//  sh "git remote prune origin"
+    sh "cd cache_cleanup/ ; ./remove_stale_branches.sh"
   }
 }
 
@@ -110,7 +85,5 @@ if( buildParams.BUILD_OS != "all" ){
 
 // Using .each{} hits "a CPS-transformed closure is not yet supported (JENKINS-26481)"
 for( label in build_nodes) {
-//stage_unit_test(label)
-//stage_rpmbuild(label)
-//stage_integration(label)
+  stage_cleanup_cache(label)
 }
