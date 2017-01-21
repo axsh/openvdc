@@ -57,7 +57,7 @@ func init() {
 func setupDatabaseSchema() {
 	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
-		log.WithError(err).Fatalf("Could not connect to database: %s", zkAddr)
+		log.WithError(err).Fatalf("Could not connect to database: %s", zkAddr.String())
 	}
 	defer model.Close(ctx)
 	ms, ok := model.GetBackendCtx(ctx).(backend.ModelSchema)
