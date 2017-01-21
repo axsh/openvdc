@@ -79,9 +79,13 @@ func (z *Zk) Connect(dest ConnectionAddress) error {
 	if z.isConnected() {
 		return ErrConnectionExists
 	}
-	zkAddr, ok := dest.(*ZkEndpoint)
+	zkAddr, ok := dest.(ZkEndpoint)
 	if !ok {
-		return fmt.Errorf("Invalid connection address type: %T", dest)
+		p, ok := dest.(*ZkEndpoint)
+		if !ok {
+			return fmt.Errorf("Invalid connection address type: %T", dest)
+		}
+		zkAddr = *p
 	}
 	z.basePath = zkAddr.Path
 	c, ev, err := zk.Connect(zkAddr.Hosts, 10*time.Second)
