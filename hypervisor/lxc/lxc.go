@@ -23,8 +23,11 @@ const (
 	ScriptPath      = "/etc/lxc/"
 	LinuxUpScript   = "linux-bridge-up.sh"
 	LinuxDownScript = "linux-bridge-down.sh"
-	OvsUpScript     = "ovs-up.sh"
-	OvsDownScript   = "ovs-down.sh"
+	BridgeName      = "br0"
+
+	OvsUpScript   = "ovs-up.sh"
+	OvsDownScript = "ovs-down.sh"
+	OvsName       = "ovs-vsctl"
 )
 
 type NetworkInterface struct {
@@ -33,6 +36,14 @@ type NetworkInterface struct {
 	Ipv4Addr   string
 	MacAddr    string
 	TapName    string
+}
+
+var settings hypervisor.HypervisorSettings
+
+func (d *LXCHypervisorDriver) SetHypervisorSettings(input hypervisor.HypervisorSettings) error {
+	settings = input
+
+	return nil
 }
 
 var interfaces []NetworkInterface
@@ -103,19 +114,19 @@ func updateSettings(nwi NetworkInterface, input string) string {
 
 	switch nwi.Type {
 	case constants.BRIDGE_LINUX:
-		output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath+LinuxUpScript)
-		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath+LinuxDownScript)
+		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.LinuxUpScript)
+		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.LinuxDownScript)
 
 		scriptInput := fmt.Sprintf("brctl addif br0 %s", nwi.TapName)
-		updateScript(LinuxUpScript, scriptInput)
+		updateScript(settings.LinuxUpScript, scriptInput)
 
 	case constants.BRIDGE_OVS:
-		output += fmt.Sprintf("lxc.network.script.up=%s\n", ScriptPath+OvsUpScript)
+		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.OvsUpScript)
 
-		output += fmt.Sprintf("lxc.network.script.down=%s\n", ScriptPath+OvsDownScript)
+		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.OvsDownScript)
 
 		scriptInput := fmt.Sprintf("ovs-vsctl add-port br0 %s", nwi.TapName)
-		updateScript(OvsUpScript, scriptInput)
+		updateScript(settings.OvsUpScript, scriptInput)
 	default:
 		log.Fatalf("Unrecognized bridge type.")
 	}
@@ -165,11 +176,11 @@ func resetConfigFile() {
 }
 
 func checkScript(script string) {
-	_, err := os.Stat(ScriptPath + script)
+	_, err := os.Stat(settings.ScriptPath + script)
 
 	if err != nil {
 		log.Infoln("Script not found.", err)
-		createScript(ScriptPath + script)
+		createScript(settings.ScriptPath + script)
 	}
 }
 
@@ -190,7 +201,7 @@ func createScript(script string) {
 }
 
 func updateScript(script string, input string) {
-	err := ioutil.WriteFile(ScriptPath+script, []byte(input), 0666)
+	err := ioutil.WriteFile(settings.ScriptPath+script, []byte(input), 0666)
 	if err != nil {
 		log.Fatalf("Failed to update script: ", err)
 	}

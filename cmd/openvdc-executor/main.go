@@ -168,6 +168,18 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		return err
 	}
 
+	hvs := hypervisor.HypervisorSettings{
+		ScriptPath:      "",
+		LinuxUpScript:   "",
+		LinuxDownScript: "",
+		BridgeName:      "",
+		OvsUpScript:     "",
+		OvsDownScript:   "",
+		OvsName:         "",
+	}
+
+	hv.SetHypervisorSettings(hvs)
+
 	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
 	if err != nil {
 		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
@@ -369,7 +381,6 @@ func init() {
 
 	pfs.String("zkAddr", viper.GetString("zk.addr"), "Zk Addr")
 	viper.BindPFlag("hypervisor.name", pfs.Lookup("hypervisorName"))
-
 }
 
 func main() {

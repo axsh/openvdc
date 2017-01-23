@@ -7,6 +7,16 @@ import (
 	"github.com/axsh/openvdc/model"
 )
 
+type HypervisorSettings struct {
+	ScriptPath      string
+	LinuxUpScript   string
+	LinuxDownScript string
+	BridgeName      string
+	OvsUpScript     string
+	OvsDownScript   string
+	OvsName         string
+}
+
 type HypervisorProvider interface {
 	Name() string
 	CreateDriver(string) (HypervisorDriver, error)
@@ -18,6 +28,7 @@ type HypervisorDriver interface {
 	StartInstance() error
 	StopInstance() error
 	InstanceConsole() error
+	SetHypervisorSettings(HypervisorSettings) error
 }
 
 var (

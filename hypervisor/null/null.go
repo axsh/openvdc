@@ -17,6 +17,10 @@ func (n *NullHypervisorProvider) Name() string {
 	return "null"
 }
 
+func (n *NullHypervisorDriver) SetHypervisorSettings(hypervisor.HypervisorSettings) error {
+	return nil
+}
+
 func (n *NullHypervisorProvider) CreateDriver(string) (hypervisor.HypervisorDriver, error) {
 	return &NullHypervisorDriver{}, nil
 }
