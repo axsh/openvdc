@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 
 	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type SSHServer struct {
@@ -50,28 +52,109 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 			log.Error("Failed to handshake:", err)
 			continue
 		}
-
+		instanceID := sshConn.User()
 		log.Printf("New SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
 		go ssh.DiscardRequests(reqs)
-		go handleChannels(chans)
+		go handleChannels(chans, instanceID)
 	}
 }
 
-func handleChannels(chans <-chan ssh.NewChannel) {
+func handleChannels(chans <-chan ssh.NewChannel, instanceID string) {
 	for newChannel := range chans {
-		go handleChannel(newChannel)
+		if t := newChannel.ChannelType(); t != "session" {
+			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
+			continue
+		}
+		session := sshSession{instanceID: instanceID}
+		go session.handleChannel(newChannel)
 	}
 }
 
-func handleChannel(newChannel ssh.NewChannel) {
-	if t := newChannel.ChannelType(); t != "session" {
-		newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
-		return
-	}
-	connection, _, err := newChannel.Accept()
+type sshSession struct {
+	instanceID string
+}
+
+func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
+	connection, req, err := newChannel.Accept()
 	if err != nil {
 		log.Error("Could not accept channel:", err)
 		return
 	}
-	defer connection.Close()
+	defer func() {
+		msg := struct {
+			ExitStatus uint32
+		}{uint32(0)}
+		_, err := connection.SendRequest("exit-status", false, ssh.Marshal(&msg))
+		if err != nil {
+			log.WithError(err).Error("Failed to send exit-status")
+		}
+		if err := connection.Close(); err != nil {
+			log.WithError(err).Warn("Invalid close sequence")
+		} else {
+			log.Info("Session closed")
+		}
+	}()
+
+	quit := make(chan error, 1)
+	go func(connection ssh.Channel) {
+		t := terminal.NewTerminal(connection, "> ")
+		var err error
+		defer func() {
+			quit <- err
+			close(quit)
+		}()
+
+		for {
+			l, err := t.ReadLine()
+			if err != nil {
+				if err == io.EOF {
+					return
+				}
+				log.Error("failed to read: %v", err)
+				return
+			}
+
+			if _, err := t.Write([]byte("You've typed: " + string(l) + "\r\n")); err != nil {
+				log.Printf("failed to write: %v", err)
+				return
+			}
+		}
+	}(connection)
+
+Done:
+	for {
+		select {
+		case r := <-req:
+			switch r.Type {
+			case "shell":
+				if err := r.Reply(true, nil); err != nil {
+					log.WithError(err).Warn("Failed to reply")
+				}
+
+			case "signal":
+				var msg struct {
+					Signal string
+				}
+				if err := ssh.Unmarshal(r.Payload, &msg); err != nil {
+					log.WithError(err).Error("Failed to parse signal requeyst body")
+					// Won't break the loop
+					break
+				}
+
+				switch ssh.Signal(msg.Signal) {
+				case ssh.SIGINT:
+					break Done
+				default:
+					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
+				}
+			default:
+				if r.WantReply {
+					r.Reply(false, nil)
+				}
+				log.Warn("Unsupported session request: ", r.Type)
+			}
+		case <-quit:
+			break Done
+		}
+	}
 }

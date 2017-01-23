@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"math/rand"
 	"net"
 	"strconv"
@@ -47,7 +46,6 @@ func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider,
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
 	log.Infoln("Registered Executor on slave ", slaveInfo.GetHostname())
-
 	exec.nodeInfo.Id = slaveInfo.GetId().GetValue()
 	err := model.Cluster(exec.ctx).Register(exec.nodeInfo)
 	if err != nil {
@@ -365,17 +363,16 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 }
 
 var (
-	hypervisorName        = flag.String("hypervisor", "null", "")
-	sshListenAddr         = flag.String("ssh", defaultSSHListenAddr, "SSH Listen Address")
-	sshPortRangeStr       = flag.String("ssh-port-range", fmt.Sprintf("%d-%d", defaultSSHPortRange[0], defaultSSHPortRange[1]), "SSH Listen Port range")
-	executorAPIListenAddr = flag.String("listen", defaultExecutorAPIListenAddr, "Executor API Listen Address")
+	hypervisorName  = flag.String("hypervisor", "null", "")
+	sshPort         = flag.String("ssh-port", "", "SSH Listen port")
+	executorAPIPort = flag.String("api-port", defaultExecutorAPIPort, "Executor API Listen port")
 )
 var zkAddr backend.ZkEndpoint
 
-const defaultSSHListenAddr = "127.0.0.1"
-const defaultExecutorAPIListenAddr = "127.0.0.1:19372"
+const defaultExecutorAPIPort = "19372"
 
 var defaultSSHPortRange = [2]int{29876, 39876}
+var advertiseIP = "192.168.56.150"
 
 func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executor.ExecutorAPIServer {
 	s := executor.NewExecutorAPIServer(&zkAddr, ctx)
@@ -412,27 +409,22 @@ func main() {
 		}
 	}()
 
-	executorAPIListener, err := net.Listen("tcp", *executorAPIListenAddr)
+	apiListenAddr := net.JoinHostPort(advertiseIP, *executorAPIPort)
+	executorAPIListener, err := net.Listen("tcp", apiListenAddr)
 	if err != nil {
-		log.Fatalln("Faild to bind address for Executor gRPC API: ", *executorAPIListenAddr)
+		log.Fatalln("Faild to bind address for Executor gRPC API: ", apiListenAddr)
 	}
 	s := startExecutorAPIServer(ctx, executorAPIListener)
 	defer s.GracefulStop()
-	log.Infof("Listening Executor gRPC API on %s", *sshListenAddr)
+	log.Infof("Listening Executor gRPC API on %s", executorAPIListener.Addr().String())
 
-	minmax := strings.SplitN(*sshPortRangeStr, "-", 2)
-	minPort, err := strconv.Atoi(minmax[0])
-	if err != nil {
-		log.WithError(err).Fatal("Failed to get min port number")
+	if *sshPort == "" {
+		*sshPort = strconv.Itoa(randomPort(defaultSSHPortRange[0], defaultSSHPortRange[1]))
 	}
-	maxPort, err := strconv.Atoi(minmax[1])
+	sshListenAddr := net.JoinHostPort(advertiseIP, *sshPort)
+	sshListener, err := net.Listen("tcp", sshListenAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to get max port number")
-	}
-	sshListenAddrPort := net.JoinHostPort(*sshListenAddr, strconv.Itoa(randomPort(minPort, maxPort)))
-	sshListener, err := net.Listen("tcp", sshListenAddrPort)
-	if err != nil {
-		log.WithError(err).Fatalf("Failed to listen SSH on %s", *sshListenAddr)
+		log.WithError(err).Fatalf("Failed to listen SSH on %s", sshListenAddr)
 	}
 	defer sshListener.Close()
 
@@ -441,13 +433,13 @@ func main() {
 		log.WithError(err).Fatal("Failed to setup SSH Server")
 	}
 	go sshd.Run(sshListener)
-	log.Infof("Listening SSH on %s", sshListenAddrPort)
+	log.Infof("Listening SSH on %s", sshListenAddr)
 
 	node := &model.ExecutorNode{
-		GrpcAddr: executorAPIListener.Addr().String(),
+		GrpcAddr: apiListenAddr,
 		Console: &model.Console{
 			Type:     model.Console_SSH,
-			BindAddr: sshListenAddrPort,
+			BindAddr: sshListenAddr,
 		},
 	}
 	dconfig := exec.DriverConfig{
