@@ -2,24 +2,23 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"path/filepath"
+
+	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
 	"golang.org/x/net/context"
-)
-
-// Build time constant variables from -ldflags
-var (
-	version   string
-	sha       string
-	builddate string
-	goversion string
 )
 
 var log = logrus.WithField("context", "vdc-executor")
@@ -77,7 +76,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -140,7 +139,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -185,7 +184,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -230,7 +229,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -345,19 +344,52 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 	log.Errorln("Got error message:", err)
 }
 
-var (
-	hypervisorName = flag.String("hypervisor", "null", "")
-	zkAddr         = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
-)
-
-func init() {
-	flag.Parse()
+var rootCmd = &cobra.Command{
+	Use:   "openvdc-executor",
+	Short: "",
+	Long:  ``,
+	Run:   execute,
 }
 
-func main() {
-	provider, ok := hypervisor.FindProvider(*hypervisorName)
+var DefaultConfPath string
+
+func init() {
+	DefaultConfPath = "/etc/openvdc/executor.toml"
+	viper.SetDefault("hypervisor.driver", "null")
+	viper.SetDefault("zookeeper.endpoint", "127.0.0.1:2181")
+
+	cobra.OnInitialize(initConfig)
+	pfs := rootCmd.PersistentFlags()
+	pfs.String("config", DefaultConfPath, "Load config file from the path")
+	pfs.String("hypervisor", viper.GetString("hypervisor.driver"), "Hypervisor driver name")
+	viper.BindPFlag("hypervisor.driver", pfs.Lookup("hypervisor"))
+	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper address")
+	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
+}
+
+func initConfig() {
+	f := rootCmd.PersistentFlags().Lookup("config")
+	if f.Changed {
+		viper.SetConfigFile(f.Value.String())
+	}
+	dir, _ := filepath.Split(DefaultConfPath)
+	viper.SetConfigName("executor")
+	viper.AddConfigPath(dir)
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+	}
+}
+
+func init() {
+	flag.CommandLine.Parse([]string{})
+}
+
+func execute(cmd *cobra.Command, args []string) {
+	provider, ok := hypervisor.FindProvider(viper.GetString("hypervisor.driver"))
 	if ok == false {
-		log.Fatalln("Unknown hypervisor name:", hypervisorName)
+		log.Fatalln("Unknown hypervisor name:", viper.GetString("hypervisor.driver"))
 	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
@@ -380,4 +412,12 @@ func main() {
 		log.Fatalln("Something went wrong with the driver: ", err)
 	}
 	log.Infoln("Executor shutting down")
+}
+
+func main() {
+	rootCmd.AddCommand(openvdc.VersionCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 }
