@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 	"fmt"
+	"sync"
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/axsh/openvdc/hypervisor"
@@ -193,13 +194,15 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 		return fmt.Errorf("lxc-container can not perform console")
 	}
 
-  return con.attachShell(stdin, stdout, stderr)
+  return con.attachShell(c, stdin, stdout, stderr)
+  //return con.console(c, stdin, stdout, stderr)
 }
 
-func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) error {
-	rStdin, wStdin, err := os.Pipe()
-	rStdout, wStdout, err := os.Pipe()
-	rStderr, wStderr, err := os.Pipe()
+func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
+	var wg sync.WaitGroup
+	rStdin, wStdin, _ := os.Pipe()
+	rStdout, wStdout, _ := os.Pipe()
+	rStderr, wStderr, _ := os.Pipe()
 	defer func() {
 		rStdin.Close()
 		wStdin.Close()
@@ -210,8 +213,16 @@ func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) er
 	}()
 
 	go io.Copy(wStdin, stdin)
-	go io.Copy(stdout, rStdout)
-	go io.Copy(stderr, rStderr)
+	wg.Add(1)
+	go func(){
+		defer wg.Done()
+		io.Copy(stdout, rStdout)
+	}()
+	wg.Add(1)
+	go func(){
+		defer wg.Done()
+		io.Copy(stderr, rStderr)
+	}()
 
 	options := lxc.DefaultAttachOptions
  	options.StdinFd = rStdin.Fd()
@@ -222,10 +233,11 @@ func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) er
 		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
 		return err
 	}
+	wg.Wait()
 	return nil
 }
 
-func (con *lxcConsole) console(stdin io.Reader, stdout, stderr io.Writer) error {
+func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
 
 	options := lxc.DefaultConsoleOptions
 	options.StdinFd					= rStdin.Fd()
