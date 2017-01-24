@@ -3,6 +3,7 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -115,13 +116,23 @@ func HandleArgs(args []string) []string {
 	for i, _ := range args {
 		arg := strings.Replace(args[i], "-", "", 2)
 
-		var bridgetype string
-		//var ipaddr     string
-		//var macaddr    string
-
 		switch arg {
-		case "bridge-type", "t":
-			switch strings.ToLower(args[i+1]) {
+		case "config", "c":
+
+			f, err := ioutil.ReadFile(args[i+1])
+
+			if err != nil {
+				log.Fatalf("Failed loading provided config file: ", err)
+			}
+
+			err = viper.ReadConfig(bytes.NewBuffer(f))
+			if err != nil {
+				log.Fatalf("Failed reading provided config file: ", err)
+			}
+
+			bridgetype := viper.GetString("bridgetype")
+
+			switch strings.ToLower(bridgetype) {
 			case "linux":
 				bridgetype = fmt.Sprintf(`"type":"%s"`, constants.BRIDGE_LINUX)
 			case "ovs":
@@ -129,14 +140,9 @@ func HandleArgs(args []string) []string {
 			default:
 				log.Fatalf("Unrecognized bridge type.")
 			}
-			
+
 			args[i] = fmt.Sprintf(`{"interfaces":[{%s}]}`, bridgetype)
 			args[i+1] = ""
-
-		case "ip-addr", "i":
-
-		case "mac-addr", "m":
-
 		}
 	}
 
