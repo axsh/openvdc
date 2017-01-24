@@ -10,6 +10,8 @@ import (
 	"sync"
 	log "github.com/Sirupsen/logrus"
 
+  "github.com/kr/pty"
+	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	lxc "gopkg.in/lxc/go-lxc.v2"
@@ -238,11 +240,21 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 }
 
 func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
+	fpty, ftty, err := pty.Open()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to open tty")
+	}
+	defer ftty.Close()
+	defer fpty.Close()
+
+	go io.Copy(fpty, stdin)
+	go io.Copy(stdout, fpty)
+	go io.Copy(stderr, os.Stderr)
 
 	options := lxc.DefaultConsoleOptions
-	options.StdinFd					= rStdin.Fd()
-	options.StdoutFd				= wStdout.Fd()
-	options.StderrFd				= wStderr.Fd()
+	options.StdinFd					= ftty.Fd()
+	options.StdoutFd				= ftty.Fd()
+	options.StderrFd				= ftty.Fd()
 	options.EscapeCharacter = '~'
 
 	if err := c.Console(options); err != nil {
