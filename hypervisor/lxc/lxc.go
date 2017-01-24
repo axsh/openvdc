@@ -11,40 +11,32 @@ import (
 	"strings"
 	"time"
 
-	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
+	"github.com/spf13/viper"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 var LxcConfigFile string
 
-const (
-	ScriptPath      = "/etc/lxc/"
-	LinuxUpScript   = "linux-bridge-up.sh"
-	LinuxDownScript = "linux-bridge-down.sh"
-	BridgeName      = "br0"
-
-	OvsUpScript   = "ovs-up.sh"
-	OvsDownScript = "ovs-down.sh"
-	OvsName       = "ovs-vsctl"
-)
+type Settings struct {
+	ScriptPath      string
+	LinuxUpScript   string
+	LinuxDownScript string
+	BridgeName      string
+	OvsUpScript     string
+	OvsDownScript   string
+	OvsName         string
+}
 
 type NetworkInterface struct {
-	Type       string
-	BridgeName string
-	Ipv4Addr   string
-	MacAddr    string
-	TapName    string
+	Type     string
+	Ipv4Addr string
+	MacAddr  string
+	TapName  string
 }
 
-var settings hypervisor.HypervisorSettings
-
-func (d *LXCHypervisorDriver) SetHypervisorSettings(input hypervisor.HypervisorSettings) error {
-	settings = input
-
-	return nil
-}
+var settings Settings
 
 var interfaces []NetworkInterface
 
@@ -100,6 +92,7 @@ func modifyConf() {
 }
 
 func updateSettings(nwi NetworkInterface, input string) string {
+
 	output := input + "\n"
 
 	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", nwi.TapName)
@@ -113,19 +106,20 @@ func updateSettings(nwi NetworkInterface, input string) string {
 	}
 
 	switch nwi.Type {
-	case constants.BRIDGE_LINUX:
+	case "linux":
 		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.LinuxUpScript)
+
 		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.LinuxDownScript)
 
-		scriptInput := fmt.Sprintf("brctl addif br0 %s", nwi.TapName)
+		scriptInput := fmt.Sprintf("brctl addif %s %s", settings.BridgeName, nwi.TapName)
 		updateScript(settings.LinuxUpScript, scriptInput)
 
-	case constants.BRIDGE_OVS:
+	case "ovs":
 		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.OvsUpScript)
 
 		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.OvsDownScript)
 
-		scriptInput := fmt.Sprintf("ovs-vsctl add-port br0 %s", nwi.TapName)
+		scriptInput := fmt.Sprintf("ovs-vsctl add-port %s %s", settings.OvsName, nwi.TapName)
 		updateScript(settings.OvsUpScript, scriptInput)
 	default:
 		log.Fatalf("Unrecognized bridge type.")
@@ -238,6 +232,16 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	}
 
+	loadConfigFile()
+
+	settings.ScriptPath = viper.GetString("script-path")
+	settings.LinuxUpScript = viper.GetString("linux-up-script")
+	settings.LinuxDownScript = viper.GetString("linux-down-script")
+	settings.BridgeName = viper.GetString("bridge-name")
+	settings.OvsUpScript = viper.GetString("ovs-up-script")
+	settings.OvsDownScript = viper.GetString("ovs-down-script")
+	settings.OvsName = viper.GetString("ovs-up-name")
+
 	var conf string
 
 	for x, i := range lxcTmpl.GetInterfaces() {
@@ -252,19 +256,18 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 		interfaces = append(interfaces,
 			NetworkInterface{
-				BridgeName: "br0",
-				Type:       i.GetType(),
-				Ipv4Addr:   i.GetIpv4Addr(),
-				MacAddr:    i.GetMacaddr(),
-				TapName:    d.name + "-" + strconv.Itoa(x),
+				Type:     i.GetType(),
+				Ipv4Addr: i.GetIpv4Addr(),
+				MacAddr:  i.GetMacaddr(),
+				TapName:  d.name + "-" + strconv.Itoa(x),
 			},
 		)
 	}
 
-	checkScript(LinuxUpScript)
-	checkScript(LinuxDownScript)
-	checkScript(OvsUpScript)
-	checkScript(OvsDownScript)
+	checkScript(settings.LinuxUpScript)
+	checkScript(settings.LinuxDownScript)
+	checkScript(settings.OvsUpScript)
+	checkScript(settings.OvsDownScript)
 
 	modifyConf()
 
@@ -272,6 +275,16 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	return nil
 
+}
+
+func loadConfigFile() {
+	viper.SetConfigName("executor")
+	viper.AddConfigPath("/etc/openvdc/")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+	}
 }
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {

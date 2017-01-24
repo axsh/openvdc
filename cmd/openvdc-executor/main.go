@@ -168,18 +168,6 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		return err
 	}
 
-	hvs := hypervisor.HypervisorSettings{
-		ScriptPath:      "",
-		LinuxUpScript:   "",
-		LinuxDownScript: "",
-		BridgeName:      "",
-		OvsUpScript:     "",
-		OvsDownScript:   "",
-		OvsName:         "",
-	}
-
-	hv.SetHypervisorSettings(hvs)
-
 	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
 	if err != nil {
 		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
@@ -368,25 +356,22 @@ var hypervisorName string
 var zkAddr string
 
 func init() {
-
-	RootCmd.PersistentFlags().StringVarP(&hypervisorName, "hypervisor-name", "", "null", "Hypervisor name")
+	RootCmd.PersistentFlags().StringVarP(&hypervisorName, "hypervisor-name", "", "lxc", "Hypervisor name")
 	RootCmd.PersistentFlags().StringVarP(&zkAddr, "zk", "", "127.0.0.1:2181", "Zookeeper address")
 
 	cobra.OnInitialize(initConfig)
 	pfs := RootCmd.PersistentFlags()
 
-	pfs.String("config", "/root/.openvdc/executor-config.toml", "")
-	pfs.String("hypervisorName", viper.GetString("hypervisor.name"), "Hypervisor name")
+	pfs.String("config", "/etc/openvdc/executor.toml", "")
+
+	pfs.String("hypervisorName", viper.GetString("hypervisor-name"), "Hypervisor name")
 	viper.BindPFlag("hypervisor.name", pfs.Lookup("hypervisorName"))
 
-	pfs.String("zkAddr", viper.GetString("zk.addr"), "Zk Addr")
-	viper.BindPFlag("hypervisor.name", pfs.Lookup("hypervisorName"))
+	pfs.String("zkAddr", viper.GetString("zk-addr"), "Zk Addr")
+	viper.BindPFlag("zk.addr", pfs.Lookup("zkAddr"))
 }
 
 func main() {
-
-	//hypervisorName = viper.GetString("hypervisorName")
-	//zkAddr = viper.GetString("zkAddr")
 
 	provider, ok := hypervisor.FindProvider(hypervisorName)
 	if ok == false {
@@ -421,8 +406,8 @@ func initConfig() {
 		viper.SetConfigFile(f.Value.String())
 	}
 
-	viper.SetConfigName("executor-config")
-	viper.AddConfigPath("/root/.openvdc/")
+	viper.SetConfigName("executor")
+	viper.AddConfigPath("/etc/openvdc/")
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig()
 	if err != nil {
