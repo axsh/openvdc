@@ -3,7 +3,6 @@
 package util
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -19,7 +18,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/axsh/openvdc/cmd/openvdc/constants"
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/registry"
@@ -110,58 +108,6 @@ func PreRunHelpFlagCheckAndQuit(cmd *cobra.Command, args []string) error {
 		return pflag.ErrHelp
 	}
 	return nil
-}
-
-func HandleArgs(args []string) []string {
-	for i, _ := range args {
-		arg := strings.Replace(args[i], "-", "", 2)
-
-		switch arg {
-		case "config", "c":
-
-			f, err := ioutil.ReadFile(args[i+1])
-
-			if err != nil {
-				log.Fatalf("Failed loading provided config file: ", err)
-			}
-
-			err = viper.ReadConfig(bytes.NewBuffer(f))
-			if err != nil {
-				log.Fatalf("Failed reading provided config file: ", err)
-			}
-
-			bridgetype := viper.GetString("bridgetype")
-
-			switch strings.ToLower(bridgetype) {
-			case "linux":
-				bridgetype = fmt.Sprintf(`"type":"%s"`, constants.BRIDGE_LINUX)
-			case "ovs":
-				bridgetype = fmt.Sprintf(`"type":"%s"`, constants.BRIDGE_OVS)
-			default:
-				log.Fatalf("Unrecognized bridge type.")
-			}
-
-			args[i] = fmt.Sprintf(`{"interfaces":[{%s}]}`, bridgetype)
-			args[i+1] = ""
-		}
-	}
-
-	return args
-}
-
-func IsFlagProvided(args []string, flagName string, flagShortName string) bool {
-
-	result := false
-
-	for i, _ := range args {
-		trimmedArg := strings.Replace(args[i], "-", "", 2)
-		if trimmedArg == flagName || trimmedArg == flagShortName {
-			result = true
-			break
-		}
-	}
-
-	return result
 }
 
 // MergeTemplateParams returns the value merged resource template. The value source is

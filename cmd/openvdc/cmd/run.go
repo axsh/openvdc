@@ -12,11 +12,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-
-var configFilePath string
           
 func init() {
-	runCmd.Flags().StringVarP(&configFilePath, "config", "c", "", "Config File")
+
 }
 
 var runCmd = &cobra.Command{
@@ -46,12 +44,6 @@ var runCmd = &cobra.Command{
 		if len(left) < 1 {
 			return pflag.ErrHelp
 		}
-	
-		if util.IsFlagProvided(args,"config-file","c") != true {
-			log.Fatalf("Please provide a config file.")
-		}
-
-		args = util.HandleArgs(args)
 		
 		templateSlug := left[0]
 		for i, a := range args {
