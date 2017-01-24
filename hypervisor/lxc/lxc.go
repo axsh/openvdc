@@ -3,6 +3,7 @@
 package lxc
 
 import (
+	"io"
 	"os"
 	"time"
 	"fmt"
@@ -166,29 +167,74 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 	return nil
 }
 
-func (d *LXCHypervisorDriver) InstanceConsole() error {
+func (d *LXCHypervisorDriver) InstanceConsole() hypervisor.Console {
+	return &lxcConsole{
+		lxc: d,
+	}
+}
 
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
+func (d *LXCHypervisorDriver) newContainer() (*lxc.Container, error) {
+	return lxc.NewContainer(d.name, d.lxcpath)
+}
+
+type lxcConsole struct {
+	lxc *LXCHypervisorDriver
+}
+
+func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
+	c, err := con.lxc.newContainer()
 	if err != nil {
-		d.log.Errorln(err)
+		con.lxc.log.Errorln(err)
 		return err
 	}
 
 	if c.State() != lxc.RUNNING {
-		d.log.Errorf("lxc-container can not perform console")
+		con.lxc.log.Errorf("lxc-container can not perform console")
 		return fmt.Errorf("lxc-container can not perform console")
 	}
 
-	var options = lxc.ConsoleOptions{
-		Tty:             -1,
-		StdinFd:         os.Stdin.Fd(), //These should probably be changed.
-		StdoutFd:        os.Stdout.Fd(),
-		StderrFd:        os.Stderr.Fd(),
-		EscapeCharacter: 'a',
+  return con.attachShell(stdin, stdout, stderr)
+}
+
+func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) error {
+	rStdin, wStdin, err := os.Pipe()
+	rStdout, wStdout, err := os.Pipe()
+	rStderr, wStderr, err := os.Pipe()
+	defer func() {
+		rStdin.Close()
+		wStdin.Close()
+		rStdout.Close()
+		wStdout.Close()
+		rStderr.Close()
+		wStderr.Close()
+	}()
+
+	go io.Copy(wStdin, stdin)
+	go io.Copy(stdout, rStdout)
+	go io.Copy(stderr, rStderr)
+
+	options := lxc.DefaultAttachOptions
+ 	options.StdinFd = rStdin.Fd()
+	options.StdoutFd = wStdout.Fd()
+	options.StderrFd = wStderr.Fd()
+
+	if err := c.AttachShell(options); err != nil {
+		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
+		return err
 	}
+	return nil
+}
+
+func (con *lxcConsole) console(stdin io.Reader, stdout, stderr io.Writer) error {
+
+	options := lxc.DefaultConsoleOptions
+	options.StdinFd					= rStdin.Fd()
+	options.StdoutFd				= wStdout.Fd()
+	options.StderrFd				= wStderr.Fd()
+	options.EscapeCharacter = '~'
 
 	if err := c.Console(options); err != nil {
-		d.log.Errorln(err)
+		con.lxc.log.Errorln(err)
 		return err
 	}
 	return nil

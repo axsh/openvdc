@@ -65,7 +65,7 @@ func sshShell(instanceID string, destAddr string) error {
 				quit <- err
 				return
 			}
-			fmt.Fprint(in, "\r\n")
+			fmt.Fprint(in, "\n")
 		}
 		quit <- lineScan.Err()
 	}()

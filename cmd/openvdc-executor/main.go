@@ -428,7 +428,7 @@ func main() {
 	}
 	defer sshListener.Close()
 
-	sshd := NewSSHServer()
+	sshd := NewSSHServer(provider)
 	if err := sshd.Setup(); err != nil {
 		log.WithError(err).Fatal("Failed to setup SSH Server")
 	}
