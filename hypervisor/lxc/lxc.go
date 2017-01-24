@@ -7,7 +7,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -80,9 +79,9 @@ func modifyConf() {
 	cf := cleanConfigFile(string(f))
 
 	var newSettings string
-	for i, _ := range interfaces {
-		newSettings = updateSettings(interfaces[i], newSettings)
-	}
+	//for i, _ := range interfaces {
+	newSettings = updateSettings(interfaces[0], newSettings)
+	//}
 
 	result := strings.Join([]string{cf, newSettings}, "")
 	err = ioutil.WriteFile(LxcConfigFile, []byte(result), 0644)
@@ -244,7 +243,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	var conf string
 
-	for x, i := range lxcTmpl.GetInterfaces() {
+	for _, i := range lxcTmpl.GetInterfaces() {
 
 		if i.GetIpv4Addr() == "" {
 			conf += fmt.Sprintf("lxc.network.ipv4=%s\n", i.GetIpv4Addr())
@@ -259,7 +258,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 				Type:     i.GetType(),
 				Ipv4Addr: i.GetIpv4Addr(),
 				MacAddr:  i.GetMacaddr(),
-				TapName:  d.name + "-" + strconv.Itoa(x),
+				TapName:  d.name,
 			},
 		)
 	}
