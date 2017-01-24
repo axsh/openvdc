@@ -13,14 +13,10 @@ import (
 )
 
 
-var bridgeType string
-var ipv4 string
-var macAddr string
+var configFilePath string
           
 func init() {
-	runCmd.Flags().StringVarP(&bridgeType, "bridge-type", "t", "", "Bridge type")
-	runCmd.Flags().StringVarP(&ipv4, "ip-addr", "i", "", "Ipv4 Address")
-	runCmd.Flags().StringVarP(&macAddr, "mac-addr", "m", "", "Mac Address")
+	runCmd.Flags().StringVarP(&configFilePath, "config", "c", "", "Config File")
 }
 
 var runCmd = &cobra.Command{
@@ -51,8 +47,8 @@ var runCmd = &cobra.Command{
 			return pflag.ErrHelp
 		}
 	
-		if util.IsFlagProvided(args,"bridge-type","t") != true {
-			log.Fatalf("Please specify a bridge type.")
+		if util.IsFlagProvided(args,"config-file","c") != true {
+			log.Fatalf("Please provide a config file.")
 		}
 
 		args = util.HandleArgs(args)
