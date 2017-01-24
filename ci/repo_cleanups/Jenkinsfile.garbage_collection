@@ -4,11 +4,6 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 // http://stackoverflow.com/questions/37425064/how-to-use-environment-variables-in-a-groovy-function-using-a-jenkinsfile
 import groovy.transform.Field
 
-def checkout_and_merge() {
-    checkout scm
-    sh "git merge origin/master"
-}
-
 def stage_clean_rpms() {
   node() {
     stage "RPM Repository Cleanups"
@@ -20,7 +15,6 @@ def stage_clean_rpms() {
 
 node() {
     stage "Checkout"
-//  checkout_and_merge()
     stage_clean_rpms()
 }
 
