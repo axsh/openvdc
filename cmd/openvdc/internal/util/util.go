@@ -26,6 +26,12 @@ import (
 
 var UserConfDir string
 
+type Settings struct {
+	Interfaces []struct {
+		Type string `json:"type"`
+	}
+}
+
 func init() {
 	// UserConfDir variable is referenced from init() in cmd/root.go
 	// so that it has to be initialized eagerly.
@@ -140,6 +146,23 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 			if err != nil {
 				log.Fatalf("Failed to read variables from file: %s", fpath)
 			}
+
+			var settings Settings
+
+			err := json.Unmarshal([]byte(buf), &settings)
+
+			if err != nil {
+				fmt.Println("Failed reading config file:", err)
+			}
+
+			for _, i := range settings.Interfaces {
+				if i.Type == "linux" || i.Type == "ovs" {
+					continue
+				} else {
+					log.Fatalf("Unrecognized bridgetype: %s", i.Type)
+				}
+			}
+
 		} else if args[0] == "-" {
 			buf, err = ioutil.ReadAll(os.Stdin)
 			if err != nil {
