@@ -74,6 +74,8 @@ This environment uses a caching system to avoid having to constantly rebuild the
 
 * Install OpenVDC packages on KVM VMs for the branch/commit we're testing
 
+The cache directory is bind mounted into the docker container so the same cache is re-used every time the tests run.
+
 ### The actual tests
 
 Once the KVM environment is in place we can run the actual tests. This is the `run_tests.sh` script's final action.
