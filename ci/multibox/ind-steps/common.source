@@ -58,9 +58,9 @@ function stop_masquerade() {
     $starting_step "Stop masquerading for subnet ${subnet}"
     sudo iptables-save | grep -wq "\-A POSTROUTING \-s ${subnet} \-j MASQUERADE"
     [ "$?" != "0" ]
-    $skip_step_if_already_done
+    $skip_step_if_already_done; set +e
     sudo iptables -t nat -D POSTROUTING -s "${subnet}" -j MASQUERADE
-  ) ; prev_cmd_failed
+  ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 }
 
 function run_steps () {
@@ -130,10 +130,11 @@ function destroy_bridge() {
     $starting_step "Destroy bridge ${name}"
     brctl show | grep -q "${name}"
     [ "$?" != "0" ]
-    $skip_step_if_already_done ; set -xe
+    $skip_step_if_already_done ; set -x +e
+    # Ignore errors for complete teardown.
     sudo ip link set "${1}" down
     sudo brctl delbr "${1}"
-  ) ; prev_cmd_failed
+  ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 }
 
 function require_branch_variable() {
