@@ -14,6 +14,11 @@ RELEASE_SUFFIX="current"
 
 # Set to "1" if you don't want to remove the docker container after running
 REBUILD="0"
+
+# This variable holds the directory on the *host* that will be bind mounted
+# into the Docker container to place the cache for KVM images.
+# If not provided, the default value is "/data2"
+DATA_DIR=/data2
 ```
 
 Let's save this file as `build.env`. Now kick off the `build_and_run_in_docker.sh` script, passing in that file as an argument.
@@ -87,3 +92,50 @@ To make sure that the `openvdc` command doesn't require root previliges, we run 
 The `build_and_run_in_docker.sh` script traps EXIT and calls a cleanup function that will remove the docker container unless `LEAVE_CONTAINER` is set.
 
 The leftover KVM cache and Docker images are cleaned up periodically by a garbage collection job on Jenkins.
+
+## FAQ
+
+Keep in mind that all answers are true at time of writing (January 2017) and might no longer be accurate.
+
+#### What OS has it run on successfully?
+
+Fedora 23 and Arch Linux.
+
+#### What Docker versions has it run on successfully?
+
+1.10.3 on Fedora and 1.12.6 on Arch.
+
+#### How much disk space is required?
+
+609 MB for the KVM centos 7 seed image.
+
+```
+> du -hs openvdc-ci/boxes
+
+609M    openvdc-ci/boxes
+```
+
+About 3.9 GB KVM cache per branch
+
+```
+> du -hs openvdc-ci/branches/*
+
+3.9G    openvdc-ci/branches/acceptance-test
+3.8G    openvdc-ci/branches/master
+```
+
+About 470 per docker image plus about 190 for the base centos image.
+
+```
+> sudo docker images
+
+REPOSITORY                TAG                       IMAGE ID            CREATED             SIZE
+openvdc/acceptance-test   acceptance-test.current   8f53091d43bb        29 minutes ago      470.8 MB
+centos                    7                         67591570dd29        5 weeks ago         191.8 MB
+```
+
+You do the math. :p
+
+#### How much memory is required?
+
+We've got 5 KVM machines with 1 GB of memory assigned to each one.
