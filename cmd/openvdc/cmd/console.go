@@ -60,7 +60,7 @@ func sshShell(instanceID string, destAddr string) error {
 	lineScan := bufio.NewScanner(os.Stdin)
 	go func() {
 		for lineScan.Scan() {
-			_, err := fmt.Fprint(in, lineScan.Text())
+			_, err := in.Write(lineScan.Bytes())
 			if err != nil {
 				quit <- err
 				return

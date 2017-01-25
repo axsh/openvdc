@@ -142,7 +142,7 @@ Done:
 
 				switch ssh.Signal(msg.Signal) {
 				case ssh.SIGINT:
-					break Done
+					quit <- nil
 				default:
 					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
 				}
