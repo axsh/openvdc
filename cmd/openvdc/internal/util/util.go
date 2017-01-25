@@ -138,6 +138,7 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 	subargs := args
 	// Process JSON input and merging.
 	{
+
 		var err error
 		var buf []byte
 		if strings.HasPrefix(args[0], "@") {
@@ -146,6 +147,18 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 			if err != nil {
 				log.Fatalf("Failed to read variables from file: %s", fpath)
 			}
+
+		} else if args[0] == "-" {
+			buf, err = ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				log.Fatalf("Failed to read variables from stdin")
+			}
+		} else if !strings.HasPrefix(args[0], "-") {
+			// Assume JSON string input
+			buf = []byte(args[0])
+		}
+
+		if len(buf) > 0 {
 
 			var settings Settings
 
@@ -163,17 +176,6 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 				}
 			}
 
-		} else if args[0] == "-" {
-			buf, err = ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				log.Fatalf("Failed to read variables from stdin")
-			}
-		} else if !strings.HasPrefix(args[0], "-") {
-			// Assume JSON string input
-			buf = []byte(args[0])
-		}
-
-		if len(buf) > 0 {
 			err = json.Unmarshal(buf, merged)
 			if err != nil {
 				log.Fatal("Invalid variable input:", err)
