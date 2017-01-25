@@ -124,7 +124,7 @@ About 3.9 GB KVM cache per branch
 3.8G    openvdc-ci/branches/master
 ```
 
-About 470 per docker image plus about 190 for the base centos image.
+About 470 MB per docker image plus about 190 MB for the base Centos 7 image.
 
 ```
 > sudo docker images
