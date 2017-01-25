@@ -25,6 +25,8 @@ func prepareRegisterAPICall(templateSlug string, args []string) *api.ResourceReq
 	}
 	if len(args) > 1 {
 		rt.Template.Template = util.MergeTemplateParams(rt, args[1:])
+	} else {
+		log.Fatalf("Please provide a config file.")
 	}
 	req := &api.ResourceRequest{
 		Template: rt.ToModel(),
