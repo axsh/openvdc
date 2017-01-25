@@ -202,34 +202,34 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 
 func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
 	var wg sync.WaitGroup
-	rStdin, wStdin, _ := os.Pipe()
-	rStdout, wStdout, _ := os.Pipe()
-	rStderr, wStderr, _ := os.Pipe()
-	defer func() {
-		rStdin.Close()
-		wStdin.Close()
-		rStdout.Close()
-		wStdout.Close()
-		rStderr.Close()
-		wStderr.Close()
-	}()
+	fpty, ftty, err := pty.Open()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to open tty")
+	}
+	defer ftty.Close()
+	defer fpty.Close()
 
-	go io.Copy(wStdin, stdin)
 	wg.Add(1)
 	go func(){
 		defer wg.Done()
-		io.Copy(stdout, rStdout)
+		io.Copy(fpty, stdin)
 	}()
 	wg.Add(1)
-	go func(){
+	go func() {
 		defer wg.Done()
-		io.Copy(stderr, rStderr)
+		io.Copy(stdout, fpty)
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		io.Copy(stderr, fpty)
 	}()
 
 	options := lxc.DefaultAttachOptions
- 	options.StdinFd = rStdin.Fd()
-	options.StdoutFd = wStdout.Fd()
-	options.StderrFd = wStderr.Fd()
+	options.StdinFd	= ftty.Fd()
+	options.StdoutFd = ftty.Fd()
+	options.StderrFd = ftty.Fd()
+	options.ClearEnv = true
 
 	if err := c.AttachShell(options); err != nil {
 		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
