@@ -12,7 +12,7 @@ This is the environment used on the OpenVDC CI to run the integration tests. To 
 BRANCH="master"
 RELEASE_SUFFIX="current"
 
-# Set to "1" if you don't want to remove the docker container after running
+# Set to "1" if you don't want to remove the Docker container after running
 REBUILD="0"
 
 # This variable holds the directory on the *host* that will be bind mounted
@@ -37,11 +37,11 @@ Here's everything you need to know about how this acceptance test works exactly.
 
 The actual test code is in the `tests` directory. This is written in go using the [Testing](https://golang.org/pkg/testing/) package. During the CI's rpmbuild stage, these tests are compiled as a binary and packaged in an rpm called `openvdc-acceptance-test`. This way we don't have to worry about installing go and setting up a GOPATH on the test environment.
 
-### The docker container
+### The Docker container
 
 The test environment consists of multiple KVM machines and we've decided to put them all together in a Docker container. That way we can test multiple branches in parallel and cleanup becomes simple. We just remove the container when we're done.
 
-The command we run inside of the docker container is `run_tests.sh`. This script will first write the correct OpenVDC yum repository to `/etc/yum.repos.d/openvdc.repo`. The environment variables described in [Quick start](#quick-start) decide which repository is used.
+The command we run inside of the Docker container is `run_tests.sh`. This script will first write the correct OpenVDC yum repository to `/etc/yum.repos.d/openvdc.repo`. The environment variables described in [Quick start](#quick-start) decide which repository is used.
 
 Next the `run_tests.sh` script installs the `openvdc-acceptance-test` package through yum which depends on `openvdc-cli`.
 
@@ -49,9 +49,9 @@ Now we build the KVM environment.
 
 ### The KVM environment
 
-The code that builds the KVM machines running inside of the docker container is in the `multibox` directory.
+The code that builds the KVM machines running inside of the Docker container is in the `multibox` directory.
 
-If you want to run this KVM environment locally without docker, you can do so like this.
+If you want to run this KVM environment locally without Docker, you can do so like this.
 
 ```
 BRANCH=master RELEASE_SUFFIX=current REBUILD=false ./build.sh
@@ -79,7 +79,7 @@ This environment uses a caching system to avoid having to constantly rebuild the
 
 * Install OpenVDC packages on KVM VMs for the branch/commit we're testing
 
-The cache directory is bind mounted into the docker container so the same cache is re-used every time the tests run.
+The cache directory is bind mounted into the Docker container so the same cache is re-used every time the tests run.
 
 ### The actual tests
 
@@ -89,7 +89,7 @@ To make sure that the `openvdc` command doesn't require root previliges, we run 
 
 ### Cleanup
 
-The `build_and_run_in_docker.sh` script traps EXIT and calls a cleanup function that will remove the docker container unless `LEAVE_CONTAINER` is set.
+The `build_and_run_in_docker.sh` script traps EXIT and calls a cleanup function that will remove the Docker container unless `LEAVE_CONTAINER` is set.
 
 The leftover KVM cache and Docker images are cleaned up periodically by a garbage collection job on Jenkins.
 
@@ -124,7 +124,7 @@ About 3.9 GB KVM cache per branch
 3.8G    openvdc-ci/branches/master
 ```
 
-About 470 MB per docker image plus about 190 MB for the base Centos 7 image.
+About 470 MB per Docker image plus about 190 MB for the base Centos 7 image.
 
 ```
 > sudo docker images
