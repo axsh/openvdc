@@ -2,14 +2,12 @@ FROM centos:7
 
 MAINTAINER "Axsh Co. LTD"
 
-#TODO: Install openvdc-cli in the container... openvdc-acceptance-test should depend on it
-
 VOLUME /data
 
 RUN ["yum", "install", "-y", "epel-release"]
 RUN ["yum", "install", "-y", "rsync", "bridge-utils", "qemu-kvm", "qemu-system-x86", "parted", "sudo", "openssh-clients", "nmap-ncat"]
 
-RUN groupadd -r axsh && useradd -r -g axsh axsh
+RUN groupadd -r axsh && useradd -d /home/axsh -g axsh axsh
 WORKDIR /home/axsh
 
 ARG BRANCH
