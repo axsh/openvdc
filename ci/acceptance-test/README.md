@@ -26,17 +26,17 @@ That's it. This should build the environment and run the tests
 
 ## The nitty gritty
 
-Here's everything you should know about how this acceptance test works exactly.
+Here's everything you need to know about how this acceptance test works exactly.
 
 ### The actual test code
 
-The actual test code is in the `tests` directory. This is written in go using the [Testing](https://golang.org/pkg/testing/) package. These tests are compiled as a binary and packages in an rpm called `openvdc-acceptance-test`. This way we don't have to worry about installing go and setting up a GOPATH on the test environment.
+The actual test code is in the `tests` directory. This is written in go using the [Testing](https://golang.org/pkg/testing/) package. During the CI's rpmbuild stage, these tests are compiled as a binary and packaged in an rpm called `openvdc-acceptance-test`. This way we don't have to worry about installing go and setting up a GOPATH on the test environment.
 
 ### The docker container
 
 The test environment consists of multiple KVM machines and we've decided to put them all together in a Docker container. That way we can test multiple branches in parallel and cleanup becomes simple. We just remove the container when we're done.
 
-The command we run inside of the docker container is `run_tests.sh`. This script will first write the correct OpenVDC yum repository to `/etc/yum.repos.d/openvdc.repo`. The environment variables described in [Quick start](#Quick-start) decide which repository is used.
+The command we run inside of the docker container is `run_tests.sh`. This script will first write the correct OpenVDC yum repository to `/etc/yum.repos.d/openvdc.repo`. The environment variables described in [Quick start](#quick-start) decide which repository is used.
 
 Next the `run_tests.sh` script installs the `openvdc-acceptance-test` package through yum which depends on `openvdc-cli`.
 
@@ -62,7 +62,7 @@ This environment uses a caching system to avoid having to constantly rebuild the
 
 * Build images in .raw format **without** openvdc installed. We use .raw so we can loopback mount and install packages using chroot.
 
-* Convert images to .qcow format so we can use copy on write.
+* Convert images to .qcow format so we can use copy-on-write.
 
 * Store images in cache directory.
 
@@ -79,3 +79,9 @@ This environment uses a caching system to avoid having to constantly rebuild the
 Once the KVM environment is in place we can run the actual tests. This is the `run_tests.sh` script's final action.
 
 To make sure that the `openvdc` command doesn't require root previliges, we run it as an unpreviliged `axsh` user.
+
+### Cleanup
+
+The `build_and_run_in_docker.sh` script traps EXIT and calls a cleanup function that will remove the docker container unless `LEAVE_CONTAINER` is set.
+
+The leftover KVM cache and Docker images are cleaned up periodically by a garbage collection job on Jenkins.
