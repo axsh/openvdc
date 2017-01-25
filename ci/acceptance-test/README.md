@@ -52,4 +52,30 @@ If you want to run this KVM environment locally without docker, you can do so li
 BRANCH=master RELEASE_SUFFIX=current REBUILD=false ./build.sh
 ```
 
-This environment uses a caching system to avoid having to constantly rebuild the images every time we test a new branch or commit.
+This environment uses a caching system to avoid having to constantly rebuild the images every time we test a new branch or commit. The system works as follows.
+
+#### First time ever run
+
+* Download seed image containing a minimal Centos 7. All images built are based on this.
+
+#### First time run on a branch
+
+* Build images in .raw format **without** openvdc installed. We use .raw so we can loopback mount and install packages using chroot.
+
+* Convert images to .qcow format so we can use copy on write.
+
+* Store images in cache directory.
+
+#### Every time we run on a branch
+
+* Copy-on-write cached images for branch to the directory we will run KVM from.
+
+* Run KVM.
+
+* Install OpenVDC packages on KVM VMs for the branch/commit we're testing
+
+### The actual tests
+
+Once the KVM environment is in place we can run the actual tests. This is the `run_tests.sh` script's final action.
+
+To make sure that the `openvdc` command doesn't require root previliges, we run it as an unpreviliged `axsh` user.
