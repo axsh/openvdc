@@ -130,6 +130,7 @@ func updateSettings(nwi NetworkInterface, input string) string {
 
 		os.Setenv("OVSNAME", settings.BridgeName)
 		os.Setenv("TAPNAME", nwi.TapName)
+
 	default:
 		log.Fatalf("Unrecognized bridge type.")
 	}
@@ -236,18 +237,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	loadConfigFile()
 
-	var conf string
-
 	for _, i := range lxcTmpl.GetInterfaces() {
-
-		if i.GetIpv4Addr() == "" {
-			conf += fmt.Sprintf("lxc.network.ipv4=%s\n", i.GetIpv4Addr())
-		}
-
-		if i.GetMacaddr() == "" {
-			conf += fmt.Sprintf("lxc.network.hwaddr=%s\n", i.GetMacaddr())
-		}
-
 		interfaces = append(interfaces,
 			NetworkInterface{
 				Type:     i.GetType(),
