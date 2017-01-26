@@ -17,6 +17,7 @@ BuildRequires: rpmdevtools lxc-devel git
 BuildRequires: golang >= 1.6
 
 Requires: mesosphere-zookeeper mesos
+Requires: bridge-utils
 %{systemd_requires}
 Requires: openvdc-cli
 Requires: openvdc-executor
@@ -46,6 +47,9 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
+mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc
+mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
+cp deployment/conf-files/executor.toml $RPM_BUILD_ROOT"/etc/openvdc
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
