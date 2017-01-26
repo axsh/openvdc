@@ -44,13 +44,13 @@ func init() {
 
 	loadConfigFile()
 
-        settings.ScriptPath = viper.GetString("script-path")
-        settings.LinuxUpScript = viper.GetString("linux-up-script")
-        settings.LinuxDownScript = viper.GetString("linux-down-script")
-        settings.BridgeName = viper.GetString("bridge-name")
-        settings.OvsUpScript = viper.GetString("ovs-up-script")
-        settings.OvsDownScript = viper.GetString("ovs-down-script")
-        settings.OvsName = viper.GetString("ovs-up-name")
+	settings.ScriptPath = viper.GetString("script-path")
+	settings.LinuxUpScript = viper.GetString("linux-up-script")
+	settings.LinuxDownScript = viper.GetString("linux-down-script")
+	settings.BridgeName = viper.GetString("bridge-name")
+	settings.OvsUpScript = viper.GetString("ovs-up-script")
+	settings.OvsDownScript = viper.GetString("ovs-down-script")
+	settings.OvsName = viper.GetString("ovs-up-name")
 }
 
 type LXCHypervisorProvider struct {
@@ -120,16 +120,16 @@ func updateSettings(nwi NetworkInterface, input string) string {
 
 		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.LinuxDownScript)
 
-		scriptInput := fmt.Sprintf("brctl addif %s %s", settings.BridgeName, nwi.TapName)
-		updateScript(settings.LinuxUpScript, scriptInput)
+		os.Setenv("BRIDGENAME", settings.BridgeName)
+		os.Setenv("TAPNAME", nwi.TapName)
 
 	case "ovs":
 		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.OvsUpScript)
 
 		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.OvsDownScript)
 
-		scriptInput := fmt.Sprintf("ovs-vsctl add-port %s %s", settings.OvsName, nwi.TapName)
-		updateScript(settings.OvsUpScript, scriptInput)
+		os.Setenv("OVSNAME", settings.BridgeName)
+		os.Setenv("TAPNAME", nwi.TapName)
 	default:
 		log.Fatalf("Unrecognized bridge type.")
 	}
@@ -201,13 +201,6 @@ func createScript(script string) {
 	}
 
 	defer f.Close()
-}
-
-func updateScript(script string, input string) {
-	err := ioutil.WriteFile(settings.ScriptPath+script, []byte(input), 0666)
-	if err != nil {
-		log.Fatalf("Failed to update script: ", err)
-	}
 }
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
