@@ -12,8 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"path/filepath"
-
 	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
@@ -370,13 +368,17 @@ func initConfig() {
 	f := rootCmd.PersistentFlags().Lookup("config")
 	if f.Changed {
 		viper.SetConfigFile(f.Value.String())
+	} else {
+		viper.SetConfigFile(DefaultConfPath)
+		viper.SetConfigType("toml")
 	}
-	dir, _ := filepath.Split(DefaultConfPath)
-	viper.SetConfigName("executor")
-	viper.AddConfigPath(dir)
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig()
 	if err != nil {
+		if viper.ConfigFileUsed() == DefaultConfPath && os.IsNotExist(err) {
+			// Ignore default conf file does not exist.
+			return
+		}
 		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
 	}
 }
