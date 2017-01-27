@@ -10,6 +10,7 @@ import (
 
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
 	"golang.org/x/net/context"
 )
@@ -77,7 +78,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -140,7 +141,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -185,7 +186,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -230,7 +231,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{*zkAddr})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -347,10 +348,12 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 
 var (
 	hypervisorName = flag.String("hypervisor", "null", "")
-	zkAddr         = flag.String("zk", "127.0.0.1:2181", "Zookeeper address")
 )
+var zkAddr backend.ZkEndpoint
 
 func init() {
+	zkAddr = backend.ZkEndpoint{Hosts: []string{"127.0.0.1:2181"}, Path: "/openvdc"}
+	flag.Var(&zkAddr, "zk", "Zookeeper address")
 	flag.Parse()
 }
 
