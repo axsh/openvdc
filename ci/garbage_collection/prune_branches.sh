@@ -43,7 +43,6 @@ function active_git_branches {
 
     cutoff_date=$(get_cutoff_date)
     git_query | while IFS= read -r branch; do
-echo "${branch}" >> temp.outfile
         branch=${branch##*/}      ## Remove everything up to and including the last '/'
                                   ## (Directory names are assumed to match the branch name
                                   ## only, without any leading path names. origin/, etc.)
@@ -60,12 +59,6 @@ echo "${branch}" >> temp.outfile
 }
 
 function dirs_to_prune {
-
-    ## Before we start: Are we inside a git repo?
-    ls .git > /dev/null 2>&1    # Check to see if we're inside a git repo.
-    if [[ $? -ne 0 ]]; then
-       exit 1
-    fi 
 
     base_directory=${1?No base directory name passed to dirs_to_prun function.}
 
