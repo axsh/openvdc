@@ -354,7 +354,6 @@ var rootCmd = &cobra.Command{
 var DefaultConfPath string
 
 func init() {
-	DefaultConfPath = "/etc/openvdc/executor.toml"
 	viper.SetDefault("hypervisor.driver", "null")
 	viper.SetDefault("zookeeper.endpoint", "127.0.0.1:2181")
 
