@@ -2,7 +2,6 @@
 
 
 function run_git {
-#   git for-each-ref --sort=-committerdate refs/remotes --format='%(HEAD)%(refname:short), %(committerdate:relative)'
     git for-each-ref --sort=-committerdate refs/remotes --format='%(refname:short), %(committerdate:relative)'
 }
 
@@ -53,7 +52,6 @@ function write_script {
     function git_branch_info {
     
         ### Find all gitbranches with update times older than x weeks
-#       run_git | while IFS= read -r branch_info; do
         echo -e "_STUB_" | while IFS= read -r branch_info; do
            bname=$(echo ${branch_info} | cut -d, -f1)
            time_info=$(echo ${branch_info} | cut -d, -f2)
