@@ -31,7 +31,7 @@ echo "Will prune all branches not commited to in the past ${time_limit} days."
 ## format and edit out the dashes.
 function git_query {
 #   git for-each-ref --sort=-committerdate refs/remotes --format='%(refname), %(committerdate:format:%Y%m%d)'
-    git for-each-ref --sort=-committerdate refs/remotes --format='%(refname), %(committerdate:short)' | sed -e 's/-//g'
+    git for-each-ref --sort=-committerdate refs/remotes --format='%(refname), %(committerdate:short)'
 }
 
 function get_cutoff_date {
@@ -48,7 +48,7 @@ function active_git_branches {
                                   ## only, without any leading path names. origin/, etc.)
 
         bname=$(echo ${branch} | cut -d, -f1)
-        commit_date=$(echo ${branch} | cut -d, -f2)
+        commit_date=$(echo ${branch} | cut -d, -f2 | sed -e 's/-//g')
 
         if [[ "${commit_date}"  <  "${cutoff_date}" ]]; then
             break      # break: The git command sorts by date. Once we reach here, all
