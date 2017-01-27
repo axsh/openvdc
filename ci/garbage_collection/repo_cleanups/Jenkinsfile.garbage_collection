@@ -5,11 +5,11 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 import groovy.transform.Field
 
 def stage_clean_rpms() {
-  node() {
+  node("rpm_repo") {
     stage "RPM Repository Cleanups"
     checkout scm
     sh "git remote prune origin"
-    sh "cd ci/repo_cleanups ; ./remove_stale_rpm.sh"
+    sh "cd ci/garbage_collection/repo_cleanups ; ./rpm_garbage_collection.sh"
   }
 }
 
@@ -17,4 +17,3 @@ node() {
     stage "Checkout"
     stage_clean_rpms()
 }
-
