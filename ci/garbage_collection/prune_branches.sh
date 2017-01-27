@@ -38,11 +38,12 @@ function get_cutoff_date {
     date -d "-${time_limit} days" +%Y%m%d
 }
 
-# This routine will fail ingloriously if it is not run inside a git repositroy!
+# This routine will fail ingloriously if it is not run inside a git repository!
 function active_git_branches {
 
     cutoff_date=$(get_cutoff_date)
     git_query | while IFS= read -r branch; do
+echo "${branch}" >> temp.outfile
         branch=${branch##*/}      ## Remove everything up to and including the last '/'
                                   ## (Directory names are assumed to match the branch name
                                   ## only, without any leading path names. origin/, etc.)

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -x
 
 . ../garbage_collection_misc.sh
 . ../prune_branches.sh
