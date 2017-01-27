@@ -15,6 +15,7 @@ import (
 	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
 	"golang.org/x/net/context"
 )
@@ -74,7 +75,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -137,7 +138,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -182,7 +183,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -227,7 +228,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
-	ctx, err := model.Connect(context.Background(), []string{viper.GetString("zookeeper.endpoint")})
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 		return err
@@ -350,10 +351,11 @@ var rootCmd = &cobra.Command{
 }
 
 var DefaultConfPath string
+var zkAddr backend.ZkEndpoint
 
 func init() {
 	viper.SetDefault("hypervisor.driver", "null")
-	viper.SetDefault("zookeeper.endpoint", "127.0.0.1:2181")
+	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
 
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
@@ -388,6 +390,9 @@ func init() {
 }
 
 func execute(cmd *cobra.Command, args []string) {
+	var zkAddr backend.ZkEndpoint
+	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+
 	provider, ok := hypervisor.FindProvider(viper.GetString("hypervisor.driver"))
 	if ok == false {
 		log.Fatalln("Unknown hypervisor name:", viper.GetString("hypervisor.driver"))
