@@ -66,5 +66,5 @@ $LDFLAGS="${LDFLAGS} -X '${BUILDSTAMP}.GithubDefaultRef=${branch}'"
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-scheduler
-go build -ldflags "$LDFLAGS -X 'main.DefaultConfPath=C:\\openvdc\\etc\\executor.conf'" -v ./cmd/openvdc-executor
+go build -ldflags "$LDFLAGS -X 'main.DefaultConfPath=C:\\openvdc\\etc\\executor.toml'" -v ./cmd/openvdc-executor
 Write-Host "Done"
