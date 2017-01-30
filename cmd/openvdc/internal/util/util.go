@@ -28,7 +28,7 @@ var UserConfDir string
 
 type Settings struct {
 	Interfaces []struct {
-		Type string `json:"type"`
+		Bridge string `json:"bridge"`
 	}
 }
 
@@ -169,10 +169,10 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 			}
 
 			for _, i := range settings.Interfaces {
-				if i.Type == "linux" || i.Type == "ovs" {
+				if i.Bridge == "linux" || i.Bridge == "ovs" {
 					continue
 				} else {
-					log.Fatalf("Unrecognized bridgetype: %s", i.Type)
+					log.Fatalf("Unrecognized bridgetype: %s", i.Bridge)
 				}
 			}
 

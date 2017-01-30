@@ -101,7 +101,7 @@ func modifyConf() {
 }
 
 func updateSettings(nwi NetworkInterface, input string) string {
-
+	
 	output := input + "\n"
 
 	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", nwi.TapName)
@@ -223,7 +223,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	for _, i := range lxcTmpl.GetInterfaces() {
 		interfaces = append(interfaces,
 			NetworkInterface{
-				Type:     i.GetType(),
+				Type:     i.GetBridge(),
 				Ipv4Addr: i.GetIpv4Addr(),
 				MacAddr:  i.GetMacaddr(),
 				TapName:  d.name,
