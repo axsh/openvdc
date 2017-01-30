@@ -183,25 +183,8 @@ func checkScript(script string) {
 	_, err := os.Stat(settings.ScriptPath + script)
 
 	if err != nil {
-		log.Infoln("Script not found.", err)
-		createScript(settings.ScriptPath + script)
+		log.Fatalf("Script not found.", err)
 	}
-}
-
-func createScript(script string) {
-	log.Infoln("Creating script '%s'...", script)
-	f, err := os.Create(script)
-
-	if err != nil {
-		log.Fatalf("Failed creating script.", err)
-	}
-
-	err = os.Chmod(script, 666)
-	if err != nil {
-		log.Fatalf("Failed to set file permissions.", err)
-	}
-
-	defer f.Close()
 }
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
@@ -291,7 +274,7 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *LXCHypervisorDriver) StartInstance() error {
-
+	
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
 		d.log.Errorln(err)
@@ -301,14 +284,15 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 	d.log.Infoln("Starting lxc-container...")
 	if err := c.Start(); err != nil {
 		d.log.Errorln(err)
-		resetConfigFile()
-		return err
+		//resetConfigFile()
+	//("BRIDGENAME", d.name)
+	return err
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
 	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
 		d.log.Errorln("Failed or timedout to wait for RUNNING")
-		resetConfigFile()
+		//resetConfigFile()
 		return fmt.Errorf("Failed or timedout to wait for RUNNING")
 	}
 	return nil
