@@ -56,7 +56,7 @@ cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
-cp pkg/conf/ "${RPM_BUILD_ROOT}/etc/openvdc"
+cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 
 %package cli
 Summary: OpenVDC cli
