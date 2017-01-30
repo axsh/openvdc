@@ -49,13 +49,8 @@ go test -tags=acceptance -c -o openvdc-acceptance-test
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
-mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc
-mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/executor.toml "$RPM_BUILD_ROOT"/etc/openvdc
-cp deployment/conf-files/scripts/linux-bridge-up.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/scripts/linux-bridge-down.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/scripts/ovs-up.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/scripts/ovs-down.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
+mkdir -p "{$RPM_BUILD_ROOT}/etc/openvdc"
+mkdir -p "{$RPM_BUILD_ROOT}/etc/openvdc/scripts"
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
@@ -65,7 +60,8 @@ cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/o
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
-
+cp pkg/conf/executor.toml "{$RPM_BUILD_ROOT}/etc/openvdc"
+cp pkg/conf/scripts/ "{$RPM_BUILD_ROOT}/etc/openvdc/scripts"
 
 %package cli
 Summary: OpenVDC cli
@@ -91,6 +87,8 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-executor
+%dir /etc/openvdc
+%config(noreplace) /etc/openvdc/executor.toml
 
 %package scheduler
 Summary: OpenVDC scheduler
