@@ -26,11 +26,7 @@ time_limit=${TIME_LIMIT:-14}
 
 echo "Will prune all branches not commited to in the past ${time_limit} days."
 
-## Unfortunately, there is some nastiness due to the (old) git version on the ci machines
-## (ver. 1.8). The %Y%m%d date format is not recognized! Print the date in yyyy-mm-dd
-## format and edit out the dashes.
 function git_query {
-#   git for-each-ref --sort=-committerdate refs/remotes --format='%(refname), %(committerdate:format:%Y%m%d)'
     git for-each-ref --sort=-committerdate refs/remotes --format='%(refname), %(committerdate:short)'
 }
 

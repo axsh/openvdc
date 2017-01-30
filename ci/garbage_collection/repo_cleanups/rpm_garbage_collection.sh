@@ -50,7 +50,7 @@ for directory in $(ls -d 2*); do
    fi
 
    if [[ "${rpmdate}" < "${cutoff_date}" ]]; then  
-     full_dir_name=${rpm_base_dir}/${dr}
+     full_dir_name=${rpm_base_dir}/master/${dr}
      remove_dir ${full_dir_name}
    fi
 
