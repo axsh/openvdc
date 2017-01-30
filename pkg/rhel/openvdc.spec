@@ -55,9 +55,6 @@ cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
-mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
-cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
-
 
 %package cli
 Summary: OpenVDC cli
@@ -70,7 +67,6 @@ The OpenVDC commandline interface.
 %dir /opt/axsh/openvdc/bin
 /usr/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc
-%config(noreplace) /etc/sysconfig/openvdc
 
 %package executor
 Summary: OpenVDC executor
