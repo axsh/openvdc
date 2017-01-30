@@ -41,16 +41,6 @@ var interfaces []NetworkInterface
 
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
-
-	loadConfigFile()
-
-	settings.ScriptPath = viper.GetString("script-path")
-	settings.LinuxUpScript = viper.GetString("linux-up-script")
-	settings.LinuxDownScript = viper.GetString("linux-down-script")
-	settings.BridgeName = viper.GetString("bridge-name")
-	settings.OvsUpScript = viper.GetString("ovs-up-script")
-	settings.OvsDownScript = viper.GetString("ovs-down-script")
-	settings.OvsName = viper.GetString("ovs-up-name")
 }
 
 type LXCHypervisorProvider struct {
@@ -252,6 +242,14 @@ func loadConfigFile() {
 	if err != nil {
 		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
 	}
+
+	settings.ScriptPath = viper.GetString("script-path")
+        settings.LinuxUpScript = viper.GetString("linux-up-script")
+        settings.LinuxDownScript = viper.GetString("linux-down-script")
+        settings.BridgeName = viper.GetString("bridge-name")
+        settings.OvsUpScript = viper.GetString("ovs-up-script")
+        settings.OvsDownScript = viper.GetString("ovs-down-script")
+        settings.OvsName = viper.GetString("ovs-up-name")
 }
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {
