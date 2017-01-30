@@ -49,7 +49,6 @@ go test -tags=acceptance -c -o openvdc-acceptance-test
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
-<<<<<<< HEAD
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
 cp deployment/conf-files/executor.toml $RPM_BUILD_ROOT"/etc/openvdc
