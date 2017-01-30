@@ -244,12 +244,12 @@ func loadConfigFile() {
 	}
 
 	settings.ScriptPath = viper.GetString("script-path")
-        settings.LinuxUpScript = viper.GetString("linux-up-script")
-        settings.LinuxDownScript = viper.GetString("linux-down-script")
-        settings.BridgeName = viper.GetString("bridge-name")
-        settings.OvsUpScript = viper.GetString("ovs-up-script")
-        settings.OvsDownScript = viper.GetString("ovs-down-script")
-        settings.OvsName = viper.GetString("ovs-up-name")
+        settings.LinuxUpScript = viper.GetString("bridges.linux.up-script")
+        settings.LinuxDownScript = viper.GetString("bridges.linux.down-script")
+        settings.BridgeName = viper.GetString("bridges.linux.name")
+        settings.OvsUpScript = viper.GetString("bridges.ovs.up-script")
+        settings.OvsDownScript = viper.GetString("bridges.ovs.down-script")
+        settings.OvsName = viper.GetString("bridges.ovs.name")
 }
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {

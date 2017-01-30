@@ -1,11 +1,14 @@
 hypervisor-name = "lxc"
 zk-addr = "127.0.0.1:2181"
+script-path="/etc/openvdc/scripts/"
 
-script-path="/etc/openvdc/scripts/"                                                         
-linux-up-script = "linux-bridge-up.sh"                     
-linux-down-script = "linux-bridge-down.sh"                 
-bridge-name = "br0"                                        
-                                      
-ovs-up-script = "ovs-up.sh"                                
-ovs-down-script = "ovs-down.sh"                            
-ovs-name = "ovs-vsctl"
+[bridges]
+	[bridges.linux]
+	name = "br0"
+	up-script = "linux-bridge-up.sh"
+	down-script = "linux-bridge-down.sh"
+
+	[bridges.ovs]
+	name = "ovs-vsctl"
+	up-script = "ovs-up.sh"
+	down-script = "ovs-down.sh"
