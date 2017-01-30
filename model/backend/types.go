@@ -13,8 +13,12 @@ type KeyIterator interface {
 	Value() string
 }
 
+type ConnectionAddress interface {
+	isConnectionAddress()
+}
+
 type ModelBackend interface {
-	Connect(dest []string) error
+	Connect(dest ConnectionAddress) error
 	Close() error
 	Create(key string, value []byte) error
 	CreateWithID(key string, value []byte) (string, error)

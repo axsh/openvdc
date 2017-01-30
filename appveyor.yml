@@ -21,7 +21,7 @@ install:
 
 build_script:
   - set PATH=C:\gopath\bin;%PATH%
-  - ps: .\build.ps1
+  - powershell -ExecutionPolicy Bypass .\build.ps1
 
 
 deploy: off

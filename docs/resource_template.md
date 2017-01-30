@@ -2,57 +2,44 @@
 
 The resource template is a definition of datacenter resource.
 
-The basic and minimal definition is as following:
+Following is a LXC template as basic example:
 
 ```json
+% cat ./templates/centos/7/lxc.json
 {
-  "$schema": "https://raw.githubusercontent.com/axsh/openvdc/master/schema/v1.json#",
-  "title": "MyResource",
+  "title": "CentOS7",
   "template": {
-    "type": "none"
+    "type": "vm/lxc",
+    "lxc_image": {
+      "download_url": "https://images.linuxcontainers.org/1.0/images/d767cfe9a0df0b2213e28b39b61e8f79cb9b1e745eeed98c22bc5236f277309a/export"
+    }
   }
 }
 ```
 
-Save the template as ``./templates/myresource.json`` so that you can
-check the syntax.
+You can check the syntax.
 
 ```bash
-openvdc template validate ./templates/myresource.json
+% openvdc template validate ./templates/centos/7/lxc.json
 ```
 
 Show details about the template.
 
 ```bash
-% openvdc template show ./templates/myresource.json
-Type: none
-Title: MyResource
-
-Parameters overwrite:
-  param1: Test parameter1
-  param2: Test parameter2
+% openvdc template show ./templates/centos/7/lxc.json
+lxc_image: <
+  download_url: "https://images.linuxcontainers.org/1.0/images/d767cfe9a0df0b2213e28b39b61e8f79cb9b1e745eeed98c22bc5236f277309a/export"
+>
 ```
 
-Overwrite the parameter.
-
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/axsh/openvdc/master/schema/v1.json#",
-  "title": "MyResource",
-  "template": {
-    "type": "none",
-    "param1": "xxx"
-  }
-}
-```
+Overwrite some parameters.
 
 ```bash
-openvdc template validate ./templates/myresource.json --param1=yyy
-```
-
-``template validate`` returns error if undefined parameter is given.
-
-```bash
-% openvdc template validate ./templates/myresource.json --param3=x
-ERROR: No such parameter: param3
+% openvdc template show ./templates/centos/7/lxc.json  '{"interfaces":[{"macaddr":"11:11:11:11:11:11"}]}'
+lxc_image: <
+  download_url: "https://images.linuxcontainers.org/1.0/images/d767cfe9a0df0b2213e28b39b61e8f79cb9b1e745eeed98c22bc5236f277309a/export"
+>
+interfaces: <
+  macaddr: "11:11:11:11:11:11"
+>
 ```

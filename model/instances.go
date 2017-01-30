@@ -4,13 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"time"
 
 	"golang.org/x/net/context"
-
-	"github.com/axsh/openvdc/model/backend"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 )
 
 var ErrInstanceMissingResource = errors.New("Resource is not associated")
@@ -22,6 +17,7 @@ type InstanceOps interface {
 	UpdateState(id string, next InstanceState_State) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
 	Update(*Instance) error
+	Filter(limit int, cb func(*Instance) int) error
 }
 
 const instancesBaseKey = "instances"
@@ -71,19 +67,11 @@ func init() {
 }
 
 type instances struct {
-	ctx context.Context
+	base
 }
 
 func Instances(ctx context.Context) InstanceOps {
-	return &instances{ctx: ctx}
-}
-
-func (i *instances) connection() (backend.ModelBackend, error) {
-	bk := GetBackendCtx(i.ctx)
-	if bk == nil {
-		return nil, ErrBackendNotInContext
-	}
-	return bk, nil
+	return &instances{base{ctx: ctx}}
 }
 
 func (i *instances) Create(n *Instance) (*Instance, error) {
@@ -91,41 +79,27 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 		return nil, ErrInstanceMissingResource
 	}
 
-	createdAt, err := ptypes.TimestampProto(time.Now())
-	if err != nil {
-		return nil, err
-	}
 	initState := &InstanceState{
-		State:     InstanceState_REGISTERED,
-		CreatedAt: createdAt,
+		State: InstanceState_REGISTERED,
 	}
 	n.LastState = initState
-	data1, err := proto.Marshal(n)
-	if err != nil {
-		return nil, err
-	}
-	data2, err := proto.Marshal(initState)
-	if err != nil {
-		return nil, err
-	}
 
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
 	}
-	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/i-", instancesBaseKey), data1)
+	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/i-", instancesBaseKey), n)
 	if err != nil {
 		return nil, err
 	}
-	_, err = bk.Find(nkey)
-	if err != nil {
+	if err := bk.Find(nkey, n); err != nil {
 		return nil, err
 	}
 	n.Id = path.Base(nkey)
-	if err = bk.Create(fmt.Sprintf("%s/state", nkey), []byte{}); err != nil {
+	if err = bk.Backend().Create(fmt.Sprintf("%s/state", nkey), []byte{}); err != nil {
 		return nil, err
 	}
-	_, err = bk.CreateWithID(fmt.Sprintf("%s/state/state-", nkey), data2)
+	_, err = bk.CreateWithID(fmt.Sprintf("%s/state/state-", nkey), initState)
 	if err != nil {
 		return nil, err
 	}
@@ -138,15 +112,11 @@ func (i *instances) Update(instance *Instance) error {
 		return ErrInvalidID
 	}
 
-	buf, err := proto.Marshal(instance)
-	if err != nil {
-		return err
-	}
 	bk, err := i.connection()
 	if err != nil {
 		return err
 	}
-	err = bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, instance.Id), buf)
+	err = bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, instance.Id), instance)
 	if err != nil {
 		return err
 	}
@@ -158,13 +128,8 @@ func (i *instances) FindByID(id string) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-	v, err := bk.Find(fmt.Sprintf("/%s/%s", instancesBaseKey, id))
-	if err != nil {
-		return nil, err
-	}
 	n := &Instance{}
-	err = proto.Unmarshal(v, n)
-	if err != nil {
+	if err := bk.Find(fmt.Sprintf("/%s/%s", instancesBaseKey, id), n); err != nil {
 		return nil, err
 	}
 	n.Id = id
@@ -180,14 +145,8 @@ func (i *instances) findLastState(id string) (*InstanceState, error) {
 	if err != nil {
 		return nil, err
 	}
-	buf, err := bk.Find(key)
-	if err != nil {
-		return nil, err
-	}
-
 	n := &InstanceState{}
-	err = proto.Unmarshal(buf, n)
-	if err != nil {
+	if err := bk.Find(key, n); err != nil {
 		return nil, err
 	}
 	return n, nil
@@ -201,56 +160,57 @@ func (i *instances) UpdateState(id string, next InstanceState_State) error {
 	if err := instance.LastState.ValidateNextState(next); err != nil {
 		return err
 	}
-	createdAt, err := ptypes.TimestampProto(time.Now())
-	if err != nil {
-		return err
-	}
 	nstate := &InstanceState{
-		State:     next,
-		CreatedAt: createdAt,
+		State: next,
 	}
 	instance.LastState = nstate
 
-	buf1, err := proto.Marshal(instance)
-	if err != nil {
-		return err
-	}
-	buf2, err := proto.Marshal(nstate)
-	if err != nil {
-		return err
-	}
-
 	bk, err := i.connection()
 	if err != nil {
 		return err
 	}
-	_, err = bk.CreateWithID(fmt.Sprintf("/%s/%s/state/state-", instancesBaseKey, id), buf2)
+	_, err = bk.CreateWithID(fmt.Sprintf("/%s/%s/state/state-", instancesBaseKey, id), nstate)
 	if err != nil {
 		return err
 	}
-	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), buf1)
+	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), instance)
 }
 
 func (i *instances) FilterByState(state InstanceState_State) ([]*Instance, error) {
-	bk, err := i.connection()
+	res := []*Instance{}
+	err := i.Filter(0, func(inst *Instance) int {
+		if inst.GetLastState().State == state {
+			res = append(res, inst)
+		}
+		return len(res)
+	})
 	if err != nil {
 		return nil, err
 	}
-	res := []*Instance{}
+	return res, nil
+}
+
+func (i *instances) Filter(limit int, cb func(*Instance) int) error {
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
 	keys, err := bk.Keys(fmt.Sprintf("/%s", instancesBaseKey))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for keys.Next() {
 		instance, err := i.FindByID(keys.Value())
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if instance.LastState.State == state {
-			res = append(res, instance)
+		if limit > 0 && cb(instance) > limit {
+			break
+		} else {
+			cb(instance)
 		}
 	}
-	return res, nil
+	return nil
 }
 
 func (i *Instance) Resource(ctx context.Context) (*Resource, error) {

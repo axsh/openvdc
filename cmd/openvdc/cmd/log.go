@@ -7,8 +7,8 @@ import (
 
 	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var tail bool
@@ -31,23 +31,26 @@ var logCmd = &cobra.Command{
 
 		instanceID := "VDC_" + args[0]
 
-		split := strings.Split(util.MesosMasterAddr, ":")
+		split := strings.Split(viper.GetString("mesos.master"), ":")
 		mesosMasterAddr := split[0]
 		mesosMasterPort, err := strconv.Atoi(split[1])
 
 		if err != nil {
-			log.Errorln("Couldn't convert string to int") //  <--- lol
+			log.WithError(err).Fatal("Error trying to convert string")
+			return err
 		}
 
 		if tail == false {
 			cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
 			if err != nil {
-				log.Errorln("Couldn't connect to Mesos master")
+				log.WithError(err).Fatal("Couldn't connect to Mesos master")
+				return err
 			}
 
 			result, err := cl.GetLog(instanceID, mlog.STDERR, "")
 			if err != nil {
-				log.Errorln("Error getting log")
+				log.WithError(err).Fatal("Error fetching log")
+				return err
 			}
 
 			for _, log := range result {
@@ -57,13 +60,15 @@ var logCmd = &cobra.Command{
 			cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, nil)
 
 			if err != nil {
-				log.Errorln("Couldn't connect to Mesos master")
+				log.WithError(err).Fatal("Couldn't connect to Mesos master")
+				return err
 			}
 
 			err = cl.TailLog(instanceID, mlog.STDOUT, 5)
 
 			if err != nil {
-				fmt.Printf("%s", err.Error())
+				log.WithError(err).Fatal("Error trying to tail log")
+				return err
 			}
 		}
 		return err

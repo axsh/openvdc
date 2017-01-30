@@ -21,14 +21,31 @@ var runCmd = &cobra.Command{
 	% openvdc run https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json
 	` + util.ExampleMergeTemplateOptions("openvdc run"),
 	DisableFlagParsing: true,
-	PreRunE:            util.PreRunHelpFlagCheckAndQuit,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		err := util.PreRunHelpFlagCheckAndQuit(cmd, args)
+		if err != nil {
+			return err
+		}
+		err = cmd.ParseFlags(args)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
+		left := cmd.Flags().Args()
+		if len(left) < 1 {
 			return pflag.ErrHelp
 		}
 
-		templateSlug := args[0]
-		req := prepareRegisterAPICall(templateSlug, args)
+		templateSlug := left[0]
+		for i, a := range args {
+			if a == templateSlug {
+				left = args[i:]
+				break
+			}
+		}
+		req := prepareRegisterAPICall(templateSlug, left)
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 			res, err := c.Run(context.Background(), req)
@@ -36,7 +53,7 @@ var runCmd = &cobra.Command{
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err
 			}
-			fmt.Println(res)
+			fmt.Println(res.GetInstanceId())
 			return err
 		})
 	}}
