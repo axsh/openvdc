@@ -1,6 +1,10 @@
 package backend
 
-import "github.com/boltdb/bolt"
+import (
+	"fmt"
+
+	"github.com/boltdb/bolt"
+)
 
 type Bolt struct {
 	db       *bolt.DB
@@ -13,11 +17,21 @@ func NewBoltBackend() *Bolt {
 	}
 }
 
-func (b *Bolt) Connect(dest []string) error {
+type BoltDBPath string
+
+func (BoltDBPath) isConnectionAddress() {}
+
+func (b BoltDBPath) String() string { return string(b) }
+
+func (b *Bolt) Connect(dest ConnectionAddress) error {
 	if b.db != nil {
 		return ErrConnectionExists
 	}
-	db, err := bolt.Open(dest[0], 0644, nil)
+	path, ok := dest.(BoltDBPath)
+	if !ok {
+		return fmt.Errorf("Invalid connection address type: %T", dest)
+	}
+	db, err := bolt.Open(path.String(), 0644, nil)
 	if err != nil {
 		return err
 	}
