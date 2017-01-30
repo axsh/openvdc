@@ -8,9 +8,11 @@ import (
 
 	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
 	"github.com/mesos/mesos-go/auth/sasl"
+	_ "github.com/mesos/mesos-go/detector/zoo"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	util "github.com/mesos/mesos-go/mesosutil"
 	sched "github.com/mesos/mesos-go/scheduler"
@@ -41,10 +43,10 @@ type VDCScheduler struct {
 	tasksErrored  int
 	totalTasks    int
 	listenAddr    string
-	zkAddr        string
+	zkAddr        backend.ZkEndpoint
 }
 
-func newVDCScheduler(listenAddr string, zkAddr string) *VDCScheduler {
+func newVDCScheduler(listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
 	return &VDCScheduler{
 		totalTasks: taskCount,
 		listenAddr: listenAddr,
@@ -67,9 +69,9 @@ func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
 func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers []*mesos.Offer) {
 	log := log.WithFields(log.Fields{"offers": len(offers)})
 
-	ctx, err := model.Connect(context.Background(), []string{sched.zkAddr})
+	ctx, err := model.Connect(context.Background(), sched.zkAddr)
 	if err != nil {
-		log.WithError(err).Error("Failed to connecto to datasource: ", sched.zkAddr)
+		log.WithError(err).Error("Failed to connect to datasource")
 	} else {
 		defer model.Close(ctx)
 		err = sched.processOffers(driver, offers, ctx)
@@ -155,7 +157,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			Name:       proto.String("VDC Executor"),
 			Command: &mesos.CommandInfo{
 				Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=%s -zk=%s",
-					ExecutorPath, hypervisorName, sched.zkAddr)),
+					ExecutorPath, hypervisorName, sched.zkAddr.String())),
 			},
 		}
 
@@ -239,7 +241,7 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func startAPIServer(laddr string, zkAddr string, driver sched.SchedulerDriver) *api.APIServer {
+func startAPIServer(laddr string, zkAddr backend.ZkEndpoint, driver sched.SchedulerDriver) *api.APIServer {
 	lis, err := net.Listen("tcp", laddr)
 	if err != nil {
 		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
@@ -250,7 +252,7 @@ func startAPIServer(laddr string, zkAddr string, driver sched.SchedulerDriver) *
 	return s
 }
 
-func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr string) {
+func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),

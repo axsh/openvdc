@@ -8,13 +8,13 @@ export ENV_ROOTDIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 . "${ENV_ROOTDIR}/config.source"
 
 # Jenkins writes its environment variables to a build.env file in OpenVDC root
-if [[ -f "${ENV_ROOTDIR}/../../build.env" ]]; then
-  . "${ENV_ROOTDIR}/../../build.env"
-fi
+#if [[ -f "${ENV_ROOTDIR}/../../build.env" ]]; then
+#  . "${ENV_ROOTDIR}/../../build.env"
+#fi
 
 require_branch_variable
 require_rebuild_variable
-#TODO: require release suffix
+require_release_suffix
 
 YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
 curl -fs --head "${YUM_REPO_URL}" > /dev/null
@@ -37,6 +37,9 @@ check_dep "rsync"
 check_dep "brctl"
 check_dep "qemu-system-x86_64"
 check_dep "parted" # For mount-partition.sh
+check_dep "sudo"
+check_dep "ssh"
+check_dep "nc"
 
 (
   $starting_step "Enable IP forwarding"
