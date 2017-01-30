@@ -40,6 +40,7 @@ else
   LDFLAGS="${LDFLAGS} -X '${BUILDSTAMP}.GithubDefaultRef=${GIT_BRANCH:-$(git rev-parse --abbrev-ref HEAD)}'"
 fi
 
+go build -i ./vendor/...
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-scheduler
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-executor

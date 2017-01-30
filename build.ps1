@@ -64,6 +64,7 @@ if( $env:APPVEYOR_REPO_BRANCH ){
 }
 $LDFLAGS="${LDFLAGS} -X '${BUILDSTAMP}.GithubDefaultRef=${branch}'"
 
+go build -i ./vendor/...
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-scheduler
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-executor
