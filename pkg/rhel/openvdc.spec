@@ -89,6 +89,7 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-executor
 %dir /etc/openvdc
 %config(noreplace) /etc/openvdc/executor.toml
+%config(noreplace) /etc/openvdc/scripts/*
 
 %package scheduler
 Summary: OpenVDC scheduler
