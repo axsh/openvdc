@@ -51,11 +51,11 @@ mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/executor.toml $RPM_BUILD_ROOT"/etc/openvdc
-cp deployment/conf-files/scripts/linux-bridge-up.sh $RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/scripts/linux-bridge-down.sh $RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/scripts/ovs-up.sh $RPM_BUILD_ROOT"/etc/openvdc/scripts
-cp deployment/conf-files/scripts/ovs-down.sh $RPM_BUILD_ROOT"/etc/openvdc/scripts
+cp deployment/conf-files/executor.toml "$RPM_BUILD_ROOT"/etc/openvdc
+cp deployment/conf-files/scripts/linux-bridge-up.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
+cp deployment/conf-files/scripts/linux-bridge-down.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
+cp deployment/conf-files/scripts/ovs-up.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
+cp deployment/conf-files/scripts/ovs-down.sh "$RPM_BUILD_ROOT"/etc/openvdc/scripts
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
