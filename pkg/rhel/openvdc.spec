@@ -61,7 +61,7 @@ cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
 cp pkg/conf/executor.toml "{$RPM_BUILD_ROOT}/etc/openvdc"
-cp pkg/conf/scripts/ "{$RPM_BUILD_ROOT}/etc/openvdc/scripts"
+cp -r pkg/conf/scripts/ "{$RPM_BUILD_ROOT}/etc/openvdc/scripts"
 
 %package cli
 Summary: OpenVDC cli
