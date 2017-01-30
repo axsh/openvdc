@@ -69,20 +69,12 @@ def stage_rpmbuild(label) {
   }
 }
 
-def stage_integration(label) {
+def stage_acceptance(label) {
   node("multibox") {
+    stage "Acceptance Test ${label}"
     checkout_and_merge()
-    stage "Build Integration Environment"
     write_build_env(label)
-
-    try {
-      sh "cd ci/multibox/ ; ./build.sh"
-      stage "Run Tntegration Test"
-      // This is where the integration test will be run
-    } finally {
-      stage "Cleanup Environment"
-      sh "cd ci/multibox/ ; ./destroy_leaving_cache.sh"
-    }
+    sh "./ci/acceptance-test/build_and_run_in_docker.sh ./build.env"
   }
 }
 
@@ -112,5 +104,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_integration(label)
+  stage_acceptance(label)
 }

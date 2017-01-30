@@ -2,7 +2,7 @@ FROM centos:7
 WORKDIR /var/tmp
 ENTRYPOINT ["/sbin/init"]
 # epel-release.rpm from CentOS/extra contains deprecated index for mirror sites.
-RUN yum install -y http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-8.noarch.rpm
+RUN yum install -y http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
 
 RUN yum install -y git go
 ENV GOPATH=/var/tmp/go
