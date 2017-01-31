@@ -11,16 +11,11 @@ import (
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/scheduler"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 )
 
-// Build time constant variables from -ldflags
-var (
-	version   string
-	sha       string
-	builddate string
-	goversion string
-)
+var DefaultConfPath string
 
 var rootCmd = &cobra.Command{
 	Use:   "openvdc-scheduler",
@@ -39,23 +34,31 @@ var rootCmd = &cobra.Command{
 	`,
 	Run: execute,
 }
-var gRPCAddr string
-var mesosMasterAddr string
-var listenAddr string
-var zkAddr backend.ZkEndpoint
 
 func init() {
-	zkAddr = backend.ZkEndpoint{Hosts: []string{"localhost"}, Path: "/openvdc"}
+	viper.SetDefault("mesos.master", "zk://localhost/mesos")
+	viper.SetDefault("mesos.listen", "0.0.0.0")
+	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
+	viper.SetDefault("api.endpoint", "localhost:5000")
 
-	rootCmd.PersistentFlags().StringVarP(&mesosMasterAddr, "master", "", "zk://localhost/mesos", "Mesos Master node address")
-	rootCmd.PersistentFlags().StringVarP(&gRPCAddr, "api", "a", "localhost:5000", "gRPC API bind address")
-	rootCmd.PersistentFlags().StringVarP(&listenAddr, "listen", "l", "0.0.0.0", "Local bind address")
-	rootCmd.PersistentFlags().VarP(&zkAddr, "zk", "", "Zookeeper node address")
-	rootCmd.PersistentFlags().SetAnnotation("master", cobra.BashCompSubdirsInDir, []string{})
+	cobra.OnInitialize(initConfig)
+	pfs := rootCmd.PersistentFlags()
+	pfs.String("config", DefaultConfPath, "Load config file from the path")
+
+	pfs.String("master", viper.GetString("mesos.master"), "Mesos Master node address")
+	viper.BindPFlag("mesos.master", pfs.Lookup("master"))
+	pfs.String("listen", viper.GetString("mesos.listen"), "Mesos scheduler local bind address")
+	viper.BindPFlag("mesos.listen", pfs.Lookup("listen"))
+	pfs.String("api", viper.GetString("api.endpoint"), "gRPC API bind address")
+	viper.BindPFlag("api.endpoint", pfs.Lookup("api"))
+	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper node address")
+	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
 }
 
 func setupDatabaseSchema() {
-	ctx, err := model.Connect(context.Background(), &zkAddr)
+	var zkAddr backend.ZkEndpoint
+	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	ctx, err := model.Connect(context.Background(), zkAddr)
 	if err != nil {
 		log.WithError(err).Fatalf("Could not connect to database: %s", zkAddr.String())
 	}
@@ -71,9 +74,34 @@ func setupDatabaseSchema() {
 	}
 }
 
+func initConfig() {
+	f := rootCmd.PersistentFlags().Lookup("config")
+	if f.Changed {
+		viper.SetConfigFile(f.Value.String())
+	} else {
+		viper.SetConfigFile(DefaultConfPath)
+		viper.SetConfigType("toml")
+	}
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		if viper.ConfigFileUsed() == DefaultConfPath && os.IsNotExist(err) {
+			// Ignore default conf file does not exist.
+			return
+		}
+		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+	}
+}
+
 func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
-	scheduler.Run(listenAddr, gRPCAddr, mesosMasterAddr, zkAddr)
+	var zkAddr backend.ZkEndpoint
+	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	scheduler.Run(
+		viper.GetString("mesos.listen"),
+		viper.GetString("api.endpoint"),
+		viper.GetString("mesos.master"),
+		zkAddr)
 }
 
 func main() {

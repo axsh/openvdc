@@ -2,25 +2,22 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
 	"golang.org/x/net/context"
-)
-
-// Build time constant variables from -ldflags
-var (
-	version   string
-	sha       string
-	builddate string
-	goversion string
 )
 
 var log = logrus.WithField("context", "vdc-executor")
@@ -346,21 +343,59 @@ func (exec *VDCExecutor) Error(driver exec.ExecutorDriver, err string) {
 	log.Errorln("Got error message:", err)
 }
 
-var (
-	hypervisorName = flag.String("hypervisor", "null", "")
-)
+var rootCmd = &cobra.Command{
+	Use:   "openvdc-executor",
+	Short: "",
+	Long:  ``,
+	Run:   execute,
+}
+
+var DefaultConfPath string
 var zkAddr backend.ZkEndpoint
 
 func init() {
-	zkAddr = backend.ZkEndpoint{Hosts: []string{"127.0.0.1:2181"}, Path: "/openvdc"}
-	flag.Var(&zkAddr, "zk", "Zookeeper address")
-	flag.Parse()
+	viper.SetDefault("hypervisor.driver", "null")
+	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
+
+	cobra.OnInitialize(initConfig)
+	pfs := rootCmd.PersistentFlags()
+	pfs.String("config", DefaultConfPath, "Load config file from the path")
+	pfs.String("hypervisor", viper.GetString("hypervisor.driver"), "Hypervisor driver name")
+	viper.BindPFlag("hypervisor.driver", pfs.Lookup("hypervisor"))
+	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper address")
+	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
 }
 
-func main() {
-	provider, ok := hypervisor.FindProvider(*hypervisorName)
+func initConfig() {
+	f := rootCmd.PersistentFlags().Lookup("config")
+	if f.Changed {
+		viper.SetConfigFile(f.Value.String())
+	} else {
+		viper.SetConfigFile(DefaultConfPath)
+		viper.SetConfigType("toml")
+	}
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		if viper.ConfigFileUsed() == DefaultConfPath && os.IsNotExist(err) {
+			// Ignore default conf file does not exist.
+			return
+		}
+		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+	}
+}
+
+func init() {
+	flag.CommandLine.Parse([]string{})
+}
+
+func execute(cmd *cobra.Command, args []string) {
+	var zkAddr backend.ZkEndpoint
+	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+
+	provider, ok := hypervisor.FindProvider(viper.GetString("hypervisor.driver"))
 	if ok == false {
-		log.Fatalln("Unknown hypervisor name:", hypervisorName)
+		log.Fatalln("Unknown hypervisor name:", viper.GetString("hypervisor.driver"))
 	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
@@ -383,4 +418,12 @@ func main() {
 		log.Fatalln("Something went wrong with the driver: ", err)
 	}
 	log.Infoln("Executor shutting down")
+}
+
+func main() {
+	rootCmd.AddCommand(openvdc.VersionCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
 }

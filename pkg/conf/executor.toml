@@ -1,0 +1,5 @@
+[hypervisor]
+# driver = null
+
+[zookeeper]
+# endpoint = "zk://localhost/openvdc"
