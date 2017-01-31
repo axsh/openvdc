@@ -41,6 +41,6 @@ else
 fi
 
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc
-go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-scheduler
+go build -ldflags "$LDFLAGS -X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'" -v ./cmd/openvdc-scheduler
 go build -ldflags "$LDFLAGS" -v ./cmd/openvdc-executor
 echo "Done"
