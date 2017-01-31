@@ -14,7 +14,7 @@ rpm_base_dir=/var/www/html/openvdc-repos
 ## Remove all directories whose branch (on git) no longer exists
 ## or which has not beenm pushed to within $time_limit days.
 for directory in $(TIME_LIMIT=${time_limit} dirs_to_prune ${rpm_base_dir}); do
-   remove_dir ${directory}
+   remove_dir ${rpm_base_dir}/${directory}
 done
  
 ## Now delete "old" (> ${time_limit} days) rpm's from the master directory
