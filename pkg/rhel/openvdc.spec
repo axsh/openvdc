@@ -57,6 +57,7 @@ cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/o
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
+cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 
 %package cli
 Summary: OpenVDC cli
@@ -95,7 +96,7 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-scheduler
 %{_unitdir}/openvdc-scheduler.service
-
+%config(noreplace) /etc/openvdc/scheduler.toml
 
 %post
 %{systemd_post openvdc-scheduler.service}

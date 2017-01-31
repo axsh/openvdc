@@ -1,0 +1,9 @@
+[mesos]
+# master = "zk://localhost/mesos"
+# listen = "0.0.0.0"
+
+[zookeeper]
+# endpoint = "zk://localhost/openvdc"
+
+[api]
+# endpoint = "localhost:5000"
