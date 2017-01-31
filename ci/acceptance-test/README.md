@@ -65,11 +65,17 @@ This environment uses a caching system to avoid having to constantly rebuild the
 
 #### First time run on a branch
 
+**If REBUILD != "true" (default)**
+
+* Copy cache from the master branch and use them as cache for the branch we're testing.
+
+**If REBUILD == "true" (to be used if the CI environment changed)**
+
 * Build images in .raw format **without** openvdc installed. We use .raw so we can loopback mount and install packages using chroot.
 
 * Convert images to .qcow format so we can use copy-on-write.
 
-* Store images in cache directory.
+* Store images in the branch's cache directory.
 
 #### Every time we run on a branch
 
