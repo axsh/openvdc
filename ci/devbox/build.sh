@@ -24,4 +24,5 @@ mkdir -p $box_tmp  || :
   tar -xzf t.box
 )
 
-HOST_SWITCH=vboxnet0 packer build -force devbox-centos7.json
+export HOST_SWITCH=${HOST_SWITCH:-vboxnet0}
+packer build -force devbox-centos7.json

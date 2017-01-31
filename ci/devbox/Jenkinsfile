@@ -1,0 +1,7 @@
+#!groovy
+
+node('vbox') {
+  dir("ci/devbox") {
+    sh("./build.sh")
+  }
+}
