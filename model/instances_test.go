@@ -90,6 +90,8 @@ func TestUpdateStateInstance(t *testing.T) {
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STOPPED))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STARTING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_REBOOTING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_SHUTTINGDOWN))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))
 	})
