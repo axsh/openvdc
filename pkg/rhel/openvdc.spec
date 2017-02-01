@@ -60,8 +60,9 @@ cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/o
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
 cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
-cp pkg/conf/executor.toml "$RPM_BUILD_ROOT"/etc/openvdc
 cp -r pkg/conf/scripts/ "$RPM_BUILD_ROOT"/etc/openvdc/scripts
+cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
+cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 
 %package cli
 Summary: OpenVDC cli
@@ -74,7 +75,6 @@ The OpenVDC commandline interface.
 %dir /opt/axsh/openvdc/bin
 /usr/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc
-%config(noreplace) /etc/sysconfig/openvdc
 
 %package executor
 Summary: OpenVDC executor
@@ -89,7 +89,10 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-executor
 %dir /etc/openvdc
 %config(noreplace) /etc/openvdc/executor.toml
+<<<<<<< HEAD
 %config(noreplace) /etc/openvdc/scripts/*
+=======
+>>>>>>> 2268ad9dd5accee610a8f81c48e474ddb360f766
 
 %package scheduler
 Summary: OpenVDC scheduler
@@ -102,7 +105,7 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-scheduler
 %{_unitdir}/openvdc-scheduler.service
-
+%config(noreplace) /etc/openvdc/scheduler.toml
 
 %post
 %{systemd_post openvdc-scheduler.service}

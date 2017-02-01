@@ -156,7 +156,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			ExecutorId: util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 			Name:       proto.String("VDC Executor"),
 			Command: &mesos.CommandInfo{
-				Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=%s -zk=%s",
+				Value: proto.String(fmt.Sprintf("%s --hypervisor=%s --zk=%s",
 					ExecutorPath, hypervisorName, sched.zkAddr.String())),
 			},
 		}

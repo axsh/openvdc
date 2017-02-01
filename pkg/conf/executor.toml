@@ -1,6 +1,9 @@
-hypervisor-name = "lxc"
-zk-addr = "127.0.0.1:2181"
+[hypervisor]
+# driver = null
 script-path="/etc/openvdc/scripts/"
+
+[zookeeper]
+# endpoint = "zk://localhost/openvdc"
 
 [bridges]
 	[bridges.linux]
