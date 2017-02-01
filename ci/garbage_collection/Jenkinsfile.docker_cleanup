@@ -1,0 +1,22 @@
+#!groovy
+
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+// http://stackoverflow.com/questions/37425064/how-to-use-environment-variables-in-a-groovy-function-using-a-jenkinsfile
+import groovy.transform.Field
+
+
+
+def docker_cleanup {
+  stage "Docker Cleanup"
+  node("master") {
+    checkout scm
+    sh "cd ci/garbage_collection/docker_cleanups/ ; ./docker_garbage_collection.sh"
+  }
+}
+
+node() {
+    stage "Checkout"
+}
+
+docker_cleanup()
+
