@@ -19,7 +19,7 @@ runs[1]= {
   node("rpm_repo") {
     checkout scm
     sh "git remote prune origin"
-sh "sudo usermod -a -G repoci jenkins"
+sh "groups jenkins"
     sh "cd ci/garbage_collection/repo_cleanups ; ./rpm_garbage_collection.sh"
   }
 }
