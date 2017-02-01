@@ -52,6 +52,10 @@ func init() {
 		Nexts: []InstanceState_State{InstanceState_STOPPED},
 		Goals: []InstanceState_State{InstanceState_STOPPED},
 	}
+	instanceStateDefs[InstanceState_REBOOTING] = &stateDef{
+		Nexts: []InstanceState_State{InstanceState_RUNNING},
+		Goals: []InstanceState_State{InstanceState_RUNNING},
+	}
 	instanceStateDefs[InstanceState_STOPPED] = &stateDef{
 		Nexts: []InstanceState_State{InstanceState_STARTING, InstanceState_SHUTTINGDOWN},
 		Goals: []InstanceState_State{InstanceState_RUNNING, InstanceState_TERMINATED},
