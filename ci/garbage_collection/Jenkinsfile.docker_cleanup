@@ -6,9 +6,9 @@ import groovy.transform.Field
 
 
 
-def docker_cleanup {
-  stage "Docker Cleanup"
+def docker_cleanup() {
   node("master") {
+    stage "Docker Cleanup"
     checkout scm
     sh "cd ci/garbage_collection/docker_cleanups/ ; ./docker_garbage_collection.sh"
   }
