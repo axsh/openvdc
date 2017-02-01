@@ -16,12 +16,9 @@ install:
   # some helpful output for debugging builds
   - go version
   - go env
-  - go get -u github.com/kardianos/govendor
-  - go get -u github.com/jteeuwen/go-bindata/...
 
 build_script:
   - set PATH=C:\gopath\bin;%PATH%
-  - powershell -ExecutionPolicy Bypass .\build.ps1
-
+  - go run ./internal/build/main.go
 
 deploy: off

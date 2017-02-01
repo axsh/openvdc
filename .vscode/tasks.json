@@ -1,11 +1,10 @@
 {
   "version": "0.1.0",
-  "command": "${workspaceRoot}/build.sh",
-  "windows": {
-    "command": "powershell",
-    "args":["-ExecutionPolicy", "Bypass", "${workspaceRoot}\\build.ps1"]
-  },
-  "isShellCommand": true,
+  "command": "go",
+  "args": [
+    "run", "./internal/build/main.go"
+  ],
+  "isShellCommand": false,
   "echoCommand": true,
   "showOutput": "silent",
   "tasks": [

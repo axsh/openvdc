@@ -4,12 +4,16 @@ Extendable Tiny Datacenter Hypervisor on top of Mesos architecture. Wakame-vdc v
 
 ## Build
 
-Ensure to have ``$GOPATH`` and ``$GOPATH/bin`` is included in ``$PATH``.
+Ensure ``$GOPATH`` is set. ``$PATH`` needs to have ``$GOPATH/bin``.
 
 ```
 go get -u github.com/axsh/openvdc
-go get -u github.com/kardianos/govendor
 cd $GOPATH/src/github.com/axsh/openvdc
-govendor sync
-./build.sh
+go run ./internal/build/main.go
+```
+
+Build with compile ``proto/*.proto``.
+
+```
+go run ./internal/build/main.go -with-gogen
 ```
