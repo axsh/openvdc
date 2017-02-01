@@ -15,7 +15,7 @@ function remove_dir {
     done
 
     echo "rm -rf ${dir_to_rm}"
-#   rm -rf ${dir_to_rm}
+    rm -rf ${dir_to_rm}
 
 }
 
