@@ -26,7 +26,7 @@ cutoff_date=$(get_cutoff_date ${time_limit})   ## Images older than this are rem
 
 ## Remove all directories whose branch (on git) no longer exists
 ## or which has not beenm pushed to within $time_limit days.
-for docker_image in $(docker images -q); do
+for docker_image in $(docker images -q | sort -u); do
    image_date=$(docker_image_date ${docker_image})
 
    if [[ "${image_date}" < "${cutoff_date}" ]]; then
