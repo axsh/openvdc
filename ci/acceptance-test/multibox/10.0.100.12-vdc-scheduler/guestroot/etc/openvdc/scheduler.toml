@@ -3,7 +3,7 @@ master = "zk://10.0.100.10:2181/mesos"
 #listen = "0.0.0.0"
 
 [api]
-#endpoint = "localhost:5000"
+endpoint = "10.0.100.12:5000"
 
 [zookeeper]
 endpoint = "zk://10.0.100.10:2181/openvdc"
