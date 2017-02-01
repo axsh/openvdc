@@ -228,10 +228,32 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
 
+	ctx, err := model.Connect(context.Background(), &zkAddr)
+        if err != nil {
+                log.WithError(err).Error("Failed model.Connect")
+                return err
+        }
+
+        // Push back to the state below in case of error.
+        finState := model.InstanceState_RUNNING
+        defer func() {
+                err = model.Instances(ctx).UpdateState(instanceID, finState)
+                if err != nil {
+                        log.WithField("state", finState).Error("Failed Instances.UpdateState")
+                }
+                model.Close(ctx)
+        }()
+
 	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
 		return err
 	}
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_REBOOTING)
+        if err != nil {
+                log.WithError(err).WithField("state", model.InstanceState_REBOOTING).Error("Failed Instances.UpdateState")
+                return err
+        }
 
 	log.Infof("Rebooting instance")
 	err = hv.RebootInstance()
@@ -239,7 +261,10 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 		log.Error("Failed RebootInstance")
 		return err
 	}
+
 	log.Infof("Instance rebooted successfully")
+        finState = model.InstanceState_RUNNING
+
 	return nil
 }
 
