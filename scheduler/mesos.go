@@ -33,10 +33,6 @@ var FrameworkInfo = &mesos.FrameworkInfo{
 
 const ExecutorPath = "openvdc-executor"
 
-var (
-	taskCount = 10
-)
-
 type VDCScheduler struct {
 	tasksLaunched int
 	tasksFinished int
@@ -48,7 +44,6 @@ type VDCScheduler struct {
 
 func newVDCScheduler(listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
 	return &VDCScheduler{
-		totalTasks: taskCount,
 		listenAddr: listenAddr,
 		zkAddr:     zkAddr,
 	}
