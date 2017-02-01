@@ -1,9 +1,8 @@
 [Unit]
-Description=OpenVDc scheduler
+Description=OpenVDC scheduler
 After=network.target
 
 [Service]
-EnvironmentFile=/etc/sysconfig/openvdc
 ExecStart=/opt/axsh/openvdc/bin/openvdc-scheduler 
 
 
