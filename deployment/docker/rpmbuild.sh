@@ -129,9 +129,6 @@ if [[ -n "$BUILD_CACHE_DIR" ]]; then
 fi
 # Pull compiled yum repository
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
-
-# To allow jenkins (the jenkins *user*) remove rpm's as necessary, the umask must be changed
-$SSH_REMOTE umask g+w
 $SSH_REMOTE mkdir -p ${RPM_ABSOLUTE}
 
 
@@ -140,5 +137,6 @@ docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RP
 $SSH_REMOTE /bin/bash <<EOS
 rm -f "${RPM_ABSOLUTE}/current"
 ln -s "${RPM_ABSOLUTE}/${RELEASE_SUFFIX}" "${RPM_ABSOLUTE}/current"
-chgrp -R repoci "${RPM_CURRENT}"
+chgrp -R repoci "${RPM_ABSOLUTE}"
+chmod -R g+w "${RPM_ABSOLUTE}"
 EOS
