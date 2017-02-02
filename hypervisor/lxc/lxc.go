@@ -91,7 +91,7 @@ func modifyConf() {
 }
 
 func updateSettings(nwi NetworkInterface, input string) string {
-	
+
 	output := input + "\n"
 
 	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", nwi.TapName)
@@ -244,12 +244,12 @@ func loadConfigFile() {
 	}
 
 	settings.ScriptPath = viper.GetString("script-path")
-        settings.LinuxUpScript = viper.GetString("bridges.linux.up-script")
-        settings.LinuxDownScript = viper.GetString("bridges.linux.down-script")
-        settings.BridgeName = viper.GetString("bridges.linux.name")
-        settings.OvsUpScript = viper.GetString("bridges.ovs.up-script")
-        settings.OvsDownScript = viper.GetString("bridges.ovs.down-script")
-        settings.OvsName = viper.GetString("bridges.ovs.name")
+	settings.LinuxUpScript = viper.GetString("bridges.linux.up-script")
+	settings.LinuxDownScript = viper.GetString("bridges.linux.down-script")
+	settings.BridgeName = viper.GetString("bridges.linux.name")
+	settings.OvsUpScript = viper.GetString("bridges.ovs.up-script")
+	settings.OvsDownScript = viper.GetString("bridges.ovs.down-script")
+	settings.OvsName = viper.GetString("bridges.ovs.name")
 }
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {
@@ -272,7 +272,7 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *LXCHypervisorDriver) StartInstance() error {
-	
+
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
 		d.log.Errorln(err)
@@ -283,8 +283,8 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 	if err := c.Start(); err != nil {
 		d.log.Errorln(err)
 		//resetConfigFile()
-	//("BRIDGENAME", d.name)
-	return err
+		//("BRIDGENAME", d.name)
+		return err
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
