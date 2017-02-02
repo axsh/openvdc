@@ -20,7 +20,7 @@ cache_location_dir=/data2/openvdc-ci/branches
 ## or which has not beenm pushed to within $time_limit days.
 for directory in $(TIME_LIMIT=${time_limit} dirs_to_prune ${cache_location_dir}); do
 
-   group_owner=$(stat -c %G ${directory})
+   group_owner=$(stat -c %G ${cache_location_dir}/${directory})
    if [[ "${group_owner}" = "root" ]]; then
        echo "${directory} is owned by root. Cannot remove!"
    else
