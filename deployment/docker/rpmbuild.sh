@@ -140,4 +140,5 @@ docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RP
 $SSH_REMOTE /bin/bash <<EOS
 rm -f "${RPM_ABSOLUTE}/current"
 ln -s "${RPM_ABSOLUTE}/${RELEASE_SUFFIX}" "${RPM_ABSOLUTE}/current"
+chgrp -R repoci "${RPM_CURRENT}"
 EOS
