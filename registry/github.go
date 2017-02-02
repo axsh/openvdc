@@ -231,10 +231,15 @@ func unzip(archive, target string) error {
 		return err
 	}
 
+	atime := time.Now()
 	for _, file := range reader.File {
 		path := filepath.Join(target, file.Name)
 		if file.FileInfo().IsDir() {
-			os.MkdirAll(path, file.Mode())
+			err := os.MkdirAll(path, file.Mode())
+			if err != nil {
+				return err
+			}
+			os.Chtimes(path, atime, file.ModTime())
 			continue
 		}
 
@@ -253,6 +258,7 @@ func unzip(archive, target string) error {
 		if _, err := io.Copy(targetFile, fileReader); err != nil {
 			return err
 		}
+		os.Chtimes(path, atime, file.ModTime())
 	}
 
 	return nil
