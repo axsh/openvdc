@@ -27,7 +27,7 @@ func (d *testDriver) StopInstance() error {
 }
 
 func (d *testDriver) RebootInstance() error {
-        return nil
+	return nil
 }
 
 func (d *testDriver) InstanceConsole() error {

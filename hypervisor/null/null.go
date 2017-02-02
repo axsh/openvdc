@@ -45,8 +45,8 @@ func (h *NullHypervisorDriver) DestroyInstance() error {
 }
 
 func (h *NullHypervisorDriver) RebootInstance() error {
-        log.WithFields(log.Fields{"reboot": "null"}).Infoln("RebootInstance")
-        return nil
+	log.WithFields(log.Fields{"reboot": "null"}).Infoln("RebootInstance")
+	return nil
 }
 
 func (h *NullHypervisorDriver) InstanceConsole() error {
