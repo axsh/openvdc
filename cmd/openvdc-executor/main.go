@@ -417,12 +417,16 @@ func initConfig() {
 }
 
 func init() {
+	// Initialize golang/glog flags used by mesos-go.
 	flag.CommandLine.Parse([]string{})
+	flag.Set("logtostderr", "true")
 }
 
 func execute(cmd *cobra.Command, args []string) {
-	var zkAddr backend.ZkEndpoint
-	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	err := zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	if err != nil {
+		log.WithError(err).Fatal("Invalid zookeeper endpoint: ", viper.GetString("zookeeper.endpoint"))
+	}
 
 	provider, ok := hypervisor.FindProvider(viper.GetString("hypervisor.driver"))
 	if ok == false {
