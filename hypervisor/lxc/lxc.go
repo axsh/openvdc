@@ -243,7 +243,7 @@ func loadConfigFile() {
 		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
 	}
 
-	settings.ScriptPath = viper.GetString("script-path")
+	settings.ScriptPath = viper.GetString("hypervisor.script-path")
 	settings.LinuxUpScript = viper.GetString("bridges.linux.up-script")
 	settings.LinuxDownScript = viper.GetString("bridges.linux.down-script")
 	settings.BridgeName = viper.GetString("bridges.linux.name")
