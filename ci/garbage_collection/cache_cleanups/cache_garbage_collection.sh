@@ -19,5 +19,11 @@ cache_location_dir=/data2/openvdc-ci/branches
 ## Remove all directories whose branch (on git) no longer exists
 ## or which has not beenm pushed to within $time_limit days.
 for directory in $(TIME_LIMIT=${time_limit} dirs_to_prune ${cache_location_dir}); do
-   remove_dir ${cache_location_dir}/${directory}
+
+   group_owner=$(stat -c %G ${directory})
+   if [[ "${group_owner}" = "root" ]]; then
+       echo "${directory} is owned by root. Cannot remove!"
+   else
+       remove_dir ${cache_location_dir}/${directory}
+   fi
 done
