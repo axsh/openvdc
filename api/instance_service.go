@@ -138,7 +138,7 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
-	
+
 	instanceID := in.InstanceId
 
 	if instanceID == "" {
@@ -161,12 +161,12 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 	}
 
 	currentState := inst.GetLastState().GetState()
-	
+
 	if currentState == model.InstanceState_REGISTERED {
 		err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_TERMINATED)
-                if err != nil {
-                	log.WithError(err).Error("Failed to update instance state.")
-                }
+		if err != nil {
+			log.WithError(err).Error("Failed to update instance state.")
+		}
 	} else {
 		if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
 			log.WithError(err).Error("Failed sendCommand(destroy)")
