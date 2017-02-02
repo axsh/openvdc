@@ -282,15 +282,12 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 	d.log.Infoln("Starting lxc-container...")
 	if err := c.Start(); err != nil {
 		d.log.Errorln(err)
-		//resetConfigFile()
-		//("BRIDGENAME", d.name)
 		return err
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
 	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
 		d.log.Errorln("Failed or timedout to wait for RUNNING")
-		//resetConfigFile()
 		return fmt.Errorf("Failed or timedout to wait for RUNNING")
 	}
 	return nil
