@@ -12,11 +12,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-          
-func init() {
-
-}
-
 var runCmd = &cobra.Command{
 	Use:   "run [ResourceTemplate ID/URI]",
 	Short: "Run an instance",
@@ -32,28 +27,24 @@ var runCmd = &cobra.Command{
 			return err
 		}
 		err = cmd.ParseFlags(args)
-
 		if err != nil {
 			fmt.Println(err)
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-			
 		left := cmd.Flags().Args()
 		if len(left) < 1 {
 			return pflag.ErrHelp
 		}
-		
+
 		templateSlug := left[0]
 		for i, a := range args {
-			
 			if a == templateSlug {
 				left = args[i:]
 				break
 			}
 		}
-
 		req := prepareRegisterAPICall(templateSlug, left)
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
