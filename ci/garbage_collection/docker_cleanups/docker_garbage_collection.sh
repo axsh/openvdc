@@ -31,7 +31,7 @@ for docker_image in $(docker images -q | sort -u); do
 
    if [[ "${image_date}" < "${cutoff_date}" ]]; then
        echo "docker rmi \"${docker_image}\""
-#      docker rmi "${docker_image}"
+       docker rmi "${docker_image}"
    fi
 
 done
