@@ -15,7 +15,6 @@ rpm_base_dir=/var/www/html/openvdc-repos
 ## or which has not beenm pushed to within $time_limit days.
 for directory in $(TIME_LIMIT=${time_limit} dirs_to_prune ${rpm_base_dir}); do
    remove_dir ${rpm_base_dir}/${directory}
-exit 1
 done
  
 ## Now delete "old" (> ${time_limit} days) rpm's from the master directory
