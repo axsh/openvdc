@@ -169,13 +169,13 @@ func (r *GithubRegistry) Fetch() error {
 
 	// https://github.com/axsh/openvdc/archive/%{sha}.zip
 	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
-	f, err := ioutil.TempFile(tmpDest, "zip")
+	tmpzip, err := ioutil.TempFile(tmpDest, "zip")
 	if err != nil {
 		return err
 	}
 	defer func() {
-		f.Close()
-		os.Remove(f.Name())
+		tmpzip.Close()
+		os.Remove(tmpzip.Name())
 	}()
 
 	res, err := http.Get(zipLinkURI)
@@ -187,7 +187,7 @@ func (r *GithubRegistry) Fetch() error {
 		return fmt.Errorf("Failed to request %s with %s", zipLinkURI, res.Status)
 	}
 
-	_, err = io.Copy(f, res.Body)
+	_, err = io.Copy(tmpzip, res.Body)
 	if err != nil {
 		// TODO: retry fetching because it might be a network error.
 		return err
@@ -199,7 +199,7 @@ func (r *GithubRegistry) Fetch() error {
 	// The zip file contains a root folder with "%{repo}-%{sha}" convention.
 	// "openvdc-e77ed15f3b2ba582087afa226ace61a6756f65dd/templates"
 	// Extract the archive to regDir.
-	err = unzip(f.Name(), regDir, prefix)
+	err = unzip(tmpzip.Name(), regDir, prefix)
 	if err != nil {
 		return err
 	}
