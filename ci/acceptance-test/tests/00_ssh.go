@@ -64,7 +64,7 @@ func RunSshWithTimeoutAndReportFail(t *testing.T, ip string, cmd string, tries i
 			t.Logf("STDOUT:\n%s", stdout.String())
 			t.Logf("STDERR:\n%s", stderr.String())
 
-			t.Fatalf("Running command over ssh failed. Tried %s times.\nCommand: %s\n%s", tries, cmd, err.Error())
+			t.Fatalf("Running '%s' on '%s' failed. Tried %d times.", cmd, ip, tries)
 		}
 
 		time.Sleep(sleeptime * time.Second)
