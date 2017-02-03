@@ -24,7 +24,5 @@ func RunCmd(t *testing.T, name string, arg ...string) (*bytes.Buffer, *bytes.Buf
 		t.Fatalf("Unable to run command: '%s %v'\n%s", name, arg, err.Error())
 	}
 
-	t.Logf("%+v\n", stdout)
-
 	return &stdout, &stderr
 }
