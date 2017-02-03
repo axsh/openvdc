@@ -13,7 +13,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc"
 )
 
 const (
@@ -23,6 +22,9 @@ const (
 	defaultPath           = "templates"
 	mimeTypeGitUploadPack = "application/x-git-upload-pack-advertisement"
 )
+
+// Buildtime constant
+var GithubDefaultRef = "master"
 
 type GithubRegistry struct {
 	confDir                 string
@@ -35,7 +37,7 @@ type GithubRegistry struct {
 func NewGithubRegistry(confDir string) *GithubRegistry {
 	return &GithubRegistry{
 		confDir:                 confDir,
-		Branch:                  openvdc.GithubDefaultRef,
+		Branch:                  GithubDefaultRef,
 		RepoSlug:                githubRepoSlug,
 		TreePath:                defaultPath,
 		ForceCheckToRemoteAfter: 1 * time.Hour,

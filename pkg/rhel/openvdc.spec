@@ -39,7 +39,7 @@ An empty metapackage that depends on all OpenVDC services. Just a conventient wa
 export PATH="$PATH:${GOPATH}/bin"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
-  VERSION=%{version} go run ./internal/build/main.go
+  VERSION=%{version} go run ./build.go
 )
 cd "${GOPATH}/src/github.com/axsh/openvdc/ci/acceptance-test/tests"
 go test -tags=acceptance -c -o openvdc-acceptance-test

@@ -19,6 +19,6 @@ install:
 
 build_script:
   - set PATH=C:\gopath\bin;%PATH%
-  - go run ./internal/build/main.go
+  - go run ./build.go
 
 deploy: off

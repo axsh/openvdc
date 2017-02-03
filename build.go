@@ -125,10 +125,9 @@ Environment Variables:
 	BUILDDATE := ""
 
 	GOVERSION := cmd("go", "version")
-	gopkg := "github.com/axsh/openvdc"
 	LDFLAGS := fmt.Sprintf(
 		"-X '%[1]s.Version=%[2]s' -X '%[1]s.Sha=%[3]s' -X '%[1]s.Builddate=%[4]s' -X '%[1]s.Goversion=%[5]s'",
-		gopkg,
+		"github.com/axsh/openvdc/cmd",
 		VERSION,
 		SHA,
 		BUILDDATE,
@@ -137,7 +136,7 @@ Environment Variables:
 
 	LDFLAGS += fmt.Sprintf(
 		" -X '%[1]s.GithubDefaultRef=%[2]s'",
-		gopkg,
+		"github.com/axsh/openvdc/registry",
 		determineGHRef(),
 	)
 

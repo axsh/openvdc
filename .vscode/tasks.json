@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "command": "go",
   "args": [
-    "run", "./internal/build/main.go"
+    "run", "./build.go"
   ],
   "isShellCommand": false,
   "echoCommand": true,
