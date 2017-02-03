@@ -18,10 +18,10 @@ func RunCmd(t *testing.T, name string, arg ...string) (*bytes.Buffer, *bytes.Buf
 
 	err := cmd.Run()
 	if err != nil {
-		t.Log("STDOUT:\n" + stdout.String())
-		t.Log("STDERR:\n" + stderr.String())
+		t.Logf("STDOUT:\n%s", stdout.String())
+		t.Logf("STDERR:\n%s", stderr.String())
 
-		t.Fatal("Unable to run " + name + " command: " + err.Error())
+		t.Fatalf("Unable to run command: '%s %v'\n%s", name, arg, err.Error())
 	}
 
 	t.Logf("%+v\n", stdout)
