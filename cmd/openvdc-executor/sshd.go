@@ -97,25 +97,22 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		}
 	}()
 
-	quit := make(chan error, 1)
-	go func(connection ssh.Channel) {
-		var err error
-		defer func() {
-			quit <- err
-			close(quit)
-		}()
+	driver, err := session.sshd.provider.CreateDriver(session.instanceID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	console := driver.InstanceConsole()
+	if err := console.Attach(connection, connection, connection.Stderr()); err != nil {
+		log.Error(err)
+		return
+	}
 
-		driver, err := session.sshd.provider.CreateDriver(session.instanceID)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		console := driver.InstanceConsole()
-		err = console.Attach(connection, connection, connection.Stderr())
-		if err != nil {
-			log.Error(err)
-		}
-	}(connection)
+	quit := make(chan error, 1)
+	go func() {
+		quit <- console.Wait()
+		close(quit)
+	}()
 
 Done:
 	for {
@@ -142,7 +139,7 @@ Done:
 
 				switch ssh.Signal(msg.Signal) {
 				case ssh.SIGINT:
-					quit <- nil
+					quit <- console.ForceClose()
 				default:
 					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
 				}
@@ -152,7 +149,10 @@ Done:
 				}
 				log.Warn("Unsupported session request: ", r.Type)
 			}
-		case <-quit:
+		case err := <-quit:
+			if err != nil {
+				log.WithError(err).Error("")
+			}
 			break Done
 		}
 	}

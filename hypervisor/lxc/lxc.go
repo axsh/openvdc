@@ -182,6 +182,9 @@ func (d *LXCHypervisorDriver) newContainer() (*lxc.Container, error) {
 
 type lxcConsole struct {
 	lxc *LXCHypervisorDriver
+	attached *os.Process
+	wg *sync.WaitGroup
+	pty *os.File
 }
 
 func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
@@ -200,14 +203,41 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
   //return con.console(c, stdin, stdout, stderr)
 }
 
+func (con *lxcConsole) Wait() error {
+	if con.attached == nil {
+		return fmt.Errorf("No process is found")
+	}
+	defer func() {
+		con.pty.Close()
+		con.attached = nil
+	}()
+
+	_, err := con.attached.Wait()
+	return err
+}
+
+func (con *lxcConsole) ForceClose() error {
+	if con.attached == nil {
+		return fmt.Errorf("No process is found")
+	}
+	defer func() {
+		con.pty.Close()
+		con.pty = nil
+		con.attached.Release()
+		con.attached = nil
+	}()
+
+	return con.attached.Kill()
+}
+
 func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
 	var wg sync.WaitGroup
 	fpty, ftty, err := pty.Open()
 	if err != nil {
 		return errors.Wrapf(err, "Failed to open tty")
 	}
+	// Close primary socket
 	defer ftty.Close()
-	defer fpty.Close()
 
 	wg.Add(1)
 	go func(){
@@ -231,11 +261,22 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 	options.StderrFd = ftty.Fd()
 	options.ClearEnv = true
 
-	if err := c.AttachShell(options); err != nil {
+	pid, err := c.RunCommandNoWait([]string{"/bin/bash"}, options)
+	if err != nil {
 		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
+		defer fpty.Close()
 		return err
 	}
-	wg.Wait()
+
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		con.lxc.log.WithError(err).Errorf("Failed to find attached shell process: %d", pid)
+		defer fpty.Close()
+		return err
+	}
+	con.attached = proc
+	con.wg = &wg
+	con.pty = fpty
 	return nil
 }
 

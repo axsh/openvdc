@@ -23,6 +23,8 @@ type HypervisorDriver interface {
 
 type Console interface {
 	Attach(stdin io.Reader, stdout, stderr io.Writer) error
+	Wait() error
+	ForceClose() error
 }
 
 var (
