@@ -2,10 +2,12 @@
 
 
 def cleanup() {
-  node("master") {
+//node("master") {
+  node("multibox") {
     stage "Docker Cleanup"
     checkout scm
-    sh "cd ci/garbage_collection/docker_cleanups/ ; ./docker_garbage_collection.sh"
+//  sh "cd ci/garbage_collection/docker_cleanups/ ; ./docker_garbage_collection.sh"
+   sh "echo 'jenkins slave test.'"
   }
 }
 
