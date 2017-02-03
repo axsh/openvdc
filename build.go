@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 var verbose = true
@@ -122,7 +123,7 @@ Environment Variables:
 	if !exists {
 		SHA = cmd("git", "rev-parse", "--verify", "HEAD")
 	}
-	BUILDDATE := ""
+	BUILDDATE := time.Now().UTC().Format(time.RFC3339)
 
 	GOVERSION := cmd("go", "version")
 	LDFLAGS := fmt.Sprintf(
