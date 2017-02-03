@@ -371,7 +371,6 @@ var zkAddr backend.ZkEndpoint
 const defaultExecutorAPIPort = "19372"
 
 var defaultSSHPortRange = [2]int{29876, 39876}
-var advertiseIP = "192.168.56.150"
 
 func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executor.ExecutorAPIServer {
 	s := executor.NewExecutorAPIServer(&zkAddr, ctx)
@@ -382,6 +381,10 @@ func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executo
 func init() {
 	viper.SetDefault("hypervisor.driver", "null")
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
+	viper.SetDefault("executor-api.listen", "0.0.0.0:19372")
+	viper.SetDefault("executor-api.advertise-ip", "")
+	viper.SetDefault("console.ssh.listen", "")
+	viper.SetDefault("console.ssh.advertise-ip", "")
 
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
@@ -445,17 +448,34 @@ func execute(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	apiListenAddr := net.JoinHostPort(advertiseIP, defaultExecutorAPIPort)
-	executorAPIListener, err := net.Listen("tcp", apiListenAddr)
+	executorAPIListener, err := net.Listen("tcp", viper.GetString("executor-api.listen"))
 	if err != nil {
-		log.Fatalln("Faild to bind address for Executor gRPC API: ", apiListenAddr)
+		log.Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
 	}
 	s := startExecutorAPIServer(ctx, executorAPIListener)
 	defer s.GracefulStop()
 	log.Infof("Listening Executor gRPC API on %s", executorAPIListener.Addr().String())
+	exposedExecutorAPIAddr := executorAPIListener.Addr().String()
+	if viper.GetString("executor-api.advertise-ip") != "" {
+		_, port, err := net.SplitHostPort(exposedExecutorAPIAddr)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to parse host:port: ", exposedExecutorAPIAddr)
+		}
+		exposedExecutorAPIAddr = net.JoinHostPort(viper.GetString("executor-api.advertise-ip"), port)
+		log.Infof("Exposed Executor gRPC API on %s", exposedExecutorAPIAddr)
+	}
 
 	sshPort := strconv.Itoa(randomPort(defaultSSHPortRange[0], defaultSSHPortRange[1]))
-	sshListenAddr := net.JoinHostPort(advertiseIP, sshPort)
+	sshListenIP := "0.0.0.0"
+	if viper.GetString("console.ssh.listen") != "" {
+		var port string
+		sshListenIP, port, err = net.SplitHostPort(viper.GetString("console.ssh.listen"))
+		if err != nil {
+			log.WithError(err).Fatal("Failed to parse host:port: ", viper.GetString("console.ssh.listen"))
+		}
+		sshPort = port
+	}
+	sshListenAddr := net.JoinHostPort(sshListenIP, sshPort)
 	sshListener, err := net.Listen("tcp", sshListenAddr)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to listen SSH on %s", sshListenAddr)
@@ -468,12 +488,17 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	go sshd.Run(sshListener)
 	log.Infof("Listening SSH on %s", sshListenAddr)
+	exposedSSHAddr := sshListener.Addr().String()
+	if viper.GetString("console.ssh.advertise-ip") != "" {
+		exposedSSHAddr = net.JoinHostPort(viper.GetString("console.ssh.advertise-ip"), sshPort)
+		log.Infof("Exposed SSH on %s", exposedSSHAddr)
+	}
 
 	node := &model.ExecutorNode{
-		GrpcAddr: apiListenAddr,
+		GrpcAddr: exposedExecutorAPIAddr,
 		Console: &model.Console{
 			Type:     model.Console_SSH,
-			BindAddr: sshListenAddr,
+			BindAddr: exposedSSHAddr,
 		},
 	}
 	dconfig := exec.DriverConfig{
