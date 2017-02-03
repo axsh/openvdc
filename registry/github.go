@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -151,49 +152,9 @@ func (r *GithubRegistry) Fetch() error {
 		}
 	}()
 
-	// https://github.com/axsh/openvdc/archive/%{sha}.zip
-	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
-	err = func() error {
-		f, err := ioutil.TempFile(tmpDest, "zip")
-		if err != nil {
-			return err
-		}
-		defer func() {
-			f.Close()
-			os.Remove(f.Name())
-		}()
-
-		res, err := http.Get(zipLinkURI)
-		if err != nil {
-			return err
-		}
-		defer res.Body.Close()
-		if res.StatusCode != http.StatusOK {
-			return fmt.Errorf("Failed to request %s with %s", zipLinkURI, res.Status)
-		}
-
-		_, err = io.Copy(f, res.Body)
-		if err != nil {
-			// TODO: retry fetching because it might be a network error.
-			return err
-		}
-		f.Close()
-
-		// Extract the archive to tmpdir once.
-		err = unzip(f.Name(), tmpDest)
-		if err != nil {
-			return err
-		}
-		return nil
-	}()
-	if err != nil {
-		return err
-	}
 	// Create local registry cache.
 	regDir := r.localCachePath()
 	if _, err = os.Stat(regDir); os.IsNotExist(err) {
-		// mkdir -p should be limited to the parent directory because os.Rename() in later fails.
-		// https://github.com/golang/go/issues/14527
 		err = os.MkdirAll(filepath.Dir(regDir), 0755)
 		if err != nil {
 			return err
@@ -205,22 +166,49 @@ func (r *GithubRegistry) Fetch() error {
 			return err
 		}
 	}
-	// Save current sha
-	ioutil.WriteFile(regDir+".sha", []byte(ref.Sha), 0644)
 
-	// tmpDest dir gets a folder with "%{user}-%{repo}-%{sha}" convention.
-	tmpLs, err := ioutil.ReadDir(tmpDest)
+	// https://github.com/axsh/openvdc/archive/%{sha}.zip
+	zipLinkURI := fmt.Sprintf("%s/%s/archive/%s.zip", githubURI, r.RepoSlug, ref.Sha)
+	f, err := ioutil.TempFile(tmpDest, "zip")
 	if err != nil {
 		return err
 	}
-	if len(tmpLs) != 1 {
-		return fmt.Errorf("%s returned unexpected archive structure", zipLinkURI)
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+
+	res, err := http.Get(zipLinkURI)
+	if err != nil {
+		return err
 	}
-	return os.Rename(filepath.Join(tmpDest, tmpLs[0].Name(), filepath.FromSlash(r.TreePath)), regDir)
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("Failed to request %s with %s", zipLinkURI, res.Status)
+	}
+
+	_, err = io.Copy(f, res.Body)
+	if err != nil {
+		// TODO: retry fetching because it might be a network error.
+		return err
+	}
+
+	prefix := filepath.Join(
+		fmt.Sprintf("%s-%s", path.Base(r.RepoSlug), ref.Sha),
+		filepath.FromSlash(r.TreePath))
+	// The zip file contains a root folder with "%{repo}-%{sha}" convention.
+	// "openvdc-e77ed15f3b2ba582087afa226ace61a6756f65dd/templates"
+	// Extract the archive to regDir.
+	err = unzip(f.Name(), regDir, prefix)
+	if err != nil {
+		return err
+	}
+	// Save current sha
+	return ioutil.WriteFile(regDir+".sha", []byte(ref.Sha), 0644)
 }
 
 // http://blog.ralch.com/tutorial/golang-working-with-zip/
-func unzip(archive, target string) error {
+func unzip(archive, target string, prefix string) error {
 	reader, err := zip.OpenReader(archive)
 	if err != nil {
 		return err
@@ -233,7 +221,14 @@ func unzip(archive, target string) error {
 
 	atime := time.Now()
 	for _, file := range reader.File {
-		path := filepath.Join(target, file.Name)
+		if prefix != "" && !strings.HasPrefix(filepath.FromSlash(file.Name), prefix) {
+			continue
+		}
+		// Slide path in .zip to the length of prefix.
+		path := filepath.Join(target, filepath.FromSlash(file.Name[len(prefix)+1:]))
+		if path == "" {
+			continue
+		}
 		if file.FileInfo().IsDir() {
 			err := os.MkdirAll(path, file.Mode())
 			if err != nil {
