@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -40,11 +39,7 @@ func sshShell(instanceID string, destAddr string) error {
 
 	session.Stdout = ansicolor.NewAnsiColorWriter(os.Stdout)
 	session.Stderr = ansicolor.NewAnsiColorWriter(os.Stderr)
-	in, err := session.StdinPipe()
-	if err != nil {
-		return err
-	}
-	defer in.Close()
+	session.Stdin = os.Stdin
 
 	// Handle control + C
 	cInt := make(chan os.Signal, 1)
@@ -58,36 +53,23 @@ func sshShell(instanceID string, destAddr string) error {
 	quit := make(chan error, 1)
 	defer close(quit)
 
-	lineScan := bufio.NewScanner(os.Stdin)
 	go func() {
-		for lineScan.Scan() {
-			_, err := in.Write(lineScan.Bytes())
-			if err != nil {
-				quit <- err
-				return
-			}
-			fmt.Fprint(in, "\n")
-		}
-		quit <- lineScan.Err()
+		quit <- session.Wait()
 	}()
 
-Done:
 	for {
 		select {
 		case err := <-quit:
 			if err != nil {
-				log.Error(err)
+				log.WithError(err).Error("Quit")
 			}
-			in.Close()
-			break Done
+			return err
 		case <-cInt:
 			if err := session.Signal(ssh.SIGINT); err != nil {
 				log.WithError(err).Error("Failed to send signal")
 			}
-			break Done
 		}
 	}
-	return session.Wait()
 }
 
 func init() {
