@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/signal"
 	"time"
@@ -89,6 +90,10 @@ Done:
 	return session.Wait()
 }
 
+func init() {
+	consoleCmd.Flags().Bool("show", false, "Show console information")
+}
+
 var consoleCmd = &cobra.Command{
 	Use:   "console [Instance ID]",
 	Short: "Connect to an instance",
@@ -106,8 +111,17 @@ var consoleCmd = &cobra.Command{
 			if err != nil {
 				log.WithError(err).Fatal("Failed request to Instance.Console API")
 			}
+			info, err := cmd.Flags().GetBool("show")
 			switch res.Type {
 			case model.Console_SSH:
+				if info {
+					host, port, err := net.SplitHostPort(res.GetAddress())
+					if err != nil {
+						log.Fatal("Invalid ssh host address: ", res.GetAddress())
+					}
+					fmt.Printf("-p %s %s@%s\n", port, instanceID, host)
+					return nil
+				}
 				if err := sshShell(instanceID, res.GetAddress()); err != nil && err != io.EOF {
 					log.WithError(err).Fatal("Failed ssh to ", res.GetAddress())
 				}
