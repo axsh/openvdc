@@ -185,6 +185,7 @@ type lxcConsole struct {
 	attached *os.Process
 	wg *sync.WaitGroup
 	pty *os.File
+	tty string
 }
 
 func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
@@ -208,11 +209,19 @@ func (con *lxcConsole) Wait() error {
 		return fmt.Errorf("No process is found")
 	}
 	defer func() {
-		con.pty.Close()
+		err := con.pty.Close()
+		log.WithFields(log.Fields{
+			"tty": con.tty,
+			"pid": con.attached.Pid,
+		}).WithError(err).Info("TTY session closed")
+		con.pty = nil
 		con.attached = nil
 	}()
 
 	_, err := con.attached.Wait()
+	if err != nil {
+		con.attached.Release()
+	}
 	return err
 }
 
@@ -220,13 +229,8 @@ func (con *lxcConsole) ForceClose() error {
 	if con.attached == nil {
 		return fmt.Errorf("No process is found")
 	}
-	defer func() {
-		con.pty.Close()
-		con.pty = nil
-		con.attached.Release()
-		con.attached = nil
-	}()
-
+	// This sends just signal. pty and pid are
+	// closed by Wait()
 	return con.attached.Kill()
 }
 
@@ -277,6 +281,7 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 	con.attached = proc
 	con.wg = &wg
 	con.pty = fpty
+	con.tty = ftty.Name()
 	return nil
 }
 
