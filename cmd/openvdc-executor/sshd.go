@@ -146,6 +146,21 @@ Done:
 				default:
 					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
 				}
+			case "pty-req":
+				var ptyReq struct {
+					Term     string
+					Columns  uint32
+					Rows     uint32
+					Width    uint32
+					Height   uint32
+					Modelist string
+				}
+				if err := ssh.Unmarshal(r.Payload, &ptyReq); err != nil {
+					log.WithError(err).Error("Failed to parse pty-req message")
+				}
+				if err := r.Reply(true, nil); err != nil {
+					log.WithError(err).Warn("Failed to reply")
+				}
 			default:
 				if r.WantReply {
 					r.Reply(false, nil)
