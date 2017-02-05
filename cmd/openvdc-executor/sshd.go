@@ -106,16 +106,8 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		return
 	}
 	console := driver.InstanceConsole()
-	if err := console.Attach(connection, connection, connection.Stderr()); err != nil {
-		log.Error(err)
-		return
-	}
-
 	quit := make(chan error, 1)
-	go func() {
-		quit <- console.Wait()
-		close(quit)
-	}()
+	defer close(quit)
 
 Done:
 	for {
@@ -126,6 +118,14 @@ Done:
 			}
 			switch r.Type {
 			case "shell":
+				if err := console.Attach(connection, connection, connection.Stderr()); err != nil {
+					log.Error(err)
+					return
+				}
+
+				go func() {
+					quit <- console.Wait()
+				}()
 				if err := r.Reply(true, nil); err != nil {
 					log.WithError(err).Warn("Failed to reply")
 				}
@@ -141,8 +141,8 @@ Done:
 				}
 
 				switch ssh.Signal(msg.Signal) {
-				case ssh.SIGINT:
-					quit <- console.ForceClose()
+				case ssh.SIGINT, ssh.SIGKILL:
+					console.ForceClose()
 				default:
 					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
 				}
