@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 
 	"github.com/pkg/errors"
@@ -90,11 +91,13 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		if err != nil {
 			log.WithError(err).Error("Failed to send exit-status")
 		}
-		if err := connection.Close(); err != nil {
-			log.WithError(err).Warn("Invalid close sequence")
-		} else {
-			log.Info("Session closed")
+		if err := connection.CloseWrite(); err != nil && err != io.EOF {
+			log.WithError(err).Warn("Failed CloseWrite()")
 		}
+		if err := connection.Close(); err != nil && err != io.EOF {
+			log.WithError(err).Warn("Invalid close sequence")
+		}
+		log.WithField("instance_id", session.instanceID).Info("Session closed")
 	}()
 
 	driver, err := session.sshd.provider.CreateDriver(session.instanceID)
