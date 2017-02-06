@@ -13,6 +13,7 @@ mesos_agent=true
 IND_STEPS=(
     "box"
     "ssh"
+    "disable-firewalld"
     "epel"
     "lxc"
     "mesosphere"
