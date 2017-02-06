@@ -1,11 +1,17 @@
 package main
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"io"
 	"net"
 
 	"github.com/pkg/errors"
+
+	"crypto/elliptic"
 
 	"github.com/axsh/openvdc/hypervisor"
 	"golang.org/x/crypto/ed25519"
@@ -29,16 +35,33 @@ func NewSSHServer(provider hypervisor.HypervisorProvider) *SSHServer {
 	}
 }
 
+type HostKeyGen func(rand io.Reader) (crypto.Signer, error)
+
+var KeyGenList = []HostKeyGen{
+	func(rand io.Reader) (crypto.Signer, error) {
+		_, priv, err := ed25519.GenerateKey(rand)
+		return priv, err
+	},
+	func(rand io.Reader) (crypto.Signer, error) {
+		return ecdsa.GenerateKey(elliptic.P521(), rand)
+	},
+	func(rand io.Reader) (crypto.Signer, error) {
+		return rsa.GenerateKey(rand, 2048)
+	},
+}
+
 func (sshd *SSHServer) Setup() error {
-	_, priv, err := ed25519.GenerateKey(nil)
-	if err != nil {
-		return errors.Wrap(err, "Failed to generate host key")
+	for _, gen := range KeyGenList {
+		priv, err := gen(rand.Reader)
+		if err != nil {
+			return errors.Wrap(err, "Failed to generate host key")
+		}
+		sshSigner, err := ssh.NewSignerFromSigner(priv)
+		if err != nil {
+			return errors.Wrap(err, "Failed to convert to ssh.Signer")
+		}
+		sshd.config.AddHostKey(sshSigner)
 	}
-	sshSigner, err := ssh.NewSignerFromSigner(priv)
-	if err != nil {
-		return errors.Wrap(err, "Failed to convert to ssh.Signer")
-	}
-	sshd.config.AddHostKey(sshSigner)
 	return nil
 }
 
