@@ -30,11 +30,13 @@ func RunSsh(ip string, cmd string) (*bytes.Buffer, *bytes.Buffer, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	defer connection.Close()
 
 	session, err := connection.NewSession()
 	if err != nil {
 		return nil, nil, err
 	}
+	defer session.Close()
 
 	session.Stdout = &stdout
 	session.Stderr = &stderr
