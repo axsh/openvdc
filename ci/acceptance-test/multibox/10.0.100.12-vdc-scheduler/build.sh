@@ -28,3 +28,4 @@ build "${IND_STEPS[@]}"
 # different version to test every the CI runs.
 install_openvdc_yum_repo
 install_yum_package_over_ssh "openvdc-scheduler"
+enable_service_over_ssh "openvdc-scheduler"

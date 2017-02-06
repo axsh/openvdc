@@ -197,3 +197,17 @@ function install_yum_package_over_ssh() {
     run_ssh root@${IP_ADDR} "yum install -y ${package}"
   ) ; prev_cmd_failed
 }
+
+function enable_service_over_ssh() {
+  local service="$1"
+
+  (
+    $starting_step "Enable service (over SSH): ${service}"
+    # No need to make an extra ssh connection to check if it's enabled already
+    # systemctl will just not do anything
+    false
+    $skip_step_if_already_done; set -xe
+    run_ssh root@${IP_ADDR} "systemctl start ${service}"
+    run_ssh root@${IP_ADDR} "systemctl enable ${service}"
+  ) ; prev_cmd_failed
+}
