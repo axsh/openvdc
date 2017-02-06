@@ -7,7 +7,7 @@ VOLUME /data
 RUN ["yum", "install", "-y", "epel-release"]
 RUN ["yum", "install", "-y", "rsync", "bridge-utils", "qemu-kvm", "qemu-system-x86", "parted", "sudo", "openssh-clients", "nmap-ncat"]
 
-RUN groupadd -r axsh && useradd -d /home/axsh -g axsh axsh
+RUN groupadd -r axsh && useradd -d /home/axsh -g axsh axsh && mkdir -p /home/axsh/.openvdc
 WORKDIR /home/axsh
 
 ARG BRANCH
@@ -25,5 +25,6 @@ LABEL "jp.axsh.vendor"="Axsh Co. LTD"  \
 
 COPY ["multibox", "/multibox"]
 COPY ["run_tests.sh", "run_tests.sh"]
+COPY ["dot_openvdc-config.toml", "/home/axsh/.openvdc/config.toml"]
 
 ENTRYPOINT ["./run_tests.sh", "RUN"]
