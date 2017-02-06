@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc"
 	"github.com/axsh/openvdc/api/executor"
+	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
@@ -523,7 +523,7 @@ func execute(cmd *cobra.Command, args []string) {
 }
 
 func main() {
-	rootCmd.AddCommand(openvdc.VersionCmd)
+	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
