@@ -15,6 +15,7 @@ IND_STEPS=(
     "ssh"
     "disable-firewalld"
     "epel"
+    "bridge-utils"
     "lxc"
     "mesosphere"
     "mesos"
