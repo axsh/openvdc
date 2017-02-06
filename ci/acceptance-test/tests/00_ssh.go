@@ -53,7 +53,18 @@ func RunSshAndReportFail(t *testing.T, ip string, cmd string) {
 		t.Logf("STDOUT:\n%s", stdout.String())
 		t.Logf("STDERR:\n%s", stderr.String())
 
-		t.Fatalf("Running command over ssh failed. Command: %s\n%s", cmd, err.Error())
+		t.Fatalf("Running command over SSH failed. Command: %s\n%s", cmd, err.Error())
+	}
+}
+
+func RunSshAndExpectFail(t *testing.T, ip string, cmd string) {
+	stdout, stderr, err := RunSsh(ip, cmd)
+
+	if err == nil {
+		t.Logf("STDOUT:\n%s", stdout.String())
+		t.Logf("STDERR:\n%s", stderr.String())
+
+		t.Fatalf("Expected command over SSH to fail. Command: %s\n%s", cmd, err.Error())
 	}
 }
 
@@ -67,6 +78,25 @@ func RunSshWithTimeoutAndReportFail(t *testing.T, ip string, cmd string, tries i
 			t.Logf("STDERR:\n%s", stderr.String())
 
 			t.Fatalf("Running '%s' on '%s' failed. Tried %d times.", cmd, ip, tries)
+		}
+
+		time.Sleep(sleeptime * time.Second)
+
+		tried += 1
+		stdout, stderr, err = RunSsh(ip, cmd)
+	}
+}
+
+func RunSshWithTimeoutAndExpectFail(t *testing.T, ip string, cmd string, tries int, sleeptime time.Duration) {
+	tried := 1
+	stdout, stderr, err := RunSsh(ip, cmd)
+
+	for err == nil {
+		if tried >= tries {
+			t.Logf("STDOUT:\n%s", stdout.String())
+			t.Logf("STDERR:\n%s", stderr.String())
+
+			t.Fatalf("Expected '%s' on '%s' to fail. Tried %d times.", cmd, ip, tries)
 		}
 
 		time.Sleep(sleeptime * time.Second)
