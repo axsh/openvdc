@@ -16,6 +16,7 @@ import (
 	"github.com/axsh/openvdc/api"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -45,6 +46,23 @@ func sshShell(instanceID string, destAddr string) error {
 	cInt := make(chan os.Signal, 1)
 	defer close(cInt)
 	signal.Notify(cInt, os.Interrupt)
+
+	fd := int(os.Stdout.Fd())
+	if terminal.IsTerminal(fd) {
+		w, h, err := terminal.GetSize(fd)
+		if err != nil {
+			log.WithError(err).Warn("Failed to get console size. Set to 80x40")
+			w = 80
+			h = 40
+		}
+		modes := ssh.TerminalModes{
+			ssh.ECHO:  0, // Disable echoing
+			ssh.IGNCR: 1, // Ignore CR on input.
+		}
+		if err := session.RequestPty("vt100", h, w, modes); err != nil {
+			return err
+		}
+	}
 
 	if err := session.Shell(); err != nil {
 		return err
