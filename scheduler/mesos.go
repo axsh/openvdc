@@ -114,6 +114,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			if hypervisorName == "" {
 				continue
 			}
+
 			r, err := i.Resource(ctx)
 			if err != nil {
 				log.WithError(err).WithFields(log.Fields{
@@ -143,9 +144,16 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	acceptIDs := []*mesos.OfferID{}
 	for _, i := range queued {
 		found := findMatching(i)
+		for i, _ := range acceptIDs {
+			if acceptIDs[i] == found.Id {
+				found = nil
+			}
+		}
+
 		if found == nil {
 			continue
 		}
+
 		hypervisorName := getHypervisorName(found)
 		log.WithFields(log.Fields{
 			"instance_id": i.GetId(),
@@ -156,7 +164,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			ExecutorId: util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 			Name:       proto.String("VDC Executor"),
 			Command: &mesos.CommandInfo{
-				Value: proto.String(fmt.Sprintf("%s -logtostderr=true -hypervisor=%s -zk=%s",
+				Value: proto.String(fmt.Sprintf("%s --hypervisor=%s --zk=%s",
 					ExecutorPath, hypervisorName, sched.zkAddr.String())),
 			},
 		}

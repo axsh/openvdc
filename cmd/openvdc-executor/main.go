@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/axsh/openvdc"
+	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
@@ -386,12 +386,16 @@ func initConfig() {
 }
 
 func init() {
+	// Initialize golang/glog flags used by mesos-go.
 	flag.CommandLine.Parse([]string{})
+	flag.Set("logtostderr", "true")
 }
 
 func execute(cmd *cobra.Command, args []string) {
-	var zkAddr backend.ZkEndpoint
-	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	err := zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	if err != nil {
+		log.WithError(err).Fatal("Invalid zookeeper endpoint: ", viper.GetString("zookeeper.endpoint"))
+	}
 
 	provider, ok := hypervisor.FindProvider(viper.GetString("hypervisor.driver"))
 	if ok == false {
@@ -421,7 +425,7 @@ func execute(cmd *cobra.Command, args []string) {
 }
 
 func main() {
-	rootCmd.AddCommand(openvdc.VersionCmd)
+	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

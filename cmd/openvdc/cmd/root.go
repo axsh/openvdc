@@ -6,13 +6,11 @@ import (
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc"
+	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-var cfgFile string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -39,7 +37,7 @@ func Execute() {
 	RootCmd.AddCommand(TemplateCmd)
 	RootCmd.AddCommand(logCmd)
 	RootCmd.AddCommand(listCmd)
-	RootCmd.AddCommand(openvdc.VersionCmd)
+	RootCmd.AddCommand(cmd.VersionCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
