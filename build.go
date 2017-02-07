@@ -151,7 +151,7 @@ Environment Variables:
 		if_not_exists("go-bindata", func() {
 			cmd("go", "get", "-u", "github.com/jteeuwen/go-bindata/...")
 		})
-		cmd("go", "generate", "-v", "./api", "./model", "./registry")
+		cmd("go", "generate", "-v", "./api/...", "./model", "./registry")
 	}
 
 	if_not_exists("govendor", func() {

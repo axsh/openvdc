@@ -3,7 +3,6 @@ package executor
 import (
 	"net"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"golang.org/x/net/context"
@@ -32,7 +31,6 @@ func NewExecutorAPIServer(modelAddr backend.ConnectionAddress, ctx context.Conte
 		modelStoreAddr: modelAddr,
 	}
 
-	RegisterInstanceConsoleServer(s.server, &InstanceConsoleAPI{api: s})
 	return s
 }
 
@@ -53,18 +51,4 @@ func (s *ExecutorAPIServer) GracefulStop() {
 
 func (s *ExecutorAPIServer) Listener() net.Listener {
 	return s.listener
-}
-
-type InstanceConsoleAPI struct {
-	api *ExecutorAPIServer
-}
-
-func (s *InstanceConsoleAPI) Attach(stream InstanceConsole_AttachServer) error {
-	cin, err := stream.Recv()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Println(cin.InstanceId)
-	return nil
 }
