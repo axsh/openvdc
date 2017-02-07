@@ -26,5 +26,6 @@ LABEL "jp.axsh.vendor"="Axsh Co. LTD"  \
 COPY ["multibox", "/multibox"]
 COPY ["run_tests.sh", "run_tests.sh"]
 COPY ["dot_openvdc-config.toml", "/home/axsh/.openvdc/config.toml"]
+run chown -R axsh /home/axsh/.openvdc
 
 ENTRYPOINT ["./run_tests.sh", "RUN"]
