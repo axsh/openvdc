@@ -8,6 +8,8 @@ import (
 	"time"
 	"fmt"
 	"sync"
+	"syscall"
+	"unsafe"
 	log "github.com/Sirupsen/logrus"
 
   "github.com/kr/pty"
@@ -259,6 +261,17 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 		io.Copy(stderr, fpty)
 	}()
 
+	modes, err := TcGetAttr(ftty.Fd())
+	if err != nil {
+		return errors.Wrap(err, "Failed TcGetAttr")
+	}
+	modes.Lflag &^= syscall.ECHO
+	modes.Iflag |= syscall.IGNCR
+	err = TcSetAttr(ftty.Fd(), modes)
+	if err != nil {
+		return errors.Wrap(err, "Failed TcSetAttr")
+	}
+
 	options := lxc.DefaultAttachOptions
 	options.StdinFd	= ftty.Fd()
 	options.StdoutFd = ftty.Fd()
@@ -308,4 +321,21 @@ func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr
 		return err
 	}
 	return nil
+}
+
+// https://github.com/creack/termios/blob/master/raw/raw.go
+func TcSetAttr(fd uintptr, termios *syscall.Termios) error {
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TCSETS), uintptr(unsafe.Pointer(termios))); err != 0 {
+		return err
+	}
+	return nil
+}
+
+// https://github.com/creack/termios/blob/master/raw/raw.go
+func TcGetAttr(fd uintptr) (*syscall.Termios, error) {
+	var termios = &syscall.Termios{}
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, syscall.TCGETS, uintptr(unsafe.Pointer(termios))); err != 0 {
+		return nil, err
+	}
+	return termios, nil
 }
