@@ -14,6 +14,7 @@ import (
 	"github.com/axsh/openvdc/model"
 	"github.com/spf13/viper"
 	lxc "gopkg.in/lxc/go-lxc.v2"
+	"path/filepath"
 )
 
 var LxcConfigFile string
