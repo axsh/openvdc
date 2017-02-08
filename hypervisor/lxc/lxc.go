@@ -116,12 +116,16 @@ func updateSettings(nwi NetworkInterface, input string) string {
 
 	switch nwi.Type {
 	case "linux":
-		generateScriptFromTemplate(settings.LinuxUpScript, "up.sh", nwi.Type)
-		generateScriptFromTemplate(settings.LinuxDownScript, "down.sh", nwi.Type)
+		bridgeConnect := fmt.Sprintf("brctl addif %s %s \n", settings.BridgeName, settings.TapName)
+
+		generateScriptFromTemplate(settings.LinuxUpScript, "up.sh", bridgeConnect)
+		generateScriptFromTemplate(settings.LinuxDownScript, "down.sh", bridgeConnect)
 
 	case "ovs":
-		generateScriptFromTemplate(settings.OvsUpScript, "up.sh", nwi.Type)
-		generateScriptFromTemplate(settings.OvsDownScript, "down.sh", nwi.Type)
+		bridgeConnect := fmt.Sprintf("ovs-vsctl add-port %s %s \n", settings.OvsName, settings.TapName)
+
+		generateScriptFromTemplate(settings.OvsUpScript, "up.sh", bridgeConnect)
+		generateScriptFromTemplate(settings.OvsDownScript, "down.sh", bridgeConnect)
 
 	default:
 		log.Fatalf("Unrecognized bridge type.")
@@ -130,23 +134,11 @@ func updateSettings(nwi NetworkInterface, input string) string {
 	return output
 }
 
-func generateScriptFromTemplate(scriptTemplate string, generatedScriptName string, bridgeType string) {
+func generateScriptFromTemplate(scriptTemplate string, generatedScriptName string, bridgeConnect string) {
 	f, err := ioutil.ReadFile(filepath.Join(settings.ScriptPath, scriptTemplate))
 
 	if err != nil {
 		log.Fatalf("Failed loading script template: ", err)
-	}
-
-	var bridgeConnect string
-
-	switch bridgeType {
-	case "linux":
-		bridgeConnect = fmt.Sprintf("brctl addif %s %s \n", settings.BridgeName, settings.TapName)
-	case "ovs":
-		bridgeConnect = fmt.Sprintf("ovs-vsctl add-port %s %s \n", settings.OvsName, settings.TapName)
-
-	default:
-		log.Fatalf("Unrecognized bridge type.")
 	}
 
 	lines := strings.Split(string(f), "\n")
@@ -157,7 +149,10 @@ func generateScriptFromTemplate(scriptTemplate string, generatedScriptName strin
 	}
 
 	output := strings.Join(lines, "\n")
-	output = bridgeConnect + output
+
+	if generatedScriptName == "up.sh" {
+		output = bridgeConnect + output
+	}
 
 	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
 
