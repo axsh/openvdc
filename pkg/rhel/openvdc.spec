@@ -40,7 +40,7 @@ An empty metapackage that depends on all OpenVDC services. Just a conventient wa
 export PATH="$PATH:${GOPATH}/bin"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
-  VERSION=%{version} ./build.sh
+  VERSION=%{version} go run ./build.go
 )
 cd "${GOPATH}/src/github.com/axsh/openvdc/ci/acceptance-test/tests"
 go test -tags=acceptance -c -o openvdc-acceptance-test
@@ -74,9 +74,12 @@ The OpenVDC commandline interface.
 /usr/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc
 
+#TODO: Different packages for executor-lxc and executor-null
 %package executor
 Summary: OpenVDC executor
 Requires: lxc
+Requires: lxc-templates
+Requires: bridge-utils
 
 %description executor
 This is a 'stub'. An appropriate message must be substituted at some point.
