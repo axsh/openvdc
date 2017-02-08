@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
-	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 var tail bool
@@ -28,49 +28,25 @@ var logCmd = &cobra.Command{
 		if len(args) != 1 {
 			log.Fatalf("Please provide an Instance ID.")
 		}
-
-		instanceID := "VDC_" + args[0]
-
-		split := strings.Split(viper.GetString("mesos.master"), ":")
-		mesosMasterAddr := split[0]
-		mesosMasterPort, err := strconv.Atoi(split[1])
-
-		if err != nil {
-			log.WithError(err).Fatal("Error trying to convert string")
-			return err
+		instanceID := args[0]
+		req := &api.InstanceLogRequest{
+			Target: &api.InstanceIDRequest{
+				Key: &api.InstanceIDRequest_ID{
+					ID: instanceID,
+				},
+			},
 		}
-
-		if tail == false {
-			cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, &mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+		return util.RemoteCall(func(conn *grpc.ClientConn) error {
+			c := api.NewInstanceClient(conn)
+			res, err := c.Log(context.Background(), req)
 			if err != nil {
-				log.WithError(err).Fatal("Couldn't connect to Mesos master")
+				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err
 			}
-
-			result, err := cl.GetLog(instanceID, mlog.STDERR, "")
-			if err != nil {
-				log.WithError(err).Fatal("Error fetching log")
-				return err
+			for _, l := range res.Line {
+				fmt.Println(l)
 			}
-
-			for _, log := range result {
-				fmt.Printf(log.Log)
-			}
-		} else {
-			cl, err := mlog.NewMesosClientWithOptions(mesosMasterAddr, mesosMasterPort, nil)
-
-			if err != nil {
-				log.WithError(err).Fatal("Couldn't connect to Mesos master")
-				return err
-			}
-
-			err = cl.TailLog(instanceID, mlog.STDOUT, 5)
-
-			if err != nil {
-				log.WithError(err).Fatal("Error trying to tail log")
-				return err
-			}
-		}
-		return err
+			return nil
+		})
 	},
 }

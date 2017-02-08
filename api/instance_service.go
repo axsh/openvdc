@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
 	util "github.com/mesos/mesos-go/mesosutil"
@@ -267,4 +268,34 @@ func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*Insta
 		},
 		Items: results,
 	}, nil
+}
+
+func (s *InstanceAPI) Log(ctx context.Context, in *InstanceLogRequest) (*InstanceLogReply, error) {
+	masterAddr := s.api.GetMesosMasterAddr()
+	if masterAddr == nil {
+		return nil, fmt.Errorf("Mesos master address is not detected")
+	}
+	cl, err := mlog.NewMesosClientWithOptions(
+		masterAddr.GetIp(),
+		int(masterAddr.GetPort()),
+		&mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+	if err != nil {
+		log.WithError(err).Error("Couldn't connect to Mesos master: ", masterAddr)
+		return nil, err
+	}
+
+	taskID := fmt.Sprintf("VDC_%s", in.Target.GetID())
+	result, err := cl.GetLog(taskID, mlog.STDERR, "")
+	if err != nil {
+		log.WithError(err).Fatal("Error fetching log")
+		return nil, err
+	}
+
+	res := &InstanceLogReply{
+		Line: make([]string, len(result)),
+	}
+	for i, log := range result {
+		res.Line[i] = log.Log
+	}
+	return res, nil
 }
