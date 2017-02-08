@@ -28,6 +28,7 @@ type Settings struct {
 	OvsUpScript     string
 	OvsDownScript   string
 	OvsName         string
+	TapName         string
 }
 
 type NetworkInterface struct {
@@ -94,6 +95,8 @@ func modifyConf() {
 
 func updateSettings(nwi NetworkInterface, input string) string {
 
+	settings.TapName = nwi.TapName
+
 	output := input + "\n"
 
 	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", nwi.TapName)
@@ -106,24 +109,19 @@ func updateSettings(nwi NetworkInterface, input string) string {
 		output += fmt.Sprintf("lxc.network.hwaddr=%s\n", nwi.MacAddr)
 	}
 
+	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
+
+	output += fmt.Sprintf("lxc.network.script.up=%s\n", filepath.Join(containerPath, "up.sh"))
+	output += fmt.Sprintf("lxc.network.script.down=%s\n", filepath.Join(containerPath, "down.sh"))
+
 	switch nwi.Type {
 	case "linux":
-		output += fmt.Sprintf("lxc.network.script.up=%s\n", "up.sh")
-		output += fmt.Sprintf("lxc.network.script.down=%s\n", "down.sh")
-
-		os.Setenv("BRIDGENAME", settings.BridgeName)
-		os.Setenv("TAPNAME", nwi.TapName)
-
-		generateScriptFromTemplate(settings.LinuxUpScript, "up.sh")
-		generateScriptFromTemplate(settings.LinuxDownScript, "down.sh")
+		generateScriptFromTemplate(settings.LinuxUpScript, "up.sh", nwi.Type)
+		generateScriptFromTemplate(settings.LinuxDownScript, "down.sh", nwi.Type)
 
 	case "ovs":
-		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.OvsUpScript)
-
-		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.OvsDownScript)
-
-		os.Setenv("OVSNAME", settings.BridgeName)
-		os.Setenv("TAPNAME", nwi.TapName)
+		generateScriptFromTemplate(settings.OvsUpScript, "up.sh", nwi.Type)
+		generateScriptFromTemplate(settings.OvsDownScript, "down.sh", nwi.Type)
 
 	default:
 		log.Fatalf("Unrecognized bridge type.")
@@ -132,16 +130,38 @@ func updateSettings(nwi NetworkInterface, input string) string {
 	return output
 }
 
-func generateScriptFromTemplate(scriptTemplate string, generatedScriptName string) {
+func generateScriptFromTemplate(scriptTemplate string, generatedScriptName string, bridgeType string) {
 	f, err := ioutil.ReadFile(filepath.Join(settings.ScriptPath, scriptTemplate))
 
 	if err != nil {
 		log.Fatalf("Failed loading script template: ", err)
 	}
 
+	var bridgeConnect string
+
+	switch bridgeType {
+	case "linux":
+		bridgeConnect = fmt.Sprintf("brctl addif %s %s \n", settings.BridgeName, settings.TapName)
+	case "ovs":
+		bridgeConnect = fmt.Sprintf("ovs-vsctl add-port %s %s \n", settings.OvsName, settings.TapName)
+
+	default:
+		log.Fatalf("Unrecognized bridge type.")
+	}
+
+	lines := strings.Split(string(f), "\n")
+	for i, line := range lines {
+		if strings.Contains(line, "brctl addif") || strings.Contains(line, "ovs-vsctl add-port") {
+			lines[i] = ""
+		}
+	}
+
+	output := strings.Join(lines, "\n")
+	output = bridgeConnect + output
+
 	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
 
-	err = ioutil.WriteFile(filepath.Join(containerPath, generatedScriptName), []byte(f), 0644)
+	err = ioutil.WriteFile(filepath.Join(containerPath, generatedScriptName), []byte(output), 0755)
 
 	if err != nil {
 		log.Fatalln("Failed saving generated script to container path: ", err)

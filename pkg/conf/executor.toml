@@ -12,6 +12,6 @@ script-path="/etc/openvdc/scripts/"
 	down-script = "linux-bridge-down.sh"
 
 	[bridges.ovs]
-	name = "ovs-vsctl"
+	name = "br0"
 	up-script = "ovs-up.sh"
 	down-script = "ovs-down.sh"
