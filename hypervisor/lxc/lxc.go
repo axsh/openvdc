@@ -17,6 +17,7 @@ import (
 )
 
 var LxcConfigFile string
+var ContainerName string
 
 type Settings struct {
 	ScriptPath      string
@@ -207,6 +208,8 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	LxcConfigFile = c.ConfigFileName()
+
+	ContainerName = d.name
 
 	if err != nil {
 
