@@ -5,8 +5,8 @@ import (
 	"net"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 
-	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -249,18 +249,7 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func startAPIServer(laddr string, zkAddr backend.ZkEndpoint, driver sched.SchedulerDriver) *api.APIServer {
-	lis, err := net.Listen("tcp", laddr)
-	if err != nil {
-		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
-	}
-	log.Println("Listening gRPC API on: ", laddr)
-	s := api.NewAPIServer(zkAddr, driver)
-	go s.Serve(lis)
-	return s
-}
-
-func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) {
+func NewMesosScheduler(listenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) (*sched.MesosSchedulerDriver, error) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
@@ -269,7 +258,7 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 	cred = nil
 	bindingAddrs, err := net.LookupIP(listenAddr)
 	if err != nil {
-		log.Fatalln("Invalid Address to -listen option: ", err)
+		return nil, errors.Wrapf(err, "Invalid listen address: %s", listenAddr)
 	}
 	config := sched.DriverConfig{
 		Scheduler:      newVDCScheduler(listenAddr, zkAddr),
@@ -285,15 +274,7 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 	}
 	driver, err := sched.NewMesosSchedulerDriver(config)
 	if err != nil {
-		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
+		return nil, errors.Wrap(err, "Unable to create SchedulerDriver")
 	}
-
-	apiServer := startAPIServer(apiListenAddr, zkAddr, driver)
-	defer func() {
-		apiServer.GracefulStop()
-	}()
-
-	if stat, err := driver.Run(); err != nil {
-		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
-	}
+	return driver, nil
 }
