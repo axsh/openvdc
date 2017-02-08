@@ -106,12 +106,14 @@ func updateSettings(nwi NetworkInterface, input string) string {
 
 	switch nwi.Type {
 	case "linux":
-		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.LinuxUpScript)
-
-		output += fmt.Sprintf("lxc.network.script.down=%s\n", settings.ScriptPath+settings.LinuxDownScript)
+		output += fmt.Sprintf("lxc.network.script.up=%s\n", "up.sh")
+		output += fmt.Sprintf("lxc.network.script.down=%s\n", "down.sh")
 
 		os.Setenv("BRIDGENAME", settings.BridgeName)
 		os.Setenv("TAPNAME", nwi.TapName)
+
+		generateScriptFromTemplate(settings.LinuxUpScript, "up.sh")
+		generateScriptFromTemplate(settings.LinuxDownScript, "down.sh")
 
 	case "ovs":
 		output += fmt.Sprintf("lxc.network.script.up=%s\n", settings.ScriptPath+settings.OvsUpScript)
@@ -126,6 +128,22 @@ func updateSettings(nwi NetworkInterface, input string) string {
 	}
 
 	return output
+}
+
+func generateScriptFromTemplate(scriptTemplate string, generatedScriptName string) {
+	f, err := ioutil.ReadFile(filepath.Join(settings.ScriptPath, scriptTemplate))
+
+	if err != nil {
+		log.Fatalf("Failed loading script template: ", err)
+	}
+
+	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
+
+	err = ioutil.WriteFile(filepath.Join(containerPath, generatedScriptName), []byte(f), 0644)
+
+	if err != nil {
+		log.Fatalln("Failed saving generated script to container path: ", err)
+	}
 }
 
 func cleanConfigFile(input string) string {
