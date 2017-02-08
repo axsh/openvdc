@@ -14,6 +14,7 @@ mesos_master=true
 IND_STEPS=(
     "box"
     "ssh"
+    "disable-firewalld"
     "mesosphere"
     "mesos"
 )
