@@ -141,17 +141,10 @@ func generateScriptFromTemplate(scriptTemplate string, generatedScriptName strin
 		log.Fatalf("Failed loading script template: ", err)
 	}
 
-	lines := strings.Split(string(f), "\n")
-	for i, line := range lines {
-		if strings.Contains(line, "brctl addif") || strings.Contains(line, "ovs-vsctl add-port") {
-			lines[i] = ""
-		}
-	}
-
-	output := strings.Join(lines, "\n")
+	var output string
 
 	if generatedScriptName == "up.sh" {
-		output = bridgeConnect + output
+		output = bridgeConnect + string(f)
 	}
 
 	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
