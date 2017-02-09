@@ -9,6 +9,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
 	util "github.com/mesos/mesos-go/mesosutil"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
@@ -270,10 +271,10 @@ func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*Insta
 	}, nil
 }
 
-func (s *InstanceAPI) Log(ctx context.Context, in *InstanceLogRequest) (*InstanceLogReply, error) {
+func (s *InstanceAPI) Log(in *InstanceLogRequest, stream Instance_LogServer) error {
 	masterAddr := s.api.GetMesosMasterAddr()
 	if masterAddr == nil {
-		return nil, fmt.Errorf("Mesos master address is not detected")
+		return errors.New("Mesos master address is not detected")
 	}
 	cl, err := mlog.NewMesosClientWithOptions(
 		masterAddr.GetIp(),
@@ -281,21 +282,23 @@ func (s *InstanceAPI) Log(ctx context.Context, in *InstanceLogRequest) (*Instanc
 		&mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
 	if err != nil {
 		log.WithError(err).Error("Couldn't connect to Mesos master: ", masterAddr)
-		return nil, err
+		return errors.Wrap(err, "mlog.NewMesosClientWithOptions")
 	}
 
 	taskID := fmt.Sprintf("VDC_%s", in.Target.GetID())
 	result, err := cl.GetLog(taskID, mlog.STDERR, "")
 	if err != nil {
-		log.WithError(err).Fatal("Error fetching log")
-		return nil, err
+		log.WithError(err).Error("Error fetching log")
+		return errors.Wrap(err, "cl.GetLog")
 	}
 
-	res := &InstanceLogReply{
-		Line: make([]string, len(result)),
+	for _, log := range result {
+		err := stream.Send(&InstanceLogReply{
+			Line: []string{log.Log},
+		})
+		if err != nil {
+			return errors.Wrap(err, "stream.Send")
+		}
 	}
-	for i, log := range result {
-		res.Line[i] = log.Log
-	}
-	return res, nil
+	return nil
 }

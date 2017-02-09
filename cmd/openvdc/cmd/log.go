@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
@@ -38,13 +39,24 @@ var logCmd = &cobra.Command{
 		}
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
-			res, err := c.Log(context.Background(), req)
+			stream, err := c.Log(context.Background(), req)
 			if err != nil {
 				log.WithError(err).Fatal("Disconnected abnormaly")
 				return err
 			}
-			for _, l := range res.Line {
-				fmt.Println(l)
+
+			for {
+				l, err := stream.Recv()
+				if err != nil {
+					if err == io.EOF {
+						break
+					} else {
+						log.WithError(err).Fatal("Error streaming log")
+					}
+				}
+				for _, l := range l.Line {
+					fmt.Println(l)
+				}
 			}
 			return nil
 		})

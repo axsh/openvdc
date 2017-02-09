@@ -15,7 +15,7 @@ service Instance {
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
-  rpc Log (InstanceLogRequest) returns (InstanceLogReply){}
+  rpc Log (InstanceLogRequest) returns (stream InstanceLogReply){}
 }
 
 message RunReply {
