@@ -12,12 +12,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var tail bool
-
-func init() {
-	logCmd.Flags().BoolVarP(&tail, "tail", "t", false, "Tail log output instead of just printing it once.")
-}
-
 var logCmd = &cobra.Command{
 	Use:   "log [Instance ID]",
 	Short: "Print logs of an instance",
