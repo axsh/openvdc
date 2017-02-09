@@ -1,6 +1,6 @@
 # OpenVDC Acceptance Test
 
-![Test environment drawing](illustrations/drawing.svg)
+![Test environment drawing](illustrations/drawing.png)
 
 ## Quick start
 
