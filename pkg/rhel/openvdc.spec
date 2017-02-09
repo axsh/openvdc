@@ -71,9 +71,12 @@ The OpenVDC commandline interface.
 /usr/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc
 
+#TODO: Different packages for executor-lxc and executor-null
 %package executor
 Summary: OpenVDC executor
 Requires: lxc
+Requires: lxc-templates
+Requires: bridge-utils
 
 %description executor
 This is a 'stub'. An appropriate message must be substituted at some point.
