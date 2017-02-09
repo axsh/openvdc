@@ -1,8 +1,8 @@
 # OpenVDC Acceptance Test
 
-## Quick start
-
 ![Test environment drawing](illustrations/drawing.svg)
+
+## Quick start
 
 This is the environment used on the OpenVDC CI to run the integration tests. To run this environment locally first make a file containing the following environment variables.
 
@@ -28,6 +28,63 @@ Let's save this file as `build.env`. Now kick off the `build_and_run_in_docker.s
 ```
 
 That's it. This should build the environment and run the tests
+
+## Running it locally without docker
+
+The docker container is [very useful on the CI](#the-docker-container) but when running locally to write new tests, it just gets in the way. Here's how to run it without docker.
+
+First make some directories to store the VM images.
+
+```
+mkdir -p $HOME/work/openvdc-multibox-data/openvdc-ci/boxes
+mkdir -p $HOME/work/openvdc-multibox-data/openvdc-ci/branches
+```
+
+Now edit `ci/acceptance-test/multibox/config.source` and tell it to use those directories.
+
+```
+#BOXES_DIR="/data/openvdc-ci/boxes"
+#CACHE_DIR="/data/openvdc-ci/branches"
+
+BOXES_DIR="$HOME/work/openvdc-multibox-data/openvdc-ci/boxes"
+CACHE_DIR="$HOME/work/openvdc-multibox-data/openvdc-ci/branches"
+```
+
+Now build the environment.
+
+```
+cd ci/acceptance-test/multibox/
+BRANCH=master RELEASE_SUFFIX=current REBUILD=false ./build.sh
+```
+
+Setting `BRANCH` and `RELEASE_SUFFIX` this way will install the version of OpenVDC that's currently on the master branch.
+
+You can replace them with any other version including your feature branch as long as it has RPMs up. If you don't have RPMs of your feature branch up, you copy your local compiled binaries to the environment after installing from master.
+
+The tests will run the openvdc command so we need to make sure it's in our PATH. We can just compile it from the local source.
+
+```
+# In the openvdc root folder
+go run ./build.go
+mkdir bin
+mv openvdc bin
+PATH=$PWD/bin:$PATH
+```
+
+Set up `.openvdc/config.toml` with the correct configuration so the `openvdc` command will use the test environment.
+
+```
+mkdir ~/.openvdc
+cp ci/acceptance-test/dot_openvdc-config.toml ~/.openvdc/config.toml
+```
+
+Now you can run the tests
+
+```
+cd ci/acceptance-test/tests
+go test -v -tags=acceptance ./...
+```
+
 
 ## The nitty gritty
 
