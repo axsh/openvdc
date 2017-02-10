@@ -23,5 +23,23 @@ sudo yum install -y openvdc-acceptance-test
 
 /multibox/build.sh
 
+wait_for_port_ready() {
+  local ip=$1
+  local port=$2
+  local started=$(date '+%s')
+  while ! (echo "" | nc $ip $port) > /dev/null; do
+    echo "Waiting for $ip:$port starts to listen ..."
+    sleep 1
+    if [[ $(($started + 60)) -le $(date '+%s') ]]; then
+      echo "Timed out for ${ip}:${port} becomes ready"
+      return 1
+    fi
+  done
+  return 0
+}
+
+# gRPC API port
+wait_for_port_ready 10.0.100.12 5000
+
 # Run the actual tests as axsh user. Root should never be required to run the openvdc command
 su axsh -c "/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v"
