@@ -27,15 +27,13 @@ const (
 )
 
 var FrameworkInfo = &mesos.FrameworkInfo{
-	User: proto.String(""),
-	Name: proto.String("OpenVDC"),
+	User:            proto.String(""),
+	Name:            proto.String("OpenVDC"),
+	FailoverTimeout: proto.Float64(604800),
+	Id:              util.NewFrameworkID("OpenVDC"),
 }
 
 const ExecutorPath = "openvdc-executor"
-
-var (
-	taskCount = 10
-)
 
 type VDCScheduler struct {
 	tasksLaunched int
@@ -48,7 +46,6 @@ type VDCScheduler struct {
 
 func newVDCScheduler(listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
 	return &VDCScheduler{
-		totalTasks: taskCount,
 		listenAddr: listenAddr,
 		zkAddr:     zkAddr,
 	}
