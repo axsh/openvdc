@@ -230,23 +230,23 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 }
 
 func (sched *VDCScheduler) OfferRescinded(_ sched.SchedulerDriver, oid *mesos.OfferID) {
-	log.Fatalf("offer rescinded: %v", oid)
+	log.Infoln("offer rescinded: %v", oid)
 }
 
 func (sched *VDCScheduler) FrameworkMessage(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, msg string) {
-	log.Fatalf("framework message from executor %q slave %q: %q", eid, sid, msg)
+	log.Infoln("framework message from executor %q slave %q: %q", eid, sid, msg)
 }
 
 func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID) {
-	log.Fatalf("slave lost: %v", sid)
+	log.Errorln("slave lost: %v", sid)
 }
 
 func (sched *VDCScheduler) ExecutorLost(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, code int) {
-	log.Fatalf("executor %q lost on slave %q code %d", eid, sid, code)
+	log.Errorln("executor %q lost on slave %q code %d", eid, sid, code)
 }
 
 func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
-	log.Fatalf("Scheduler received error: %v", err)
+	log.Errorln("Scheduler received error: %v", err)
 }
 
 func startAPIServer(laddr string, zkAddr backend.ZkEndpoint, driver sched.SchedulerDriver) *api.APIServer {
