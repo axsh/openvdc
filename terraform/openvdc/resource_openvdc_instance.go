@@ -2,6 +2,7 @@ package openvdc
 
 import (
 	"github.com/hashicorp/terraform/helper/schema"
+	"strings"
 )
 
 func OpenVdcInstance() *schema.Resource {
@@ -9,7 +10,7 @@ func OpenVdcInstance() *schema.Resource {
 		Create: openVdcInstanceCreate,
 		Read:   notImplemented,
 		Update: notImplemented,
-		Delete: notImplemented,
+		Delete: openVdcInstanceDelete,
 
 		Schema: map[string]*schema.Schema{
 
@@ -27,9 +28,15 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	d.SetId(stdout.String())
+	d.SetId(strings.TrimSpace(stdout.String()))
 
 	return nil
+}
+
+func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
+	_, _, err := RunCmd("openvdc", "destroy", d.Id())
+
+	return err
 }
 
 //TODO: Never ever use this again
