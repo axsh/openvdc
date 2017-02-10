@@ -8,7 +8,7 @@ import (
 )
 
 func TestLXCInstance(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc")
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"Interfaces":[{"bridge":"linux"}]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
