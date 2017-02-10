@@ -41,5 +41,19 @@ wait_for_port_ready() {
 # gRPC API port
 wait_for_port_ready 10.0.100.12 5000
 
-# Run the actual tests as axsh user. Root should never be required to run the openvdc command
-su axsh -c "/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v"
+dump_logs() {
+  local node=""
+  . /multibox/config.source
+  for node in ${NODES[@]}
+  do
+    # Ignore errors to correct logs from all nodes.
+    set +e
+    echo "journalctl" | /multibox/login.sh $node
+  done
+}
+
+(
+  trap dump_logs EXIT
+  # Run the actual tests as axsh user. Root should never be required to run the openvdc command
+  su axsh -c "/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v"
+)
