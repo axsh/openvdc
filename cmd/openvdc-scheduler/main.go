@@ -71,7 +71,7 @@ func init() {
 	pfs.Float64("cpus-per-executor", viper.GetFloat64("resources.cpus-per-executor"), "Cpus per executor")
 	viper.BindPFlag("resources.cpus-per-executor", pfs.Lookup("cpus-per-executor"))
 
-	pfs.Int("mem-per-executor", viper.GetInt("resources.mem-per-executor"), "Memory per executor")
+	pfs.Float64("mem-per-executor", viper.GetFloat64("resources.mem-per-executor"), "Memory per executor")
 	viper.BindPFlag("resources.mem-per-executor", pfs.Lookup("mem-per-executor"))
 
 }
@@ -124,7 +124,7 @@ func execute(cmd *cobra.Command, args []string) {
 		ID:              viper.GetString("scheduler.name"),
 		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
 		CpusPerExecutor: viper.GetFloat64("resources.cpus-per-executor"),
-		MemPerExecutor:  viper.GetInt("resources.mem-per-executor"),
+		MemPerExecutor:  viper.GetFloat64("resources.mem-per-executor"),
 	}
 
 	scheduler.Run(

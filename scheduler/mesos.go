@@ -19,19 +19,15 @@ import (
 	"golang.org/x/net/context"
 )
 
-const (
-	CPUS_PER_EXECUTOR = 0.01
-	CPUS_PER_TASK     = 1
-	MEM_PER_EXECUTOR  = 64
-	MEM_PER_TASK      = 64
-)
+var CPUS_PER_EXECUTOR float64
+var MEM_PER_EXECUTOR float64
 
 type SchedulerSettings struct {
 	Name            string
 	ID              string
 	FailoverTimeout float64
 	CpusPerExecutor float64
-	MemPerExecutor  int
+	MemPerExecutor  float64
 }
 
 const ExecutorPath = "openvdc-executor"
@@ -175,8 +171,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			Data:     []byte("instance_id=" + i.GetId()),
 			Executor: executor,
 			Resources: []*mesos.Resource{
-				util.NewScalarResource("cpus", CPUS_PER_TASK),
-				util.NewScalarResource("mem", MEM_PER_TASK),
+				util.NewScalarResource("cpus", CPUS_PER_EXECUTOR),
+				util.NewScalarResource("mem", MEM_PER_EXECUTOR),
 			},
 		}
 
@@ -276,6 +272,9 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 		FailoverTimeout: proto.Float64(settings.FailoverTimeout),
 		Id:              util.NewFrameworkID(settings.ID),
 	}
+
+	CPUS_PER_EXECUTOR = settings.CpusPerExecutor
+	MEM_PER_EXECUTOR = settings.MemPerExecutor
 
 	config := sched.DriverConfig{
 		Scheduler:      newVDCScheduler(listenAddr, zkAddr),
