@@ -48,6 +48,11 @@ dump_logs() {
   do
     # Ignore errors to correct logs from all nodes.
     set +e
+    cat <<TITLE
+=======================
+###  ${node}: Result of journalctl
+=======================
+TITLE
     echo "journalctl" | SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" /multibox/login.sh $node
   done
 }
@@ -58,6 +63,11 @@ systemctl_status_all(){
   for node in ${NODES[@]}
   do
     set +e
+    cat <<TITLE
+=======================
+###  ${node}: Result of systemctl status
+=======================
+TITLE
     echo "systemctl status" | SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" /multibox/login.sh $node
   done
 }
