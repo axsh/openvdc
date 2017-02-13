@@ -34,13 +34,6 @@ type SchedulerSettings struct {
 	MemPerExecutor  int
 }
 
-var FrameworkInfo = &mesos.FrameworkInfo{
-	User:            proto.String(""),
-	Name:            proto.String("OpenVDC"),
-	FailoverTimeout: proto.Float64(604800),
-	Id:              util.NewFrameworkID("OpenVDC"),
-}
-
 const ExecutorPath = "openvdc-executor"
 
 type VDCScheduler struct {
@@ -276,6 +269,14 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 	if err != nil {
 		log.Fatalln("Invalid Address to -listen option: ", err)
 	}
+
+	FrameworkInfo := &mesos.FrameworkInfo{
+		User:            proto.String(""),
+		Name:            proto.String(settings.Name),
+		FailoverTimeout: proto.Float64(settings.FailoverTimeout),
+		Id:              util.NewFrameworkID(settings.ID),
+	}
+
 	config := sched.DriverConfig{
 		Scheduler:      newVDCScheduler(listenAddr, zkAddr),
 		Framework:      FrameworkInfo,
