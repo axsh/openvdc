@@ -52,8 +52,19 @@ dump_logs() {
   done
 }
 
+systemctl_status_all(){
+  local node=""
+  . /multibox/config.source
+  for node in ${NODES[@]}
+  do
+    set +e
+    echo "systemctl status" | SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" /multibox/login.sh $node
+  done
+}
+
 (
   trap dump_logs EXIT
+  systemctl_status_all
   # Run the actual tests as axsh user. Root should never be required to run the openvdc command
   su axsh -c "/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v"
 )
