@@ -26,6 +26,14 @@ const (
 	MEM_PER_TASK      = 64
 )
 
+type SchedulerSettings struct {
+	Name            string
+	ID              string
+	FailoverTimeout float64
+	CpusPerExecutor float64
+	MemPerExecutor  int
+}
+
 var FrameworkInfo = &mesos.FrameworkInfo{
 	User:            proto.String(""),
 	Name:            proto.String("OpenVDC"),
@@ -257,7 +265,7 @@ func startAPIServer(laddr string, zkAddr backend.ZkEndpoint, driver sched.Schedu
 	return s
 }
 
-func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) {
+func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint, settings SchedulerSettings) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),

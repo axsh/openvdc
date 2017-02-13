@@ -53,6 +53,22 @@ func init() {
 	viper.BindPFlag("api.endpoint", pfs.Lookup("api"))
 	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper node address")
 	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
+
+	pfs.String("name", viper.GetString("scheduler.name"), "Scheduler Name")
+	viper.BindPFlag("scheduler.name", pfs.Lookup("name"))
+
+	pfs.String("id", viper.GetString("scheduler.id"), "Scheduler ID")
+	viper.BindPFlag("scheduler.id", pfs.Lookup("id"))
+
+	pfs.String("failover-timeout", viper.GetString("scheduler.failover-timeout"), "Failover timeout")
+	viper.BindPFlag("scheduler.failover-timeout", pfs.Lookup("failover-timeout"))
+
+	pfs.String("cpus-per-executor", viper.GetString("resources.cpus-per-executor"), "Cpus per executor")
+	viper.BindPFlag("resources.cpus-per-executor", pfs.Lookup("cpus-per-executor"))
+
+	pfs.String("mem-per-executor", viper.GetString("resources.mem-per-executor"), "Memory per executor")
+	viper.BindPFlag("resources.mem-per-executor", pfs.Lookup("mem-per-executor"))
+
 }
 
 func setupDatabaseSchema() {
@@ -97,11 +113,22 @@ func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
 	var zkAddr backend.ZkEndpoint
 	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+
+	settings := scheduler.SchedulerSettings{
+		Name:            viper.GetString("scheduler.id"),
+		ID:              viper.GetString("scheduler.name"),
+		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
+		CpusPerExecutor: viper.GetFloat64("resources.cpus-per-executor"),
+		MemPerExecutor:  viper.GetInt("resources.mem-per-executor"),
+	}
+
 	scheduler.Run(
 		viper.GetString("mesos.listen"),
 		viper.GetString("api.endpoint"),
 		viper.GetString("mesos.master"),
-		zkAddr)
+		zkAddr,
+		settings,
+	)
 }
 
 func main() {
