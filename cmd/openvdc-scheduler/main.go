@@ -40,6 +40,11 @@ func init() {
 	viper.SetDefault("mesos.listen", "0.0.0.0")
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
 	viper.SetDefault("api.endpoint", "localhost:5000")
+	viper.SetDefault("scheduler.name", "scheduler_1")
+	viper.SetDefault("scheduler.id", "openvdc")
+	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
+	viper.SetDefault("resources.cpus-per-executor", 1)
+	viper.SetDefault("resources.mem-per-executor", 128)
 
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
