@@ -7,3 +7,13 @@
 
 [api]
 # endpoint = "localhost:5000"
+
+[scheduler]
+# id = "scheduler_1"
+# name = "openvdc"
+# failover-timeout = 604800 #1 week
+
+
+[resources]
+# cpus-per-executor = 1
+# mem-per-executor = 128
