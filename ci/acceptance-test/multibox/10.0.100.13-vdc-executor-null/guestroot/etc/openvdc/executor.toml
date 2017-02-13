@@ -1,5 +1,5 @@
 [hypervisor]
-driver = "lxc"
+driver = "null"
 
 [zookeeper]
 endpoint = "zk://10.0.100.10/openvdc"

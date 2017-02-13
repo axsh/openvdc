@@ -14,11 +14,6 @@ IND_STEPS=(
     "box"
     "ssh"
     "disable-firewalld"
-    "epel"
-    "lxc"
-    "mesosphere"
-    "mesos"
-    "zookeeper"
 )
 
 build "${IND_STEPS[@]}"

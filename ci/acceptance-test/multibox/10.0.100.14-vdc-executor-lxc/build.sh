@@ -19,7 +19,6 @@ IND_STEPS=(
     "lxc"
     "mesosphere"
     "mesos"
-    "zookeeper"
 )
 
 build "${IND_STEPS[@]}"
