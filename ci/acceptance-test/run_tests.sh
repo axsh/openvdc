@@ -48,7 +48,7 @@ dump_logs() {
   do
     # Ignore errors to correct logs from all nodes.
     set +e
-    echo "journalctl" | /multibox/login.sh $node
+    echo "journalctl" | SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" /multibox/login.sh $node
   done
 }
 
