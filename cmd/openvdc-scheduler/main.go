@@ -60,13 +60,13 @@ func init() {
 	pfs.String("id", viper.GetString("scheduler.id"), "Scheduler ID")
 	viper.BindPFlag("scheduler.id", pfs.Lookup("id"))
 
-	pfs.String("failover-timeout", viper.GetString("scheduler.failover-timeout"), "Failover timeout")
+	pfs.Float64("failover-timeout", viper.GetFloat64("scheduler.failover-timeout"), "Failover timeout")
 	viper.BindPFlag("scheduler.failover-timeout", pfs.Lookup("failover-timeout"))
 
-	pfs.String("cpus-per-executor", viper.GetString("resources.cpus-per-executor"), "Cpus per executor")
+	pfs.Float64("cpus-per-executor", viper.GetFloat64("resources.cpus-per-executor"), "Cpus per executor")
 	viper.BindPFlag("resources.cpus-per-executor", pfs.Lookup("cpus-per-executor"))
 
-	pfs.String("mem-per-executor", viper.GetString("resources.mem-per-executor"), "Memory per executor")
+	pfs.Int("mem-per-executor", viper.GetInt("resources.mem-per-executor"), "Memory per executor")
 	viper.BindPFlag("resources.mem-per-executor", pfs.Lookup("mem-per-executor"))
 
 }
