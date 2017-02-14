@@ -40,8 +40,8 @@ func TestLXCInstance(t *testing.T) {
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 
-	cmd := exec.Command("openvdc", "show", instance_id)
 	waitUntil(t, 5 * time.Minute, func()error {
+		cmd := exec.Command("openvdc", "show", instance_id)
 		buf, err := cmd.CombinedOutput()
 		if err !=nil {
 			return err
