@@ -138,13 +138,18 @@ func generateScriptFromTemplate(scriptTemplate string, generatedScriptName strin
 	f, err := ioutil.ReadFile(filepath.Join(settings.ScriptPath, scriptTemplate))
 
 	if err != nil {
-		log.Fatalf("Failed loading script template: ", err)
+		log.Warnln("Failed loading script template: ", err)
 	}
 
 	var output string
 
-	if generatedScriptName == "up.sh" {
-		output = bridgeConnect + string(f)
+	if f != nil {
+		if generatedScriptName == "up.sh" {
+			output = bridgeConnect + string(f)
+		}
+	} else {
+
+		output = bridgeConnect
 	}
 
 	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
@@ -197,14 +202,6 @@ func resetConfigFile() {
 	}
 }
 
-func checkScript(script string) {
-	_, err := os.Stat(settings.ScriptPath + script)
-
-	if err != nil {
-		log.Fatalf("Script not found.", err)
-	}
-}
-
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
 
 	lxcTmpl, ok := in.(*model.LxcTemplate)
@@ -250,11 +247,6 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 			},
 		)
 	}
-
-	checkScript(settings.LinuxUpScript)
-	checkScript(settings.LinuxDownScript)
-	checkScript(settings.OvsUpScript)
-	checkScript(settings.OvsDownScript)
 
 	modifyConf()
 
