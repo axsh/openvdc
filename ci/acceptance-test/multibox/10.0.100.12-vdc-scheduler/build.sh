@@ -13,7 +13,6 @@ scheduler=true
 IND_STEPS=(
     "box"
     "ssh"
-    "hosts"
     "disable-firewalld"
 )
 

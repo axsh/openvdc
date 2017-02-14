@@ -13,7 +13,6 @@ zk_host=true
 IND_STEPS=(
     "box"
     "ssh"
-    "hosts"
     "disable-firewalld"
     "mesosphere"
     "zookeeper"

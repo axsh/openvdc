@@ -13,7 +13,6 @@ mesos_agent=true
 IND_STEPS=(
     "box"
     "ssh"
-    "hosts"
     "disable-firewalld"
     "epel"
     "bridge-utils"
