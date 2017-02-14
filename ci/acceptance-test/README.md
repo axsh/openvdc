@@ -12,7 +12,7 @@ This is the environment used on the OpenVDC CI to run the integration tests. To 
 BRANCH="master"
 RELEASE_SUFFIX="current"
 
-# Set to "1" if you don't want to remove the Docker container after running
+# Set to "1" if you want to remove the Docker container after running
 REBUILD="0"
 
 # This variable holds the directory on the *host* that will be bind mounted
