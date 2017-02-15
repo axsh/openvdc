@@ -1,7 +1,5 @@
 // +build acceptance
 
-// +build acceptance
-
 package tests
 
 import (
