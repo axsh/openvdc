@@ -44,7 +44,7 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		fmt.Fprintf(b, " %s=%s", k, entry.Data[k])
+		fmt.Fprintf(b, " %s=%v", k, entry.Data[k])
 	}
 	if !f.DisableStacktrace {
 		if err, exists := entry.Data[logrus.ErrorKey]; exists && err != nil {
@@ -53,7 +53,7 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			}
 
 			if err, ok := err.(stackTracer); ok {
-				fmt.Fprintf(b, "\n%v", err)
+				fmt.Fprintf(b, "\n%+v", err.StackTrace())
 			}
 		}
 	}
