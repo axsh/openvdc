@@ -63,7 +63,7 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			}
 
 			if err, ok := err.(stackTracer); ok {
-				fmt.Fprintf(b, "\n%+v", err.StackTrace())
+				fmt.Fprintf(b, "\nErrorStackTrace:%+v", err.StackTrace())
 			}
 		}
 	} else {
