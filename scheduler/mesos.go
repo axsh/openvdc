@@ -20,15 +20,11 @@ import (
 )
 
 var ExecutorPath string
-var CPUS_PER_EXECUTOR float64
-var MEM_PER_EXECUTOR float64
 
 type SchedulerSettings struct {
 	Name            string
 	ID              string
 	FailoverTimeout float64
-	CpusPerExecutor float64
-	MemPerExecutor  float64
 	ExecutorPath    string
 }
 
@@ -127,17 +123,6 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			switch t := r.GetTemplate().GetItem(); t.(type) {
 			case *model.Template_Lxc:
 				if hypervisorName == "lxc" {
-
-					Cpu := float64(r.GetTemplate().GetLxc().GetVcpu())
-					Mem := float64(r.GetTemplate().GetLxc().GetMemoryGb() * 1024)
-
-					if Cpu > 0 {
-						CPUS_PER_EXECUTOR = Cpu
-					}
-					if Mem > 0 {
-						MEM_PER_EXECUTOR = Mem
-					}
-
 					return offer
 				}
 			case *model.Template_Null:
@@ -180,6 +165,16 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			},
 		}
 
+		r, err := i.Resource(ctx)
+
+		if err != nil {
+			log.WithError(err).WithFields(log.Fields{
+				"instance_id": i.GetId(),
+				"resource_id": i.GetResourceId(),
+			}).Error("Failed to retrieve resource object")
+			continue
+		}
+
 		taskId := util.NewTaskID(i.GetId())
 		task := &mesos.TaskInfo{
 			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
@@ -188,8 +183,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			Data:     []byte("instance_id=" + i.GetId()),
 			Executor: executor,
 			Resources: []*mesos.Resource{
-				util.NewScalarResource("cpus", CPUS_PER_EXECUTOR),
-				util.NewScalarResource("mem", MEM_PER_EXECUTOR),
+				util.NewScalarResource("cpus", float64(r.GetTemplate().GetLxc().GetVcpu())),
+				util.NewScalarResource("mem", float64(r.GetTemplate().GetLxc().GetMemoryGb()*1024)),
 			},
 		}
 
@@ -291,9 +286,6 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 		FailoverTimeout: proto.Float64(settings.FailoverTimeout),
 		Id:              util.NewFrameworkID(settings.ID),
 	}
-
-	CPUS_PER_EXECUTOR = settings.CpusPerExecutor
-	MEM_PER_EXECUTOR = settings.MemPerExecutor
 
 	config := sched.DriverConfig{
 		Scheduler:      newVDCScheduler(listenAddr, zkAddr),

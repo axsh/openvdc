@@ -45,8 +45,6 @@ func init() {
 	viper.SetDefault("scheduler.id", "openvdc")
 	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
 	viper.SetDefault("scheduler.executor-path", "openvdc-executor")
-	viper.SetDefault("resources.cpus-per-executor", 1)
-	viper.SetDefault("resources.mem-per-executor", 128)
 
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
@@ -72,13 +70,6 @@ func init() {
 
 	pfs.Float64("executor-path", viper.GetFloat64("scheduler.executor-path"), "Executor path")
 	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
-
-	pfs.Float64("cpus-per-executor", viper.GetFloat64("resources.cpus-per-executor"), "Cpus per executor")
-	viper.BindPFlag("resources.cpus-per-executor", pfs.Lookup("cpus-per-executor"))
-
-	pfs.Float64("mem-per-executor", viper.GetFloat64("resources.mem-per-executor"), "Memory per executor")
-	viper.BindPFlag("resources.mem-per-executor", pfs.Lookup("mem-per-executor"))
-
 }
 
 func setupDatabaseSchema() {
@@ -129,8 +120,6 @@ func execute(cmd *cobra.Command, args []string) {
 		ID:              viper.GetString("scheduler.name"),
 		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
-		CpusPerExecutor: viper.GetFloat64("resources.cpus-per-executor"),
-		MemPerExecutor:  viper.GetFloat64("resources.mem-per-executor"),
 	}
 
 	scheduler.Run(
