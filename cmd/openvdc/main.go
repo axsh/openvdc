@@ -12,9 +12,9 @@ import (
 
 const defaultTomlConfig = `
 [api]
-# endpoint = 127.0.0.1:5000
+# endpoint = "127.0.0.1:5000"
 [mesos]
-# address = 127.0.0.1:5050
+# master = "127.0.0.1:5050"
 `
 
 func setupDefaultUserConfig(dir string) error {

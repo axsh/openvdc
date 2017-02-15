@@ -33,8 +33,8 @@ func init() {
 	schemaKeys = append(schemaKeys, instancesBaseKey)
 
 	instanceStateDefs[InstanceState_REGISTERED] = &stateDef{
-		Nexts: []InstanceState_State{InstanceState_QUEUED},
-		Goals: []InstanceState_State{InstanceState_QUEUED},
+		Nexts: []InstanceState_State{InstanceState_QUEUED, InstanceState_TERMINATED},
+		Goals: []InstanceState_State{InstanceState_QUEUED, InstanceState_TERMINATED},
 	}
 	instanceStateDefs[InstanceState_QUEUED] = &stateDef{
 		Nexts: []InstanceState_State{InstanceState_STARTING},

@@ -89,6 +89,16 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   done
 fi
 
+
+# We remove the Sources repository to work around some weird behaviour of yum-builddep
+# First of all these repositories are completely broken. They are referring to
+# http://vault.centos.org/centos/7 which does not exist. Usually this is not a
+# problem because they are disabled but yum-builddep always enables all disables repos.
+# This is fixed in an upstream commit but Centos 7 doesn't include that change yet.
+# https://github.com/rpm-software-management/yum-utils/commit/f957e6684cde8132321ff0a6d8aa4bc9ba7490b8
+# Until that fix is included in Centos, we work around it by removing the broken sources repo.
+docker exec -t "${CID}" /bin/bash -c "rm -f /etc/yum.repos.d/CentOS-Sources.repo"
+
 # Install build dependencies
 docker exec -t "${CID}" /bin/bash -c "yum-builddep -y ${OPENVDC_ROOT_DOCKER}/pkg/rhel/openvdc.spec"
 
