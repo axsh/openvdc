@@ -16,7 +16,7 @@ func TestLogFomatter(t *testing.T) {
 
 	log.Info("test")
 	ok, err := regexp.Match(
-		"^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+\\d{2}:\\d{2} \\[INFO\\] github.com/axsh/openvdc/cmd/formatter_test.go:\\d+ test",
+		"^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} \\[INFO\\] github.com/axsh/openvdc/cmd/formatter_test.go:\\d+ test",
 		buf.Bytes())
 	if err != nil {
 		t.Error(err)

@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const DefaultTimestampFormat = "2006-01-02 15:04:05"
+
 type LogFormatter struct {
 	DisableTimestamp  bool
 	DisableStacktrace bool
@@ -26,7 +28,7 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 
 	if !f.DisableTimestamp {
-		b.WriteString(entry.Time.Format(logrus.DefaultTimestampFormat) + " ")
+		b.WriteString(entry.Time.Format(DefaultTimestampFormat) + " ")
 	}
 
 	fmt.Fprintf(b, "[%s]", strings.ToUpper(entry.Level.String()))
