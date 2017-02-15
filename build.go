@@ -159,8 +159,14 @@ Environment Variables:
 	})
 	cmd("govendor", "sync")
 
+	// Build main binaries
 	cmd("go", "build", "-i", "./vendor/...")
 	cmd("go", "build", "-ldflags", LDFLAGS, "-v", "./cmd/openvdc")
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "./cmd/openvdc-executor")
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'", "-v", "./cmd/openvdc-scheduler")
+
+	// Build Acceptance Test binary
+	os.Chdir("./ci/acceptance-test/tests")
+	cmd("govendor", "sync")
+	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test")
 }

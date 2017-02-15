@@ -21,7 +21,7 @@ else
     }
 
     [[ ${PROTOCOL} == "ssh" ]] &&
-        ssh -i ${NODE_DIR}/sshkey root@${IP_ADDR}
+        ssh ${SSH_OPTS:+$SSH_OPTS} -i ${NODE_DIR}/sshkey root@${IP_ADDR}
     [[ ${PROTOCOL} == "telnet" ]] && {
         telnet_host="${serial%%,*}"
         telnet_host=${telnet_host#*:}
