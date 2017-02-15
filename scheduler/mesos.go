@@ -28,9 +28,12 @@ type SchedulerSettings struct {
 	FailoverTimeout float64
 	CpusPerExecutor float64
 	MemPerExecutor  float64
+	ExecutorPath    string
 }
 
-const ExecutorPath = "openvdc-executor"
+var ExecutorPath string
+
+//const ExecutorPath = "openvdc-executor"
 
 type VDCScheduler struct {
 	tasksLaunched int
@@ -271,6 +274,8 @@ func Run(listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr
 	if err != nil {
 		log.Fatalln("Invalid Address to -listen option: ", err)
 	}
+
+	ExecutorPath = settings.ExecutorPath
 
 	FrameworkInfo := &mesos.FrameworkInfo{
 		User:            proto.String(""),

@@ -40,9 +40,11 @@ func init() {
 	viper.SetDefault("mesos.listen", "0.0.0.0")
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
 	viper.SetDefault("api.endpoint", "localhost:5000")
+
 	viper.SetDefault("scheduler.name", "scheduler_1")
 	viper.SetDefault("scheduler.id", "openvdc")
 	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
+	viper.SetDefault("scheduler.executor-path", "openvdc-executor")
 	viper.SetDefault("resources.cpus-per-executor", 1)
 	viper.SetDefault("resources.mem-per-executor", 128)
 
@@ -67,6 +69,9 @@ func init() {
 
 	pfs.Float64("failover-timeout", viper.GetFloat64("scheduler.failover-timeout"), "Failover timeout")
 	viper.BindPFlag("scheduler.failover-timeout", pfs.Lookup("failover-timeout"))
+
+	pfs.Float64("executor-path", viper.GetFloat64("scheduler.executor-path"), "Executor path")
+	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
 
 	pfs.Float64("cpus-per-executor", viper.GetFloat64("resources.cpus-per-executor"), "Cpus per executor")
 	viper.BindPFlag("resources.cpus-per-executor", pfs.Lookup("cpus-per-executor"))
@@ -123,6 +128,7 @@ func execute(cmd *cobra.Command, args []string) {
 		Name:            viper.GetString("scheduler.id"),
 		ID:              viper.GetString("scheduler.name"),
 		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
+		ExecutorPath:    viper.GetString("scheduler.executor-path"),
 		CpusPerExecutor: viper.GetFloat64("resources.cpus-per-executor"),
 		MemPerExecutor:  viper.GetFloat64("resources.mem-per-executor"),
 	}

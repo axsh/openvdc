@@ -12,7 +12,7 @@
 # id = "scheduler_1"
 # name = "openvdc"
 # failover-timeout = 604800 #1 week
-
+# executor-path = "openvdc-executor"
 
 [resources]
 # cpus-per-executor = 1
