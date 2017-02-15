@@ -129,7 +129,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 				if hypervisorName == "lxc" {
 
 					Cpu := float64(r.GetTemplate().GetLxc().GetVcpu())
-					Mem := float64(r.GetTemplate().GetLxc().GetMemoryGb())
+					Mem := float64(r.GetTemplate().GetLxc().GetMemoryGb() * 1024)
 
 					if Cpu > 0 {
 						CPUS_PER_EXECUTOR = Cpu
