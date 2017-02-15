@@ -69,6 +69,13 @@ if [[ "$REBUILD" == "true" ]]; then
             ) ; prev_cmd_failed
         done
     ) ; prev_cmd_failed
+
+    (
+        $starting_step "Create empty cache folder"
+        [ -d "${CACHE_DIR}/${BRANCH}" ]
+        $skip_step_if_already_done ; set -ex
+        mkdir -p "${CACHE_DIR}/${BRANCH}"
+    ) ; prev_cmd_failed
 else
     (   $starting_group "Set up cache for ${BRANCH} branch"
         [ -d "${CACHE_DIR}/${BRANCH}" ]
