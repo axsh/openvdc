@@ -75,13 +75,12 @@ else
         [ -d "${CACHE_DIR}/${BRANCH}" ]
         $skip_step_if_already_done ; set -ex
         mkdir -p "${CACHE_DIR}/${BRANCH}"
-    ) ; prev_cmd_failed
-
-    (
-        $starting_step "Copy cache from ${BASE_BRANCH} branch"
-        [ ! -d "${CACHE_DIR}/${BASE_BRANCH}" ]
-        $skip_step_if_already_done
-        rsync -av "${CACHE_DIR}/${BASE_BRANCH}/" "${CACHE_DIR}/${BRANCH}/"
+        (
+          $starting_step "Copy cache from ${BASE_BRANCH} branch"
+          [ ! -d "${CACHE_DIR}/${BASE_BRANCH}" ]
+          $skip_step_if_already_done
+          rsync -av "${CACHE_DIR}/${BASE_BRANCH}/" "${CACHE_DIR}/${BRANCH}/"
+        ) ; prev_cmd_failed
     ) ; prev_cmd_failed
 fi
 
