@@ -38,16 +38,26 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	}
 	fmt.Fprintf(b, " %s", entry.Message)
 
-	keys := make([]string, 0, len(entry.Data))
-	for k := range entry.Data {
-		keys = append(keys, k)
+	printFields := func() {
+		keys := make([]string, 0, len(entry.Data))
+		for k := range entry.Data {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			if k == logrus.ErrorKey {
+				continue
+			}
+			fmt.Fprintf(b, " %s=%v", k, entry.Data[k])
+		}
 	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		fmt.Fprintf(b, " %s=%v", k, entry.Data[k])
-	}
-	if !f.DisableStacktrace {
-		if err, exists := entry.Data[logrus.ErrorKey]; exists && err != nil {
+
+	if err, exists := entry.Data[logrus.ErrorKey]; exists && err != nil {
+		if err, ok := err.(error); ok {
+			fmt.Fprintf(b, " Error: %s", err)
+		}
+		printFields()
+		if !f.DisableStacktrace {
 			type stackTracer interface {
 				StackTrace() errors.StackTrace
 			}
@@ -56,6 +66,8 @@ func (f *LogFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 				fmt.Fprintf(b, "\n%+v", err.StackTrace())
 			}
 		}
+	} else {
+		printFields()
 	}
 	b.WriteString("\n")
 	return b.Bytes(), nil

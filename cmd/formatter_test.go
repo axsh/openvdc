@@ -46,7 +46,7 @@ func TestLogFomatter_StackTrace(t *testing.T) {
 
 	lines := strings.SplitN(buf.String(), "\n", 2)
 	ok, err := regexp.MatchString(
-		"^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} \\[ERROR\\] github.com/axsh/openvdc/cmd/formatter_test.go:\\d+ test error=err1",
+		"^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} \\[ERROR\\] github.com/axsh/openvdc/cmd/formatter_test.go:\\d+ test Error: err1",
 		lines[0])
 	if err != nil {
 		t.Error(err)
