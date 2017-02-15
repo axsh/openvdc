@@ -3,3 +3,7 @@ driver = "lxc"
 
 [zookeeper]
 endpoint = "zk://10.0.100.10/openvdc"
+
+[bridges]
+	[bridges.linux]
+	name = "virbr0"
