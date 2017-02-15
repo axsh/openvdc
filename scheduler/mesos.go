@@ -54,6 +54,12 @@ func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId 
 
 func (sched *VDCScheduler) Reregistered(driver sched.SchedulerDriver, masterInfo *mesos.MasterInfo) {
 	log.Println("Framework Re-Registered with Master ", masterInfo)
+
+	_, err := driver.ReconcileTasks([]*mesos.TaskStatus{})
+
+	if err != nil {
+		log.Errorln("Failed to reconcile tasks: %v", err)
+	}
 }
 
 func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
