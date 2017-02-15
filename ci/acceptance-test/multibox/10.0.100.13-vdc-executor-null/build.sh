@@ -13,12 +13,11 @@ mesos_agent=true
 IND_STEPS=(
     "box"
     "ssh"
+    "hosts"
     "disable-firewalld"
     "epel"
-    "lxc"
     "mesosphere"
     "mesos"
-    "zookeeper"
 )
 
 build "${IND_STEPS[@]}"

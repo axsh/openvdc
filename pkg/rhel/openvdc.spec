@@ -41,8 +41,6 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
   VERSION=%{version} go run ./build.go
 )
-cd "${GOPATH}/src/github.com/axsh/openvdc/ci/acceptance-test/tests"
-go test -tags=acceptance -c -o openvdc-acceptance-test
 
 %install
 cd "${GOPATH}/src/github.com/axsh/openvdc"
