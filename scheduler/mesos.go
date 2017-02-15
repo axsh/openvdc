@@ -19,6 +19,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+var ExecutorPath string
 var CPUS_PER_EXECUTOR float64
 var MEM_PER_EXECUTOR float64
 
@@ -30,10 +31,6 @@ type SchedulerSettings struct {
 	MemPerExecutor  float64
 	ExecutorPath    string
 }
-
-var ExecutorPath string
-
-//const ExecutorPath = "openvdc-executor"
 
 type VDCScheduler struct {
 	tasksLaunched int
@@ -130,6 +127,17 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			switch t := r.GetTemplate().GetItem(); t.(type) {
 			case *model.Template_Lxc:
 				if hypervisorName == "lxc" {
+
+					Cpu := float64(r.GetTemplate().GetLxc().GetVcpu())
+					Mem := float64(r.GetTemplate().GetLxc().GetMemoryGb())
+
+					if Cpu > 0 {
+						CPUS_PER_EXECUTOR = Cpu
+					}
+					if Mem > 0 {
+						MEM_PER_EXECUTOR = Mem
+					}
+
 					return offer
 				}
 			case *model.Template_Null:
