@@ -50,6 +50,12 @@ var interfaces []NetworkInterface
 
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
+	viper.SetDefault("hypervisor.script-path", "/etc/openvdc/scripts")
+	// Default script file names in pkg/conf/scripts/*
+	viper.SetDefault("bridges.linux.up-script", "linux-bridge-up.sh")
+	viper.SetDefault("bridges.linux.down-script", "linux-bridge-down.sh")
+	viper.SetDefault("bridges.ovs.up-script", "ovs-up.sh")
+	viper.SetDefault("bridges.ovs.down-script", "ovs-down.sh")
 }
 
 type LXCHypervisorProvider struct {
