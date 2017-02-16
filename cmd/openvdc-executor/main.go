@@ -523,6 +523,7 @@ func execute(cmd *cobra.Command, args []string) {
 }
 
 func main() {
+	logrus.SetFormatter(&cmd.LogFormatter{})
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

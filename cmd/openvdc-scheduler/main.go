@@ -118,6 +118,7 @@ func execute(cmd *cobra.Command, args []string) {
 
 func main() {
 	flag.CommandLine.Parse([]string{})
+	log.SetFormatter(&cmd.LogFormatter{})
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
