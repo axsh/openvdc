@@ -12,7 +12,7 @@ import (
 
 func init() {
 	// forward log messages to local syslog.
-	hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_SYSLOG, "vdc-executor")
+	hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_ERR, "vdc-executor")
 	if err != nil {
 		logrus.Fatal("Failed to initialize syslog hook: ", err)
 	}
