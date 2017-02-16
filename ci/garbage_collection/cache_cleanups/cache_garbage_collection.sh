@@ -8,7 +8,7 @@
 time_limit=14     ## Days. Set this to give the "deadline". All
                   ## branches older than this will be removed.
 
-cache_location_dir=/data2/openvdc-ci/branches
+cache_location_dir=/data/openvdc-ci/branches
 
 
 ###################################################################################

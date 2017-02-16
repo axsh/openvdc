@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -e
-#set -x
 
 . ../garbage_collection_misc.sh
 . ../prune_branches.sh
@@ -25,6 +24,7 @@ cd ${rpm_base_dir}/master
 nrepos=$(ls -1 . | wc -l)
 if [[ ${nrepos} -lt 2 ]]; then
    echo "Something is wrong. The master directory contains one or less repos. Quitting."
+   exit 1
 fi
  
 current=$(readlink current)
