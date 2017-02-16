@@ -7,6 +7,7 @@ Package model is a generated protocol buffer package.
 
 It is generated from these files:
 	model.proto
+	cluster.proto
 
 It has these top-level messages:
 	Instance
@@ -16,6 +17,10 @@ It has these top-level messages:
 	NoneTemplate
 	LxcTemplate
 	NullTemplate
+	Console
+	ExecutorNode
+	SchedulerNode
+	NodeState
 */
 package model
 

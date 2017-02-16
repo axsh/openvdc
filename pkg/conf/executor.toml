@@ -15,3 +15,13 @@ script-path = "/etc/openvdc/scripts/"
 	name = "br0"
 	up-script = "ovs-up.sh"
 	down-script = "ovs-down.sh"
+
+[executor-api]
+# listen = "0.0.0.0:19372"
+# advertise-ip = "192.168.56.150"
+
+[console]
+
+[console.ssh]
+# listen = ""
+# advertise-ip = "192.168.56.150"

@@ -4,12 +4,18 @@ package lxc
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
+	"unsafe"
 
+	log "github.com/Sirupsen/logrus"
+  "github.com/kr/pty"
+	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/spf13/viper"
@@ -337,30 +343,170 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 	return nil
 }
 
-func (d *LXCHypervisorDriver) InstanceConsole() error {
+func (d *LXCHypervisorDriver) InstanceConsole() hypervisor.Console {
+	return &lxcConsole{
+		lxc: d,
+	}
+}
 
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
+func (d *LXCHypervisorDriver) newContainer() (*lxc.Container, error) {
+	return lxc.NewContainer(d.name, d.lxcpath)
+}
+
+type lxcConsole struct {
+	lxc *LXCHypervisorDriver
+	attached *os.Process
+	wg *sync.WaitGroup
+	pty *os.File
+	tty string
+}
+
+func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
+	c, err := con.lxc.newContainer()
 	if err != nil {
-		d.log.Errorln(err)
+		con.lxc.log.Errorln(err)
 		return err
 	}
 
 	if c.State() != lxc.RUNNING {
-		d.log.Errorf("lxc-container can not perform console")
+		con.lxc.log.Errorf("lxc-container can not perform console")
 		return fmt.Errorf("lxc-container can not perform console")
 	}
 
-	var options = lxc.ConsoleOptions{
-		Tty:             -1,
-		StdinFd:         os.Stdin.Fd(), //These should probably be changed.
-		StdoutFd:        os.Stdout.Fd(),
-		StderrFd:        os.Stderr.Fd(),
-		EscapeCharacter: 'a',
+  return con.attachShell(c, stdin, stdout, stderr)
+  //return con.console(c, stdin, stdout, stderr)
+}
+
+func (con *lxcConsole) Wait() error {
+	if con.attached == nil {
+		return fmt.Errorf("No process is found")
+	}
+	defer func() {
+		err := con.pty.Close()
+		log.WithFields(log.Fields{
+			"tty": con.tty,
+			"pid": con.attached.Pid,
+		}).WithError(err).Info("TTY session closed")
+		con.pty = nil
+		con.attached = nil
+	}()
+
+	_, err := con.attached.Wait()
+	if err != nil {
+		con.attached.Release()
+	}
+	return err
+}
+
+func (con *lxcConsole) ForceClose() error {
+	if con.attached == nil {
+		return fmt.Errorf("No process is found")
+	}
+	// This sends just signal. pty and pid are
+	// closed by Wait()
+	return con.attached.Kill()
+}
+
+func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
+	var wg sync.WaitGroup
+	fpty, ftty, err := pty.Open()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to open tty")
+	}
+	// Close primary socket
+	defer ftty.Close()
+
+	wg.Add(1)
+	go func(){
+		defer wg.Done()
+		io.Copy(fpty, stdin)
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		io.Copy(stdout, fpty)
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		io.Copy(stderr, fpty)
+	}()
+
+	modes, err := TcGetAttr(ftty.Fd())
+	if err != nil {
+		return errors.Wrap(err, "Failed TcGetAttr")
+	}
+	modes.Lflag &^= syscall.ECHO
+	modes.Iflag |= syscall.IGNCR
+	err = TcSetAttr(ftty.Fd(), modes)
+	if err != nil {
+		return errors.Wrap(err, "Failed TcSetAttr")
 	}
 
+	options := lxc.DefaultAttachOptions
+	options.StdinFd	= ftty.Fd()
+	options.StdoutFd = ftty.Fd()
+	options.StderrFd = ftty.Fd()
+	options.ClearEnv = true
+
+	pid, err := c.RunCommandNoWait([]string{"/bin/bash"}, options)
+	if err != nil {
+		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
+		defer fpty.Close()
+		return err
+	}
+
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		con.lxc.log.WithError(err).Errorf("Failed to find attached shell process: %d", pid)
+		defer fpty.Close()
+		return err
+	}
+	con.attached = proc
+	con.wg = &wg
+	con.pty = fpty
+	con.tty = ftty.Name()
+	return nil
+}
+
+func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
+	fpty, ftty, err := pty.Open()
+	if err != nil {
+		return errors.Wrapf(err, "Failed to open tty")
+	}
+	defer ftty.Close()
+	defer fpty.Close()
+
+	go io.Copy(fpty, stdin)
+	go io.Copy(stdout, fpty)
+	go io.Copy(stderr, os.Stderr)
+
+	options := lxc.DefaultConsoleOptions
+	options.StdinFd					= ftty.Fd()
+	options.StdoutFd				= ftty.Fd()
+	options.StderrFd				= ftty.Fd()
+	options.EscapeCharacter = '~'
+
 	if err := c.Console(options); err != nil {
-		d.log.Errorln(err)
+		con.lxc.log.Errorln(err)
 		return err
 	}
 	return nil
+}
+
+// https://github.com/creack/termios/blob/master/raw/raw.go
+func TcSetAttr(fd uintptr, termios *syscall.Termios) error {
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TCSETS), uintptr(unsafe.Pointer(termios))); err != 0 {
+		return err
+	}
+	return nil
+}
+
+// https://github.com/creack/termios/blob/master/raw/raw.go
+func TcGetAttr(fd uintptr) (*syscall.Termios, error) {
+	var termios = &syscall.Termios{}
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, syscall.TCGETS, uintptr(unsafe.Pointer(termios))); err != 0 {
+		return nil, err
+	}
+	return termios, nil
 }

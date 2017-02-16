@@ -160,6 +160,12 @@
 			"revisionTime": "2013-11-06T22:25:44Z"
 		},
 		{
+			"checksumSHA1": "eIjJhEqZZmQwt++0jlQhbIhAcH4=",
+			"path": "github.com/kr/pty",
+			"revision": "ce7fa45920dc37a92de8377972e52bc55ffa8d57",
+			"revisionTime": "2016-07-16T20:46:20Z"
+		},
+		{
 			"checksumSHA1": "506eXGmFfB7mgzbMcsdT/UAXJgI=",
 			"path": "github.com/magiconair/properties",
 			"revision": "9c47895dc1ce54302908ab8a43385d1f5df2c11c",
@@ -317,6 +323,12 @@
 			"revisionTime": "2016-10-28T23:23:40Z"
 		},
 		{
+			"checksumSHA1": "v5CCEZdC63TIkIL8TUeURBcZzNc=",
+			"path": "github.com/shiena/ansicolor",
+			"revision": "a422bbe96644373c5753384a59d678f7d261ff10",
+			"revisionTime": "2015-11-19T15:19:21Z"
+		},
+		{
 			"checksumSHA1": "iGmLeUVcmiFgd4/iK2Tmx7WIoa4=",
 			"path": "github.com/spf13/afero",
 			"revision": "90dd71edc4d0a8b3511dc12ea15d617d03be09e0",
@@ -411,6 +423,12 @@
 			"path": "golang.org/x/crypto/ssh",
 			"revision": "9477e0b78b9ac3d0b03822fd95422e2fe07627cd",
 			"revisionTime": "2016-10-31T15:37:30Z"
+		},
+		{
+			"checksumSHA1": "HpfYVaB8VI/Q4dS6I78I1iWaIT4=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "2b786ab9e9649dc660afa3bd580fd05a05e20d95",
+			"revisionTime": "2016-12-19T07:27:34Z"
 		},
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
