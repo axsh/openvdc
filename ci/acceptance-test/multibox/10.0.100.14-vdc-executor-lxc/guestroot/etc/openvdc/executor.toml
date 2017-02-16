@@ -1,5 +1,6 @@
 [hypervisor]
 driver = "lxc"
+script-path = "/etc/openvdc/scripts/"
 
 [zookeeper]
 endpoint = "zk://10.0.100.10/openvdc"
