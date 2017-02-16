@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package executor;
+
+option go_package = "github.com/axsh/openvdc/api/executor";
+
+import "v1.proto";

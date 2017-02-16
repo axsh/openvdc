@@ -6,14 +6,16 @@ import (
 	"time"
 
 	"github.com/axsh/openvdc/internal/unittest"
+	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
+	"golang.org/x/net/context"
 )
 
 func TestNewAPIServer(t *testing.T) {
-	// TODO: Set mock SchedulerDriver
 	ze := &backend.ZkEndpoint{}
 	ze.Set(unittest.TestZkServer)
-	s := NewAPIServer(ze, nil)
+	// TODO: Set mock SchedulerDriver
+	s := NewAPIServer(ze, nil, model.WithMockClusterBackendCtx(context.Background()))
 	if s == nil {
 		t.Error("NewAPIServer() returned nil")
 	}
@@ -24,10 +26,10 @@ func TestAPIServerRun(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// TODO: Set mock SchedulerDriver
 	ze := &backend.ZkEndpoint{}
 	ze.Set(unittest.TestZkServer)
-	s := NewAPIServer(ze, nil)
+	// TODO: Set mock SchedulerDriver
+	s := NewAPIServer(ze, nil, model.WithMockClusterBackendCtx(context.Background()))
 	go func() {
 		time.Sleep(2 * time.Second)
 		s.Stop()

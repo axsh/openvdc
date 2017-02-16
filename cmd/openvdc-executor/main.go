@@ -3,20 +3,24 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
+	"net"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Sirupsen/logrus"
-	exec "github.com/mesos/mesos-go/executor"
-	mesos "github.com/mesos/mesos-go/mesosproto"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
+	"github.com/axsh/openvdc/api/executor"
 	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
+	exec "github.com/mesos/mesos-go/executor"
+	mesos "github.com/mesos/mesos-go/mesosproto"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 )
 
@@ -24,16 +28,27 @@ var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
+	ctx                context.Context
+	nodeInfo           *model.ExecutorNode
 }
 
-func newVDCExecutor(provider hypervisor.HypervisorProvider) *VDCExecutor {
+func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider, node *model.ExecutorNode) *VDCExecutor {
 	return &VDCExecutor{
 		hypervisorProvider: provider,
+		ctx:                ctx,
+		nodeInfo:           node,
 	}
 }
 
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
 	log.Infoln("Registered Executor on slave ", slaveInfo.GetHostname())
+	exec.nodeInfo.Id = slaveInfo.GetId().GetValue()
+	err := model.Cluster(exec.ctx).Register(exec.nodeInfo)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Infoln("Registered on OpenVDC cluster service: ", exec.nodeInfo)
 }
 
 func (exec *VDCExecutor) Reregistered(driver exec.ExecutorDriver, slaveInfo *mesos.SlaveInfo) {
@@ -353,9 +368,23 @@ var rootCmd = &cobra.Command{
 var DefaultConfPath string
 var zkAddr backend.ZkEndpoint
 
+const defaultExecutorAPIPort = "19372"
+
+var defaultSSHPortRange = [2]int{29876, 39876}
+
+func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executor.ExecutorAPIServer {
+	s := executor.NewExecutorAPIServer(&zkAddr, ctx)
+	go s.Serve(listener)
+	return s
+}
+
 func init() {
 	viper.SetDefault("hypervisor.driver", "null")
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
+	viper.SetDefault("executor-api.listen", "0.0.0.0:19372")
+	viper.SetDefault("executor-api.advertise-ip", "")
+	viper.SetDefault("console.ssh.listen", "")
+	viper.SetDefault("console.ssh.advertise-ip", "")
 
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
@@ -364,6 +393,11 @@ func init() {
 	viper.BindPFlag("hypervisor.driver", pfs.Lookup("hypervisor"))
 	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper address")
 	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
+}
+
+func randomPort(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max-min) + min
 }
 
 func initConfig() {
@@ -403,8 +437,72 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
+	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to connect to cluster service %s", zkAddr.String())
+	}
+	defer func() {
+		err := model.ClusterClose(ctx)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
+	executorAPIListener, err := net.Listen("tcp", viper.GetString("executor-api.listen"))
+	if err != nil {
+		log.Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
+	}
+	s := startExecutorAPIServer(ctx, executorAPIListener)
+	defer s.GracefulStop()
+	log.Infof("Listening Executor gRPC API on %s", executorAPIListener.Addr().String())
+	exposedExecutorAPIAddr := executorAPIListener.Addr().String()
+	if viper.GetString("executor-api.advertise-ip") != "" {
+		_, port, err := net.SplitHostPort(exposedExecutorAPIAddr)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to parse host:port: ", exposedExecutorAPIAddr)
+		}
+		exposedExecutorAPIAddr = net.JoinHostPort(viper.GetString("executor-api.advertise-ip"), port)
+		log.Infof("Exposed Executor gRPC API on %s", exposedExecutorAPIAddr)
+	}
+
+	sshPort := strconv.Itoa(randomPort(defaultSSHPortRange[0], defaultSSHPortRange[1]))
+	sshListenIP := "0.0.0.0"
+	if viper.GetString("console.ssh.listen") != "" {
+		var port string
+		sshListenIP, port, err = net.SplitHostPort(viper.GetString("console.ssh.listen"))
+		if err != nil {
+			log.WithError(err).Fatal("Failed to parse host:port: ", viper.GetString("console.ssh.listen"))
+		}
+		sshPort = port
+	}
+	sshListenAddr := net.JoinHostPort(sshListenIP, sshPort)
+	sshListener, err := net.Listen("tcp", sshListenAddr)
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to listen SSH on %s", sshListenAddr)
+	}
+	defer sshListener.Close()
+
+	sshd := NewSSHServer(provider)
+	if err := sshd.Setup(); err != nil {
+		log.WithError(err).Fatal("Failed to setup SSH Server")
+	}
+	go sshd.Run(sshListener)
+	log.Infof("Listening SSH on %s", sshListenAddr)
+	exposedSSHAddr := sshListener.Addr().String()
+	if viper.GetString("console.ssh.advertise-ip") != "" {
+		exposedSSHAddr = net.JoinHostPort(viper.GetString("console.ssh.advertise-ip"), sshPort)
+		log.Infof("Exposed SSH on %s", exposedSSHAddr)
+	}
+
+	node := &model.ExecutorNode{
+		GrpcAddr: exposedExecutorAPIAddr,
+		Console: &model.Console{
+			Type:     model.Console_SSH,
+			BindAddr: exposedSSHAddr,
+		},
+	}
 	dconfig := exec.DriverConfig{
-		Executor: newVDCExecutor(provider),
+		Executor: newVDCExecutor(ctx, provider, node),
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {
