@@ -44,18 +44,29 @@ type VDCScheduler struct {
 	totalTasks    int
 	listenAddr    string
 	zkAddr        backend.ZkEndpoint
+	ctx           context.Context
 }
 
-func newVDCScheduler(listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
+func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
 	return &VDCScheduler{
 		totalTasks: taskCount,
 		listenAddr: listenAddr,
 		zkAddr:     zkAddr,
+		ctx:        ctx,
 	}
 }
 
 func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId *mesos.FrameworkID, masterInfo *mesos.MasterInfo) {
 	log.Println("Framework Registered with Master ", masterInfo)
+	node := &model.SchedulerNode{
+		Id: "scheduler",
+	}
+	err := model.Cluster(sched.ctx).Register(node)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Infoln("Registered on OpenVDC cluster service: ", node)
 }
 
 func (sched *VDCScheduler) Reregistered(driver sched.SchedulerDriver, masterInfo *mesos.MasterInfo) {
@@ -249,7 +260,7 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Fatalf("Scheduler received error: %v", err)
 }
 
-func NewMesosScheduler(listenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) (*sched.MesosSchedulerDriver, error) {
+func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) (*sched.MesosSchedulerDriver, error) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
@@ -261,7 +272,7 @@ func NewMesosScheduler(listenAddr string, mesosMasterAddr string, zkAddr backend
 		return nil, errors.Wrapf(err, "Invalid listen address: %s", listenAddr)
 	}
 	config := sched.DriverConfig{
-		Scheduler:      newVDCScheduler(listenAddr, zkAddr),
+		Scheduler:      newVDCScheduler(ctx, listenAddr, zkAddr),
 		Framework:      FrameworkInfo,
 		Master:         mesosMasterAddr,
 		Credential:     cred,

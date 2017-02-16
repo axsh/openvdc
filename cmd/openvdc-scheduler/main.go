@@ -14,7 +14,6 @@ import (
 	"github.com/axsh/openvdc/scheduler"
 	"github.com/mesos/mesos-go/detector"
 	_ "github.com/mesos/mesos-go/detector/zoo"
-	sched "github.com/mesos/mesos-go/scheduler"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -98,21 +97,6 @@ func initConfig() {
 	}
 }
 
-func startAPIServer(laddr string, zkAddr backend.ZkEndpoint, driver sched.SchedulerDriver) *api.APIServer {
-	lis, err := net.Listen("tcp", laddr)
-	if err != nil {
-		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
-	}
-	log.Println("Listening gRPC API on: ", laddr)
-	s := api.NewAPIServer(zkAddr, driver)
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			log.WithError(err).Fatal("Failed to start gRPC API")
-		}
-	}()
-	return s
-}
-
 func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
 	var zkAddr backend.ZkEndpoint
@@ -123,7 +107,19 @@ func execute(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatal("Failed to create mesos detector")
 	}
 
+	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		err := model.ClusterClose(ctx)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
 	mesosDriver, err := scheduler.NewMesosScheduler(
+		ctx,
 		viper.GetString("mesos.listen"),
 		viper.GetString("mesos.master"),
 		zkAddr)
@@ -136,7 +132,7 @@ func execute(cmd *cobra.Command, args []string) {
 		log.Fatalln("Faild to bind address for gRPC API: ", viper.GetString("api.endpoint"))
 	}
 	log.Info("Listening gRPC API on: ", viper.GetString("api.endpoint"))
-	grpcServer := api.NewAPIServer(zkAddr, mesosDriver)
+	grpcServer := api.NewAPIServer(zkAddr, mesosDriver, ctx)
 
 	if err := detector.Detect(grpcServer); err != nil {
 		log.WithError(err).Fatal("Failed to start mesos detector")
@@ -163,6 +159,7 @@ func execute(cmd *cobra.Command, args []string) {
 
 func main() {
 	flag.CommandLine.Parse([]string{})
+	log.SetFormatter(&cmd.LogFormatter{})
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

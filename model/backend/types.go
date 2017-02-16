@@ -18,8 +18,7 @@ type ConnectionAddress interface {
 }
 
 type ModelBackend interface {
-	Connect(dest ConnectionAddress) error
-	Close() error
+	BackendConnection
 	Create(key string, value []byte) error
 	CreateWithID(key string, value []byte) (string, error)
 	Update(key string, value []byte) error
@@ -35,4 +34,16 @@ type ModelSchema interface {
 
 type SchemaHandler interface {
 	Install(subkeys []string) error
+}
+
+type ClusterBackend interface {
+	BackendConnection
+	Register(nodeID string, value []byte) error
+	Find(nodeID string) ([]byte, error)
+	UnRegister(nodeID string) error
+}
+
+type BackendConnection interface {
+	Connect(dest ConnectionAddress) error
+	Close() error
 }

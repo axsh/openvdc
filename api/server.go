@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	sched "github.com/mesos/mesos-go/scheduler"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -23,10 +24,14 @@ type APIServer struct {
 	mMesosMasterAddr sync.Mutex
 }
 
-func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDriver) *APIServer {
+func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDriver, ctx context.Context) *APIServer {
+	// Assert the ctx has "cluster.backend" key
+	model.GetClusterBackendCtx(ctx)
+
 	sopts := []grpc.ServerOption{
 		// Setup request middleware for the model.backend database connection.
-		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr)),
+		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr, ctx)),
+		grpc.StreamInterceptor(model.GrpcStreamInterceptor(modelAddr, ctx)),
 	}
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
@@ -36,6 +41,7 @@ func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDri
 
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
 	RegisterResourceServer(s.server, &ResourceAPI{api: s})
+	RegisterInstanceConsoleServer(s.server, &InstanceConsoleAPI{api: s})
 	return s
 }
 
