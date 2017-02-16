@@ -21,6 +21,12 @@
 			"revisionTime": "2016-11-08T19:08:11Z"
 		},
 		{
+			"checksumSHA1": "63vHVSiItUfflK3tUwe6mrI84BQ=",
+			"path": "github.com/Sirupsen/logrus/hooks/syslog",
+			"revision": "1445b7a38228c041834afc69231b7966b9943397",
+			"revisionTime": "2016-11-08T19:08:11Z"
+		},
+		{
 			"checksumSHA1": "Z/gwISedxg/Os0Y4hhvDF9dCipw=",
 			"path": "github.com/boltdb/bolt",
 			"revision": "315c65d4cf4f5278c73477a35fb1f9b08365d340",
