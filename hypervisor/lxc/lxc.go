@@ -141,7 +141,7 @@ func generateScriptFromTemplate(scriptTemplate string, generatedScriptName strin
 		log.Warnln("Failed loading script template: ", err)
 	}
 
-	var output string
+	var output string = "#!/bin/sh\n"
 
 	if f != nil {
 		if generatedScriptName == "up.sh" {
