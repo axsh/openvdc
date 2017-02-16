@@ -7,7 +7,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-//go:generate protoc -I../proto -I${GOPATH}/src --go_out=${GOPATH}/src ../proto/model.proto
+// TODO: move cluster.proto
+//go:generate protoc -I../proto -I${GOPATH}/src --go_out=${GOPATH}/src ../proto/model.proto ../proto/cluster.proto
 
 type base struct {
 	ctx context.Context

@@ -49,7 +49,7 @@ func (h *NullHypervisorDriver) RebootInstance() error {
 	return nil
 }
 
-func (h *NullHypervisorDriver) InstanceConsole() error {
+func (h *NullHypervisorDriver) InstanceConsole() hypervisor.Console {
 	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("InstanceConsole")
 	return nil
 }

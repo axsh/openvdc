@@ -1,24 +1,23 @@
-package api
+package executor
 
 import (
 	"net"
 
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
-	sched "github.com/mesos/mesos-go/scheduler"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-//go:generate protoc -I../proto -I${GOPATH}/src --go_out=plugins=grpc:${GOPATH}/src ../proto/v1.proto
+//go:generate protoc -I../../proto -I${GOPATH}/src --go_out=plugins=grpc:${GOPATH}/src ../../proto/executor.proto
 
-type APIServer struct {
+type ExecutorAPIServer struct {
 	server         *grpc.Server
+	listener       net.Listener
 	modelStoreAddr backend.ConnectionAddress
-	scheduler      sched.SchedulerDriver
 }
 
-func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDriver, ctx context.Context) *APIServer {
+func NewExecutorAPIServer(modelAddr backend.ConnectionAddress, ctx context.Context) *ExecutorAPIServer {
 	// Assert the ctx has "cluster.backend" key
 	model.GetClusterBackendCtx(ctx)
 
@@ -27,26 +26,29 @@ func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDri
 		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr, ctx)),
 		grpc.StreamInterceptor(model.GrpcStreamInterceptor(modelAddr, ctx)),
 	}
-	s := &APIServer{
+	s := &ExecutorAPIServer{
 		server:         grpc.NewServer(sopts...),
 		modelStoreAddr: modelAddr,
-		scheduler:      driver,
 	}
 
-	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
-	RegisterResourceServer(s.server, &ResourceAPI{api: s})
-	RegisterInstanceConsoleServer(s.server, &InstanceConsoleAPI{api: s})
 	return s
 }
 
-func (s *APIServer) Serve(listen net.Listener) error {
+func (s *ExecutorAPIServer) Serve(listen net.Listener) error {
+	s.listener = listen
 	return s.server.Serve(listen)
 }
 
-func (s *APIServer) Stop() {
+func (s *ExecutorAPIServer) Stop() {
 	s.server.Stop()
+	s.listener = nil
 }
 
-func (s *APIServer) GracefulStop() {
+func (s *ExecutorAPIServer) GracefulStop() {
 	s.server.GracefulStop()
+	s.listener = nil
+}
+
+func (s *ExecutorAPIServer) Listener() net.Listener {
+	return s.listener
 }
