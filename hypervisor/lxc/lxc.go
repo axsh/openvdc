@@ -84,11 +84,11 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-func modifyConf() {
+func (d *LXCHypervisorDriver) modifyConf() error {
 	f, err := ioutil.ReadFile(LxcConfigFile)
 
 	if err != nil {
-		log.Fatalf("Failed loading lxc default.conf: ", err)
+		return errors.Wrapf(err, "Failed loading %s", LxcConfigFile)
 	}
 
 	cf := cleanConfigFile(string(f))
@@ -101,8 +101,10 @@ func modifyConf() {
 	result := strings.Join([]string{cf, newSettings}, "")
 	err = ioutil.WriteFile(LxcConfigFile, []byte(result), 0644)
 	if err != nil {
-		log.Fatalln("Couldn't save lxc config file", err)
+		return errors.Wrapf(err, "Couldn't save %s", LxcConfigFile)
 	}
+	d.log.Debug(result)
+	return nil
 }
 
 func updateSettings(nwi NetworkInterface, input string) string {
@@ -260,7 +262,9 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		)
 	}
 
-	modifyConf()
+	if err := d.modifyConf(); err != nil {
+		return err
+	}
 
 	interfaces = nil
 
