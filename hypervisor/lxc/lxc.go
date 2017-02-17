@@ -222,7 +222,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	if !ok {
 
-		log.Fatal("BUGON: Unsupported model type")
+		d.log.Fatalf("BUGON: Unsupported model type: %T", in)
 
 	}
 
