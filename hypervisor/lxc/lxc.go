@@ -235,7 +235,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 		d.log.Errorln(err)
 
-		return err
+		return errors.Wrap(err, "Failed lxc.NewContainer")
 
 	}
 
@@ -245,7 +245,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 		d.log.Errorln(err)
 
-		return err
+		return errors.Wrap(err, "Failed lxc.Create")
 
 	}
 
@@ -286,17 +286,20 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
 		d.log.Errorln(err)
-		return err
+		return errors.Wrap(err, "Failed lxc.NewContainer")
 	}
 
 	if c.State() == lxc.RUNNING {
-		c.Stop()
+		d.log.Infoln("Stopping lxc-container..")
+		if err := c.Stop(); err != nil {
+			return errors.Wrap(err, "Failed lxc.Stop")
+		}
 	}
 
 	d.log.Infoln("Destroying lxc-container..")
 	if err := c.Destroy(); err != nil {
 		d.log.Errorln(err)
-		return err
+		return errors.Wrap(err, "Failed lxc.Destroy")
 	}
 	return nil
 }
@@ -306,19 +309,19 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
 		d.log.Errorln(err)
-		return err
+		return errors.Wrap(err, "Failed lxc.NewContainer")
 	}
 
 	d.log.Infoln("Starting lxc-container...")
 	if err := c.Start(); err != nil {
 		d.log.Errorln(err)
-		return err
+		return errors.Wrap(err, "Failed lxc.Start")
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
 	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
 		d.log.Errorln("Failed or timedout to wait for RUNNING")
-		return fmt.Errorf("Failed or timedout to wait for RUNNING")
+		return errors.New("Failed or timedout to wait for RUNNING")
 	}
 	return nil
 }
@@ -328,19 +331,19 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
 		d.log.Errorln(err)
-		return err
+		return errors.Wrap(err, "Failed lxc.NewContainer")
 	}
 
 	d.log.Infoln("Stopping lxc-container..")
 	if err := c.Stop(); err != nil {
 		d.log.Errorln(err)
-		return err
+		return errors.Wrap(err, "Failed lxc.Stop")
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become STOPPED")
 	if ok := c.Wait(lxc.STOPPED, 30*time.Second); !ok {
 		d.log.Errorln("Failed or timedout to wait for STOPPED")
-		return fmt.Errorf("Failed or timedout to wait for STOPPED")
+		return errors.New("Failed or timedout to wait for STOPPED")
 	}
 	return nil
 }
@@ -367,12 +370,12 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 	c, err := con.lxc.newContainer()
 	if err != nil {
 		con.lxc.log.Errorln(err)
-		return err
+		return errors.Wrap(err, "lxc.NewContainer")
 	}
 
 	if c.State() != lxc.RUNNING {
 		con.lxc.log.Errorf("lxc-container can not perform console")
-		return fmt.Errorf("lxc-container can not perform console")
+		return errors.New("lxc-container can not perform console")
 	}
 
   return con.attachShell(c, stdin, stdout, stderr)
@@ -381,14 +384,14 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 
 func (con *lxcConsole) Wait() error {
 	if con.attached == nil {
-		return fmt.Errorf("No process is found")
+		return errors.New("No process is found")
 	}
 	defer func() {
 		err := con.pty.Close()
 		log.WithFields(log.Fields{
 			"tty": con.tty,
 			"pid": con.attached.Pid,
-		}).WithError(err).Info("TTY session closed")
+		}).WithError(errors.WithStack(err)).Info("TTY session closed")
 		con.pty = nil
 		con.attached = nil
 	}()
@@ -397,16 +400,16 @@ func (con *lxcConsole) Wait() error {
 	if err != nil {
 		con.attached.Release()
 	}
-	return err
+	return errors.Wrap(err, "Failed Process.Wait")
 }
 
 func (con *lxcConsole) ForceClose() error {
 	if con.attached == nil {
-		return fmt.Errorf("No process is found")
+		return errors.New("No process is found")
 	}
 	// This sends just signal. pty and pid are
 	// closed by Wait()
-	return con.attached.Kill()
+	return errors.WithStack(con.attached.Kill())
 }
 
 func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
@@ -453,6 +456,7 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 
 	pid, err := c.RunCommandNoWait([]string{"/bin/bash"}, options)
 	if err != nil {
+		err = errors.WithStack(err)
 		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
 		defer fpty.Close()
 		return err
@@ -460,6 +464,7 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 
 	proc, err := os.FindProcess(pid)
 	if err != nil {
+		err = errors.WithStack(err)
 		con.lxc.log.WithError(err).Errorf("Failed to find attached shell process: %d", pid)
 		defer fpty.Close()
 		return err
@@ -490,7 +495,8 @@ func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr
 	options.EscapeCharacter = '~'
 
 	if err := c.Console(options); err != nil {
-		con.lxc.log.Errorln(err)
+		err = errors.WithStack(err)
+		con.lxc.log.WithError(err).Error("Failed lxc.Console")
 		return err
 	}
 	return nil
