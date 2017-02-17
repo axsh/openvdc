@@ -68,7 +68,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 	_, err := driver.SendStatusUpdate(runStatus)
 	if err != nil {
-		log.Errorln("Couldn't send status update", err)
+		log.WithError(err).Errorln("Couldn't send status update")
 	}
 
 	err = exec.bootInstance(driver, taskInfo)
@@ -164,7 +164,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -183,7 +183,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	log.Infof("Starting instance")
 	err = hv.StartInstance()
 	if err != nil {
-		log.Error("Failed StartInstance")
+		log.WithError(err).Error("Failed StartInstance")
 		return err
 	}
 	log.Infof("Instance started successfully")
@@ -209,7 +209,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -261,7 +261,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -291,7 +291,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 
 	err = hv.DestroyInstance()
 	if err != nil {
-		log.Error("Failed DestroyInstance")
+		log.WithError(err).Error("Failed DestroyInstance")
 		return err
 	}
 	log.Infof("Instance terminated successfully")
@@ -415,7 +415,7 @@ func initConfig() {
 			// Ignore default conf file does not exist.
 			return
 		}
-		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+		log.WithError(err).Fatalf("Failed to load config %s", viper.ConfigFileUsed())
 	}
 }
 
@@ -444,13 +444,13 @@ func execute(cmd *cobra.Command, args []string) {
 	defer func() {
 		err := model.ClusterClose(ctx)
 		if err != nil {
-			log.Error(err)
+			log.WithError(err).Error("Failed ClusterClose")
 		}
 	}()
 
 	executorAPIListener, err := net.Listen("tcp", viper.GetString("executor-api.listen"))
 	if err != nil {
-		log.Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
+		log.WithError(err).Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
 	}
 	s := startExecutorAPIServer(ctx, executorAPIListener)
 	defer s.GracefulStop()
@@ -506,18 +506,18 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {
-		log.Fatalln("Couldn't create ExecutorDriver ", err)
+		log.WithError(err).Fatal("Couldn't create ExecutorDriver")
 	}
 
 	_, err = driver.Start()
 	if err != nil {
-		log.Fatalln("ExecutorDriver wasn't able to start: ", err)
+		log.WithError(err).Fatalln("ExecutorDriver wasn't able to start")
 	}
 	log.Infoln("Process running")
 
 	_, err = driver.Join()
 	if err != nil {
-		log.Fatalln("Something went wrong with the driver: ", err)
+		log.WithError(err).Fatalln("Something went wrong with the driver")
 	}
 	log.Infoln("Executor shutting down")
 }
