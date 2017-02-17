@@ -101,7 +101,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
