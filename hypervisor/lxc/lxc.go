@@ -7,7 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"text/template"
@@ -21,7 +21,6 @@ import (
 	"github.com/axsh/openvdc/model"
 	"github.com/spf13/viper"
 	lxc "gopkg.in/lxc/go-lxc.v2"
-	"path/filepath"
 )
 
 type BridgeType int
@@ -33,9 +32,9 @@ const (
 
 func (t BridgeType) String() string {
 	switch t {
-		Linux:
+		case Linux:
 		return "linux"
-		OVS:
+		case OVS:
 		return "ovs"
 		default:
 		return "none"
@@ -74,9 +73,9 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		settings.BridgeName = sub.GetString("bridges.name")
 		if sub.IsSet("bridges.type") {
 			switch sub.GetString("bridges.type") {
-				case "linux"
+				case "linux":
 				settings.BridgeType = Linux
-				case "ovs"
+				case "ovs":
 				settings.BridgeType = OVS
 				default:
 				return errors.Errorf("Unknown bridges.type value: %s", sub.GetString("bridges.type"))
@@ -106,6 +105,7 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
 	settings.OvsUpScript = sub.GetString("bridges.ovs.up-script")
 	settings.OvsDownScript = sub.GetString("bridges.ovs.down-script")
+	return nil
 }
 
 func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
@@ -131,7 +131,7 @@ type LXCHypervisorDriver struct {
 }
 
 
-const lxcNetworkTemplate := `
+const lxcNetworkTemplate = `
 lxc.network.type=veth
 lxc.network.veth.pair={{.TapName}}
 lxc.network.script.up={{.UpScript}}
@@ -166,12 +166,12 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 
 	// Write lxc.network.* entries.
 	for idx, i := range resource.Interfaces {
-		var tval := struct {
-			IFace *model.LxcTemplate_Interface,
-			TapName string,
-			UpScript string,
-			DownScript string,
-			IFIndex int,
+		tval := struct {
+			IFace *model.LxcTemplate_Interface
+			TapName string
+			UpScript string
+			DownScript string
+			IFIndex int
 		}{
 			IFace: i,
 			IFIndex: idx,
@@ -230,14 +230,14 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	}
 
 	switch settings.BridgeType {
-		case Linux
+		case Linux:
 			if err := d.renderUpDownScript(settings.LinuxUpScript, "up.sh"); err != nil {
 				return err
 			}
 			if err := d.renderUpDownScript(settings.LinuxDownScript, "down.sh"); err != nil {
 				return err
 			}
-		case OVS
+		case OVS:
 			if err := d.renderUpDownScript(settings.OvsUpScript, "up.sh"); err != nil {
 				return err
 			}
