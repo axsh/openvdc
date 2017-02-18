@@ -66,12 +66,18 @@ func (p *LXCHypervisorProvider) Name() string {
 }
 
 func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
+	c, err := lxc.NewContainer(containerName, lxc.DefaultConfigPath())
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed lxc.NewContainer")
+	}
+
 	return &LXCHypervisorDriver{
 		log:     log.WithFields(log.Fields{"hypervisor":"lxc", "instance_id": containerName}),
 		lxcpath: lxc.DefaultConfigPath(),
 		name:    containerName,
 		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
 		template: lxc.DownloadTemplateOptions,
+		container: c,
 	}, nil
 }
 
@@ -82,6 +88,7 @@ type LXCHypervisorDriver struct {
 	lxcpath   string
 	template  lxc.TemplateOptions
 	name      string
+	container	*lxc.Container
 }
 
 func (d *LXCHypervisorDriver) modifyConf() error {
@@ -226,18 +233,13 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	}
 
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	LxcConfigFile = c.ConfigFileName()
 
 	ContainerName = d.name
 
-	if err != nil {
-		return errors.Wrap(err, "Failed lxc.NewContainer")
-	}
 
 	d.log.Infoln("Creating lxc-container...")
-
-	if err := c.Create(d.template); err != nil {
+	if err := d.container.Create(d.template); err != nil {
 		return errors.Wrap(err, "Failed lxc.Create")
 	}
 
@@ -275,58 +277,41 @@ func loadConfigFile() {
 }
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
-	if err != nil {
-		return errors.Wrap(err, "Failed lxc.NewContainer")
-	}
-
-	if c.State() == lxc.RUNNING {
+	if d.container.State() == lxc.RUNNING {
 		d.log.Infoln("Stopping lxc-container..")
-		if err := c.Stop(); err != nil {
+		if err := d.container.Stop(); err != nil {
 			return errors.Wrap(err, "Failed lxc.Stop")
 		}
 	}
 
 	d.log.Infoln("Destroying lxc-container..")
-	if err := c.Destroy(); err != nil {
+	if err := d.container.Destroy(); err != nil {
 		return errors.Wrap(err, "Failed lxc.Destroy")
 	}
 	return nil
 }
 
 func (d *LXCHypervisorDriver) StartInstance() error {
-
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
-	if err != nil {
-		return errors.Wrap(err, "Failed lxc.NewContainer")
-	}
-
 	d.log.Infoln("Starting lxc-container...")
-	if err := c.Start(); err != nil {
+	if err := d.container.Start(); err != nil {
 		return errors.Wrap(err, "Failed lxc.Start")
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
-	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
+	if ok := d.container.Wait(lxc.RUNNING, 30*time.Second); !ok {
 		return errors.New("Failed or timedout to wait for RUNNING")
 	}
 	return nil
 }
 
 func (d *LXCHypervisorDriver) StopInstance() error {
-
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
-	if err != nil {
-		return errors.Wrap(err, "Failed lxc.NewContainer")
-	}
-
 	d.log.Infoln("Stopping lxc-container..")
-	if err := c.Stop(); err != nil {
+	if err := d.container.Stop(); err != nil {
 		return errors.Wrap(err, "Failed lxc.Stop")
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become STOPPED")
-	if ok := c.Wait(lxc.STOPPED, 30*time.Second); !ok {
+	if ok := d.container.Wait(lxc.STOPPED, 30*time.Second); !ok {
 		return errors.New("Failed or timedout to wait for STOPPED")
 	}
 	return nil
@@ -338,10 +323,6 @@ func (d *LXCHypervisorDriver) InstanceConsole() hypervisor.Console {
 	}
 }
 
-func (d *LXCHypervisorDriver) newContainer() (*lxc.Container, error) {
-	return lxc.NewContainer(d.name, d.lxcpath)
-}
-
 type lxcConsole struct {
 	lxc *LXCHypervisorDriver
 	attached *os.Process
@@ -350,18 +331,17 @@ type lxcConsole struct {
 	tty string
 }
 
-func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
-	c, err := con.lxc.newContainer()
-	if err != nil {
-		return errors.Wrap(err, "lxc.NewContainer")
-	}
+func (con *lxcConsole) container() *lxc.Container {
+	return con.lxc.container
+}
 
-	if c.State() != lxc.RUNNING {
+func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
+	if con.container().State() != lxc.RUNNING {
 		return errors.New("lxc-container can not perform console")
 	}
 
-  return con.attachShell(c, stdin, stdout, stderr)
-  //return con.console(c, stdin, stdout, stderr)
+  return con.attachShell(stdin, stdout, stderr)
+  //return con.console(stdin, stdout, stderr)
 }
 
 func (con *lxcConsole) Wait() error {
@@ -394,7 +374,7 @@ func (con *lxcConsole) ForceClose() error {
 	return errors.WithStack(con.attached.Kill())
 }
 
-func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
+func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) error {
 	var wg sync.WaitGroup
 	fpty, ftty, err := pty.Open()
 	if err != nil {
@@ -436,7 +416,7 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 	options.StderrFd = ftty.Fd()
 	options.ClearEnv = true
 
-	pid, err := c.RunCommandNoWait([]string{"/bin/bash"}, options)
+	pid, err := con.container().RunCommandNoWait([]string{"/bin/bash"}, options)
 	if err != nil {
 		err = errors.WithStack(err)
 		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
@@ -458,7 +438,7 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 	return nil
 }
 
-func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr io.Writer) error {
+func (con *lxcConsole) console(stdin io.Reader, stdout, stderr io.Writer) error {
 	fpty, ftty, err := pty.Open()
 	if err != nil {
 		return errors.Wrapf(err, "Failed to open tty")
@@ -476,7 +456,7 @@ func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr
 	options.StderrFd				= ftty.Fd()
 	options.EscapeCharacter = '~'
 
-	if err := c.Console(options); err != nil {
+	if err := con.container().Console(options); err != nil {
 		err = errors.WithStack(err)
 		con.lxc.log.WithError(err).Error("Failed lxc.Console")
 		return err
