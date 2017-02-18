@@ -232,21 +232,13 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	ContainerName = d.name
 
 	if err != nil {
-
-		d.log.Errorln(err)
-
 		return errors.Wrap(err, "Failed lxc.NewContainer")
-
 	}
 
 	d.log.Infoln("Creating lxc-container...")
 
 	if err := c.Create(d.template); err != nil {
-
-		d.log.Errorln(err)
-
 		return errors.Wrap(err, "Failed lxc.Create")
-
 	}
 
 	loadConfigFile()
@@ -285,7 +277,6 @@ func loadConfigFile() {
 func (d *LXCHypervisorDriver) DestroyInstance() error {
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
-		d.log.Errorln(err)
 		return errors.Wrap(err, "Failed lxc.NewContainer")
 	}
 
@@ -298,7 +289,6 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 
 	d.log.Infoln("Destroying lxc-container..")
 	if err := c.Destroy(); err != nil {
-		d.log.Errorln(err)
 		return errors.Wrap(err, "Failed lxc.Destroy")
 	}
 	return nil
@@ -308,19 +298,16 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
-		d.log.Errorln(err)
 		return errors.Wrap(err, "Failed lxc.NewContainer")
 	}
 
 	d.log.Infoln("Starting lxc-container...")
 	if err := c.Start(); err != nil {
-		d.log.Errorln(err)
 		return errors.Wrap(err, "Failed lxc.Start")
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
 	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
-		d.log.Errorln("Failed or timedout to wait for RUNNING")
 		return errors.New("Failed or timedout to wait for RUNNING")
 	}
 	return nil
@@ -330,19 +317,16 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 
 	c, err := lxc.NewContainer(d.name, d.lxcpath)
 	if err != nil {
-		d.log.Errorln(err)
 		return errors.Wrap(err, "Failed lxc.NewContainer")
 	}
 
 	d.log.Infoln("Stopping lxc-container..")
 	if err := c.Stop(); err != nil {
-		d.log.Errorln(err)
 		return errors.Wrap(err, "Failed lxc.Stop")
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become STOPPED")
 	if ok := c.Wait(lxc.STOPPED, 30*time.Second); !ok {
-		d.log.Errorln("Failed or timedout to wait for STOPPED")
 		return errors.New("Failed or timedout to wait for STOPPED")
 	}
 	return nil
@@ -369,12 +353,10 @@ type lxcConsole struct {
 func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 	c, err := con.lxc.newContainer()
 	if err != nil {
-		con.lxc.log.Errorln(err)
 		return errors.Wrap(err, "lxc.NewContainer")
 	}
 
 	if c.State() != lxc.RUNNING {
-		con.lxc.log.Errorf("lxc-container can not perform console")
 		return errors.New("lxc-container can not perform console")
 	}
 
