@@ -205,113 +205,24 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	return nil
 }
 
-func (d *LXCHypervisorDriver) updateSettings(nwi NetworkInterface, input string) string {
-
-	settings.TapName = nwi.TapName
-
-	output := input + "\n"
-
-	output += fmt.Sprintf("lxc.network.veth.pair=%s\n", nwi.TapName)
-
-	if nwi.Ipv4Addr != "" {
-		output += fmt.Sprintf("lxc.network.ipv4=%s\n", nwi.Ipv4Addr)
-	}
-
-	if nwi.MacAddr != "" {
-		output += fmt.Sprintf("lxc.network.hwaddr=%s\n", nwi.MacAddr)
-	}
-
-	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
-
-	output += fmt.Sprintf("lxc.network.script.up=%s\n", filepath.Join(containerPath, "up.sh"))
-	output += fmt.Sprintf("lxc.network.script.down=%s\n", filepath.Join(containerPath, "down.sh"))
-
-	switch nwi.Type {
-	case "linux":
-		bridgeConnect := fmt.Sprintf("brctl addif %s %s \n", settings.BridgeName, settings.TapName)
-
-		generateScriptFromTemplate(settings.LinuxUpScript, "up.sh", bridgeConnect)
-		generateScriptFromTemplate(settings.LinuxDownScript, "down.sh", bridgeConnect)
-
-	case "ovs":
-		bridgeConnect := fmt.Sprintf("ovs-vsctl add-port %s %s \n", settings.OvsName, settings.TapName)
-
-		generateScriptFromTemplate(settings.OvsUpScript, "up.sh", bridgeConnect)
-		generateScriptFromTemplate(settings.OvsDownScript, "down.sh", bridgeConnect)
-
-	default:
-		log.Fatalf("Unrecognized bridge type.")
-	}
-
-	return output
-}
-
-func generateScriptFromTemplate(scriptTemplate string, generatedScriptName string, bridgeConnect string) {
-	f, err := ioutil.ReadFile(filepath.Join(settings.ScriptPath, scriptTemplate))
-
+func (d *LXCHypervisorDriver) renderUpDownScript(scriptTemplate, generateScript string) error {
+	containerDir, _ := filepath.Split(d.container.ConfigPath())
+	tmplPath := filepath.Join(settings.ScriptPath, scriptTemplate)
+	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
-		log.Warnln("Failed loading script template: ", err)
+		return errors.Wrapf(err, "Failed to parse script template: %s", tmplPath)
 	}
-
-	var output string = "#!/bin/sh\n"
-
-	if f != nil {
-		if generatedScriptName == "up.sh" {
-			output = bridgeConnect + string(f)
-		}
-	} else {
-
-		output = bridgeConnect
-	}
-
-	containerPath := filepath.Join(lxc.DefaultConfigPath(), ContainerName)
-
-	err = ioutil.WriteFile(filepath.Join(containerPath, generatedScriptName), []byte(output), 0755)
-
+	genPath := filepath.Join(containerDir, generateScript)
+	gen, err := os.OpenFile(genPath, os.O_CREATE | os.O_WRONLY, 0755)
 	if err != nil {
-		log.Fatalln("Failed saving generated script to container path: ", err)
+		return errors.Wrapf(err, "Failed to create up/down script: %s", genPath)
 	}
-}
-
-func cleanConfigFile(input string) string {
-	lines := strings.Split(input, "\n")
-
-	for i, line := range lines {
-		if strings.Contains(line, "lxc.network.link") {
-			lines[i] = ""
-		}
-	}
-
-	output := strings.Join(lines, "\n")
-
-	return output
-}
-
-func resetConfigFile() {
-	f, err := ioutil.ReadFile(LxcConfigFile)
-
+	defer gen.Close()
+	err = tmpl.Execute(gen, settings)
 	if err != nil {
-		log.Fatalf("Failed loading lxc default.conf: ", err)
+		return errors.Wrapf(err, "Failed to render up/down script: %s", genPath)
 	}
-
-	lines := strings.Split(string(f), "\n")
-
-	for i, line := range lines {
-		if strings.Contains(line, "hwaddr") ||
-			strings.Contains(line, "ipv4") ||
-			strings.Contains(line, "script.up") ||
-			strings.Contains(line, "script.down") ||
-			strings.Contains(line, "veth.pair") {
-			lines[i] = ""
-		}
-	}
-
-	output := strings.Join(lines, "\n")
-
-	err = ioutil.WriteFile(LxcConfigFile, []byte(output), 0644)
-	if err != nil {
-		log.Fatalln("Couldn't restore lxc config file", err)
-	}
+	return nil
 }
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
@@ -333,6 +244,24 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		return err
 	}
 
+	switch settings.BridgeType {
+		case Linux
+			if err := d.renderUpDownScript(settings.LinuxUpScript, "up.sh"); err != nil {
+				return err
+			}
+			if err := d.renderUpDownScript(settings.LinuxDownScript, "down.sh"); err != nil {
+				return err
+			}
+		case OVS
+			if err := d.renderUpDownScript(settings.OvsUpScript, "up.sh"); err != nil {
+				return err
+			}
+			if err := d.renderUpDownScript(settings.OvsDownScript, "down.sh"); err != nil {
+				return err
+			}
+		default:
+			log.Fatalf("BUGON: Unknown bridge type: %s", settings.BridgeType)
+	}
 	return nil
 
 }
