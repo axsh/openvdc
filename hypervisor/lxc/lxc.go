@@ -145,9 +145,9 @@ lxc.network.hwaddr={{.IFace.MacAddr}}
 `
 
 func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
-	lxcconf, err := os.OpenFile(d.container.ConfigPath(), os.O_WRONLY|os.O_APPEND, 0)
+	lxcconf, err := os.OpenFile(d.container.ConfigFileName(), os.O_WRONLY|os.O_APPEND, 0)
 	if err != nil {
-		return errors.Wrapf(err, "Failed opening %s", d.container.ConfigPath())
+		return errors.Wrapf(err, "Failed opening %s", d.container.ConfigFileName())
 	}
 	defer lxcconf.Close()
 
@@ -184,14 +184,14 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	lxcconf.Sync()
 
 	if d.log.Level <= log.DebugLevel {
-		buf, _ := ioutil.ReadFile(d.container.ConfigPath())
+		buf, _ := ioutil.ReadFile(d.container.ConfigFileName())
 		d.log.Debug(string(buf))
 	}
 	return nil
 }
 
 func (d *LXCHypervisorDriver) renderUpDownScript(scriptTemplate, generateScript string) error {
-	containerDir, _ := filepath.Split(d.container.ConfigPath())
+	containerDir, _ := filepath.Split(d.container.ConfigFileName())
 	tmplPath := filepath.Join(settings.ScriptPath, scriptTemplate)
 	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
