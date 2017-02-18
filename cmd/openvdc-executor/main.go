@@ -435,6 +435,9 @@ func execute(cmd *cobra.Command, args []string) {
 	if ok == false {
 		log.Fatalln("Unknown hypervisor name:", viper.GetString("hypervisor.driver"))
 	}
+	if err := provider.LoadConfig(viper.GetViper()); err != nil {
+		log.WithError(err).Fatal("Failed to apply hypervisor configuration")
+	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
 	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)

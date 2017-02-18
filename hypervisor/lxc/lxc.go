@@ -26,16 +26,32 @@ import (
 
 var LxcConfigFile string
 var ContainerName string
+type BridgeType int
+const (
+	None BridgeType = iota // 0
+	Linux
+	OVS
+)
 
-type Settings struct {
+func (t BridgeType) String() string {
+	switch t {
+		Linux:
+		return "linux"
+		OVS:
+		return "ovs"
+		default:
+		return "none"
+	}
+}
+
+var settings struct {
 	ScriptPath      string
+	BridgeName      string
+	BridgeType 			BridgeType
 	LinuxUpScript   string
 	LinuxDownScript string
-	BridgeName      string
 	OvsUpScript     string
 	OvsDownScript   string
-	OvsName         string
-	TapName         string
 }
 
 type NetworkInterface struct {
@@ -44,8 +60,6 @@ type NetworkInterface struct {
 	MacAddr  string
 	TapName  string
 }
-
-var settings Settings
 
 var interfaces []NetworkInterface
 
@@ -64,6 +78,45 @@ type LXCHypervisorProvider struct {
 
 func (p *LXCHypervisorProvider) Name() string {
 	return "lxc"
+}
+
+func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
+	if sub.IsSet("bridges.name") {
+		settings.BridgeName = sub.GetString("bridges.name")
+		if sub.IsSet("bridges.type") {
+			switch sub.GetString("bridges.type") {
+				case "linux"
+				settings.BridgeType = Linux
+				case "ovs"
+				settings.BridgeType = OVS
+				default:
+				return errors.Errorf("Unknown bridges.type value: %s", sub.GetString("bridges.type"))
+			}
+		}
+	}else	if sub.IsSet("bridges.linux.name") {
+		log.Warn("bridges.linux.name is obsolete option")
+		settings.BridgeName = sub.GetString("bridges.linux.name")
+		settings.BridgeType = Linux
+	}else	if sub.IsSet("bridges.ovs.name") {
+		log.Warn("bridges.ovs.name is obsolete option")
+		settings.BridgeName = sub.GetString("bridges.ovs.name")
+		settings.BridgeType = OVS
+	}
+
+	if settings.BridgeName == "" {
+		return errors.New("Missing bridges.name parameter")
+	}
+
+	if settings.BridgeType == None {
+		return errors.New("Missing bridges.type parameter")
+	}
+
+	// They have default value.
+	settings.ScriptPath = sub.GetString("hypervisor.script-path")
+	settings.LinuxUpScript = sub.GetString("bridges.linux.up-script")
+	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
+	settings.OvsUpScript = sub.GetString("bridges.ovs.up-script")
+	settings.OvsDownScript = sub.GetString("bridges.ovs.down-script")
 }
 
 func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
@@ -280,16 +333,6 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	return nil
 
-}
-
-func loadConfigFile() {
-	settings.ScriptPath = viper.GetString("hypervisor.script-path")
-	settings.LinuxUpScript = viper.GetString("bridges.linux.up-script")
-	settings.LinuxDownScript = viper.GetString("bridges.linux.down-script")
-	settings.BridgeName = viper.GetString("bridges.linux.name")
-	settings.OvsUpScript = viper.GetString("bridges.ovs.up-script")
-	settings.OvsDownScript = viper.GetString("bridges.ovs.down-script")
-	settings.OvsName = viper.GetString("bridges.ovs.name")
 }
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {
