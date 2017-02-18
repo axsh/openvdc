@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"text/template"
 	"time"
 	"unsafe"
 
@@ -91,30 +92,65 @@ type LXCHypervisorDriver struct {
 	container	*lxc.Container
 }
 
-func (d *LXCHypervisorDriver) modifyConf() error {
-	f, err := ioutil.ReadFile(LxcConfigFile)
 
+const lxcNetworkTemplate := `
+lxc.network.type=veth
+lxc.network.veth.pair={{.TapName}}
+lxc.network.script.up={{.UpScript}}
+lxc.network.script.down={{.DownScript}}
+{{with .IFace.Ipv4Addr}}
+lxc.network.ipv4={{.IFace.Ipv4Addr}}
+{{- end}}
+{{with .IFace.MacAddr}}
+lxc.network.hwaddr={{.IFace.MacAddr}}
+{{- end}}
+`
+
+func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
+	lxcconf, err := os.OpenFile(d.container.ConfigPath(), os.O_WRONLY | os.O_APPEND, 0)
 	if err != nil {
-		return errors.Wrapf(err, "Failed loading %s", LxcConfigFile)
+		return errors.Wrapf(err, "Failed opening %s", d.container.ConfigPath())
+	}
+	defer lxcconf.Close()
+
+	// Append lxc.network entries to tmp file.
+
+	/* Append comment header and lxc.network with no parameter
+			https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
+			lxc.network
+			may be used without a value to clear all previous network options.
+	*/
+	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n\n# Here clear all network options.\nlxc.network=\n")
+	nwTemplate, err := template.New("lxc.network").Parse(lxcNetworkTemplate)
+	if err != nil {
+		errors.Wrap(err, "Failed to parse lxc.network template")
 	}
 
-	cf := cleanConfigFile(string(f))
-
-	var newSettings string
-	//for i, _ := range interfaces {
-	newSettings = updateSettings(interfaces[0], newSettings)
-	//}
-
-	result := strings.Join([]string{cf, newSettings}, "")
-	err = ioutil.WriteFile(LxcConfigFile, []byte(result), 0644)
-	if err != nil {
-		return errors.Wrapf(err, "Couldn't save %s", LxcConfigFile)
+	// Write lxc.network.* entries.
+	for _, i := range resource.Interfaces {
+		var tval := struct {
+			IFace *model.LxcTemplate_Interface,
+			TapName string,
+			UpScript string,
+			DownScript string,
+		}{
+			IFace: i,
+			TapName: d.container.Name(),
+		}
+		if err := nwTemplate.Execute(lxcconf, tval); err != nil {
+			return errors.Wrapf(err, "Failed to render lxc.network template: %v", tval)
+		}
 	}
-	d.log.Debug(result)
+	lxcconf.Sync()
+
+	if d.log.Level <= log.DebugLevel {
+		buf, _ := ioutil.ReadFile(d.container.ConfigPath())
+		d.log.Debug(string(buf))
+	}
 	return nil
 }
 
-func updateSettings(nwi NetworkInterface, input string) string {
+func (d *LXCHypervisorDriver) updateSettings(nwi NetworkInterface, input string) string {
 
 	settings.TapName = nwi.TapName
 
@@ -233,34 +269,14 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	}
 
-	LxcConfigFile = c.ConfigFileName()
-
-	ContainerName = d.name
-
-
 	d.log.Infoln("Creating lxc-container...")
 	if err := d.container.Create(d.template); err != nil {
 		return errors.Wrap(err, "Failed lxc.Create")
 	}
 
-	loadConfigFile()
-
-	for _, i := range lxcTmpl.GetInterfaces() {
-		interfaces = append(interfaces,
-			NetworkInterface{
-				Type:     i.GetBridge(),
-				Ipv4Addr: i.GetIpv4Addr(),
-				MacAddr:  i.GetMacaddr(),
-				TapName:  d.name,
-			},
-		)
-	}
-
-	if err := d.modifyConf(); err != nil {
+	if err := d.modifyConf(lxcTmpl); err != nil {
 		return err
 	}
-
-	interfaces = nil
 
 	return nil
 
