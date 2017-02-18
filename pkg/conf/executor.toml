@@ -6,15 +6,15 @@ script-path = "/etc/openvdc/scripts/"
 # endpoint = "zk://localhost/openvdc"
 
 [bridges]
+name = "br0"
+type = "linux"
 	[bridges.linux]
-	name = "br0"
-	up-script = "linux-bridge-up.sh"
-	down-script = "linux-bridge-down.sh"
+	# up-script = "linux-bridge-up.sh"
+	# down-script = "linux-bridge-down.sh"
 
 	[bridges.ovs]
-	name = "br0"
-	up-script = "ovs-up.sh"
-	down-script = "ovs-down.sh"
+	# up-script = "ovs-up.sh"
+	# down-script = "ovs-down.sh"
 
 [executor-api]
 # listen = "0.0.0.0:19372"
