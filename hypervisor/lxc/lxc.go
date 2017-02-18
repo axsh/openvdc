@@ -133,6 +133,7 @@ type LXCHypervisorDriver struct {
 
 const lxcNetworkTemplate = `
 lxc.network.type=veth
+lxc.network.flags=up
 lxc.network.veth.pair={{.TapName}}
 lxc.network.script.up={{.UpScript}}
 lxc.network.script.down={{.DownScript}}
@@ -158,7 +159,7 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	lxc.network
 	may be used without a value to clear all previous network options.
 	*/
-	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n\n# Here clear all network options.\nlxc.network=\n")
+	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n\n# Here clear all network options.\nlxc.network\n")
 	nwTemplate, err := template.New("lxc.network").Parse(lxcNetworkTemplate)
 	if err != nil {
 		errors.Wrap(err, "Failed to parse lxc.network template")
