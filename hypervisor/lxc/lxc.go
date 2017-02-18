@@ -24,8 +24,6 @@ import (
 	"path/filepath"
 )
 
-var LxcConfigFile string
-var ContainerName string
 type BridgeType int
 const (
 	None BridgeType = iota // 0
@@ -53,15 +51,6 @@ var settings struct {
 	OvsUpScript     string
 	OvsDownScript   string
 }
-
-type NetworkInterface struct {
-	Type     string
-	Ipv4Addr string
-	MacAddr  string
-	TapName  string
-}
-
-var interfaces []NetworkInterface
 
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
@@ -127,8 +116,6 @@ func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.H
 
 	return &LXCHypervisorDriver{
 		log:     log.WithFields(log.Fields{"hypervisor":"lxc", "instance_id": containerName}),
-		lxcpath: lxc.DefaultConfigPath(),
-		name:    containerName,
 		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
 		template: lxc.DownloadTemplateOptions,
 		container: c,
@@ -139,9 +126,7 @@ type LXCHypervisorDriver struct {
 	log       *log.Entry
 	imageName string
 	hostName  string
-	lxcpath   string
 	template  lxc.TemplateOptions
-	name      string
 	container	*lxc.Container
 }
 
