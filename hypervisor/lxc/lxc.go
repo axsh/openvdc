@@ -15,15 +15,16 @@ import (
 	"unsafe"
 
 	log "github.com/Sirupsen/logrus"
-  "github.com/kr/pty"
-	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
+	"github.com/kr/pty"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 type BridgeType int
+
 const (
 	None BridgeType = iota // 0
 	Linux
@@ -32,11 +33,11 @@ const (
 
 func (t BridgeType) String() string {
 	switch t {
-		case Linux:
+	case Linux:
 		return "linux"
-		case OVS:
+	case OVS:
 		return "ovs"
-		default:
+	default:
 		return "none"
 	}
 }
@@ -44,7 +45,7 @@ func (t BridgeType) String() string {
 var settings struct {
 	ScriptPath      string
 	BridgeName      string
-	BridgeType 			BridgeType
+	BridgeType      BridgeType
 	LinuxUpScript   string
 	LinuxDownScript string
 	OvsUpScript     string
@@ -73,19 +74,19 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		settings.BridgeName = sub.GetString("bridges.name")
 		if sub.IsSet("bridges.type") {
 			switch sub.GetString("bridges.type") {
-				case "linux":
+			case "linux":
 				settings.BridgeType = Linux
-				case "ovs":
+			case "ovs":
 				settings.BridgeType = OVS
-				default:
+			default:
 				return errors.Errorf("Unknown bridges.type value: %s", sub.GetString("bridges.type"))
 			}
 		}
-	}else	if sub.IsSet("bridges.linux.name") {
+	} else if sub.IsSet("bridges.linux.name") {
 		log.Warn("bridges.linux.name is obsolete option")
 		settings.BridgeName = sub.GetString("bridges.linux.name")
 		settings.BridgeType = Linux
-	}else	if sub.IsSet("bridges.ovs.name") {
+	} else if sub.IsSet("bridges.ovs.name") {
 		log.Warn("bridges.ovs.name is obsolete option")
 		settings.BridgeName = sub.GetString("bridges.ovs.name")
 		settings.BridgeType = OVS
@@ -115,9 +116,9 @@ func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.H
 	}
 
 	return &LXCHypervisorDriver{
-		log:     log.WithFields(log.Fields{"hypervisor":"lxc", "instance_id": containerName}),
+		log: log.WithFields(log.Fields{"hypervisor": "lxc", "instance_id": containerName}),
 		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
-		template: lxc.DownloadTemplateOptions,
+		template:  lxc.DownloadTemplateOptions,
 		container: c,
 	}, nil
 }
@@ -127,9 +128,8 @@ type LXCHypervisorDriver struct {
 	imageName string
 	hostName  string
 	template  lxc.TemplateOptions
-	container	*lxc.Container
+	container *lxc.Container
 }
-
 
 const lxcNetworkTemplate = `
 lxc.network.type=veth
@@ -145,7 +145,7 @@ lxc.network.hwaddr={{.IFace.MacAddr}}
 `
 
 func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
-	lxcconf, err := os.OpenFile(d.container.ConfigPath(), os.O_WRONLY | os.O_APPEND, 0)
+	lxcconf, err := os.OpenFile(d.container.ConfigPath(), os.O_WRONLY|os.O_APPEND, 0)
 	if err != nil {
 		return errors.Wrapf(err, "Failed opening %s", d.container.ConfigPath())
 	}
@@ -154,9 +154,9 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	// Append lxc.network entries to tmp file.
 
 	/* Append comment header and lxc.network with no parameter
-			https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
-			lxc.network
-			may be used without a value to clear all previous network options.
+	https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
+	lxc.network
+	may be used without a value to clear all previous network options.
 	*/
 	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n\n# Here clear all network options.\nlxc.network=\n")
 	nwTemplate, err := template.New("lxc.network").Parse(lxcNetworkTemplate)
@@ -167,13 +167,13 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	// Write lxc.network.* entries.
 	for idx, i := range resource.Interfaces {
 		tval := struct {
-			IFace *model.LxcTemplate_Interface
-			TapName string
-			UpScript string
+			IFace      *model.LxcTemplate_Interface
+			TapName    string
+			UpScript   string
 			DownScript string
-			IFIndex int
+			IFIndex    int
 		}{
-			IFace: i,
+			IFace:   i,
 			IFIndex: idx,
 			TapName: d.container.Name(),
 		}
@@ -198,7 +198,7 @@ func (d *LXCHypervisorDriver) renderUpDownScript(scriptTemplate, generateScript 
 		return errors.Wrapf(err, "Failed to parse script template: %s", tmplPath)
 	}
 	genPath := filepath.Join(containerDir, generateScript)
-	gen, err := os.OpenFile(genPath, os.O_CREATE | os.O_WRONLY, 0755)
+	gen, err := os.OpenFile(genPath, os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create up/down script: %s", genPath)
 	}
@@ -230,22 +230,22 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	}
 
 	switch settings.BridgeType {
-		case Linux:
-			if err := d.renderUpDownScript(settings.LinuxUpScript, "up.sh"); err != nil {
-				return err
-			}
-			if err := d.renderUpDownScript(settings.LinuxDownScript, "down.sh"); err != nil {
-				return err
-			}
-		case OVS:
-			if err := d.renderUpDownScript(settings.OvsUpScript, "up.sh"); err != nil {
-				return err
-			}
-			if err := d.renderUpDownScript(settings.OvsDownScript, "down.sh"); err != nil {
-				return err
-			}
-		default:
-			log.Fatalf("BUGON: Unknown bridge type: %s", settings.BridgeType)
+	case Linux:
+		if err := d.renderUpDownScript(settings.LinuxUpScript, "up.sh"); err != nil {
+			return err
+		}
+		if err := d.renderUpDownScript(settings.LinuxDownScript, "down.sh"); err != nil {
+			return err
+		}
+	case OVS:
+		if err := d.renderUpDownScript(settings.OvsUpScript, "up.sh"); err != nil {
+			return err
+		}
+		if err := d.renderUpDownScript(settings.OvsDownScript, "down.sh"); err != nil {
+			return err
+		}
+	default:
+		log.Fatalf("BUGON: Unknown bridge type: %s", settings.BridgeType)
 	}
 	return nil
 
@@ -299,11 +299,11 @@ func (d *LXCHypervisorDriver) InstanceConsole() hypervisor.Console {
 }
 
 type lxcConsole struct {
-	lxc *LXCHypervisorDriver
+	lxc      *LXCHypervisorDriver
 	attached *os.Process
-	wg *sync.WaitGroup
-	pty *os.File
-	tty string
+	wg       *sync.WaitGroup
+	pty      *os.File
+	tty      string
 }
 
 func (con *lxcConsole) container() *lxc.Container {
@@ -315,8 +315,8 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 		return errors.New("lxc-container can not perform console")
 	}
 
-  return con.attachShell(stdin, stdout, stderr)
-  //return con.console(stdin, stdout, stderr)
+	return con.attachShell(stdin, stdout, stderr)
+	//return con.console(stdin, stdout, stderr)
 }
 
 func (con *lxcConsole) Wait() error {
@@ -359,7 +359,7 @@ func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) er
 	defer ftty.Close()
 
 	wg.Add(1)
-	go func(){
+	go func() {
 		defer wg.Done()
 		io.Copy(fpty, stdin)
 	}()
@@ -386,7 +386,7 @@ func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) er
 	}
 
 	options := lxc.DefaultAttachOptions
-	options.StdinFd	= ftty.Fd()
+	options.StdinFd = ftty.Fd()
 	options.StdoutFd = ftty.Fd()
 	options.StderrFd = ftty.Fd()
 	options.ClearEnv = true
@@ -426,9 +426,9 @@ func (con *lxcConsole) console(stdin io.Reader, stdout, stderr io.Writer) error 
 	go io.Copy(stderr, os.Stderr)
 
 	options := lxc.DefaultConsoleOptions
-	options.StdinFd					= ftty.Fd()
-	options.StdoutFd				= ftty.Fd()
-	options.StderrFd				= ftty.Fd()
+	options.StdinFd = ftty.Fd()
+	options.StdoutFd = ftty.Fd()
+	options.StderrFd = ftty.Fd()
 	options.EscapeCharacter = '~'
 
 	if err := con.container().Console(options); err != nil {
