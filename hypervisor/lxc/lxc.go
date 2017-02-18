@@ -180,14 +180,16 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	}
 
 	// Write lxc.network.* entries.
-	for _, i := range resource.Interfaces {
+	for idx, i := range resource.Interfaces {
 		var tval := struct {
 			IFace *model.LxcTemplate_Interface,
 			TapName string,
 			UpScript string,
 			DownScript string,
+			IFIndex int,
 		}{
 			IFace: i,
+			IFIndex: idx,
 			TapName: d.container.Name(),
 		}
 		if err := nwTemplate.Execute(lxcconf, tval); err != nil {
