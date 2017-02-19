@@ -9,12 +9,12 @@ script-path = "/etc/openvdc/scripts/"
 name = "br0"
 type = "linux"
 	[bridges.linux]
-	# up-script = "linux-bridge-up.sh"
-	# down-script = "linux-bridge-down.sh"
+	# up-script = "linux-bridge-up.sh.tmpl"
+	# down-script = "linux-bridge-down.sh.tmpl"
 
 	[bridges.ovs]
-	# up-script = "ovs-up.sh"
-	# down-script = "ovs-down.sh"
+	# up-script = "ovs-up.sh.tmpl"
+	# down-script = "ovs-down.sh.tmpl"
 
 [executor-api]
 # listen = "0.0.0.0:19372"

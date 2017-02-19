@@ -8,13 +8,13 @@ endpoint = "zk://10.0.100.10/openvdc"
 [bridges]
 	[bridges.linux]
 	name = "virbr0"
-  up-script = "linux-bridge-up.sh"
-	down-script = "linux-bridge-down.sh"
+  up-script = "linux-bridge-up.sh.tmpl"
+	down-script = "linux-bridge-down.sh.tmpl"
 
 	[bridges.ovs]
 	name = "br0"
-	up-script = "ovs-up.sh"
-	down-script = "ovs-down.sh"
+	up-script = "ovs-up.sh.tmpl"
+	down-script = "ovs-down.sh.tmpl"
 
 
 [executor-api]
