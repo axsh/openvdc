@@ -165,6 +165,7 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 		errors.Wrap(err, "Failed to parse lxc.network template")
 	}
 
+	d.log.Debug("resource:", resource)
 	// Write lxc.network.* entries.
 	for idx, i := range resource.Interfaces {
 		tval := struct {
