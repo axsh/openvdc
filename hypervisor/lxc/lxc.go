@@ -177,6 +177,8 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 			IFace:   i,
 			IFIndex: idx,
 			TapName: d.container.Name(),
+			UpScript: filepath.Join(d.containerDir(), "up.sh"),
+			DownScript: filepath.Join(d.containerDir(), "down.sh"),
 		}
 		if err := nwTemplate.Execute(lxcconf, tval); err != nil {
 			return errors.Wrapf(err, "Failed to render lxc.network template: %v", tval)
@@ -191,14 +193,18 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	return nil
 }
 
-func (d *LXCHypervisorDriver) renderUpDownScript(scriptTemplate, generateScript string) error {
+func (d *LXCHypervisorDriver) containerDir() string {
 	containerDir, _ := filepath.Split(d.container.ConfigFileName())
+	return containerDir
+}
+
+func (d *LXCHypervisorDriver) renderUpDownScript(scriptTemplate, generateScript string) error {
 	tmplPath := filepath.Join(settings.ScriptPath, scriptTemplate)
 	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to parse script template: %s", tmplPath)
 	}
-	genPath := filepath.Join(containerDir, generateScript)
+	genPath := filepath.Join(d.containerDir(), generateScript)
 	gen, err := os.OpenFile(genPath, os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create up/down script: %s", genPath)
