@@ -140,8 +140,8 @@ lxc.network.script.down={{.DownScript}}
 {{with .IFace.Ipv4Addr}}
 lxc.network.ipv4={{.IFace.Ipv4Addr}}
 {{- end}}
-{{with .IFace.MacAddr}}
-lxc.network.hwaddr={{.IFace.MacAddr}}
+{{with .IFace.Macaddr}}
+lxc.network.hwaddr={{.IFace.Macaddr}}
 {{- end}}
 `
 
