@@ -87,8 +87,6 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-executor
 %dir /etc/openvdc
 %config(noreplace) /etc/openvdc/executor.toml
-%dir /etc/firewalld
-%dir /etc/firewalld/services
 %config(noreplace) /etc/firewalld/services/vdc-executor.xml
 
 %post executor
@@ -109,8 +107,6 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-scheduler
 %{_unitdir}/openvdc-scheduler.service
 %config(noreplace) /etc/openvdc/scheduler.toml
-%dir /etc/firewalld
-%dir /etc/firewalld/services
 %config(noreplace) /etc/firewalld/services/vdc-scheduler.xml
 
 %post scheduler
