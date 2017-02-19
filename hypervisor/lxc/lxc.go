@@ -152,14 +152,28 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	}
 	defer lxcconf.Close()
 
-	// Append lxc.network entries to tmp file.
+	// Start to append lxc.network entries to tmp file.
 
-	/* Append comment header and lxc.network with no parameter
-	https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
-	lxc.network
-	may be used without a value to clear all previous network options.
-	*/
-	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n\n# Here clear all network options.\nlxc.network=\n")
+	// Append comment header
+	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n")
+
+	if lxc.VersionAtLeast(1,1,0) {
+		/*
+		https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
+		lxc.network
+		may be used without a value to clear all previous network options.
+
+		However requires the change 6b0d5538.
+		https://github.com/lxc/lxc/commit/6b0d553864a16462850d87d4d2e9056ea136ebad
+		*/
+		fmt.Fprintf(lxcconf, "# Here clear all network options.\nlxc.network=\n")
+	}else{
+		/*
+		lxc.network.type with no value does same thing.
+		https://github.com/lxc/lxc/blob/stable-1.0/src/lxc/confile.c#L369-L377
+		*/
+		fmt.Fprintf(lxcconf, "# Here clear all network options.\nlxc.network.type=\n")
+	}
 	nwTemplate, err := template.New("lxc.network").Parse(lxcNetworkTemplate)
 	if err != nil {
 		errors.Wrap(err, "Failed to parse lxc.network template")
