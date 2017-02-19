@@ -99,13 +99,13 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %{_unitdir}/openvdc-scheduler.service
 %config(noreplace) /etc/openvdc/scheduler.toml
 
-%post
+%post scheduler
 %{systemd_post openvdc-scheduler.service}
 
-%postun
+%postun scheduler
 %{systemd_postun openvdc-scheduler.service}
 
-%preun
+%preun scheduler
 %{systemd_preun openvdc-scheduler.service}
 
 %package acceptance-test
