@@ -35,7 +35,7 @@ func waitUntil(t *testing.T, d time.Duration, cb func()error) {
 }
 
 func TestLXCInstance(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"Interfaces":[{"bridge":"linux"}]}`)
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"interfaces":[{"type":"veth", "bridge":"linux"}]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
