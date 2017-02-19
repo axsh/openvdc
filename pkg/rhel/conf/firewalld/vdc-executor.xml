@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>OpenVDC Executor</short>
+  <description>Listen ports</description>
+  <port protocol="tcp" port="19372"/>
+</service>

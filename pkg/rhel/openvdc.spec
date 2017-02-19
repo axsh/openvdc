@@ -56,6 +56,8 @@ cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
+mkdir -p "$RPM_BUILD_ROOT"/etc/firewalld/services
+cp pkg/rhel/conf/firewalld/* "$RPM_BUILD_ROOT"/etc/firewalld/services
 
 %package cli
 Summary: OpenVDC cli
@@ -85,6 +87,15 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-executor
 %dir /etc/openvdc
 %config(noreplace) /etc/openvdc/executor.toml
+%dir /etc/firewalld
+%dir /etc/firewalld/services
+%config(noreplace) /etc/firewalld/services/vdc-executor.xml
+
+%post executor
+%{firewalld_reload}
+
+%postun executor
+%{firewalld_reload}
 
 %package scheduler
 Summary: OpenVDC scheduler
@@ -98,12 +109,17 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-scheduler
 %{_unitdir}/openvdc-scheduler.service
 %config(noreplace) /etc/openvdc/scheduler.toml
+%dir /etc/firewalld
+%dir /etc/firewalld/services
+%config(noreplace) /etc/firewalld/services/vdc-scheduler.xml
 
 %post scheduler
 %{systemd_post openvdc-scheduler.service}
+%{firewalld_reload}
 
 %postun scheduler
 %{systemd_postun openvdc-scheduler.service}
+%{firewalld_reload}
 
 %preun scheduler
 %{systemd_preun openvdc-scheduler.service}
