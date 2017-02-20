@@ -77,6 +77,8 @@ Summary: OpenVDC executor
 Requires: lxc
 Requires: lxc-templates
 Requires: bridge-utils
+Requires: firewalld-filesystem
+Requires(post): firewalld-filesystem
 
 %description executor
 This is a 'stub'. An appropriate message must be substituted at some point.
@@ -94,6 +96,8 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 
 %package scheduler
 Summary: OpenVDC scheduler
+Requires: firewalld-filesystem
+Requires(post): firewalld-filesystem
 
 %description scheduler
 This is a 'stub'. An appropriate message must be substituted at some point.
