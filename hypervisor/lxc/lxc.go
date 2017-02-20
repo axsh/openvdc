@@ -137,11 +137,11 @@ lxc.network.flags=up
 lxc.network.veth.pair={{.TapName}}
 lxc.network.script.up={{.UpScript}}
 lxc.network.script.down={{.DownScript}}
-{{with .IFace.Ipv4Addr}}
-lxc.network.ipv4={{.IFace.Ipv4Addr}}
+{{- with .IFace.Ipv4Addr}}
+lxc.network.ipv4={{$.IFace.Ipv4Addr}}
 {{- end}}
-{{with .IFace.Macaddr}}
-lxc.network.hwaddr={{.IFace.Macaddr}}
+{{- with .IFace.Macaddr}}
+lxc.network.hwaddr={{$.IFace.Macaddr}}
 {{- end}}
 `
 
