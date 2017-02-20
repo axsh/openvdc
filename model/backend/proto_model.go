@@ -54,7 +54,7 @@ type ProtoWrapper struct {
 	filters []ProtoFilter
 }
 
-func NewProtoWrapper(bk ModelBackend) *ProtoWrapper {
+func NewProtoWrapper(bk ModelBackend) ProtoModelBackend {
 	return &ProtoWrapper{bk, []ProtoFilter{}}
 }
 

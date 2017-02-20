@@ -122,7 +122,19 @@ func execute(cmd *cobra.Command, args []string) {
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
 	}
 
+	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		err := model.ClusterClose(ctx)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
 	scheduler.Run(
+		ctx,
 		viper.GetString("mesos.listen"),
 		viper.GetString("api.endpoint"),
 		viper.GetString("mesos.master"),
@@ -133,6 +145,7 @@ func execute(cmd *cobra.Command, args []string) {
 
 func main() {
 	flag.CommandLine.Parse([]string{})
+	log.SetFormatter(&cmd.LogFormatter{})
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
