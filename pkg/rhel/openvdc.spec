@@ -92,9 +92,6 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %post executor
 %{firewalld_reload}
 
-%postun executor
-%{firewalld_reload}
-
 %package scheduler
 Summary: OpenVDC scheduler
 
@@ -115,7 +112,6 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 
 %postun scheduler
 %{systemd_postun openvdc-scheduler.service}
-%{firewalld_reload}
 
 %preun scheduler
 %{systemd_preun openvdc-scheduler.service}
