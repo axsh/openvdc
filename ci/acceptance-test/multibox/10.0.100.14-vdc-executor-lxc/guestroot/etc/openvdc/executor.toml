@@ -6,13 +6,13 @@ script-path = "/etc/openvdc/scripts/"
 endpoint = "zk://10.0.100.10/openvdc"
 
 [bridges]
+name = "br0"
+type = "linux"
 	[bridges.linux]
-	name = "virbr0"
   up-script = "linux-bridge-up.sh.tmpl"
 	down-script = "linux-bridge-down.sh.tmpl"
 
 	[bridges.ovs]
-	name = "br0"
 	up-script = "ovs-up.sh.tmpl"
 	down-script = "ovs-down.sh.tmpl"
 
