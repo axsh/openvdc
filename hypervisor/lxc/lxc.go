@@ -251,6 +251,12 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		return err
 	}
 
+	// Force reload the modified container config.
+	d.container.ClearConfig()
+	if err := d.container.LoadConfigFile( d.container.ConfigFileName() ); err != nil {
+		return errors.Wrap(err, "Failed lxc.LoadConfigFile")
+	}
+
 	switch settings.BridgeType {
 	case Linux:
 		if err := d.renderUpDownScript(settings.LinuxUpScript, "up.sh"); err != nil {
