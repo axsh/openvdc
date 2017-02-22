@@ -18,6 +18,35 @@ func OpenVdcInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+
+			"interface": &schema.Schema{
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+							//TODO: Set default "veth"
+						},
+
+						"bridge": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+
+						"ipv4addr": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+
+						"macaddr": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
