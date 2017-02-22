@@ -3,6 +3,12 @@
     "vendor/**": true,
     "vendor/vendor.json": false
   },
+  "protoc": {
+    "options": [
+      "--proto_path=${workspaceRoot}/proto",
+      "--proto_path=${env.GOPATH}/src"
+    ]
+  },
   "json.schemas": [
     {
       "fileMatch": [

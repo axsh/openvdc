@@ -5,15 +5,18 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // Handle resource template represented by URI and
 // locates on the remote system.
 type RemoteRegistry struct {
+	FetchRetry int
 }
 
 func NewRemoteRegistry() *RemoteRegistry {
-	return &RemoteRegistry{}
+	return &RemoteRegistry{FetchRetry: 3}
 }
 
 func (r *RemoteRegistry) LocateURI(name string) string {
@@ -29,7 +32,15 @@ func (r *RemoteRegistry) Find(templateName string) (*RegistryTemplate, error) {
 	var input io.Reader
 	switch uri.Scheme {
 	case "http", "https":
-		res, err := http.Get(uri.String())
+		var res *http.Response
+		var err error
+		for i := 0; i < r.FetchRetry; i++ {
+			res, err = http.Get(uri.String())
+			if err == nil {
+				break
+			}
+			log.WithError(err).Warnf("http.Get failed retrying... %d/%d", i+1, r.FetchRetry)
+		}
 		if err != nil {
 			return nil, err
 		}
