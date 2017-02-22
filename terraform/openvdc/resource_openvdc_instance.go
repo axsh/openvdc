@@ -29,7 +29,7 @@ func OpenVdcInstance() *schema.Resource {
 						"type": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
-							//TODO: Set default "veth"
+							Default:  "veth",
 						},
 
 						"bridge": &schema.Schema{
