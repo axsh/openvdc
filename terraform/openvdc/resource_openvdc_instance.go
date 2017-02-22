@@ -1,6 +1,8 @@
 package openvdc
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
 )
@@ -52,7 +54,25 @@ func OpenVdcInstance() *schema.Resource {
 }
 
 func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
-	stdout, _, err := RunCmd("openvdc", "run", d.Get("template").(string))
+	// We use a byte buffer because if we'd use a string here, go would create
+	// a new string for every concatenation. Not very efficient. :p
+	var cmdOpts bytes.Buffer
+
+	cmdOpts.WriteString("{\"interfaces\":[")
+	if x := d.Get("interface"); x != nil {
+		for _, y := range x.(*schema.Set).List() {
+			z := y.(map[string]interface{})
+			bytes, err := json.Marshal(z)
+			if err != nil {
+				return err
+			}
+
+			cmdOpts.Write(bytes)
+		}
+	}
+	cmdOpts.WriteString("]}")
+
+	stdout, _, err := RunCmd("openvdc", "run", d.Get("template").(string), cmdOpts.String())
 	if err != nil {
 		return err
 	}
