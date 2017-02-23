@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api/executor"
 	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/hypervisor"
@@ -23,8 +23,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 )
-
-var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
@@ -68,7 +66,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 	_, err := driver.SendStatusUpdate(runStatus)
 	if err != nil {
-		log.Errorln("Couldn't send status update", err)
+		log.WithError(err).Errorln("Couldn't send status update")
 	}
 
 	err = exec.bootInstance(driver, taskInfo)
@@ -85,7 +83,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
 	instanceID := taskInfo.GetTaskId().GetValue()
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -101,7 +99,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -148,7 +146,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 }
 
 func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -164,7 +162,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -183,7 +181,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	log.Infof("Starting instance")
 	err = hv.StartInstance()
 	if err != nil {
-		log.Error("Failed StartInstance")
+		log.WithError(err).Error("Failed StartInstance")
 		return err
 	}
 	log.Infof("Instance started successfully")
@@ -193,7 +191,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 }
 
 func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -209,7 +207,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -238,7 +236,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 }
 
 func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -261,7 +259,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -291,7 +289,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 
 	err = hv.DestroyInstance()
 	if err != nil {
-		log.Error("Failed DestroyInstance")
+		log.WithError(err).Error("Failed DestroyInstance")
 		return err
 	}
 	log.Infof("Instance terminated successfully")
@@ -415,7 +413,7 @@ func initConfig() {
 			// Ignore default conf file does not exist.
 			return
 		}
-		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+		log.WithError(err).Fatalf("Failed to load config %s", viper.ConfigFileUsed())
 	}
 }
 
@@ -435,6 +433,9 @@ func execute(cmd *cobra.Command, args []string) {
 	if ok == false {
 		log.Fatalln("Unknown hypervisor name:", viper.GetString("hypervisor.driver"))
 	}
+	if err := provider.LoadConfig(viper.GetViper()); err != nil {
+		log.WithError(err).Fatal("Failed to apply hypervisor configuration")
+	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
 	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
@@ -444,13 +445,13 @@ func execute(cmd *cobra.Command, args []string) {
 	defer func() {
 		err := model.ClusterClose(ctx)
 		if err != nil {
-			log.Error(err)
+			log.WithError(err).Error("Failed ClusterClose")
 		}
 	}()
 
 	executorAPIListener, err := net.Listen("tcp", viper.GetString("executor-api.listen"))
 	if err != nil {
-		log.Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
+		log.WithError(err).Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
 	}
 	s := startExecutorAPIServer(ctx, executorAPIListener)
 	defer s.GracefulStop()
@@ -506,24 +507,24 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {
-		log.Fatalln("Couldn't create ExecutorDriver ", err)
+		log.WithError(err).Fatal("Couldn't create ExecutorDriver")
 	}
 
 	_, err = driver.Start()
 	if err != nil {
-		log.Fatalln("ExecutorDriver wasn't able to start: ", err)
+		log.WithError(err).Fatalln("ExecutorDriver wasn't able to start")
 	}
 	log.Infoln("Process running")
 
 	_, err = driver.Join()
 	if err != nil {
-		log.Fatalln("Something went wrong with the driver: ", err)
+		log.WithError(err).Fatalln("Something went wrong with the driver")
 	}
 	log.Infoln("Executor shutting down")
 }
 
 func main() {
-	logrus.SetFormatter(&cmd.LogFormatter{})
+	log.SetFormatter(&cmd.LogFormatter{})
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
