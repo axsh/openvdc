@@ -292,11 +292,14 @@ func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMast
 
 	ExecutorPath = settings.ExecutorPath
 
+	cp := true
+
 	FrameworkInfo := &mesos.FrameworkInfo{
 		User:            proto.String(""),
 		Name:            proto.String(settings.Name),
 		FailoverTimeout: proto.Float64(settings.FailoverTimeout),
 		Id:              util.NewFrameworkID(settings.ID),
+		Checkpoint:      &cp,
 	}
 
 	config := sched.DriverConfig{
