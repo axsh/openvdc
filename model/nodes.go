@@ -42,7 +42,12 @@ func (i *nodes) Add(n Node) error {
 		return err
 	}
 
-	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", nodesBaseKey, n.GetUUID()), []byte{}); err != nil {
+	buf, err := proto.Marshal(n)
+	if err != nil {
+		return err
+	}
+
+	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", nodesBaseKey, n.GetUUID()), buf); err != nil {
 		return nil
 	}
 
