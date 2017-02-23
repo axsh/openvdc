@@ -56,6 +56,7 @@ func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId 
 		log.Error(err)
 		return
 	}
+
 	log.Infoln("Registered on OpenVDC cluster service: ", node)
 }
 
@@ -108,6 +109,16 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	getHypervisorName := func(offer *mesos.Offer) string {
 		for _, attr := range offer.Attributes {
 			if attr.GetName() == "hypervisor" &&
+				attr.GetType() == mesos.Value_TEXT {
+				return attr.GetText().GetValue()
+			}
+		}
+		return ""
+	}
+
+	getAgentUUID := func(offer *mesos.Offer) string {
+		for _, attr := range offer.Attributes {
+			if attr.GetName() == "id" &&
 				attr.GetType() == mesos.Value_TEXT {
 				return attr.GetText().GetValue()
 			}
@@ -203,8 +214,20 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		acceptIDs = append(acceptIDs, found.Id)
 
 		// Associate mesos Slave ID to the instance.
-		i.SlaveId = found.SlaveId.GetValue()
+
+		agentId := found.SlaveId.GetValue()
+
+		i.SlaveId = agentId
 		model.Instances(ctx).Update(i)
+
+		err = model.Nodes(ctx).Add(&model.AgentNode{
+			Uuid:    getAgentUUID(found),
+			Agentid: agentId,
+		})
+
+		if err != nil {
+			log.Infoln(err)
+		}
 	}
 	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	if err != nil {
