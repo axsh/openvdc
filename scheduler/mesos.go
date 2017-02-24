@@ -279,6 +279,32 @@ func (sched *VDCScheduler) FrameworkMessage(_ sched.SchedulerDriver, eid *mesos.
 
 func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID) {
 	log.Errorln("slave lost: %v", sid)
+
+	agentId := *sid.Value
+
+	ctx, err := model.Connect(context.Background(), sched.zkAddr)
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+	}
+
+	res, err := model.Nodes(ctx).FindByAgentID(agentId)
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch agent nodes")
+	}
+
+	agentUUID := res.Uuid
+
+	err = model.Nodes(ctx).Add(&model.AgentNode{
+		Uuid:    agentUUID,
+		Agentid: agentId,
+	})
+
+	if err != nil {
+		log.WithError(err).Error("Failed to add node %s to list of crashed agents", agentUUID)
+	}
+
+	log.Infoln("Added node %s to list of crashed agents", agentUUID)
+
 }
 
 func (sched *VDCScheduler) ExecutorLost(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, code int) {
