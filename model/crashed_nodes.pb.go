@@ -47,6 +47,13 @@ func (m *CrashedNode) GetCreatedAt() *google_protobuf.Timestamp {
 	return nil
 }
 
+func (m *CrashedNode) GetUUID() string {
+	if m != nil {
+		return m.Uuid
+	}
+	return ""
+}
+
 func (m *CrashedNode) GetReconnected() bool {
 	if m != nil {
 		return m.Reconnected
