@@ -22,7 +22,7 @@ type Node interface {
 type NodeOps interface {
 	Add(node Node) error
 	FindByUUID(nodeUUID string) (*AgentNode, error)
-	FindByAgentID(agentID string) ([]*AgentNode, error)
+	FindByAgentID(agentID string) (*AgentNode, error)
 	Filter(limit int, cb func(*AgentNode) int) error
 }
 
@@ -69,7 +69,7 @@ func (i *nodes) FindByUUID(nodeUUID string) (*AgentNode, error) {
 	return n, nil
 }
 
-func (i *nodes) FindByAgentID(agentID string) ([]*AgentNode, error) {
+func (i *nodes) FindByAgentID(agentID string) (*AgentNode, error) {
 
 	res := []*AgentNode{}
 	err := i.Filter(1, func(node *AgentNode) int {
@@ -81,7 +81,7 @@ func (i *nodes) FindByAgentID(agentID string) ([]*AgentNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	return res, nil
+	return res[0], nil
 }
 
 func (i *nodes) Filter(limit int, cb func(*AgentNode) int) error {
