@@ -294,9 +294,9 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 
 	agentUUID := res.Uuid
 
-	err = model.Nodes(ctx).Add(&model.AgentNode{
-		Uuid:    agentUUID,
-		Agentid: agentId,
+	err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
+		Uuid:        agentUUID,
+		Reconnected: false,
 	})
 
 	if err != nil {
