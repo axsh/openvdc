@@ -15,7 +15,7 @@ func init() {
 type CrashedAgentNode interface {
 	proto.Message
 	GetUUID() string
-	GetReconnected() string
+	GetReconnected() bool
 }
 
 type CrashedNodesOps interface {
