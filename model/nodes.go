@@ -21,7 +21,9 @@ type Node interface {
 
 type NodeOps interface {
 	Add(node Node) error
-	Find(nodeUUID string, node Node) error
+	FindByUUID(nodeUUID string) (*AgentNode, error)
+	FindByAgentID(agentID string) ([]*AgentNode, error)
+	Filter(limit int, cb func(*AgentNode) int) error
 }
 
 type nodes struct {
@@ -54,7 +56,53 @@ func (i *nodes) Add(n Node) error {
 	return nil
 }
 
-func (i *nodes) Find(nodeUUID string, in Node) error {
+func (i *nodes) FindByUUID(nodeUUID string) (*AgentNode, error) {
+	bk, err := i.connection()
+	if err != nil {
+		return nil, err
+	}
+	n := &AgentNode{}
+	if err := bk.Find(fmt.Sprintf("/%s/%s", nodesBaseKey, nodeUUID), n); err != nil {
+		return nil, err
+	}
 
+	return n, nil
+}
+
+func (i *nodes) FindByAgentID(agentID string) ([]*AgentNode, error) {
+
+	res := []*AgentNode{}
+	err := i.Filter(1, func(node *AgentNode) int {
+		if node.GetAgentID() == agentID {
+			res = append(res, node)
+		}
+		return len(res)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (i *nodes) Filter(limit int, cb func(*AgentNode) int) error {
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	keys, err := bk.Keys(fmt.Sprintf("/%s", nodesBaseKey))
+	if err != nil {
+		return err
+	}
+	for keys.Next() {
+		node, err := i.FindByUUID(keys.Value())
+		if err != nil {
+			return err
+		}
+		if limit > 0 && cb(node) > limit {
+			break
+		} else {
+			cb(node)
+		}
+	}
 	return nil
 }
