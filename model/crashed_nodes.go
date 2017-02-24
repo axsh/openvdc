@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
