@@ -12,16 +12,16 @@ func init() {
 	schemaKeys = append(schemaKeys, crashedNodesBaseKey)
 }
 
-type CrashedNode interface {
+type CrashedAgentNode interface {
 	proto.Message
 	GetUUID() string
 	GetReconnected() string
 }
 
 type CrashedNodesOps interface {
-	Add(node CrashedNode) error
-	Find(nodeUUID string, node CrashedNode) error
-	SetReconnected(nodeUUID string, node CrashedNode) error
+	Add(node CrashedAgentNode) error
+	Find(nodeUUID string, node CrashedAgentNode) error
+	SetReconnected(nodeUUID string, node CrashedAgentNode) error
 }
 
 type crashedNodes struct {
@@ -32,7 +32,7 @@ func CrashedNodes(ctx context.Context) CrashedNodesOps {
 	return &crashedNodes{base{ctx: ctx}}
 }
 
-func (i *crashedNodes) Add(n CrashedNode) error {
+func (i *crashedNodes) Add(n CrashedAgentNode) error {
 
 	if n.GetUUID() == "" {
 		return fmt.Errorf("ID is not set")
@@ -55,10 +55,10 @@ func (i *crashedNodes) Add(n CrashedNode) error {
 	return nil
 }
 
-func (i *crashedNodes) Find(nodeUUID string, in CrashedNode) error {
+func (i *crashedNodes) Find(nodeUUID string, in CrashedAgentNode) error {
 	return nil
 }
 
-func (i *crashedNodes) SetReconnected(nodeUUID string, in CrashedNode) error {
+func (i *crashedNodes) SetReconnected(nodeUUID string, in CrashedAgentNode) error {
 	return nil
 }
