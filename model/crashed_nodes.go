@@ -32,6 +32,25 @@ func CrashedNodes(ctx context.Context) CrashedNodesOps {
 }
 
 func (i *crashedNodes) Add(n CrashedNode) error {
+
+	if n.GetUUID() == "" {
+		return fmt.Errorf("ID is not set")
+	}
+
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+
+	buf, err := proto.Marshal(n)
+	if err != nil {
+		return err
+	}
+
+	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", crashedNodesBaseKey, n.GetUUID()), buf); err != nil {
+		return nil
+	}
+
 	return nil
 }
 
