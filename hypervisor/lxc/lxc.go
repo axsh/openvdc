@@ -191,7 +191,7 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 		}{
 			IFace:   i,
 			IFIndex: idx,
-			TapName: d.container.Name(),
+			TapName: fmt.Sprintf("%s_%02d", d.container.Name(), idx),
 			UpScript: filepath.Join(d.containerDir(), "up.sh"),
 			DownScript: filepath.Join(d.containerDir(), "down.sh"),
 		}
