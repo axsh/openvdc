@@ -21,8 +21,10 @@ type CrashedAgentNode interface {
 
 type CrashedNodesOps interface {
 	Add(node CrashedAgentNode) error
-	Find(agentID string, node CrashedAgentNode) error
-	SetReconnected(agentID string, node CrashedAgentNode) error
+	FindByAgentMesosID(agentMesosID string) (*CrashedNode, error)
+	FindByAgentID(agentID string) (*CrashedNode, error)
+	Filter(limit int, cb func(*CrashedNode) int) error
+	SetReconnected(agentID string, node *CrashedNode) error
 }
 
 type crashedNodes struct {
@@ -60,6 +62,57 @@ func (i *crashedNodes) Find(agentID string, in CrashedAgentNode) error {
 	return nil
 }
 
-func (i *crashedNodes) SetReconnected(agentID string, in CrashedAgentNode) error {
+func (i *crashedNodes) SetReconnected(string, *CrashedNode) error {
+	return nil
+}
+
+func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, error) {
+	bk, err := i.connection()
+	if err != nil {
+		return nil, err
+	}
+	n := &CrashedNode{}
+	if err := bk.Find(fmt.Sprintf("/%s/%s", crashedNodesBaseKey, agentMesosID), n); err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
+func (i *crashedNodes) FindByAgentID(agentID string) (*CrashedNode, error) {
+
+	res := []*CrashedNode{}
+	err := i.Filter(1, func(node *CrashedNode) int {
+		if node.GetAgentID() == agentID {
+			res = append(res, node)
+		}
+		return len(res)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res[0], nil
+}
+
+func (i *crashedNodes) Filter(limit int, cb func(*CrashedNode) int) error {
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	keys, err := bk.Keys(fmt.Sprintf("/%s", crashedNodesBaseKey))
+	if err != nil {
+		return err
+	}
+	for keys.Next() {
+		node, err := i.FindByAgentMesosID(keys.Value())
+		if err != nil {
+			return err
+		}
+		if limit > 0 && cb(node) > limit {
+			break
+		} else {
+			cb(node)
+		}
+	}
 	return nil
 }
