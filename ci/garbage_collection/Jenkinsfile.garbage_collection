@@ -23,12 +23,12 @@ runs[1]= {
   }
 }
 
-runs[2]= {
-  node("master") {
-    checkout scm
-    sh "cd ci/garbage_collection/docker_cleanups ; ./docker_garbage_collection.sh"
-  }
-}
+//runs[2]= {
+//  node("master") {
+//    checkout scm
+//    sh "cd ci/garbage_collection/docker_cleanups ; ./docker_garbage_collection.sh"
+//  }
+//}
 
 node() {
     stage "Checkout"
