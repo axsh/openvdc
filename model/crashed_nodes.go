@@ -79,7 +79,12 @@ func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, er
 	if err != nil {
 		return nil, err
 	}
-	return res[0], nil
+
+	if len(res) > 0 {
+		return res[0], nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (i *crashedNodes) FindByAgentID(agentID string) (*CrashedNode, error) {
