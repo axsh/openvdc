@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/pborman/uuid"
 	"golang.org/x/net/context"
 )
 
@@ -48,7 +49,7 @@ func (i *crashedNodes) Add(n CrashedAgentNode) error {
 		return err
 	}
 
-	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", crashedNodesBaseKey, n.GetAgentID()), buf); err != nil {
+	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", crashedNodesBaseKey, uuid.New()), buf); err != nil {
 		return nil
 	}
 
