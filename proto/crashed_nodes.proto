@@ -8,6 +8,7 @@ option go_package = "github.com/axsh/openvdc/model";
 
 message CrashedNode {
   string agentid = 1;
-  google.protobuf.Timestamp created_at = 2;
+  string agentmesosid = 2;
   bool reconnected = 3;
+  google.protobuf.Timestamp created_at = 4;
 }
