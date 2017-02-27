@@ -90,6 +90,19 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 }
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
+
+	for _, offer := range offers {
+		wasDisconnected, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
+
+		if wasDisconnected != nil {
+			log.Infoln("Agent back online.")
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
 	queued, err := model.Instances(ctx).FilterByState(model.InstanceState_QUEUED)
 	if err != nil {
 		return err
@@ -295,8 +308,9 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 	agentID := res.Agentid
 
 	err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
-		Agentid:     agentID,
-		Reconnected: false,
+		Agentid:      agentID,
+		Agentmesosid: agentMesosID,
+		Reconnected:  false,
 	})
 
 	if err != nil {
