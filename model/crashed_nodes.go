@@ -67,20 +67,20 @@ func (i *crashedNodes) SetReconnected(string, *CrashedNode) error {
 }
 
 func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, error) {
-	bk, err := i.connection()
+	res := []*CrashedNode{}
+	err := i.Filter(1, func(node *CrashedNode) int {
+		if node.GetAgentMesosID() == agentMesosID {
+			res = append(res, node)
+		}
+		return len(res)
+	})
 	if err != nil {
 		return nil, err
 	}
-	n := &CrashedNode{}
-	if err := bk.Find(fmt.Sprintf("/%s/%s", crashedNodesBaseKey, agentMesosID), n); err != nil {
-		return nil, err
-	}
-
-	return n, nil
+	return res[0], nil
 }
 
 func (i *crashedNodes) FindByAgentID(agentID string) (*CrashedNode, error) {
-
 	res := []*CrashedNode{}
 	err := i.Filter(1, func(node *CrashedNode) int {
 		if node.GetAgentID() == agentID {
