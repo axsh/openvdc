@@ -7,7 +7,7 @@ package model;
 option go_package = "github.com/axsh/openvdc/model";
 
 message AgentNode {
-  string uuid = 1;
+  string agentmesosid = 1;
   string agentid = 2;
   google.protobuf.Timestamp created_at = 3;
 }

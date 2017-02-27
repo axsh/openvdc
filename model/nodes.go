@@ -16,12 +16,12 @@ func init() {
 type Node interface {
 	proto.Message
 	GetAgentID() string
-	GetUUID() string
+	GetAgentMesosID() string
 }
 
 type NodeOps interface {
 	Add(node Node) error
-	FindByUUID(nodeUUID string) (*AgentNode, error)
+	FindByAgentMesosID(agentMesosID string) (*AgentNode, error)
 	FindByAgentID(agentID string) (*AgentNode, error)
 	Filter(limit int, cb func(*AgentNode) int) error
 }
@@ -35,7 +35,7 @@ func Nodes(ctx context.Context) NodeOps {
 }
 
 func (i *nodes) Add(n Node) error {
-	if n.GetUUID() == "" {
+	if n.GetAgentID() == "" {
 		return fmt.Errorf("ID is not set")
 	}
 
@@ -49,20 +49,20 @@ func (i *nodes) Add(n Node) error {
 		return err
 	}
 
-	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", nodesBaseKey, n.GetUUID()), buf); err != nil {
+	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", nodesBaseKey, n.GetAgentID()), buf); err != nil {
 		return nil
 	}
 
 	return nil
 }
 
-func (i *nodes) FindByUUID(nodeUUID string) (*AgentNode, error) {
+func (i *nodes) FindByAgentMesosID(agentMesosID string) (*AgentNode, error) {
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
 	}
 	n := &AgentNode{}
-	if err := bk.Find(fmt.Sprintf("/%s/%s", nodesBaseKey, nodeUUID), n); err != nil {
+	if err := bk.Find(fmt.Sprintf("/%s/%s", nodesBaseKey, agentMesosID), n); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func (i *nodes) Filter(limit int, cb func(*AgentNode) int) error {
 		return err
 	}
 	for keys.Next() {
-		node, err := i.FindByUUID(keys.Value())
+		node, err := i.FindByAgentMesosID(keys.Value())
 		if err != nil {
 			return err
 		}

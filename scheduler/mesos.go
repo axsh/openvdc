@@ -116,7 +116,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		return ""
 	}
 
-	getAgentUUID := func(offer *mesos.Offer) string {
+	getAgentID := func(offer *mesos.Offer) string {
 		for _, attr := range offer.Attributes {
 			if attr.GetName() == "id" &&
 				attr.GetType() == mesos.Value_TEXT {
@@ -215,14 +215,14 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 		// Associate mesos Slave ID to the instance.
 
-		agentId := found.SlaveId.GetValue()
+		agentMesosId := found.SlaveId.GetValue()
 
-		i.SlaveId = agentId
+		i.SlaveId = agentMesosId
 		model.Instances(ctx).Update(i)
 
 		err = model.Nodes(ctx).Add(&model.AgentNode{
-			Uuid:    getAgentUUID(found),
-			Agentid: agentId,
+			Agentmesosid: agentMesosId,
+			Agentid:      getAgentID(found),
 		})
 
 		if err != nil {
@@ -280,35 +280,36 @@ func (sched *VDCScheduler) FrameworkMessage(_ sched.SchedulerDriver, eid *mesos.
 func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID) {
 	log.Errorln("slave lost: %v", sid)
 
-	agentId := *sid.Value
+	agentMesosID := *sid.Value
 
 	ctx, err := model.Connect(context.Background(), sched.zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
 	}
 
-	res, err := model.Nodes(ctx).FindByAgentID(agentId)
+	res, err := model.Nodes(ctx).FindByAgentMesosID(agentMesosID)
 	if err != nil {
 		log.WithError(err).Error("Failed to fetch agent nodes")
 	}
 
-	agentUUID := res.Uuid
+	agentID := res.Agentid
 
 	err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
-		Uuid:        agentUUID,
+		Agentid:     agentID,
 		Reconnected: false,
 	})
 
 	if err != nil {
-		log.WithError(err).Error("Failed to add node %s to list of crashed agents", agentUUID)
+		log.WithError(err).Error("Failed to add '%s' to list of crashed agents", agentID)
 	}
 
-	log.Infoln("Added node %s to list of crashed agents", agentUUID)
+	log.Infoln("Added '%s' to list of crashed agents", agentID)
 
 }
 
 func (sched *VDCScheduler) ExecutorLost(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, code int) {
 	log.Errorln("executor %q lost on slave %q code %d", eid, sid, code)
+
 }
 
 func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {

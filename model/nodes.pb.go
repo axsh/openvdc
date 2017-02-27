@@ -30,9 +30,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type AgentNode struct {
-	Uuid      string                     `protobuf:"bytes,1,opt,name=uuid" json:"uuid,omitempty"`
-	Agentid   string                     `protobuf:"bytes,2,opt,name=agentid" json:"agentid,omitempty"`
-	CreatedAt *google_protobuf.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt" json:"created_at,omitempty"`
+	Agentmesosid string                     `protobuf:"bytes,1,opt,name=agentmesosid" json:"agentmesosid,omitempty"`
+	Agentid      string                     `protobuf:"bytes,2,opt,name=agentid" json:"agentid,omitempty"`
+	CreatedAt    *google_protobuf.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt" json:"created_at,omitempty"`
 }
 
 func (m *AgentNode) Reset()                    { *m = AgentNode{} }
@@ -47,9 +47,9 @@ func (m *AgentNode) GetAgentID() string {
 	return ""
 }
 
-func (m *AgentNode) GetUUID() string {
+func (m *AgentNode) GetAgentMesosID() string {
 	if m != nil {
-		return m.Uuid
+		return m.Agentmesosid
 	}
 	return ""
 }

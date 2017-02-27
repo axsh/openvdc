@@ -30,7 +30,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type CrashedNode struct {
-	Uuid        string                     `protobuf:"bytes,1,opt,name=uuid" json:"uuid,omitempty"`
+	Agentid     string                     `protobuf:"bytes,1,opt,name=agentid" json:"agentid,omitempty"`
 	CreatedAt   *google_protobuf.Timestamp `protobuf:"bytes,2,opt,name=created_at,json=createdAt" json:"created_at,omitempty"`
 	Reconnected bool                       `protobuf:"bytes,3,opt,name=reconnected" json:"reconnected,omitempty"`
 }
@@ -47,9 +47,9 @@ func (m *CrashedNode) GetCreatedAt() *google_protobuf.Timestamp {
 	return nil
 }
 
-func (m *CrashedNode) GetUUID() string {
+func (m *CrashedNode) GetAgentID() string {
 	if m != nil {
-		return m.Uuid
+		return m.Agentid
 	}
 	return ""
 }
