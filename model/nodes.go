@@ -94,7 +94,7 @@ func (i *nodes) Filter(limit int, cb func(*AgentNode) int) error {
 		return err
 	}
 	for keys.Next() {
-		node, err := i.FindByAgentMesosID(keys.Value())
+		node, err := i.FindByAgentID(keys.Value())
 		if err != nil {
 			return err
 		}
