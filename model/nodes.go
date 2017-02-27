@@ -56,24 +56,24 @@ func (i *nodes) Add(n Node) error {
 	return nil
 }
 
-func (i *nodes) FindByAgentMesosID(agentMesosID string) (*AgentNode, error) {
+func (i *nodes) FindByAgentID(agentID string) (*AgentNode, error) {
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
 	}
 	n := &AgentNode{}
-	if err := bk.Find(fmt.Sprintf("/%s/%s", nodesBaseKey, agentMesosID), n); err != nil {
+	if err := bk.Find(fmt.Sprintf("/%s/%s", nodesBaseKey, agentID), n); err != nil {
 		return nil, err
 	}
 
 	return n, nil
 }
 
-func (i *nodes) FindByAgentID(agentID string) (*AgentNode, error) {
+func (i *nodes) FindByAgentMesosID(agentMesosID string) (*AgentNode, error) {
 
 	res := []*AgentNode{}
 	err := i.Filter(1, func(node *AgentNode) int {
-		if node.GetAgentID() == agentID {
+		if node.GetAgentMesosID() == agentMesosID {
 			res = append(res, node)
 		}
 		return len(res)
