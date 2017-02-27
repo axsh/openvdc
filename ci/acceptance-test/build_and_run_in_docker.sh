@@ -40,4 +40,4 @@ sudo docker build -t "${repo_and_tag}" --build-arg BRANCH="${BRANCH}" \
 
 sudo docker run --privileged -v "${DATA_DIR}":/data "${repo_and_tag}"
 
-sudo chgrp -R jenkins ${CACHE_DIR}
+sudo chown -R jenkins:jenkins "${CACHE_DIR}"/"${BRANCH}"
