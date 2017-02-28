@@ -69,7 +69,7 @@ func init() {
 	pfs.Float64("failover-timeout", viper.GetFloat64("scheduler.failover-timeout"), "Failover timeout")
 	viper.BindPFlag("scheduler.failover-timeout", pfs.Lookup("failover-timeout"))
 
-	pfs.Float64("executor-path", viper.GetFloat64("scheduler.executor-path"), "Executor path")
+	pfs.String("executor-path", viper.GetString("scheduler.executor-path"), "Executor path")
 	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
 
 	pfs.Bool("auto-reconnect", viper.GetBool("scheduler.auto-reconnect"), "Auto reconnect")
