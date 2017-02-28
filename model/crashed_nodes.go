@@ -37,16 +37,13 @@ func CrashedNodes(ctx context.Context) CrashedNodesOps {
 }
 
 func (i *crashedNodes) Add(n CrashedAgentNode) error {
-
 	if n.GetAgentID() == "" {
 		return fmt.Errorf("ID is not set")
 	}
-
 	bk, err := i.connection()
 	if err != nil {
 		return err
 	}
-
 	buf, err := proto.Marshal(n)
 	if err != nil {
 		return err
@@ -55,7 +52,6 @@ func (i *crashedNodes) Add(n CrashedAgentNode) error {
 	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", crashedNodesBaseKey, uuid.New()), buf); err != nil {
 		return nil
 	}
-
 	return nil
 }
 
@@ -68,7 +64,6 @@ func (i *crashedNodes) SetReconnected(string, *CrashedNode) error {
 }
 
 func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, error) {
-
 	res := []*CrashedNode{}
 	err := i.Filter(1, func(node *CrashedNode) int {
 		if node.GetAgentMesosID() == agentMesosID {
@@ -79,7 +74,6 @@ func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, er
 	if err != nil {
 		return nil, err
 	}
-
 	if len(res) > 0 {
 		return res[0], nil
 	} else {
@@ -98,7 +92,11 @@ func (i *crashedNodes) FindByAgentID(agentID string) (*CrashedNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	return res[0], nil
+	if len(res) > 0 {
+		return res[0], nil
+	} else {
+		return nil, nil
+	}
 }
 
 func (i *crashedNodes) Filter(limit int, cb func(*CrashedNode) int) error {
@@ -133,6 +131,5 @@ func (i *crashedNodes) FindByUUID(nodeUUID string) (*CrashedNode, error) {
 	if err := bk.Find(fmt.Sprintf("/%s/%s", crashedNodesBaseKey, nodeUUID), n); err != nil {
 		return nil, err
 	}
-
 	return n, nil
 }
