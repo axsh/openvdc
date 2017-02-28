@@ -90,11 +90,41 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
+func getHypervisorName(offer *mesos.Offer) string {
+	for _, attr := range offer.Attributes {
+		if attr.GetName() == "hypervisor" &&
+			attr.GetType() == mesos.Value_TEXT {
+			return attr.GetText().GetValue()
+		}
+	}
+	return ""
+}
+
+func getAgentID(offer *mesos.Offer) string {
+	for _, attr := range offer.Attributes {
+		if attr.GetName() == "openvdc-node-id" &&
+			attr.GetType() == mesos.Value_TEXT {
+			return attr.GetText().GetValue()
+		}
+	}
+	return ""
+}
+
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
 
 	disconnectedInstances := []*model.Instance{}
 
 	for _, offer := range offers {
+
+		err := model.Nodes(ctx).Add(&model.AgentNode{
+			Agentmesosid: *offer.SlaveId.Value,
+			Agentid:      getAgentID(offer),
+		})
+
+		if err != nil {
+			log.Infoln(err)
+		}
+
 		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
 
 		if err != nil {
@@ -134,26 +164,6 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			}
 		}
 		return nil
-	}
-
-	getHypervisorName := func(offer *mesos.Offer) string {
-		for _, attr := range offer.Attributes {
-			if attr.GetName() == "hypervisor" &&
-				attr.GetType() == mesos.Value_TEXT {
-				return attr.GetText().GetValue()
-			}
-		}
-		return ""
-	}
-
-	getAgentID := func(offer *mesos.Offer) string {
-		for _, attr := range offer.Attributes {
-			if attr.GetName() == "openvdc-node-id" &&
-				attr.GetType() == mesos.Value_TEXT {
-				return attr.GetText().GetValue()
-			}
-		}
-		return ""
 	}
 
 	findMatching := func(i *model.Instance) *mesos.Offer {
@@ -250,14 +260,15 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		i.SlaveId = agentMesosId
 		model.Instances(ctx).Update(i)
 
-		err = model.Nodes(ctx).Add(&model.AgentNode{
-			Agentmesosid: agentMesosId,
-			Agentid:      getAgentID(found),
-		})
+		/*
+			err = model.Nodes(ctx).Add(&model.AgentNode{
+				Agentmesosid: agentMesosId,
+				Agentid:      getAgentID(found),
+			})
 
-		if err != nil {
-			log.Infoln(err)
-		}
+			if err != nil {
+				log.Infoln(err)
+			}*/
 	}
 	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	if err != nil {
