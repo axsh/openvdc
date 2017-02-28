@@ -3,17 +3,16 @@ package main
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
 	"io"
 	"net"
 
-	"github.com/pkg/errors"
-
-	"crypto/elliptic"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
@@ -95,9 +94,19 @@ func (sshd *SSHServer) handleChannels(chans <-chan ssh.NewChannel, instanceID st
 	}
 }
 
+type ptyReq struct {
+	Term     string
+	Columns  uint32
+	Rows     uint32
+	Width    uint32
+	Height   uint32
+	Modelist string
+}
+
 type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
+	ptyreq     *ptyReq
 }
 
 func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
@@ -139,20 +148,27 @@ Done:
 			if r == nil {
 				break Done
 			}
+			log := log.WithField("sshreq", r.Type)
+			reply := true
 			switch r.Type {
 			case "shell":
-				if err := console.Attach(connection, connection, connection.Stderr()); err != nil {
-					log.Error(err)
-					return
+				ptycon, ok := console.(hypervisor.PtyConsole)
+				if session.ptyreq != nil && ok {
+					if err := ptycon.AttachPty(connection, connection, connection.Stderr()); err != nil {
+						reply = false
+						log.WithError(err).Error("Failed console.AttachPty")
+					}
+				} else {
+					if err := console.Attach(connection, connection, connection.Stderr()); err != nil {
+						reply = false
+						log.WithError(err).Error("Failed console.Attach")
+					}
 				}
-
-				go func() {
-					quit <- console.Wait()
-				}()
-				if err := r.Reply(true, nil); err != nil {
-					log.WithError(err).Warn("Failed to reply")
+				if reply == true {
+					go func() {
+						quit <- console.Wait()
+					}()
 				}
-
 			case "signal":
 				var msg struct {
 					Signal string
@@ -170,25 +186,22 @@ Done:
 					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
 				}
 			case "pty-req":
-				var ptyReq struct {
-					Term     string
-					Columns  uint32
-					Rows     uint32
-					Width    uint32
-					Height   uint32
-					Modelist string
-				}
-				if err := ssh.Unmarshal(r.Payload, &ptyReq); err != nil {
-					log.WithError(err).Error("Failed to parse pty-req message")
-				}
-				if err := r.Reply(true, nil); err != nil {
-					log.WithError(err).Warn("Failed to reply")
+				ptyreq := new(ptyReq)
+				if err := ssh.Unmarshal(r.Payload, ptyreq); err != nil {
+					reply = false
+					log.WithError(errors.WithStack(err)).Error("Failed to parse message")
+				} else {
+					session.ptyreq = ptyreq
 				}
 			default:
-				if r.WantReply {
-					r.Reply(false, nil)
+				reply = false
+				log.Warn("Unsupported session request")
+			}
+
+			if r.WantReply {
+				if err := r.Reply(reply, nil); err != nil {
+					log.WithError(errors.WithStack(err)).Warn("Failed to reply")
 				}
-				log.Warn("Unsupported session request: ", r.Type)
 			}
 		case err := <-quit:
 			if err != nil {
