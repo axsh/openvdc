@@ -39,6 +39,16 @@ func (i *nodes) Add(n Node) error {
 		return fmt.Errorf("ID is not set")
 	}
 
+	agentNode, err := i.FindByAgentID(n.GetAgentID())
+
+	if err != nil {
+		return err
+	}
+
+	if agentNode != nil {
+		return nil
+	}
+
 	bk, err := i.connection()
 	if err != nil {
 		return err
@@ -70,7 +80,6 @@ func (i *nodes) FindByAgentID(agentID string) (*AgentNode, error) {
 }
 
 func (i *nodes) FindByAgentMesosID(agentMesosID string) (*AgentNode, error) {
-
 	res := []*AgentNode{}
 	err := i.Filter(1, func(node *AgentNode) int {
 		if node.GetAgentMesosID() == agentMesosID {
@@ -87,7 +96,6 @@ func (i *nodes) FindByAgentMesosID(agentMesosID string) (*AgentNode, error) {
 	} else {
 		return nil, nil
 	}
-
 }
 
 func (i *nodes) Filter(limit int, cb func(*AgentNode) int) error {
