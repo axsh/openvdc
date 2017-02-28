@@ -21,6 +21,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+const defaultTermInfo = "vt100"
+
 func sshShell(instanceID string, destAddr string) error {
 	config := &ssh.ClientConfig{
 		User:    instanceID,
@@ -59,7 +61,11 @@ func sshShell(instanceID string, destAddr string) error {
 			ssh.ECHO:  0, // Disable echoing
 			ssh.IGNCR: 1, // Ignore CR on input.
 		}
-		if err := session.RequestPty("vt100", h, w, modes); err != nil {
+		term, ok := os.LookupEnv("TERM")
+		if !ok {
+			term = defaultTermInfo
+		}
+		if err := session.RequestPty(term, h, w, modes); err != nil {
 			return err
 		}
 	}
