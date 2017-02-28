@@ -525,6 +525,7 @@ func execute(cmd *cobra.Command, args []string) {
 
 func main() {
 	log.SetFormatter(&cmd.LogFormatter{})
+	log.SetLevel(log.DebugLevel)
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

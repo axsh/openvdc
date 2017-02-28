@@ -4,6 +4,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -15,6 +16,10 @@ type NullHypervisorProvider struct {
 
 func (n *NullHypervisorProvider) Name() string {
 	return "null"
+}
+
+func (n *NullHypervisorProvider) LoadConfig(sub *viper.Viper) error {
+	return nil
 }
 
 func (n *NullHypervisorProvider) CreateDriver(string) (hypervisor.HypervisorDriver, error) {

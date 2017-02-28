@@ -5,12 +5,17 @@ import (
 	"testing"
 
 	"github.com/axsh/openvdc/model"
+	"github.com/spf13/viper"
 )
 
 type testProvider struct{}
 
 func (p *testProvider) Name() string {
 	return "test"
+}
+
+func (p *testProvider) LoadConfig(sub *viper.Viper) error {
+	return nil
 }
 
 func (p *testProvider) CreateDriver(string) (HypervisorDriver, error) {

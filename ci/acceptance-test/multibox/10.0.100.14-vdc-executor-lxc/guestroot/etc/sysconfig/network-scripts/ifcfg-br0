@@ -1,4 +1,4 @@
-DEVICE=virbr0
+DEVICE=br0
 TYPE=Bridge
 BOOTPROTO=none
 ONBOOT=yes
