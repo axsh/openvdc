@@ -1,4 +1,4 @@
-package openvdc
+package cmd
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ var (
 	Builddate string
 	Goversion string
 )
-var GithubDefaultRef = "master"
 
 var VersionCmd = &cobra.Command{
 	Use:   "version",

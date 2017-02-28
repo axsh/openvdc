@@ -15,6 +15,8 @@ set -a
 set +a
 
 DATA_DIR="${DATA_DIR:-/data2}"
+CACHE_DIR="/data/openvdc-ci/branches"
+
 repo_and_tag="openvdc/acceptance-test:${BRANCH}.${RELEASE_SUFFIX}"
 
 function cleanup() {
@@ -37,3 +39,5 @@ sudo docker build -t "${repo_and_tag}" --build-arg BRANCH="${BRANCH}" \
                                   "${whereami}"
 
 sudo docker run --privileged -v "${DATA_DIR}":/data "${repo_and_tag}"
+
+sudo chown -R jenkins:jenkins "${CACHE_DIR}"/"${BRANCH}"

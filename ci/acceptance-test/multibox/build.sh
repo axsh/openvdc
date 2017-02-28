@@ -58,8 +58,8 @@ if [[ "$REBUILD" == "true" ]]; then
     (
         $starting_group "Cleanup old environment"
         [ ! -d "${CACHE_DIR}/${BRANCH}" ]
-        $skip_group_if_unnecessary
-        rm -rf "${CACHE_DIR}/${BRANCH}"
+        $skip_group_if_unnecessary; set -x
+        rm -rf ${CACHE_DIR}/${BRANCH}/*
         for node in ${scheduled_nodes[@]} ; do
             (
                 $starting_group "Destroying ${node%,*}"
@@ -69,14 +69,32 @@ if [[ "$REBUILD" == "true" ]]; then
             ) ; prev_cmd_failed
         done
     ) ; prev_cmd_failed
-fi
 
-(
-    $starting_step "Create cache folder"
-    [ -d "${CACHE_DIR}/${BRANCH}" ]
-    $skip_step_if_already_done ; set -ex
-    mkdir -p "${CACHE_DIR}/${BRANCH}"
-) ; prev_cmd_failed
+    (
+        $starting_step "Create empty cache folder"
+        [ -d "${CACHE_DIR}/${BRANCH}" ]
+        $skip_step_if_already_done ; set -ex
+        mkdir -p "${CACHE_DIR}/${BRANCH}"
+    ) ; prev_cmd_failed
+else
+    (   $starting_group "Set up cache for ${BRANCH} branch"
+        [ -d "${CACHE_DIR}/${BRANCH}" ]
+        $skip_group_if_unnecessary
+        (
+            $starting_step "Create cache folder"
+            false
+            $skip_step_if_already_done ; set -ex
+            mkdir -p "${CACHE_DIR}/${BRANCH}"
+        ) ; prev_cmd_failed
+
+        (
+          $starting_step "Copy cache from ${BASE_BRANCH} branch"
+          [ ! -d "${CACHE_DIR}/${BASE_BRANCH}" ]
+          $skip_step_if_already_done ; set -ex
+          rsync -av "${CACHE_DIR}/${BASE_BRANCH}/" "${CACHE_DIR}/${BRANCH}/"
+        ) ; prev_cmd_failed
+    ) ; prev_cmd_failed
+fi
 
 masquerade "${NETWORK}/${PREFIX}"
 

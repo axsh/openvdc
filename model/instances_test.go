@@ -19,7 +19,12 @@ func withConnect(t *testing.T, c func(context.Context)) error {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer Close(ctx)
+	defer func() {
+		err := Close(ctx)
+		if err != nil {
+			t.Error("Failed to Close:", err)
+		}
+	}()
 	err = InstallSchemas(GetBackendCtx(ctx).(backend.ModelSchema))
 	if err != nil {
 		t.Fatal(err)
@@ -82,7 +87,7 @@ func TestUpdateStateInstance(t *testing.T) {
 		got, err := Instances(ctx).Create(n)
 		assert.NoError(err)
 		assert.Equal(InstanceState_REGISTERED, got.GetLastState().State)
-		assert.Error(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))
+		assert.Error(Instances(ctx).UpdateState(got.GetId(), InstanceState_SHUTTINGDOWN))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_QUEUED))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STARTING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))

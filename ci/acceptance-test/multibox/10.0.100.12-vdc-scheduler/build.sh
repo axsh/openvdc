@@ -13,11 +13,8 @@ scheduler=true
 IND_STEPS=(
     "box"
     "ssh"
-    "epel"
-    "lxc"
-    "mesosphere"
-    "mesos"
-    "zookeeper"
+    "hosts"
+    "disable-firewalld"
 )
 
 build "${IND_STEPS[@]}"
@@ -27,3 +24,4 @@ build "${IND_STEPS[@]}"
 # different version to test every the CI runs.
 install_openvdc_yum_repo
 install_yum_package_over_ssh "openvdc-scheduler"
+enable_service_over_ssh "openvdc-scheduler"

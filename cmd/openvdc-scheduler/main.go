@@ -6,7 +6,7 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc"
+	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/scheduler"
@@ -97,7 +97,19 @@ func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
 	var zkAddr backend.ZkEndpoint
 	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		err := model.ClusterClose(ctx)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+
 	scheduler.Run(
+		ctx,
 		viper.GetString("mesos.listen"),
 		viper.GetString("api.endpoint"),
 		viper.GetString("mesos.master"),
@@ -106,7 +118,8 @@ func execute(cmd *cobra.Command, args []string) {
 
 func main() {
 	flag.CommandLine.Parse([]string{})
-	rootCmd.AddCommand(openvdc.VersionCmd)
+	log.SetFormatter(&cmd.LogFormatter{})
+	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

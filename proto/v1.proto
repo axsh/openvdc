@@ -5,6 +5,26 @@ package api;
 option go_package = "github.com/axsh/openvdc/api";
 
 import "model.proto";
+import "cluster.proto";
+
+service InstanceConsole {
+  rpc Attach(stream ConsoleIn) returns (stream ConsoleOut){}
+}
+
+message ConsoleIn {
+  string buf = 1;
+  string instance_id = 2;
+}
+
+message ConsoleOut {
+  enum Channel {
+    stdout = 0;
+    stderr = 1;
+  }
+  Channel ch = 1;
+  string buf = 2;
+}
+
 
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
@@ -41,6 +61,8 @@ message ConsoleRequest{
 }
 message ConsoleReply {
   string instance_id = 1;
+  model.Console.Transport type = 2;
+  string address = 3;
 }
 
 message CreateRequest{

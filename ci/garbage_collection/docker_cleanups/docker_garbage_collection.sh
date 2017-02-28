@@ -36,4 +36,3 @@ for docker_image in $(docker images -q | sort -u); do
 
 done
  
-exit 0   ## Explicit notice: We are done.
