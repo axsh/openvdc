@@ -26,6 +26,7 @@ type SchedulerSettings struct {
 	ID              string
 	FailoverTimeout float64
 	ExecutorPath    string
+	AutoReconnect   bool
 }
 
 type VDCScheduler struct {

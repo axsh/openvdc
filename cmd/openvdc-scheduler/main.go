@@ -45,6 +45,7 @@ func init() {
 	viper.SetDefault("scheduler.id", "openvdc")
 	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
 	viper.SetDefault("scheduler.executor-path", "openvdc-executor")
+	viper.SetDefault("scheduler.auto-reconnect", true)
 
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
@@ -70,6 +71,9 @@ func init() {
 
 	pfs.Float64("executor-path", viper.GetFloat64("scheduler.executor-path"), "Executor path")
 	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
+
+	pfs.Bool("auto-reconnect", viper.GetBool("scheduler.auto-reconnect"), "Auto reconnect")
+	viper.BindPFlag("scheduler.auto-reconnect", pfs.Lookup("auto-reconnect"))
 }
 
 func setupDatabaseSchema() {
@@ -120,6 +124,7 @@ func execute(cmd *cobra.Command, args []string) {
 		ID:              viper.GetString("scheduler.name"),
 		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
+		AutoReconnect:   viper.GetBool("scheduler.auto-reconnect"),
 	}
 
 	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
