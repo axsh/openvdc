@@ -81,7 +81,13 @@ func (i *nodes) FindByAgentMesosID(agentMesosID string) (*AgentNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	return res[0], nil
+
+	if len(res) > 0 {
+		return res[0], nil
+	} else {
+		return nil, nil
+	}
+
 }
 
 func (i *nodes) Filter(limit int, cb func(*AgentNode) int) error {
