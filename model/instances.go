@@ -16,6 +16,7 @@ type InstanceOps interface {
 	FindByID(string) (*Instance, error)
 	UpdateState(id string, next InstanceState_State) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
+	FilterByAgentMesosID(agentID string) ([]*Instance, error)
 	Update(*Instance) error
 	Filter(limit int, cb func(*Instance) int) error
 }
@@ -103,7 +104,6 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return n, nil
 }
 
@@ -180,6 +180,20 @@ func (i *instances) FilterByState(state InstanceState_State) ([]*Instance, error
 	res := []*Instance{}
 	err := i.Filter(0, func(inst *Instance) int {
 		if inst.GetLastState().State == state {
+			res = append(res, inst)
+		}
+		return len(res)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (i *instances) FilterByAgentMesosID(agentMesosID string) ([]*Instance, error) {
+	res := []*Instance{}
+	err := i.Filter(0, func(inst *Instance) int {
+		if inst.GetSlaveId() == agentMesosID {
 			res = append(res, inst)
 		}
 		return len(res)
