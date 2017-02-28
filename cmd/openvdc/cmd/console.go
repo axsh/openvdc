@@ -49,7 +49,7 @@ func sshShell(instanceID string, destAddr string) error {
 	defer close(cInt)
 	signal.Notify(cInt, os.Interrupt)
 
-	fd := int(os.Stdout.Fd())
+	fd := int(os.Stdin.Fd())
 	if terminal.IsTerminal(fd) {
 		w, h, err := terminal.GetSize(fd)
 		if err != nil {
@@ -68,6 +68,16 @@ func sshShell(instanceID string, destAddr string) error {
 		if err := session.RequestPty(term, h, w, modes); err != nil {
 			return err
 		}
+
+		origstate, err := terminal.MakeRaw(fd)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err := terminal.Restore(fd, origstate); err != nil {
+				log.WithError(err).Error("Failed terminal.Restore")
+			}
+		}()
 	}
 
 	if err := session.Shell(); err != nil {
