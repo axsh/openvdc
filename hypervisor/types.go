@@ -29,6 +29,10 @@ type Console interface {
 	ForceClose() error
 }
 
+type PtyConsole interface {
+	AttachPty(stdin io.Reader, stdout, stderr io.Writer) error
+}
+
 var (
 	hypervisorProviders = make(map[string]HypervisorProvider)
 )
