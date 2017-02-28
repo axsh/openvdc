@@ -91,15 +91,29 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
 
-	for _, offer := range offers {
-		wasDisconnected, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
+	disconnectedInstances := []*model.Instance{}
 
-		if wasDisconnected != nil {
-			log.Infoln("Agent back online.")
-		}
+	for _, offer := range offers {
+		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
 
 		if err != nil {
-			return err
+			log.WithError(err).Error("Failed to retrieve crashed agent node.")
+		}
+
+		if disconnectedAgent != nil {
+			log.Infoln("Agent back online.")
+
+			disconnected, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
+
+			if err != nil {
+				log.WithError(err).Error("Failed to retrieve disconnected instances.")
+			}
+
+			if len(disconnected) > 0 {
+				for _, instance := range disconnected {
+					disconnectedInstances = append(disconnectedInstances, instance)
+				}
+			}
 		}
 	}
 
