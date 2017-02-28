@@ -103,6 +103,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		if disconnectedAgent != nil {
 			log.Infoln("Agent back online.")
 
+			//TODO: set reconnected to true
+
 			disconnected, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
 
 			if err != nil {
@@ -145,7 +147,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 	getAgentID := func(offer *mesos.Offer) string {
 		for _, attr := range offer.Attributes {
-			if attr.GetName() == "id" &&
+			if attr.GetName() == "openvdc-node-id" &&
 				attr.GetType() == mesos.Value_TEXT {
 				return attr.GetText().GetValue()
 			}
