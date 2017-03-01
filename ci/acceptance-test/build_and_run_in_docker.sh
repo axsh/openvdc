@@ -30,6 +30,11 @@ function cleanup() {
   else
     echo "LEAVE_CONTAINER was set and not 0. Skip container cleanup."
   fi
+
+  # Give the newly created cache to this user instead of root so we can clean it up
+  # later without needing sudo
+  local user=$(/usr/bin/id -run)
+  sudo chown -R $user:$user "${CACHE_DIR}"/"${BRANCH}"
 }
 trap "cleanup" EXIT
 
@@ -39,5 +44,3 @@ sudo docker build -t "${repo_and_tag}" --build-arg BRANCH="${BRANCH}" \
                                   "${whereami}"
 
 sudo docker run --privileged -v "${DATA_DIR}":/data "${repo_and_tag}"
-
-sudo chown -R jenkins:jenkins "${CACHE_DIR}"/"${BRANCH}"
