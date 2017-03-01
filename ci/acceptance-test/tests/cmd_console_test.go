@@ -3,6 +3,7 @@
 package tests
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"os/exec"
@@ -30,5 +31,6 @@ func TestCmdConsole_ShowOption(t *testing.T) {
 	})
 
 	RunCmdAndReportFail(t, "openvdc", "console", instance_id, "--show")
+	RunCmdAndReportFail(t, "sh", "-c", fmt.Sprintf("echo 'ls; exit;' | openvdc console %s", instance_id))
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 }
