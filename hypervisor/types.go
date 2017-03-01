@@ -30,7 +30,17 @@ type Console interface {
 }
 
 type PtyConsole interface {
-	AttachPty(stdin io.Reader, stdout, stderr io.Writer) error
+	AttachPty(stdin io.Reader, stdout, stderr io.Writer, ptyreq *SSHPtyReq) error
+}
+
+// Compatible with "type ptyRequestMsg struct" in golang.org/x/crypto/ssh/session.go
+type SSHPtyReq struct {
+	Term     string
+	Columns  uint32
+	Rows     uint32
+	Width    uint32
+	Height   uint32
+	Modelist string
 }
 
 var (

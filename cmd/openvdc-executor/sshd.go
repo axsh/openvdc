@@ -94,19 +94,10 @@ func (sshd *SSHServer) handleChannels(chans <-chan ssh.NewChannel, instanceID st
 	}
 }
 
-type ptyReq struct {
-	Term     string
-	Columns  uint32
-	Rows     uint32
-	Width    uint32
-	Height   uint32
-	Modelist string
-}
-
 type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
-	ptyreq     *ptyReq
+	ptyreq     *hypervisor.SSHPtyReq
 }
 
 func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
@@ -154,7 +145,7 @@ Done:
 			case "shell":
 				ptycon, ok := console.(hypervisor.PtyConsole)
 				if session.ptyreq != nil && ok {
-					if err := ptycon.AttachPty(connection, connection, connection.Stderr()); err != nil {
+					if err := ptycon.AttachPty(connection, connection, connection.Stderr(), session.ptyreq); err != nil {
 						reply = false
 						log.WithError(err).Error("Failed console.AttachPty")
 					}
@@ -186,7 +177,7 @@ Done:
 					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
 				}
 			case "pty-req":
-				ptyreq := new(ptyReq)
+				ptyreq := new(hypervisor.SSHPtyReq)
 				if err := ssh.Unmarshal(r.Payload, ptyreq); err != nil {
 					reply = false
 					log.WithError(errors.WithStack(err)).Error("Failed to parse message")

@@ -389,7 +389,7 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 	return nil
 }
 
-func (con *lxcConsole) AttachPty(stdin io.Reader, stdout, stderr io.Writer) error {
+func (con *lxcConsole) AttachPty(stdin io.Reader, stdout, stderr io.Writer, ptyreq *hypervisor.SSHPtyReq) error {
 	if con.container().State() != lxc.RUNNING {
 		return errors.New("lxc-container can not perform console")
 	}
