@@ -24,13 +24,20 @@ type HypervisorDriver interface {
 }
 
 type Console interface {
-	Attach(stdin io.Reader, stdout, stderr io.Writer) error
+	Attach(param *ConsoleParam) error
 	Wait() error
 	ForceClose() error
 }
 
 type PtyConsole interface {
-	AttachPty(stdin io.Reader, stdout, stderr io.Writer, ptyreq *SSHPtyReq) error
+	AttachPty(param *ConsoleParam, ptyreq *SSHPtyReq) error
+}
+
+type ConsoleParam struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+	Envs   map[string]string
 }
 
 // Compatible with "type ptyRequestMsg struct" in golang.org/x/crypto/ssh/session.go

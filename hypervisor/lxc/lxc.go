@@ -335,7 +335,7 @@ func (con *lxcConsole) container() *lxc.Container {
 	return con.lxc.container
 }
 
-func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
+func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) error {
 	if con.container().State() != lxc.RUNNING {
 		return errors.New("lxc-container can not perform console")
 	}
@@ -369,9 +369,9 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 	fds = append(fds, rErr, wErr)
 	con.fds = append(con.fds, rErr)
 
-	go io.Copy(wIn, stdin)
-	go io.Copy(stdout, rOut)
-	go io.Copy(stderr, rErr)
+	go io.Copy(wIn, param.Stdin)
+	go io.Copy(param.Stdout, rOut)
+	go io.Copy(param.Stderr, rErr)
 
 	err = con.attachShell(rIn, wOut, wErr)
 	if err != nil {
@@ -389,7 +389,7 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 	return nil
 }
 
-func (con *lxcConsole) AttachPty(stdin io.Reader, stdout, stderr io.Writer, ptyreq *hypervisor.SSHPtyReq) error {
+func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervisor.SSHPtyReq) error {
 	if con.container().State() != lxc.RUNNING {
 		return errors.New("lxc-container can not perform console")
 	}
@@ -402,9 +402,9 @@ func (con *lxcConsole) AttachPty(stdin io.Reader, stdout, stderr io.Writer, ptyr
 	defer ftty.Close()
 	con.fds = append(con.fds, fpty)
 
-	go io.Copy(fpty, stdin)
-	go io.Copy(stdout, fpty)
-	go io.Copy(stderr, fpty)
+	go io.Copy(fpty, param.Stdin)
+	go io.Copy(param.Stdout, fpty)
+	go io.Copy(param.Stderr, fpty)
 
 	SetWinsize(ftty.Fd(), &Winsize{Height: uint16(ptyreq.Height), Width: uint16(ptyreq.Width)})
 	/*
