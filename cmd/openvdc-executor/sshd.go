@@ -185,6 +185,17 @@ Done:
 				} else {
 					session.ptyreq = ptyreq
 				}
+			case "env":
+				var envReq struct {
+					Name  string
+					Value string
+				}
+				if err := ssh.Unmarshal(r.Payload, &envReq); err != nil {
+					log.WithError(errors.WithStack(err)).Error("Failed to parse env request body")
+					reply = false
+					break
+				}
+				session.console.Envs[envReq.Name] = envReq.Value
 			default:
 				reply = false
 				log.Warn("Unsupported session request")

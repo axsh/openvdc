@@ -373,7 +373,7 @@ func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) error {
 	go io.Copy(param.Stdout, rOut)
 	go io.Copy(param.Stderr, rErr)
 
-	err = con.attachShell(rIn, wOut, wErr)
+	err = con.attachShell(rIn, wOut, wErr, param.Envs)
 	if err != nil {
 		defer closeAll()
 		return err
@@ -420,7 +420,7 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	}
 	*/
 
-	err = con.attachShell(ftty, ftty, ftty)
+	err = con.attachShell(ftty, ftty, ftty, param.Envs)
 	if err != nil {
 		defer fpty.Close()
 		return err
@@ -465,12 +465,19 @@ func (con *lxcConsole) ForceClose() error {
 	return errors.WithStack(con.attached.Kill())
 }
 
-func (con *lxcConsole) attachShell(stdin, stdout, stderr *os.File) error {
+func (con *lxcConsole) attachShell(stdin, stdout, stderr *os.File, envs map[string]string) error {
 	options := lxc.DefaultAttachOptions
 	options.StdinFd = stdin.Fd()
 	options.StdoutFd = stdout.Fd()
 	options.StderrFd = stderr.Fd()
 	options.ClearEnv = true
+	if len(envs) > 0 {
+		s := make([]string, len(envs))
+		for k, v := range envs {
+			s = append(s, fmt.Sprintf("%s=%s", k, v))
+		}
+		options.Env = s
+	}
 
 	pid, err := con.container().RunCommandNoWait([]string{"/bin/bash"}, options)
 	if err != nil {
