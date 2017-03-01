@@ -41,8 +41,6 @@ func sshShell(instanceID string, destAddr string) error {
 	}
 	defer session.Close()
 
-	session.Stdout = ansicolor.NewAnsiColorWriter(os.Stdout)
-	session.Stderr = ansicolor.NewAnsiColorWriter(os.Stderr)
 	session.Stdin = os.Stdin
 
 	// Handle control + C
@@ -81,6 +79,11 @@ func sshShell(instanceID string, destAddr string) error {
 				}
 			}
 		}()
+		session.Stdout = ansicolor.NewAnsiColorWriter(os.Stdout)
+		session.Stderr = ansicolor.NewAnsiColorWriter(os.Stderr)
+	} else {
+		session.Stdout = os.Stdout
+		session.Stderr = os.Stderr
 	}
 
 	if err := session.Shell(); err != nil {
