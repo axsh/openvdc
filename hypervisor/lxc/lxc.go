@@ -406,6 +406,7 @@ func (con *lxcConsole) AttachPty(stdin io.Reader, stdout, stderr io.Writer, ptyr
 	go io.Copy(stdout, fpty)
 	go io.Copy(stderr, fpty)
 
+	SetWinsize(ftty.Fd(), &Winsize{Height: uint16(ptyreq.Height), Width: uint16(ptyreq.Width)})
 	/*
 	modes, err := TcGetAttr(ftty.Fd())
 	if err != nil {
@@ -513,4 +514,20 @@ func TcGetAttr(fd uintptr) (*syscall.Termios, error) {
 		return nil, err
 	}
 	return termios, nil
+}
+
+//https://github.com/creack/termios/blob/master/win/win.go
+// Winsize stores the Heighty and Width of a terminal.
+type Winsize struct {
+	Height uint16
+	Width  uint16
+	x      uint16 // unused
+	y      uint16 // unused
+}
+
+func SetWinsize(fd uintptr, ws *Winsize) error {
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TIOCSWINSZ), uintptr(unsafe.Pointer(ws))); err != 0 {
+		return err
+	}
+	return nil
 }
