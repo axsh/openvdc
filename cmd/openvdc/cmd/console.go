@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -75,7 +76,9 @@ func sshShell(instanceID string, destAddr string) error {
 		}
 		defer func() {
 			if err := terminal.Restore(fd, origstate); err != nil {
-				log.WithError(err).Error("Failed terminal.Restore")
+				if errno, ok := err.(syscall.Errno); (ok && errno != 0) || !ok {
+					log.WithError(err).Error("Failed terminal.Restore")
+				}
 			}
 		}()
 	}
