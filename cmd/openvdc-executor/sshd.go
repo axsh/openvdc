@@ -9,6 +9,10 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
+	"syscall"
+
+	"os/exec"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -107,13 +111,6 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		return
 	}
 	defer func() {
-		msg := struct {
-			ExitStatus uint32
-		}{uint32(0)}
-		_, err := connection.SendRequest("exit-status", false, ssh.Marshal(&msg))
-		if err != nil {
-			log.WithError(err).Error("Failed to send exit-status")
-		}
 		if err := connection.CloseWrite(); err != nil && err != io.EOF {
 			log.WithError(err).Warn("Failed CloseWrite()")
 		}
@@ -195,8 +192,33 @@ Done:
 				}
 			}
 		case err := <-quit:
-			if err != nil {
+			sendExitStatus := func(code uint32) {
+				msg := struct {
+					ExitStatus uint32
+				}{uint32(code)}
+				_, err := connection.SendRequest("exit-status", false, ssh.Marshal(&msg))
+				if err != nil {
+					log.WithError(err).Error("Failed to send exit-status")
+				}
+			}
+
+			if exiterr, ok := err.(*exec.ExitError); ok {
+				// http://stackoverflow.com/questions/10385551/get-exit-code-go
+				if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
+					sendExitStatus(uint32(status.ExitStatus()))
+				} else {
+					log.Warnf("This platform %s does not support syscall.WaitStatus: %v", runtime.GOOS, exiterr)
+					if exiterr.Success() {
+						sendExitStatus(0)
+					} else {
+						sendExitStatus(1)
+					}
+				}
+			} else if err != nil {
 				log.WithError(err).Error("")
+			} else {
+				// err == nil
+				sendExitStatus(0)
 			}
 			break Done
 		}

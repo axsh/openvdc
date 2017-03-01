@@ -100,9 +100,6 @@ func sshShell(instanceID string, destAddr string) error {
 	for {
 		select {
 		case err := <-quit:
-			if err != nil {
-				log.WithError(err).Error("Quit")
-			}
 			return err
 		case <-cInt:
 			if err := session.Signal(ssh.SIGINT); err != nil {
@@ -127,28 +124,49 @@ var consoleCmd = &cobra.Command{
 
 		instanceID := args[0]
 
-		return util.RemoteCall(func(conn *grpc.ClientConn) error {
+		var res *api.ConsoleReply
+		err := util.RemoteCall(func(conn *grpc.ClientConn) error {
 			ic := api.NewInstanceClient(conn)
-			res, err := ic.Console(context.Background(), &api.ConsoleRequest{InstanceId: instanceID})
-			if err != nil {
-				log.WithError(err).Fatal("Failed request to Instance.Console API")
-			}
-			info, err := cmd.Flags().GetBool("show")
-			switch res.Type {
-			case model.Console_SSH:
-				if info {
-					host, port, err := net.SplitHostPort(res.GetAddress())
-					if err != nil {
-						log.Fatal("Invalid ssh host address: ", res.GetAddress())
-					}
-					fmt.Printf("-p %s %s@%s\n", port, instanceID, host)
-					return nil
+			var err error
+			res, err = ic.Console(context.Background(), &api.ConsoleRequest{InstanceId: instanceID})
+			return err
+		})
+		if err != nil {
+			log.WithError(err).Fatal("Failed request to Instance.Console API")
+		}
+
+		info, err := cmd.Flags().GetBool("show")
+		switch res.Type {
+		case model.Console_SSH:
+			if info {
+				host, port, err := net.SplitHostPort(res.GetAddress())
+				if err != nil {
+					log.Fatal("Invalid ssh host address: ", res.GetAddress())
 				}
-				if err := sshShell(instanceID, res.GetAddress()); err != nil && err != io.EOF {
-					log.WithError(err).Fatal("Failed ssh to ", res.GetAddress())
-				}
+				fmt.Printf("-p %s %s@%s\n", port, instanceID, host)
 				return nil
 			}
+			if err := sshShell(instanceID, res.GetAddress()); err != nil && err != io.EOF {
+				log.WithError(err).Fatal("Failed ssh to ", res.GetAddress())
+			}
+			switch err.(type) {
+			case *ssh.ExitError:
+				defer os.Exit(err.(*ssh.ExitError).ExitStatus())
+			case *ssh.ExitMissingError:
+				log.Fatal(err.Error())
+			case nil:
+				// Nothing to do
+			default:
+				if err == io.EOF {
+					return nil
+				}
+				log.WithError(err).Fatal("Failed ssh to ", res.GetAddress())
+			}
+			return nil
+		default:
+			log.Fatalf("Unsupported console type: %s", res.Type.String())
+		}
+		/*
 			cc := api.NewInstanceConsoleClient(conn)
 			stream, err := cc.Attach(context.Background())
 			if err != nil {
@@ -160,6 +178,7 @@ var consoleCmd = &cobra.Command{
 				return err
 			}
 			return err
-		})
+		*/
+		return nil
 	},
 }
