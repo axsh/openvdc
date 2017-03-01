@@ -23,6 +23,6 @@ advertise-ip = "10.0.100.14"
 
 [console]
 
-[console.ssh]
-# listen = ""
-advertise-ip = "10.0.100.14"
+  [console.ssh]
+  # listen = ""
+  advertise-ip = "10.0.100.14"
