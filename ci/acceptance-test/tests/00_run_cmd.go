@@ -124,13 +124,19 @@ func WaitInstance(t *testing.T, d time.Duration, instanceID string, goalState st
 			return err
 		}
 		result := gjson.GetBytes(buf, "instance.lastState.state")
-		if result.String() == "RUNNING" {
+		if result.String() == goalState {
 			return nil
 		} else if interimStates != nil {
-			for _, state := range interimStates {
-				if result.String() != state {
-					return fmt.Errorf("Unexpected Instance State: %s goal=%s found=%s", instanceID, goalState, result.String())
+			isInterimFound := func() bool {
+				for _, state := range interimStates {
+					if result.String() == state {
+						return true
+					}
 				}
+				return false
+			}
+			if !isInterimFound() {
+				return fmt.Errorf("Unexpected Instance State: %s goal=%s found=%s", instanceID, goalState, result.String())
 			}
 		}
 		time.Sleep(5 * time.Second)
