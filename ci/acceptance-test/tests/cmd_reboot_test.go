@@ -14,7 +14,7 @@ func TestCmdReboot(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	// This test scenario is only valid for CentOS 7 /etc/rc.d/rc.local.
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- sh -c \"echo 'touch /var/lock/subsys/local' >> /etc/rc.d/rc.local\"", instance_id), 10, 5)
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- chmod 755 /etc/rc.d/rc.local", instance_id), 10, 5)
 	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
