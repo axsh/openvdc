@@ -41,6 +41,11 @@ func init() {
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
 	viper.SetDefault("api.endpoint", "localhost:5000")
 
+	viper.SetDefault("scheduler.name", "scheduler_1")
+	viper.SetDefault("scheduler.id", "openvdc")
+	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
+	viper.SetDefault("scheduler.executor-path", "openvdc-executor")
+
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
 	pfs.String("config", DefaultConfPath, "Load config file from the path")
@@ -53,6 +58,18 @@ func init() {
 	viper.BindPFlag("api.endpoint", pfs.Lookup("api"))
 	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper node address")
 	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
+
+	pfs.String("name", viper.GetString("scheduler.name"), "Scheduler Name")
+	viper.BindPFlag("scheduler.name", pfs.Lookup("name"))
+
+	pfs.String("id", viper.GetString("scheduler.id"), "Scheduler ID")
+	viper.BindPFlag("scheduler.id", pfs.Lookup("id"))
+
+	pfs.Float64("failover-timeout", viper.GetFloat64("scheduler.failover-timeout"), "Failover timeout")
+	viper.BindPFlag("scheduler.failover-timeout", pfs.Lookup("failover-timeout"))
+
+	pfs.Float64("executor-path", viper.GetFloat64("scheduler.executor-path"), "Executor path")
+	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
 }
 
 func setupDatabaseSchema() {
@@ -97,6 +114,14 @@ func execute(cmd *cobra.Command, args []string) {
 	setupDatabaseSchema()
 	var zkAddr backend.ZkEndpoint
 	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+
+	settings := scheduler.SchedulerSettings{
+		Name:            viper.GetString("scheduler.id"),
+		ID:              viper.GetString("scheduler.name"),
+		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
+		ExecutorPath:    viper.GetString("scheduler.executor-path"),
+	}
+
 	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
 	if err != nil {
 		log.Fatal(err)
@@ -113,7 +138,9 @@ func execute(cmd *cobra.Command, args []string) {
 		viper.GetString("mesos.listen"),
 		viper.GetString("api.endpoint"),
 		viper.GetString("mesos.master"),
-		zkAddr)
+		zkAddr,
+		settings,
+	)
 }
 
 func main() {
