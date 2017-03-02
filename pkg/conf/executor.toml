@@ -1,6 +1,6 @@
 [hypervisor]
 # driver = "null"
-script-path = "/etc/openvdc/scripts/"
+# script-path = "/etc/openvdc/scripts/"
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"

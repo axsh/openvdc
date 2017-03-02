@@ -33,6 +33,7 @@ type GithubRegistry struct {
 	RepoSlug                string
 	TreePath                string
 	ForceCheckToRemoteAfter time.Duration
+	FetchRetry              int
 }
 
 func NewGithubRegistry(confDir string) *GithubRegistry {
@@ -42,6 +43,7 @@ func NewGithubRegistry(confDir string) *GithubRegistry {
 		RepoSlug:                githubRepoSlug,
 		TreePath:                defaultPath,
 		ForceCheckToRemoteAfter: 1 * time.Hour,
+		FetchRetry:              3,
 	}
 }
 
@@ -180,7 +182,14 @@ func (r *GithubRegistry) Fetch() error {
 		os.Remove(tmpzip.Name())
 	}()
 
-	res, err := http.Get(zipLinkURI)
+	var res *http.Response
+	for i := 0; i < r.FetchRetry; i++ {
+		res, err = http.Get(zipLinkURI)
+		if err == nil {
+			break
+		}
+		log.WithError(err).Warnf("http.Get failed retrying... %d/%d", i+1, r.FetchRetry)
+	}
 	if err != nil {
 		return err
 	}
