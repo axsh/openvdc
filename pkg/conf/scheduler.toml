@@ -7,3 +7,9 @@
 
 [api]
 # endpoint = "localhost:5000"
+
+[scheduler]
+# id = "scheduler_1"
+# name = "openvdc"
+# failover-timeout = 604800 #1 week
+# executor-path = "openvdc-executor"
