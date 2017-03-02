@@ -39,11 +39,7 @@ func (i *nodes) Add(n Node) error {
 		return fmt.Errorf("ID is not set")
 	}
 
-	agentNode, err := i.FindByAgentID(n.GetAgentID())
-
-	if err != nil {
-		return err
-	}
+	agentNode, _ := i.FindByAgentID(n.GetAgentID())
 
 	if agentNode != nil {
 		return nil
