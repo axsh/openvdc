@@ -4,9 +4,12 @@ package tests
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"testing"
 	"time"
+
+	"github.com/tidwall/gjson"
 )
 
 func RunCmd(name string, arg ...string) (*bytes.Buffer, *bytes.Buffer, error) {
@@ -89,4 +92,48 @@ func RunCmdWithTimeoutAndExpectFail(t *testing.T, tries int, sleeptime time.Dura
 	}
 
 	return stdout, stderr
+}
+
+var WaitContinue = fmt.Errorf("continue")
+
+func WaitUntil(t *testing.T, d time.Duration, cb func() error) {
+	startAt := time.Now()
+	var err error
+	for {
+		err = cb()
+		if err == WaitContinue {
+			if time.Now().Sub(startAt) > d {
+				err = fmt.Errorf("Timed out for %d sec", d/time.Second)
+				break
+			}
+			continue
+		}
+		break
+	}
+
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+}
+
+func WaitInstance(t *testing.T, d time.Duration, instanceID string, goalState string, interimStates []string) {
+	WaitUntil(t, d, func() error {
+		cmd := exec.Command("openvdc", "show", instanceID)
+		buf, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
+		}
+		result := gjson.GetBytes(buf, "instance.lastState.state")
+		if result.String() == "RUNNING" {
+			return nil
+		} else if interimStates != nil {
+			for _, state := range interimStates {
+				if result.String() != state {
+					return fmt.Errorf("Unexpected Instance State: %s goal=%s found=%s", instanceID, goalState, result.String())
+				}
+			}
+		}
+		time.Sleep(5 * time.Second)
+		return WaitContinue
+	})
 }
