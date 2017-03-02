@@ -3,8 +3,10 @@ package model
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pborman/uuid"
 	"golang.org/x/net/context"
+	"time"
 )
 
 const crashedNodesBaseKey = "crashed_nodes"
@@ -17,6 +19,7 @@ type CrashedAgentNode interface {
 	proto.Message
 	GetReconnected() bool
 	GetAgentID() string
+	GetUUID() string
 }
 
 type CrashedNodesOps interface {
@@ -25,7 +28,7 @@ type CrashedNodesOps interface {
 	FindByAgentID(agentID string) (*CrashedNode, error)
 	FindByUUID(nodeUUID string) (*CrashedNode, error)
 	Filter(limit int, cb func(*CrashedNode) int) error
-	SetReconnected(agentID string, node *CrashedNode) error
+	SetReconnected(node *CrashedNode) error
 }
 
 type crashedNodes struct {
@@ -59,8 +62,23 @@ func (i *crashedNodes) Find(agentID string, in CrashedAgentNode) error {
 	return nil
 }
 
-func (i *crashedNodes) SetReconnected(string, *CrashedNode) error {
-	return nil
+func (i *crashedNodes) SetReconnected(node *CrashedNode) error {
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+
+	reconnectedAt, _ := ptypes.TimestampProto(time.Now())
+
+	updatedNode := &CrashedNode{
+		Uuid:          node.GetUUID(),
+		Agentid:       node.GetAgentID(),
+		Agentmesosid:  node.GetAgentMesosID(),
+		Reconnected:   true,
+		CreatedAt:     node.GetCreatedAt(),
+		ReconnectedAt: reconnectedAt,
+	}
+	return bk.Update(fmt.Sprintf("/%s/%s", crashedNodesBaseKey, node.Uuid), updatedNode)
 }
 
 func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, error) {
