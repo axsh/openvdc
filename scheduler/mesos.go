@@ -110,43 +110,47 @@ func getAgentID(offer *mesos.Offer) string {
 	return ""
 }
 
-func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
-
+func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context) []*model.Instance {
 	disconnectedInstances := []*model.Instance{}
 
 	for _, offer := range offers {
+		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
 
+		if err != nil {
+			log.WithError(err).Error("Failed to retrieve crashed node.")
+		}
+
+		if disconnectedAgent != nil {
+			if disconnectedAgent.GetReconnected() == false {
+
+				log.Infoln("Node '%s' reconnected.", disconnectedAgent.GetAgentID)
+				model.CrashedNodes(ctx).SetReconnected(disconnectedAgent)
+				disconnected, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
+
+				if err != nil {
+					log.WithError(err).Error("Failed to retrieve disconnected instances.")
+				}
+
+				if len(disconnected) > 0 {
+					for _, instance := range disconnected {
+						log.Infoln("Added instance '%s' to relaunch-queue.", instance.GetId())
+						disconnectedInstances = append(disconnectedInstances, instance)
+					}
+				}
+			}
+		}
+	}
+	return disconnectedInstances
+}
+
+func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
+	for _, offer := range offers {
 		err := model.Nodes(ctx).Add(&model.AgentNode{
 			Agentmesosid: *offer.SlaveId.Value,
 			Agentid:      getAgentID(offer),
 		})
-
 		if err != nil {
 			log.Infoln(err)
-		}
-
-		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
-
-		if err != nil {
-			log.WithError(err).Error("Failed to retrieve crashed agent node.")
-		}
-
-		if disconnectedAgent != nil {
-			log.Infoln("Agent back online.")
-
-			//TODO: set reconnected to true
-
-			disconnected, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
-
-			if err != nil {
-				log.WithError(err).Error("Failed to retrieve disconnected instances.")
-			}
-
-			if len(disconnected) > 0 {
-				for _, instance := range disconnected {
-					disconnectedInstances = append(disconnectedInstances, instance)
-				}
-			}
 		}
 	}
 
@@ -260,15 +264,6 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		i.SlaveId = agentMesosId
 		model.Instances(ctx).Update(i)
 
-		/*
-			err = model.Nodes(ctx).Add(&model.AgentNode{
-				Agentmesosid: agentMesosId,
-				Agentid:      getAgentID(found),
-			})
-
-			if err != nil {
-				log.Infoln(err)
-			}*/
 	}
 	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 	if err != nil {
