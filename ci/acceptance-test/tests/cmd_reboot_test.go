@@ -37,7 +37,7 @@ func testCmdReboot_Ubuntu14(t *testing.T, instance_id string) {
 		}
 		return nil
 	})
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- test -f /var/local/openvdc", instance_id), 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- test -f /var/local/openvdc", instance_id), 100, 5)
 }
 
 func testCmdReboot_Ubuntu16(t *testing.T, instance_id string) {
