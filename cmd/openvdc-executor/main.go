@@ -235,6 +235,52 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 	return nil
 }
 
+func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID string) error {
+	log := log.WithFields(logrus.Fields{
+		"instance_id": instanceID,
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
+
+	ctx, err := model.Connect(context.Background(), &zkAddr)
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
+	}
+
+	// Push back to the state below in case of error.
+	finState := model.InstanceState_RUNNING
+	defer func() {
+		err = model.Instances(ctx).UpdateState(instanceID, finState)
+		if err != nil {
+			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		model.Close(ctx)
+	}()
+
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	if err != nil {
+		return err
+	}
+
+	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_REBOOTING)
+	if err != nil {
+		log.WithError(err).WithField("state", model.InstanceState_REBOOTING).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+	log.Infof("Rebooting instance")
+	err = hv.RebootInstance()
+	if err != nil {
+		log.Error("Failed RebootInstance")
+		return err
+	}
+
+	log.Infof("Instance rebooted successfully")
+	finState = model.InstanceState_RUNNING
+
+	return nil
+}
+
 func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceID string) error {
 	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
@@ -324,6 +370,11 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 		err = exec.stopInstance(driver, taskId.GetValue())
 		if err != nil {
 			log.WithError(err).Error("Failed to stop instance")
+		}
+	case "reboot":
+		err = exec.rebootInstance(driver, taskId.GetValue())
+		if err != nil {
+			log.WithError(err).Error("Failed to reboot instance")
 		}
 	case "destroy":
 		var tstatus *mesos.TaskStatus
