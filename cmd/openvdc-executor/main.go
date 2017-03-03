@@ -236,7 +236,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 }
 
 func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
