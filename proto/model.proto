@@ -22,8 +22,9 @@ message InstanceState {
     RUNNING = 3;
     STOPPING = 4;
     STOPPED = 5;
-    SHUTTINGDOWN = 6;
-    TERMINATED = 7;
+    REBOOTING = 6;
+    SHUTTINGDOWN = 7;
+    TERMINATED = 8;
   }
   State state = 1;
   google.protobuf.Timestamp created_at = 2;

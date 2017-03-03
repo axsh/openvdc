@@ -32,6 +32,7 @@ service Instance {
   rpc Run (ResourceRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
+  rpc Reboot (RebootRequest) returns (RebootReply){}
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
@@ -76,6 +77,13 @@ message StartRequest {
   string instance_id = 1;
 }
 message StartReply {
+  string instance_id = 1;
+}
+
+message RebootRequest {
+  string instance_id = 1;
+}
+message RebootReply {
   string instance_id = 1;
 }
 
