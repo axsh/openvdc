@@ -15,16 +15,23 @@ func TestCmdReboot(t *testing.T) {
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
-	testCmdReboot_Ubuntu16(t, instance_id)
+	testCmdReboot_Ubuntu14(t, instance_id)
 	//testCmdReboot_Centos7(t, instance_id)
 
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
 
+func testCmdReboot_Ubuntu14(t *testing.T, instance_id string) {
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- sh -c 'echo \"#!/bin/sh\\ntouch /var/local/openvdc\\n\" > /etc/rc.local; chmod 755 /etc/rc.local; sync;'", instance_id), 10, 5)
+	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
+	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- test -f /var/local/openvdc", instance_id), 10, 5)
+}
+
 func testCmdReboot_Ubuntu16(t *testing.T, instance_id string) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- systemctl enable rc-local.service", instance_id), 10, 5)
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- sh -c 'echo \"#!/bin/sh\\ntouch /var/local/openvdc\" > /etc/rc.local; chmod 755 /etc/rc.local;'", instance_id), 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- sh -c 'echo \"#!/bin/sh\\ntouch /var/local/openvdc\\n\" > /etc/rc.local; chmod 755 /etc/rc.local; sync;'", instance_id), 10, 5)
 	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- test -f /var/local/openvdc", instance_id), 10, 5)
