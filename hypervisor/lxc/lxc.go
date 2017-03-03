@@ -32,7 +32,30 @@ func (p *LXCHypervisorProvider) Name() string {
 
 func (d *LXCHypervisorDriver) GetContainerState(i *model.Instance) (hypervisor.ContainerState, error) {
 
-	return hypervisor.ContainerState_NONE, nil
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+
+	if err != nil {
+		return hypervisor.ContainerState_NONE, err
+	}
+
+	var containerState hypervisor.ContainerState
+
+	switch c.State() {
+	case lxc.STOPPED:
+		containerState = hypervisor.ContainerState_STOPPED
+	case lxc.STARTING:
+		containerState = hypervisor.ContainerState_STARTING
+	case lxc.RUNNING:
+		containerState = hypervisor.ContainerState_RUNNING
+	case lxc.STOPPING:
+		containerState = hypervisor.ContainerState_STOPPING
+	case lxc.ABORTING:
+		containerState = hypervisor.ContainerState_ABORTING
+	default:
+		containerState = hypervisor.ContainerState_NONE
+	}
+
+	return containerState, err
 }
 
 func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
