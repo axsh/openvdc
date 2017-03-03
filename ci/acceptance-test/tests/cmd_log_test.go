@@ -3,12 +3,9 @@
 package tests
 
 import (
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/tidwall/gjson"
 )
 
 func TestOpenVDCLog(t *testing.T) {
@@ -16,19 +13,6 @@ func TestOpenVDCLog(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 	defer RunCmd("openvdc", "destroy", instance_id)
 
-	waitUntil(t, 5 * time.Minute, func()error {
-		cmd := exec.Command("openvdc", "show", instance_id)
-		buf, err := cmd.CombinedOutput()
-		if err !=nil {
-			return err
-		}
-		result := gjson.GetBytes(buf, "instance.lastState.state")
-		if result.String() == "RUNNING" {
-			return nil
-		}
-		time.Sleep(5 * time.Second)
-		return WaitContinue
-	})
-
+	WaitInstance(t, 5 * time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunCmdAndReportFail(t, "openvdc", "log", instance_id)
 }
