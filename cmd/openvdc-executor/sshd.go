@@ -80,32 +80,35 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 			log.Error("Failed to handshake:", err)
 			continue
 		}
-		instanceID := sshConn.User()
 		log.Printf("New SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
 		go ssh.DiscardRequests(reqs)
-		go sshd.handleChannels(chans, instanceID)
-	}
-}
-
-func (sshd *SSHServer) handleChannels(chans <-chan ssh.NewChannel, instanceID string) {
-	for newChannel := range chans {
-		if t := newChannel.ChannelType(); t != "session" {
-			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
-			continue
-		}
-		session := sshSession{instanceID: instanceID, sshd: sshd}
-		go session.handleChannel(newChannel)
+		go func() {
+			for newChannel := range chans {
+				if t := newChannel.ChannelType(); t != "session" {
+					newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
+					continue
+				}
+				session := sshSession{
+					instanceID: sshConn.User(),
+					sshd:       sshd,
+					peer:       sshConn.RemoteAddr(),
+				}
+				go session.handleChannel(newChannel)
+			}
+		}()
 	}
 }
 
 type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
+	peer       net.Addr
 	ptyreq     *hypervisor.SSHPtyReq
 	console    *hypervisor.ConsoleParam
 }
 
 func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
+	log := log.WithField("instance_id", session.instanceID).WithField("peer", session.peer.String())
 	connection, req, err := newChannel.Accept()
 	if err != nil {
 		log.Error("Could not accept channel:", err)
@@ -119,7 +122,7 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		if err := connection.Close(); err != nil && err != io.EOF {
 			log.WithError(err).Warn("Invalid close sequence")
 		}
-		log.WithField("instance_id", session.instanceID).Info("Session closed")
+		log.Info("Session closed")
 	}()
 
 	driver, err := session.sshd.provider.CreateDriver(session.instanceID)
