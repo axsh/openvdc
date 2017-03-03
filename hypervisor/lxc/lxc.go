@@ -319,19 +319,10 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 }
 
 func (d *LXCHypervisorDriver) RebootInstance() error {
-
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
-	if err != nil {
-		d.log.Errorln(err)
-		return err
-	}
-
 	d.log.Infoln("Rebooting lxc-container..")
-	if err := c.Reboot(); err != nil {
-		d.log.Errorln(err)
-		return err
+	if err := d.container.Reboot(); err != nil {
+		return errors.Wrap(err, "Failed lxc.Reboot")
 	}
-
 	return nil
 }
 
