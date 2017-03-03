@@ -3,15 +3,15 @@
 package lxc
 
 import (
+	"fmt"
 	"io"
 	"os"
-	"time"
-	"fmt"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
-	log "github.com/Sirupsen/logrus"
 
+	log "github.com/Sirupsen/logrus"
   "github.com/kr/pty"
 	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/hypervisor"
@@ -143,7 +143,7 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become RUNNING")
-	if ok := c.Wait(lxc.RUNNING, 30 * time.Second); !ok {
+	if ok := c.Wait(lxc.RUNNING, 30*time.Second); !ok {
 		d.log.Errorln("Failed or timedout to wait for RUNNING")
 		return fmt.Errorf("Failed or timedout to wait for RUNNING")
 	}
@@ -165,10 +165,27 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 	}
 
 	d.log.Infoln("Waiting for lxc-container to become STOPPED")
-	if ok := c.Wait(lxc.STOPPED, 30 * time.Second); !ok {
+	if ok := c.Wait(lxc.STOPPED, 30*time.Second); !ok {
 		d.log.Errorln("Failed or timedout to wait for STOPPED")
 		return fmt.Errorf("Failed or timedout to wait for STOPPED")
 	}
+	return nil
+}
+
+func (d *LXCHypervisorDriver) RebootInstance() error {
+
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+	if err != nil {
+		d.log.Errorln(err)
+		return err
+	}
+
+	d.log.Infoln("Rebooting lxc-container..")
+	if err := c.Reboot(); err != nil {
+		d.log.Errorln(err)
+		return err
+	}
+
 	return nil
 }
 

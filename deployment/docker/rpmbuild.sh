@@ -140,9 +140,13 @@ fi
 # Pull compiled yum repository
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
 $SSH_REMOTE mkdir -p ${RPM_ABSOLUTE}
+
+
 docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
 
 $SSH_REMOTE /bin/bash <<EOS
 rm -f "${RPM_ABSOLUTE}/current"
 ln -s "${RPM_ABSOLUTE}/${RELEASE_SUFFIX}" "${RPM_ABSOLUTE}/current"
+chgrp -R repoci "${RPM_ABSOLUTE}"
+chmod -R g+w "${RPM_ABSOLUTE}"
 EOS

@@ -139,6 +139,36 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 	return &StopReply{InstanceId: instanceID}, nil
 }
 
+func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootReply, error) {
+
+	if in.GetInstanceId() == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       inst.GetLastState().GetState(),
+		}).Error(err)
+
+		return nil, err
+	}
+
+	instanceID := in.InstanceId
+	if err := s.sendCommand(ctx, "reboot", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(reboot)")
+		return nil, err
+	}
+
+	return &RebootReply{InstanceId: instanceID}, nil
+}
+
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
 	instanceID := in.InstanceId

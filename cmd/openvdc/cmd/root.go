@@ -36,6 +36,7 @@ func Execute() {
 	RootCmd.AddCommand(showCmd)
 	RootCmd.AddCommand(TemplateCmd)
 	RootCmd.AddCommand(logCmd)
+	RootCmd.AddCommand(rebootCmd)
 	RootCmd.AddCommand(listCmd)
 	RootCmd.AddCommand(cmd.VersionCmd)
 	if err := RootCmd.Execute(); err != nil {
