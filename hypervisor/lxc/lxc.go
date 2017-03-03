@@ -420,6 +420,9 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	}
 	*/
 
+	if ptyreq.Term != "" {
+		param.Envs["TERM"]=ptyreq.Term
+	}
 	err = con.attachShell(ftty, ftty, ftty, param.Envs)
 	if err != nil {
 		defer fpty.Close()
