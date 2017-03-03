@@ -27,10 +27,7 @@ func testCmdReboot_Ubuntu14(t *testing.T, instance_id string) {
 	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
 	WaitUntil(t, 6 * time.Minute, func() error {
-		stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- runlevel", instance_id))
-		if err != nil {
-			return err
-		}
+		stdout, _, _ := RunSsh(executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- runlevel", instance_id))
 		if strings.Contains(stdout.String(), "unknown") {
 			time.Sleep(3 * time.Second)
 			return WaitContinue
