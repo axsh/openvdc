@@ -1,6 +1,8 @@
-// Build script for OpenVDC
+// +build ignore
 
 package main
+
+// Build script for OpenVDC
 
 import (
 	"bufio"
