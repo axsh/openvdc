@@ -214,6 +214,8 @@ Done:
 				_, err := connection.SendRequest("exit-status", false, ssh.Marshal(&msg))
 				if err != nil {
 					log.WithError(err).Error("Failed to send exit-status")
+				} else {
+					log.WithField("exit-status", msg.ExitStatus).Info("Reply exit-status")
 				}
 			}
 
