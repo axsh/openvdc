@@ -8,6 +8,17 @@ import (
 	"github.com/axsh/openvdc/model"
 )
 
+type ContainerState int
+
+const (
+	ContainerState_STOPPED ContainerState = iota + 1
+	ContainerState_STARTING
+	ContainerState_RUNNING
+	ContainerState_STOPPING
+	ContainerState_ABORTING
+	ContainerState_NONE
+)
+
 type HypervisorProvider interface {
 	Name() string
 	CreateDriver(instanceID string) (HypervisorDriver, error)
@@ -19,6 +30,7 @@ type HypervisorDriver interface {
 	StartInstance() error
 	StopInstance() error
 	InstanceConsole() Console
+	GetContainerState(*model.Instance) (ContainerState, error)
 }
 
 type Console interface {
