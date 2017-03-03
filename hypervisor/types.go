@@ -40,6 +40,15 @@ type ConsoleParam struct {
 	Envs   map[string]string
 }
 
+func NewConsoleParam(stdin io.Reader, stdout, stderr io.Writer) *ConsoleParam {
+	return &ConsoleParam{
+		Stdin:  stdin,
+		Stdout: stdout,
+		Stderr: stderr,
+		Envs:   make(map[string]string),
+	}
+}
+
 // Compatible with "type ptyRequestMsg struct" in golang.org/x/crypto/ssh/session.go
 type SSHPtyReq struct {
 	Term     string

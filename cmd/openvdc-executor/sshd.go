@@ -102,7 +102,7 @@ type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
 	ptyreq     *hypervisor.SSHPtyReq
-	console    hypervisor.ConsoleParam
+	console    *hypervisor.ConsoleParam
 }
 
 func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
@@ -111,9 +111,7 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		log.Error("Could not accept channel:", err)
 		return
 	}
-	session.console.Stdin = connection
-	session.console.Stdout = connection
-	session.console.Stderr = connection.Stderr()
+	session.console = hypervisor.NewConsoleParam(connection, connection, connection.Stderr())
 	defer func() {
 		if err := connection.CloseWrite(); err != nil && err != io.EOF {
 			log.WithError(err).Warn("Failed CloseWrite()")
@@ -146,12 +144,12 @@ Done:
 			case "shell":
 				ptycon, ok := console.(hypervisor.PtyConsole)
 				if session.ptyreq != nil && ok {
-					if err := ptycon.AttachPty(&session.console, session.ptyreq); err != nil {
+					if err := ptycon.AttachPty(session.console, session.ptyreq); err != nil {
 						reply = false
 						log.WithError(err).Error("Failed console.AttachPty")
 					}
 				} else {
-					if err := console.Attach(&session.console); err != nil {
+					if err := console.Attach(session.console); err != nil {
 						reply = false
 						log.WithError(err).Error("Failed console.Attach")
 					}
