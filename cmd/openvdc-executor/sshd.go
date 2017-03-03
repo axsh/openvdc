@@ -147,18 +147,20 @@ Done:
 					if err := ptycon.AttachPty(session.console, session.ptyreq); err != nil {
 						reply = false
 						log.WithError(err).Error("Failed console.AttachPty")
+						break
 					}
 				} else {
 					if err := console.Attach(session.console); err != nil {
 						reply = false
 						log.WithError(err).Error("Failed console.Attach")
+						break
 					}
 				}
-				if reply == true {
-					go func() {
-						quit <- console.Wait()
-					}()
-				}
+				go func() {
+					err := console.Wait()
+					log.WithError(err).Info("Console released")
+					quit <- err
+				}()
 			case "signal":
 				var msg struct {
 					Signal string
