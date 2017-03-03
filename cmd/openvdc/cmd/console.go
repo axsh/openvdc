@@ -146,9 +146,7 @@ var consoleCmd = &cobra.Command{
 				fmt.Printf("-p %s %s@%s\n", port, instanceID, host)
 				return nil
 			}
-			if err := sshShell(instanceID, res.GetAddress()); err != nil && err != io.EOF {
-				log.WithError(err).Fatal("Failed ssh to ", res.GetAddress())
-			}
+			err := sshShell(instanceID, res.GetAddress())
 			switch err.(type) {
 			case *ssh.ExitError:
 				defer os.Exit(err.(*ssh.ExitError).ExitStatus())
