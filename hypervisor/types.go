@@ -24,14 +24,16 @@ type HypervisorDriver interface {
 	InstanceConsole() Console
 }
 
+type Closed error
+
 type Console interface {
-	Attach(param *ConsoleParam) error
+	Attach(param *ConsoleParam) (<-chan Closed, error)
 	Wait() error
 	ForceClose() error
 }
 
 type PtyConsole interface {
-	AttachPty(param *ConsoleParam, ptyreq *SSHPtyReq) error
+	AttachPty(param *ConsoleParam, ptyreq *SSHPtyReq) (<-chan Closed, error)
 }
 
 type ConsoleParam struct {

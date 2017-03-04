@@ -147,13 +147,15 @@ Done:
 			case "shell":
 				ptycon, ok := console.(hypervisor.PtyConsole)
 				if session.ptyreq != nil && ok {
-					if err := ptycon.AttachPty(session.console, session.ptyreq); err != nil {
+					_, err := ptycon.AttachPty(session.console, session.ptyreq)
+					if err != nil {
 						reply = false
 						log.WithError(err).Error("Failed console.AttachPty")
 						break
 					}
 				} else {
-					if err := console.Attach(session.console); err != nil {
+					_, err := console.Attach(session.console)
+					if err != nil {
 						reply = false
 						log.WithError(err).Error("Failed console.Attach")
 						break

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 	"syscall"
 	"text/template"
 	"time"
@@ -343,9 +344,9 @@ func (con *lxcConsole) container() *lxc.Container {
 	return con.lxc.container
 }
 
-func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) error {
+func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
 	if con.container().State() != lxc.RUNNING {
-		return errors.New("lxc-container can not perform console")
+		return nil, errors.New("lxc-container can not perform console")
 	}
 
 	fds := make([]*os.File, 6)
@@ -358,33 +359,54 @@ func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) error {
 	var err error
 	rIn, wIn, err := os.Pipe() // stdin
 	if err != nil {
-		return errors.Wrap(err, "Failed os.Pipe for stdin")
+		return nil, errors.Wrap(err, "Failed os.Pipe for stdin")
 	}
 	fds = append(fds, rIn, wIn)
 	con.fds = append(con.fds, wIn)
 	rOut, wOut, err := os.Pipe() // stdout
 	if err != nil {
 		defer closeAll()
-		return errors.Wrap(err, "Failed os.Pipe for stdout")
+		return nil, errors.Wrap(err, "Failed os.Pipe for stdout")
 	}
 	fds = append(fds, rOut, wOut)
 	con.fds = append(con.fds, rOut)
 	rErr, wErr, err := os.Pipe() // stderr
 	if err != nil {
 		defer closeAll()
-		return errors.Wrap(err, "Failed os.Pipe for stderr")
+		return nil, errors.Wrap(err, "Failed os.Pipe for stderr")
 	}
 	fds = append(fds, rErr, wErr)
 	con.fds = append(con.fds, rErr)
 
-	go io.Copy(wIn, param.Stdin)
-	go io.Copy(param.Stdout, rOut)
-	go io.Copy(param.Stderr, rErr)
+	waitClosed := new(sync.WaitGroup)
+	closeChan := make(chan hypervisor.Closed, 3)
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(wIn, param.Stdin)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stdout, rOut)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stderr, rErr)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	go func() {
+		waitClosed.Wait()
+		defer close(closeChan)
+	}()
 
 	err = con.attachShell(rIn, wOut, wErr, param.Envs)
 	if err != nil {
 		defer closeAll()
-		return err
+		return nil, err
 	}
 
 	// Close file descriptors for child process.
@@ -394,25 +416,46 @@ func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) error {
 		wErr.Close()
 	}()
 
-	return nil
+	return closeChan, nil
 }
 
-func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervisor.SSHPtyReq) error {
+func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervisor.SSHPtyReq) (<-chan hypervisor.Closed, error) {
 	if con.container().State() != lxc.RUNNING {
-		return errors.New("lxc-container can not perform console")
+		return nil, errors.New("lxc-container can not perform console")
 	}
 
 	fpty, ftty, err := pty.Open()
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open tty")
+		return nil, errors.Wrapf(err, "Failed to open tty")
 	}
 	// Close primary socket
 	defer ftty.Close()
 	con.fds = append(con.fds, fpty)
 
-	go io.Copy(fpty, param.Stdin)
-	go io.Copy(param.Stdout, fpty)
-	go io.Copy(param.Stderr, fpty)
+	waitClosed := new(sync.WaitGroup)
+	closeChan := make(chan hypervisor.Closed, 3)
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(fpty, param.Stdin)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stdout, fpty)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stderr, fpty)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	go func() {
+		waitClosed.Wait()
+		defer close(closeChan)
+	}()
 
 	SetWinsize(ftty.Fd(), &Winsize{Height: uint16(ptyreq.Height), Width: uint16(ptyreq.Width)})
 	/*
@@ -434,10 +477,10 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	err = con.attachShell(ftty, ftty, ftty, param.Envs)
 	if err != nil {
 		defer fpty.Close()
-		return err
+		return nil, err
 	}
 	con.tty = ftty.Name()
-	return nil
+	return closeChan, nil
 	//return con.console(stdin, stdout, stderr)
 }
 

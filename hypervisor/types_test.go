@@ -50,8 +50,8 @@ func (d *testDriver) DestroyInstance() error {
 type testConsole struct {
 }
 
-func (d *testConsole) Attach(param *ConsoleParam) error {
-	return nil
+func (d *testConsole) Attach(param *ConsoleParam) (<-chan Closed, error) {
+	return nil, nil
 }
 
 func (d *testConsole) Wait() error {
