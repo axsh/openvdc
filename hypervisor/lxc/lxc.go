@@ -383,6 +383,11 @@ func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor
 	waitClosed.Add(1)
 	go func() {
 		_, err := io.Copy(wIn, param.Stdin)
+		if err == nil {
+			// param.Stdin was closed due to EOF so needs to send EOF to pipe as well
+			wIn.Close()
+		}
+		// TODO: handle err is not nil case
 		closeChan <- err
 		defer waitClosed.Done()
 	}()
@@ -437,6 +442,11 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	waitClosed.Add(1)
 	go func() {
 		_, err := io.Copy(fpty, param.Stdin)
+		if err == nil {
+			// param.Stdin was closed due to EOF so needs to send EOF to pty as well
+			fpty.Close()
+		}
+		// TODO: handle err is not nil case
 		closeChan <- err
 		defer waitClosed.Done()
 	}()
