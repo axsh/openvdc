@@ -46,7 +46,7 @@ func sshShell(instanceID string, destAddr string) error {
 	// Handle control + C
 	cInt := make(chan os.Signal, 1)
 	defer close(cInt)
-	signal.Notify(cInt, os.Interrupt)
+	signal.Notify(cInt, os.Interrupt, syscall.SIGWINCH)
 
 	fd := int(os.Stdin.Fd())
 	if terminal.IsTerminal(fd) {
@@ -101,9 +101,34 @@ func sshShell(instanceID string, destAddr string) error {
 		select {
 		case err := <-quit:
 			return err
-		case <-cInt:
-			if err := session.Signal(ssh.SIGINT); err != nil {
-				log.WithError(err).Error("Failed to send signal")
+		case sig := <-cInt:
+			switch sig {
+			case syscall.SIGWINCH:
+				w, h, err := terminal.GetSize(fd)
+				if err != nil {
+					log.WithError(err).Error("Failed terminal.GetSize")
+					break
+				}
+				winchMsg := struct {
+					Columns uint32
+					Rows    uint32
+					Width   uint32
+					Height  uint32
+				}{
+					Columns: uint32(w),
+					Rows:    uint32(h),
+					Width:   uint32(w * 8),
+					Height:  uint32(h * 8),
+				}
+				if _, err := session.SendRequest("window-change", false, ssh.Marshal(&winchMsg)); err != nil {
+					log.WithError(err).Error("Failed session.SendRequest(window-change)")
+					break
+				}
+			case os.Interrupt:
+				sshSig := ssh.SIGINT
+				if err := session.Signal(sshSig); err != nil {
+					log.WithError(err).Error("Failed to send signal")
+				}
 			}
 		}
 	}
