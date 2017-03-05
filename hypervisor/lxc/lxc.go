@@ -501,6 +501,16 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	//return con.console(stdin, stdout, stderr)
 }
 
+func (con *lxcConsole) UpdateWindowSize(w, h uint32) error {
+	if !(len(con.fds) == 1) {
+		return errors.New("tty is not opened")
+	}
+	return SetWinsize(con.fds[0].Fd(), &Winsize{
+		Width:  uint16(w),
+		Height: uint16(h),
+	})
+}
+
 type consoleWaitError struct {
 	os.ProcessState
 }

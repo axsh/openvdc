@@ -39,6 +39,7 @@ type Console interface {
 
 type PtyConsole interface {
 	AttachPty(param *ConsoleParam, ptyreq *SSHPtyReq) (<-chan Closed, error)
+	UpdateWindowSize(w, h uint32) error
 }
 
 type ConsoleParam struct {

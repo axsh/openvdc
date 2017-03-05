@@ -209,6 +209,16 @@ Done:
 					reply = false
 					break
 				}
+				ptycon, ok := console.(hypervisor.PtyConsole)
+				if session.ptyreq != nil && ok {
+					if err := ptycon.UpdateWindowSize(winchMsg.Columns, winchMsg.Rows); err != nil {
+						log.WithError(err).Error("Failed UpdateWindowSize")
+						reply = false
+						break
+					}
+				} else {
+					log.Warn("window-change sshreq for non-tty session")
+				}
 			default:
 				reply = false
 				log.Warn("Unsupported session request")
