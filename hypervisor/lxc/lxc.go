@@ -410,7 +410,10 @@ func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor
 
 	err = con.attachShell(rIn, wOut, wErr, param.Envs)
 	if err != nil {
-		defer closeAll()
+		defer func() {
+			closeAll()
+			con.fds = []*os.File{}
+		}()
 		return nil, err
 	}
 
@@ -486,7 +489,10 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	}
 	err = con.attachShell(ftty, ftty, ftty, param.Envs)
 	if err != nil {
-		defer fpty.Close()
+		defer func() {
+			fpty.Close()
+			con.fds = []*os.File{}
+		}()
 		return nil, err
 	}
 	con.tty = ftty.Name()
