@@ -471,7 +471,7 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 		defer close(closeChan)
 	}()
 
-	SetWinsize(ftty.Fd(), &Winsize{Height: uint16(ptyreq.Height), Width: uint16(ptyreq.Width)})
+	SetWinsize(ftty.Fd(), &Winsize{Height: uint16(ptyreq.Rows), Width: uint16(ptyreq.Columns)})
 	/*
 		modes, err := TcGetAttr(ftty.Fd())
 		if err != nil {
