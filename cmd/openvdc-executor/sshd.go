@@ -197,6 +197,18 @@ Done:
 					break
 				}
 				session.console.Envs[envReq.Name] = envReq.Value
+			case "window-change":
+				winchMsg := struct {
+					Columns uint32
+					Rows    uint32
+					Width   uint32
+					Height  uint32
+				}{}
+				if err := ssh.Unmarshal(r.Payload, &winchMsg); err != nil {
+					log.WithError(errors.WithStack(err)).Error("Failed to parse window-change request body")
+					reply = false
+					break
+				}
 			default:
 				reply = false
 				log.Warn("Unsupported session request")
