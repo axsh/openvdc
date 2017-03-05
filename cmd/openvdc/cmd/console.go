@@ -56,10 +56,7 @@ func sshShell(instanceID string, destAddr string) error {
 			w = 80
 			h = 40
 		}
-		modes := ssh.TerminalModes{
-			ssh.ECHO:  0, // Disable echoing
-			ssh.IGNCR: 1, // Ignore CR on input.
-		}
+		modes := ssh.TerminalModes{}
 		term, ok := os.LookupEnv("TERM")
 		if !ok {
 			term = defaultTermInfo
