@@ -9,10 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime"
-	"syscall"
-
-	"os/exec"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -224,20 +220,10 @@ Done:
 				}
 			}
 
-			if exiterr, ok := err.(*exec.ExitError); ok {
-				// http://stackoverflow.com/questions/10385551/get-exit-code-go
-				if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
-					sendExitStatus(uint32(status.ExitStatus()))
-				} else {
-					log.Warnf("This platform %s does not support syscall.WaitStatus: %v", runtime.GOOS, exiterr)
-					if exiterr.Success() {
-						sendExitStatus(0)
-					} else {
-						sendExitStatus(1)
-					}
-				}
+			if exiterr, ok := err.(hypervisor.ConsoleWaitError); ok {
+				sendExitStatus(uint32(exiterr.ExitCode()))
 			} else if err != nil {
-				log.WithError(err).Error("")
+				log.WithError(err).Error("Unknown Error")
 			} else {
 				// err == nil
 				sendExitStatus(0)

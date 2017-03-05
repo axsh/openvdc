@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"syscall"
 	"text/template"
@@ -500,6 +501,26 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	//return con.console(stdin, stdout, stderr)
 }
 
+type consoleWaitError struct {
+	os.ProcessState
+}
+
+func (c *consoleWaitError) Error() string {
+	return c.ProcessState.String()
+}
+
+func (c *consoleWaitError) ExitCode() int {
+	// http://stackoverflow.com/questions/10385551/get-exit-code-go
+	if status, ok := c.Sys().(syscall.WaitStatus); ok {
+		return status.ExitStatus()
+	}
+	log.Warnf("This platform %s does not support syscall.WaitStatus", runtime.GOOS)
+	if !c.Success() {
+		return 1
+	}
+	return 0
+}
+
 func (con *lxcConsole) Wait() error {
 	if con.attached == nil {
 		return errors.New("No process is found")
@@ -519,11 +540,18 @@ func (con *lxcConsole) Wait() error {
 		log.Info("Closed attached session")
 	}()
 
-	_, err := con.attached.Wait()
+	state, err := con.attached.Wait()
 	if err != nil {
 		con.attached.Release()
+		return errors.Wrap(err, "Failed Process.Wait")
 	}
-	return errors.Wrap(err, "Failed Process.Wait")
+
+	if !state.Success() {
+		return &consoleWaitError{
+			ProcessState: *state,
+		}
+	}
+	return nil
 }
 
 func (con *lxcConsole) ForceClose() error {

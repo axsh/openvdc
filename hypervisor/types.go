@@ -26,6 +26,11 @@ type HypervisorDriver interface {
 
 type Closed error
 
+type ConsoleWaitError interface {
+	error
+	ExitCode() int
+}
+
 type Console interface {
 	Attach(param *ConsoleParam) (<-chan Closed, error)
 	Wait() error
