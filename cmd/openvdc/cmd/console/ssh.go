@@ -56,7 +56,10 @@ func (s *SshConsole) Run(destAddr string) error {
 		// windows: GetConsoleScreenBufferInfo() fails on STD_INPUT_HANDLE due to
 		//    missing GENERIC_READ access right
 		//    https://msdn.microsoft.com/en-us/library/ms683171(VS.85).aspx
-		w, h, err := terminal.GetSize(int(os.Stdout.Fd()))
+		//    AND terminal.GetSize() returns dimension includes hidden area not the
+		//    visible window dimension.
+		//w, h, err := terminal.GetSize(int(os.Stdout.Fd()))
+		w, h, err := s.getWinSize(os.Stdout.Fd())
 		if err != nil {
 			log.WithError(err).Warn("Failed to get console size. Set to 80x40")
 			w = 80

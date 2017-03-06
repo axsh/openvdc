@@ -20,6 +20,10 @@ root@i-00000001#
 % cat test.sh | openvdc console i-000000001
 `
 
+func (s *SshConsole) getWinSize(fd uintptr) (int, int, error) {
+	return terminal.GetSize(int(fd))
+}
+
 func (s *SshConsole) signal(c chan<- os.Signal) error {
 	signal.Notify(c, os.Interrupt, syscall.SIGWINCH)
 	return nil
