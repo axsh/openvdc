@@ -8,6 +8,11 @@ RUN ["yum", "install", "-y", "rsync", "bridge-utils", "qemu-kvm", "qemu-system-x
 RUN groupadd -r axsh && useradd -d /home/axsh -g axsh axsh && mkdir -p /home/axsh/.openvdc
 WORKDIR /home/axsh
 
+COPY ["multibox", "/multibox"]
+COPY ["run_tests.sh", "run_tests.sh"]
+COPY ["dot_openvdc-config.toml", "/home/axsh/.openvdc/config.toml"]
+RUN chown -R axsh /home/axsh/.openvdc
+
 ARG BRANCH
 ARG RELEASE_SUFFIX
 ARG REBUILD
@@ -20,10 +25,5 @@ LABEL "jp.axsh.vendor"="Axsh Co. LTD"  \
       "jp.axsh.task"="acceptance test" \
       "jp.axsh.branch"="$BRANCH" \
       "jp.axsh.release_suffix"="$RELEASE_SUFFIX"
-
-COPY ["multibox", "/multibox"]
-COPY ["run_tests.sh", "run_tests.sh"]
-COPY ["dot_openvdc-config.toml", "/home/axsh/.openvdc/config.toml"]
-run chown -R axsh /home/axsh/.openvdc
 
 ENTRYPOINT ["./run_tests.sh", "RUN"]
