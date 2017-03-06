@@ -78,23 +78,47 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.WithError(err).Error("Failed to get instance states")
 	}
 
-	if instanceState.State != model.InstanceState_REGISTERED && instanceState.State != model.InstanceState_QUEUED {
-
-		log.Infoln(instanceState)
-		log.Infoln(containerState)
-
-	}
-
-	err = exec.bootInstance(driver, taskInfo)
-	if err != nil {
-		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
-			TaskId: taskInfo.GetTaskId(),
-			State:  mesos.TaskState_TASK_FAILED.Enum(),
-		})
+	if instanceState.State == model.InstanceState_QUEUED {
+		err = exec.bootInstance(driver, taskInfo)
 		if err != nil {
-			log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
+			_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
+				TaskId: taskInfo.GetTaskId(),
+				State:  mesos.TaskState_TASK_FAILED.Enum(),
+			})
+			if err != nil {
+				log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
+			}
 		}
+	} else {
+		err = exec.recoverInstance(driver, taskInfo.GetTaskId().GetValue(), instanceState, containerState)
 	}
+}
+
+func (exec *VDCExecutor) recoverInstance(driver exec.ExecutorDriver, instanceID string, instanceState model.InstanceState, containerState hypervisor.ContainerState) error {
+	switch instanceState.State {
+	case model.InstanceState_STARTING:
+
+	case model.InstanceState_RUNNING:
+		if containerState == hypervisor.ContainerState_STOPPED {
+			hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+			if err != nil {
+				return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instanceID)
+			}
+
+			err = hv.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", instanceID)
+			}
+		}
+	case model.InstanceState_STOPPING:
+
+	case model.InstanceState_STOPPED:
+
+	case model.InstanceState_SHUTTINGDOWN:
+
+	case model.InstanceState_TERMINATED:
+	}
+	return nil
 }
 
 func (exec *VDCExecutor) getStates(driver exec.ExecutorDriver, instanceID string) (model.InstanceState, hypervisor.ContainerState, error) {
