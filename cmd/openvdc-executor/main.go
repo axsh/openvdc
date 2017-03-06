@@ -71,6 +71,15 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.Errorln("Couldn't send status update", err)
 	}
 
+	instanceState, containerState := exec.getStates(driver, taskInfo.GetTaskId().GetValue())
+
+	if instanceState.State != model.InstanceState_REGISTERED && instanceState.State != model.InstanceState_QUEUED {
+
+		log.Infoln(instanceState)
+		log.Infoln(containerState)
+
+	}
+
 	err = exec.bootInstance(driver, taskInfo)
 	if err != nil {
 		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
@@ -81,6 +90,33 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
 		}
 	}
+}
+
+func (exec *VDCExecutor) getStates(driver exec.ExecutorDriver, instanceID string) (model.InstanceState, hypervisor.ContainerState) {
+	ctx, err := model.Connect(context.Background(), &zkAddr)
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+	}
+
+	instance, err := model.Instances(ctx).FindByID(instanceID)
+
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch instance")
+	}
+
+	instanceState := instance.GetLastState()
+
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	if err != nil {
+		log.WithError(err).Error("Failed to create hypervisor driver")
+	}
+
+	containerState, err := hv.GetContainerState(instance)
+	if err != nil {
+		log.WithError(err).Error("Hypervisor failed to get container state")
+	}
+
+	return *instanceState, containerState
 }
 
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
