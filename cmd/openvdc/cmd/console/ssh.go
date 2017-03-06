@@ -6,6 +6,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/shiena/ansicolor"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -34,13 +35,13 @@ func (s *SshConsole) Run(destAddr string) error {
 	s.ClientConfig.User = s.instanceID
 	conn, err := ssh.Dial("tcp", destAddr, s.ClientConfig)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed ssh.Dial")
 	}
 	defer conn.Close()
 
 	session, err := conn.NewSession()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed ssh.NewSession")
 	}
 	defer session.Close()
 
@@ -67,12 +68,12 @@ func (s *SshConsole) Run(destAddr string) error {
 			term = defaultTermInfo
 		}
 		if err := session.RequestPty(term, h, w, modes); err != nil {
-			return err
+			return errors.Wrap(err, "Failed session.RequestPty")
 		}
 
 		origstate, err := terminal.MakeRaw(int(os.Stdin.Fd()))
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed terminal.MakeRaw")
 		}
 		defer func() {
 			if err := terminal.Restore(int(os.Stdin.Fd()), origstate); err != nil {
@@ -89,7 +90,7 @@ func (s *SshConsole) Run(destAddr string) error {
 	}
 
 	if err := session.Shell(); err != nil {
-		return err
+		return errors.Wrap(err, "Failed session.Shell")
 	}
 
 	quit := make(chan error, 1)
@@ -102,7 +103,7 @@ func (s *SshConsole) Run(destAddr string) error {
 	for {
 		select {
 		case err := <-quit:
-			return err
+			return errors.WithStack(err)
 		case sig := <-cInt:
 			err := s.signalHandle(sig, session)
 			if err != nil {
