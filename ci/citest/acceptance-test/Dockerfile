@@ -1,7 +1,5 @@
 FROM centos:7
 
-MAINTAINER "Axsh Co. LTD"
-
 VOLUME /data
 
 RUN ["yum", "install", "-y", "epel-release"]
