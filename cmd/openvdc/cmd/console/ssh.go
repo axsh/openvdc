@@ -51,9 +51,11 @@ func (s *SshConsole) Run(destAddr string) error {
 	defer close(cInt)
 	s.signal(cInt)
 
-	fd := int(os.Stdin.Fd())
-	if terminal.IsTerminal(fd) {
-		w, h, err := terminal.GetSize(fd)
+	if terminal.IsTerminal(int(os.Stdin.Fd())) {
+		// windows: GetConsoleScreenBufferInfo() fails on STD_INPUT_HANDLE due to
+		//    missing GENERIC_READ access right
+		//    https://msdn.microsoft.com/en-us/library/ms683171(VS.85).aspx
+		w, h, err := terminal.GetSize(int(os.Stdout.Fd()))
 		if err != nil {
 			log.WithError(err).Warn("Failed to get console size. Set to 80x40")
 			w = 80
@@ -68,12 +70,12 @@ func (s *SshConsole) Run(destAddr string) error {
 			return err
 		}
 
-		origstate, err := terminal.MakeRaw(fd)
+		origstate, err := terminal.MakeRaw(int(os.Stdin.Fd()))
 		if err != nil {
 			return err
 		}
 		defer func() {
-			if err := terminal.Restore(fd, origstate); err != nil {
+			if err := terminal.Restore(int(os.Stdin.Fd()), origstate); err != nil {
 				if errno, ok := err.(syscall.Errno); (ok && errno != 0) || !ok {
 					log.WithError(err).Error("Failed terminal.Restore")
 				}
