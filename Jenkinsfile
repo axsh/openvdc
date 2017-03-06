@@ -53,7 +53,7 @@ def checkout_and_merge() {
 
 def stage_unit_test(label) {
   node(label) {
-    stage "Units Tests ${label}"
+    stage "Units Tests (${label})"
     checkout_and_merge()
     write_build_env(label)
     sh "./deployment/docker/unit-tests.sh ./build.env"
@@ -62,16 +62,16 @@ def stage_unit_test(label) {
 
 def stage_rpmbuild(label) {
   node(label) {
-    stage "RPM Build ${label}"
+    stage "RPM Build (${label})"
     checkout_and_merge()
     write_build_env(label)
     sh "./deployment/docker/rpmbuild.sh ./build.env"
   }
 }
 
-def stage_acceptance(label) {
+def stage_acceptance() {
   node("multibox") {
-    stage "Acceptance Test ${label}"
+    stage "Acceptance Test (multibox)"
     checkout_and_merge()
     write_build_env(label)
     sh "./ci/acceptance-test/build_and_run_in_docker.sh ./build.env"
@@ -104,5 +104,5 @@ if( buildParams.BUILD_OS != "all" ){
 for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
-  stage_acceptance(label)
+  stage_acceptance()
 }
