@@ -74,7 +74,7 @@ def stage_acceptance(label) {
     stage "Acceptance Test ${label}"
     checkout_and_merge()
     write_build_env(label)
-    sh "./ci/acceptance-test/build_and_run_in_docker.sh ./build.env"
+    sh "./ci/citest/acceptance-test/build_and_run_in_docker.sh ./build.env"
   }
 }
 
