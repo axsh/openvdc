@@ -19,6 +19,7 @@ import (
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -68,10 +69,14 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 	_, err := driver.SendStatusUpdate(runStatus)
 	if err != nil {
-		log.Errorln("Couldn't send status update", err)
+		log.WithError(err).Error("Couldn't send status update")
 	}
 
-	instanceState, containerState := exec.getStates(driver, taskInfo.GetTaskId().GetValue())
+	instanceState, containerState, err := exec.getStates(driver, taskInfo.GetTaskId().GetValue())
+
+	if err != nil {
+		log.WithError(err).Error("Failed to get instance states")
+	}
 
 	if instanceState.State != model.InstanceState_REGISTERED && instanceState.State != model.InstanceState_QUEUED {
 
@@ -92,31 +97,31 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	}
 }
 
-func (exec *VDCExecutor) getStates(driver exec.ExecutorDriver, instanceID string) (model.InstanceState, hypervisor.ContainerState) {
+func (exec *VDCExecutor) getStates(driver exec.ExecutorDriver, instanceID string) (model.InstanceState, hypervisor.ContainerState, error) {
 	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
-		log.WithError(err).Error("Failed model.Connect")
+		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Failed model.Connect")
 	}
 
 	instance, err := model.Instances(ctx).FindByID(instanceID)
 
 	if err != nil {
-		log.WithError(err).Error("Failed to fetch instance")
+		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Failed to fetch instance %s", instanceID)
 	}
 
 	instanceState := instance.GetLastState()
 
 	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
 	if err != nil {
-		log.WithError(err).Error("Failed to create hypervisor driver")
+		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Failed to create hypervisor driver. InstanceID: %s", instanceID)
 	}
 
 	containerState, err := hv.GetContainerState(instance)
 	if err != nil {
-		log.WithError(err).Error("Hypervisor failed to get container state")
+		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Hypervisor failed to get container state. InstanceID: %s", instanceID)
 	}
 
-	return *instanceState, containerState
+	return *instanceState, containerState, nil
 }
 
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
