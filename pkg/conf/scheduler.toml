@@ -13,4 +13,3 @@
 # name = "openvdc"
 # failover-timeout = 604800 #1 week
 # executor-path = "openvdc-executor"
-# auto-reconnect = true
