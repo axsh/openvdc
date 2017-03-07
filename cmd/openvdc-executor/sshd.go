@@ -219,6 +219,25 @@ Done:
 				} else {
 					log.Warn("window-change sshreq for non-tty session")
 				}
+			case "exec":
+				var execMsg struct {
+					Command string
+				}
+				if err := ssh.Unmarshal(r.Payload, &execMsg); err != nil {
+					log.WithError(errors.WithStack(err)).Error("Failed to parse exec request body")
+					reply = false
+					break
+				}
+
+				// TODO: Skip /bin/sh -c if .Command does not contain shell keywords.
+				if _, err := console.Exec(session.console, []string{"/bin/sh", "-c", execMsg.Command}); err != nil {
+					log.WithError(err).Error("Failed console.Exec")
+					reply = false
+					break
+				}
+				go func() {
+					quit <- console.Wait()
+				}()
 			default:
 				reply = false
 				log.Warn("Unsupported session request")

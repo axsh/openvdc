@@ -33,6 +33,7 @@ type ConsoleWaitError interface {
 
 type Console interface {
 	Attach(param *ConsoleParam) (<-chan Closed, error)
+	Exec(param *ConsoleParam, args []string) (<-chan Closed, error)
 	Wait() error
 	ForceClose() error
 }

@@ -54,6 +54,10 @@ func (d *testConsole) Attach(param *ConsoleParam) (<-chan Closed, error) {
 	return nil, nil
 }
 
+func (d *testConsole) Exec(param *ConsoleParam, args []string) (<-chan Closed, error) {
+	return nil, nil
+}
+
 func (d *testConsole) Wait() error {
 	return nil
 }
