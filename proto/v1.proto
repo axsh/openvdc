@@ -36,6 +36,7 @@ service Instance {
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
+  rpc Log (InstanceLogRequest) returns (stream InstanceLogReply){}
 }
 
 message RunReply {
@@ -123,6 +124,14 @@ message InstanceListReply {
     model.InstanceState.State state = 2;
   }
   repeated InstanceListItem items = 2;
+}
+
+message InstanceLogRequest {
+  InstanceIDRequest Target = 1;
+}
+
+message InstanceLogReply {
+  repeated string Line = 1;
 }
 
 service Resource {
