@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/cmd/console"
@@ -62,10 +63,20 @@ var consoleCmd = &cobra.Command{
 				if err != nil {
 					log.Fatal("Invalid ssh host address: ", res.GetAddress())
 				}
-				fmt.Printf("-p %s %s@%s\n", port, instanceID, host)
+				fmt.Printf("-p %s %s@%s", port, instanceID, host)
+				if len(execArgs) > 0 {
+					fmt.Printf(" %s", strings.Join(execArgs, " "))
+				}
+				fmt.Println("")
 				return nil
 			}
-			err := console.NewSshConsole(instanceID, nil).Run(res.GetAddress())
+			sshcon := console.NewSshConsole(instanceID, nil)
+			var err error
+			if len(execArgs) > 0 {
+				err = sshcon.Exec(res.GetAddress(), execArgs)
+			} else {
+				err = sshcon.Run(res.GetAddress())
+			}
 			switch err.(type) {
 			case *ssh.ExitError:
 				defer os.Exit(err.(*ssh.ExitError).ExitStatus())
