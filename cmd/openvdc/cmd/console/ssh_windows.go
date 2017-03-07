@@ -3,7 +3,6 @@
 package console
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -80,6 +79,5 @@ func getSize(fd uintptr) (width, height int, err error) {
 	if e != 0 {
 		return 0, 0, error(e)
 	}
-	fmt.Println(info)
-	return int(info.maximumWindowSize.x), int(info.maximumWindowSize.y), nil
+	return int(info.window.right - info.window.left + 1), int(info.window.bottom - info.window.top + 1), nil
 }
