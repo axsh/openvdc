@@ -96,7 +96,8 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 func (exec *VDCExecutor) recoverInstance(driver exec.ExecutorDriver, instanceID string, instanceState model.InstanceState, containerState hypervisor.ContainerState) error {
 	switch instanceState.State {
-	case model.InstanceState_STARTING:
+
+	//TODO: Handle all other possible scenarios as well.
 
 	case model.InstanceState_RUNNING:
 		if containerState == hypervisor.ContainerState_STOPPED {
@@ -110,13 +111,36 @@ func (exec *VDCExecutor) recoverInstance(driver exec.ExecutorDriver, instanceID 
 				return errors.Wrapf(err, "Failed to start instance:  %s", instanceID)
 			}
 		}
-	case model.InstanceState_STOPPING:
 
 	case model.InstanceState_STOPPED:
+		if containerState == hypervisor.ContainerState_STOPPED {
+			hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+			if err != nil {
+				return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instanceID)
+			}
 
-	case model.InstanceState_SHUTTINGDOWN:
+			err = hv.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", instanceID)
+			}
 
-	case model.InstanceState_TERMINATED:
+			err = hv.StopInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to stop instance:  %s", instanceID)
+			}
+		}
+
+		//case model.InstanceState_STARTING:
+
+		//case model.InstanceState_STOPPING:
+
+		//case model.InstanceState_SHUTTINGDOWN:
+
+		//case model.InstanceState_TERMINATED:
+
+	default:
+		err := fmt.Errorf("Couldn't recover instance due to state mismatch:")
+		return errors.Wrapf(err, "InstanceState:%s,  ContainerState:%v", instanceState.State, containerState)
 	}
 	return nil
 }
