@@ -56,7 +56,7 @@ def stage_unit_test(label) {
     stage "Units Tests ${label}"
     checkout_and_merge()
     write_build_env(label)
-    sh "./ci/citest/uni-tests/unit-tests.sh ./build.env"
+    sh "./ci/citest/unit-tests/unit-tests.sh ./build.env"
   }
 }
 
