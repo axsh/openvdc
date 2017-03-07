@@ -23,7 +23,7 @@ type CrashedAgentNode interface {
 }
 
 type CrashedNodesOps interface {
-	Add(node CrashedAgentNode) error
+	Add(node *CrashedNode) error
 	FindByAgentMesosID(agentMesosID string) (*CrashedNode, error)
 	FindByAgentID(agentID string) (*CrashedNode, error)
 	FindByUUID(nodeUUID string) (*CrashedNode, error)
@@ -39,10 +39,16 @@ func CrashedNodes(ctx context.Context) CrashedNodesOps {
 	return &crashedNodes{base{ctx: ctx}}
 }
 
-func (i *crashedNodes) Add(n CrashedAgentNode) error {
+func (i *crashedNodes) Add(n *CrashedNode) error {
 	if n.GetAgentID() == "" {
 		return fmt.Errorf("ID is not set")
 	}
+
+	createdAt, _ := ptypes.TimestampProto(time.Now())
+
+	n.Uuid = uuid.New()
+	n.CreatedAt = createdAt
+
 	bk, err := i.connection()
 	if err != nil {
 		return err
@@ -52,7 +58,7 @@ func (i *crashedNodes) Add(n CrashedAgentNode) error {
 		return err
 	}
 
-	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", crashedNodesBaseKey, uuid.New()), buf); err != nil {
+	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", crashedNodesBaseKey, n.Uuid), buf); err != nil {
 		return nil
 	}
 	return nil
