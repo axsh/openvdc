@@ -10,8 +10,17 @@ message Instance {
   string id = 1;
   string slave_id = 2;
   string resource_id = 3;
-  InstanceState last_state = 4;
-  google.protobuf.Timestamp created_at = 5;
+  bool autorecovery = 4;
+  InstanceState last_state = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message ConnectionStatus {
+  enum Status {
+    CONNECTED = 0;
+    NOT_CONNECTED = 1;
+  }
+  Status status = 1; 
 }
 
 message InstanceState {
