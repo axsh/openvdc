@@ -152,6 +152,23 @@ func (i *instances) findLastState(id string) (*InstanceState, error) {
 	return n, nil
 }
 
+func (i *instances) UpdateConnectionStatus(id string, connStatus ConnectionStatus_Status) error {
+	instance, err := i.FindByID(id)
+	if err != nil {
+		return err
+	}
+	instance.ConnectionStatus.Status = connStatus
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	err = bk.Update(fmt.Sprintf("%s/%s", instancesBaseKey, id), instance)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (i *instances) UpdateState(id string, next InstanceState_State) error {
 	instance, err := i.FindByID(id)
 	if err != nil {
