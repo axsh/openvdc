@@ -23,7 +23,7 @@ func init() {
 }
 
 var consoleCmd = &cobra.Command{
-	Use:   "console [Instance ID]",
+	Use:   "console [Instance ID] [options] [--] [commands]",
 	Short: "Connect to an instance",
 	Long:  "Connect to an instance.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -32,6 +32,16 @@ var consoleCmd = &cobra.Command{
 		}
 
 		instanceID := args[0]
+		execArgs := []string{}
+		if len(args) > 1 {
+			for _, a := range args[1:] {
+				if a == "--" {
+					// Ignore args before "--"
+					execArgs = []string{}
+				}
+				execArgs = append(execArgs, a)
+			}
+		}
 
 		var res *api.ConsoleReply
 		err := util.RemoteCall(func(conn *grpc.ClientConn) error {
