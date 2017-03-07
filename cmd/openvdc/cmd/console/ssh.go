@@ -9,7 +9,6 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
-	"github.com/shiena/ansicolor"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -46,8 +45,6 @@ func (s *SshConsole) Run(destAddr string) error {
 		return errors.Wrap(err, "Failed ssh.NewSession")
 	}
 	defer session.Close()
-
-	session.Stdin = os.Stdin
 
 	// Handle control + C
 	cInt := make(chan os.Signal, 1)
@@ -87,12 +84,8 @@ func (s *SshConsole) Run(destAddr string) error {
 				}
 			}
 		}()
-		session.Stdout = ansicolor.NewAnsiColorWriter(os.Stdout)
-		session.Stderr = ansicolor.NewAnsiColorWriter(os.Stderr)
-	} else {
-		session.Stdout = os.Stdout
-		session.Stderr = os.Stderr
 	}
+	s.bindFDs(session)
 
 	if err := session.Shell(); err != nil {
 		return errors.Wrap(err, "Failed session.Shell")

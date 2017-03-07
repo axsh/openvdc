@@ -20,6 +20,13 @@ root@i-00000001#
 % cat test.sh | openvdc console i-000000001
 `
 
+func (s *SshConsole) bindFDs(session *ssh.Session) error {
+	session.Stdin = os.Stdin
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+	return nil
+}
+
 func (s *SshConsole) getWinSize(fd uintptr) (int, int, error) {
 	return terminal.GetSize(int(fd))
 }
