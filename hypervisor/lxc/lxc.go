@@ -345,7 +345,15 @@ func (con *lxcConsole) container() *lxc.Container {
 	return con.lxc.container
 }
 
+func (con *lxcConsole) Exec(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
+	return con.pipeAttach(param, args)
+}
+
 func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
+	return con.pipeAttach(param, []string{"/bin/bash"})
+}
+
+func (con *lxcConsole) pipeAttach(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
 	if con.container().State() != lxc.RUNNING {
 		return nil, errors.New("lxc-container can not perform console")
 	}
@@ -409,7 +417,7 @@ func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor
 		defer close(closeChan)
 	}()
 
-	err = con.attachShell(rIn, wOut, wErr, param.Envs)
+	err = con.attachShell(rIn, wOut, wErr, param.Envs, args)
 	if err != nil {
 		defer func() {
 			closeAll()
@@ -488,7 +496,7 @@ func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervi
 	if ptyreq.Term != "" {
 		param.Envs["TERM"] = ptyreq.Term
 	}
-	err = con.attachShell(ftty, ftty, ftty, param.Envs)
+	err = con.attachShell(ftty, ftty, ftty, param.Envs, []string{"/bin/bash"})
 	if err != nil {
 		defer func() {
 			fpty.Close()
@@ -573,7 +581,7 @@ func (con *lxcConsole) ForceClose() error {
 	return errors.WithStack(con.attached.Kill())
 }
 
-func (con *lxcConsole) attachShell(stdin, stdout, stderr *os.File, envs map[string]string) error {
+func (con *lxcConsole) attachShell(stdin, stdout, stderr *os.File, envs map[string]string, args []string) error {
 	options := lxc.DefaultAttachOptions
 	options.StdinFd = stdin.Fd()
 	options.StdoutFd = stdout.Fd()
@@ -587,7 +595,7 @@ func (con *lxcConsole) attachShell(stdin, stdout, stderr *os.File, envs map[stri
 		options.Env = s
 	}
 
-	pid, err := con.container().RunCommandNoWait([]string{"/bin/bash"}, options)
+	pid, err := con.container().RunCommandNoWait(args, options)
 	if err != nil {
 		return errors.Wrap(err, "Failed lxc.RunCommandNoWait")
 	}
