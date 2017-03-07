@@ -24,9 +24,10 @@ func init() {
 }
 
 var consoleCmd = &cobra.Command{
-	Use:   "console [Instance ID] [options] [--] [commands]",
-	Short: "Connect to an instance",
-	Long:  "Connect to an instance.",
+	Use:     "console [Instance ID] [options] [--] [commands]",
+	Short:   "Connect to an instance",
+	Long:    "Connect to an instance.",
+	Example: console.CommandExample,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			log.Fatal("Please provide an instance ID")
