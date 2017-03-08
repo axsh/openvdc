@@ -12,6 +12,7 @@ import (
 	util "github.com/mesos/mesos-go/mesosutil"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 )
 
 type InstanceAPI struct {
@@ -29,18 +30,20 @@ func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateRep
 	return &CreateReply{InstanceId: inst.Id}, nil
 }
 
-func checkSupportAPI(t *model.Template, method string) bool {
+func checkSupportAPI(t *model.Template, ctx context.Context) error {
 	rt, ok := t.Item.(model.ResourceTemplate)
 	if !ok {
-		log.Errorf("Invalid type: %T", t.Item)
-		return false
+		return errors.Errorf("Invalid type: %T", t.Item)
 	}
 	h, ok := handlers.FindByType(rt.ResourceName())
 	if !ok {
-		log.Errorf("Unknown resource name: %s", rt.ResourceName())
-		return false
+		return errors.Errorf("Unknown resource name: %s", rt.ResourceName())
 	}
-	return h.IsSupportAPI(method)
+	md, _ := metadata.FromContext(ctx)
+	if !h.IsSupportAPI(md["fullmethod"][0]) {
+		return errors.Errorf("%s is not supported: %T", md["fullmethod"][0], t.Item)
+	}
+	return nil
 }
 
 func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {
@@ -52,8 +55,8 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
-	if !checkSupportAPI(inst.GetTemplate(), "/api.Instance/Start") {
-		return nil, fmt.Errorf("/api.Instance/Start is not supported: %T", inst.GetTemplate().Item)
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
+		return nil, err
 	}
 	lastState := inst.GetLastState()
 	flog := log.WithFields(log.Fields{
@@ -89,8 +92,8 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 }
 
 func (s *InstanceAPI) Run(ctx context.Context, in *CreateRequest) (*RunReply, error) {
-	if !checkSupportAPI(in.GetTemplate(), "/api.Instance/Run") {
-		return nil, fmt.Errorf("/api.Instance/Run is not supported: %T", in.GetTemplate().Item)
+	if err := checkSupportAPI(in.GetTemplate(), ctx); err != nil {
+		return nil, err
 	}
 	res1, err := s.Create(ctx, &CreateRequest{Template: in.GetTemplate()})
 	if err != nil {
@@ -114,6 +117,9 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
 	if err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
 
@@ -146,8 +152,8 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
-	if !checkSupportAPI(inst.GetTemplate(), "/api.Instance/Reboot") {
-		return nil, fmt.Errorf("/api.Instance/Reboot is not supported: %T", inst.GetTemplate().Item)
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
+		return nil, err
 	}
 	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
 		log.WithFields(log.Fields{
@@ -219,8 +225,8 @@ func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*Console
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
-	if checkSupportAPI(inst.GetTemplate(), "/api.Instance/Console") {
-		return nil, fmt.Errorf("/api.Instance/Console is not supported: %T", inst.GetTemplate().Item)
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
+		return nil, err
 	}
 	lastState := inst.GetLastState()
 	if err := lastState.ReadyForConsole(); err != nil {
@@ -325,8 +331,8 @@ func (s *InstanceAPI) Log(in *InstanceLogRequest, stream Instance_LogServer) err
 		log.WithError(err).WithField("instance_id", in.Target.GetID()).Error("Failed to find the instance")
 		return err
 	}
-	if checkSupportAPI(inst.GetTemplate(), "/api.Instance/Log") {
-		return fmt.Errorf("/api.Instance/Log is not supported: %T", inst.GetTemplate().Item)
+	if err := checkSupportAPI(inst.GetTemplate(), stream.Context()); err != nil {
+		return err
 	}
 	masterAddr := s.api.GetMesosMasterAddr()
 	if masterAddr == nil {
