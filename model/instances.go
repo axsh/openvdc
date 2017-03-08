@@ -15,6 +15,7 @@ type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
 	FindByID(string) (*Instance, error)
 	UpdateState(id string, next InstanceState_State) error
+	UpdateConnectionStatus(id string, connStatus ConnectionStatus_Status) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
 	FilterByAgentMesosID(agentID string) ([]*Instance, error)
 	Update(*Instance) error
