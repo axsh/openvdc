@@ -233,6 +233,13 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	log.Infof("Instance launched successfully")
 	// Here can bring the instance state to RUNNING finally.
 	finState = model.InstanceState_RUNNING
+
+	err = model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_CONNECTED)
+
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_CONNECTED)
+	}
+
 	return nil
 }
 
@@ -278,6 +285,13 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	log.Infof("Instance started successfully")
 	// Here can bring the instance state to RUNNING finally.
 	finState = model.InstanceState_RUNNING
+
+	err = model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_CONNECTED)
+
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_CONNECTED)
+	}
+
 	return nil
 }
 
