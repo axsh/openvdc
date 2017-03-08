@@ -21,6 +21,11 @@ func (*NullTemplate) ResourceName() string    { return "vm/null" }
 // InstanceResource is a marker interface for instance template structs.
 type InstanceResource interface {
 	isInstanceResourceKind()
+	// protobuf message belongs to InstanceResource should have fields below:
+	//  int32 vcpu = xx;
+	//  int32 memory_gb = xx;
+	GetVcpu() int32
+	GetMemoryGb() int32
 }
 
 func (*LxcTemplate) isInstanceResourceKind()  {}

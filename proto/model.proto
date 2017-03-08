@@ -63,4 +63,7 @@ message LxcTemplate {
   repeated Interface interfaces = 6;
 }
 
-message NullTemplate {}
+message NullTemplate {
+  int32 vcpu = 1;
+  int32 memory_gb = 2;
+}
