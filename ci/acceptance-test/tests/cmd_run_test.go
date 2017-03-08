@@ -3,7 +3,6 @@
 package tests
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 	"time"
