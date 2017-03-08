@@ -18,26 +18,8 @@ type InstanceAPI struct {
 }
 
 func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateReply, error) {
-	if in.GetResourceId() == "" {
-		return nil, fmt.Errorf("Invalid Resource ID")
-	}
-	r, err := model.Resources(ctx).FindByID(in.GetResourceId())
-	if err != nil {
-		log.WithError(err).Error()
-		return nil, err
-	}
-
-	if r.GetState() == model.Resource_UNREGISTERED {
-		log.WithFields(log.Fields{
-			"resource_id": in.GetResourceId(),
-			"state":       r.GetState().String(),
-		}).Error("Cannot use unregistered resource")
-
-		return nil, fmt.Errorf("Cannot use unregistered resource")
-	}
-
 	inst, err := model.Instances(ctx).Create(&model.Instance{
-		ResourceId: r.GetId(),
+		Template: in.GetTemplate(),
 	})
 	if err != nil {
 		log.WithError(err).Error()
@@ -88,15 +70,8 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	return &StartReply{InstanceId: in.GetInstanceId()}, nil
 }
 
-func (s *InstanceAPI) Run(ctx context.Context, in *ResourceRequest) (*RunReply, error) {
-	resourceAPI := &ResourceAPI{api: s.api}
-	res0, err := resourceAPI.Register(ctx, in)
-	if err != nil {
-		log.WithError(err).Error("Failed InstanceAPI.Run at ResourceAPI.Register")
-		return nil, err
-	}
-	resourceID := res0.GetID()
-	res1, err := s.Create(ctx, &CreateRequest{ResourceId: resourceID})
+func (s *InstanceAPI) Run(ctx context.Context, in *CreateRequest) (*RunReply, error) {
+	res1, err := s.Create(ctx, &CreateRequest{Template: in.GetTemplate()})
 	if err != nil {
 		log.WithError(err).Error("Failed InstanceAPI.Run at Create")
 		return nil, err
@@ -106,7 +81,7 @@ func (s *InstanceAPI) Run(ctx context.Context, in *ResourceRequest) (*RunReply, 
 		log.WithError(err).Error("Failed InstanceAPI.Run at Start")
 		return nil, err
 	}
-	return &RunReply{InstanceId: res2.GetInstanceId(), ResourceId: resourceID}, nil
+	return &RunReply{InstanceId: res2.GetInstanceId()}, nil
 }
 
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
@@ -247,11 +222,6 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 	if err != nil {
 		return err
 	}
-	// Fetch associated resource to the instance
-	res, err := inst.Resource(ctx)
-	if err != nil {
-		return err
-	}
 	//There might be a better way to do this, but for now the AgentID is set through an environment variable.
 	//Example: export AGENT_ID="81fd8c72-3261-4ce9-95c8-7fade4b290ad-S0"
 	slaveID, ok := os.LookupEnv("AGENT_ID")
@@ -259,7 +229,7 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 		slaveID = inst.SlaveId
 	}
 
-	hypervisorName := strings.TrimPrefix(res.ResourceTemplate().ResourceName(), "vm/")
+	hypervisorName := strings.TrimPrefix(inst.ResourceTemplate().ResourceName(), "vm/")
 	_, err = s.api.scheduler.SendFrameworkMessage(
 		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 		util.NewSlaveID(slaveID),

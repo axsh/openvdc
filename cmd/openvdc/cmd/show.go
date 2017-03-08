@@ -37,17 +37,6 @@ var showCmd = &cobra.Command{
 				c := api.NewInstanceClient(conn)
 				return c.Show(context.Background(), req)
 			}
-		} else if strings.HasPrefix(id, "r-") {
-			showTarget = func(conn *grpc.ClientConn) (proto.Message, error) {
-				req := &api.ResourceIDRequest{
-					Key: &api.ResourceIDRequest_ID{
-						ID: id,
-					},
-				}
-
-				c := api.NewResourceClient(conn)
-				return c.Show(context.Background(), req)
-			}
 		} else {
 			log.Fatal("Invalid ID syntax:", id)
 		}

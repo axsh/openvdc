@@ -40,7 +40,6 @@ func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDri
 	}
 
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
-	RegisterResourceServer(s.server, &ResourceAPI{api: s})
 	RegisterInstanceConsoleServer(s.server, &InstanceConsoleAPI{api: s})
 	return s
 }
