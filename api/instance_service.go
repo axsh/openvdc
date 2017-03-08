@@ -31,10 +31,7 @@ func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateRep
 }
 
 func checkSupportAPI(t *model.Template, ctx context.Context) error {
-	rt, ok := t.Item.(model.ResourceTemplate)
-	if !ok {
-		return errors.Errorf("Invalid type: %T", t.Item)
-	}
+	rt := t.ResourceTemplate()
 	h, ok := handlers.FindByType(rt.ResourceName())
 	if !ok {
 		return errors.Errorf("Unknown resource name: %s", rt.ResourceName())

@@ -43,3 +43,7 @@ func GetResourceTemplate(tmpl *Template) ResourceTemplate {
 	field := v.Elem().FieldByName(fieldName)
 	return field.Interface().(ResourceTemplate)
 }
+
+func (t *Template) ResourceTemplate() ResourceTemplate {
+	return GetResourceTemplate(t)
+}
