@@ -3,13 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/scheduler"
+	"github.com/mesos/mesos-go/detector"
+	_ "github.com/mesos/mesos-go/detector/zoo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -122,6 +126,11 @@ func execute(cmd *cobra.Command, args []string) {
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
 	}
 
+	detector, err := detector.New(viper.GetString("mesos.master"))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create mesos detector")
+	}
+
 	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
 	if err != nil {
 		log.Fatal(err)
@@ -133,14 +142,45 @@ func execute(cmd *cobra.Command, args []string) {
 		}
 	}()
 
-	scheduler.Run(
+	mesosDriver, err := scheduler.NewMesosScheduler(
 		ctx,
 		viper.GetString("mesos.listen"),
-		viper.GetString("api.endpoint"),
 		viper.GetString("mesos.master"),
 		zkAddr,
 		settings,
 	)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create mesos driver")
+	}
+
+	grpcListener, err := net.Listen("tcp", viper.GetString("api.endpoint"))
+	if err != nil {
+		log.Fatalln("Faild to bind address for gRPC API: ", viper.GetString("api.endpoint"))
+	}
+	log.Info("Listening gRPC API on: ", viper.GetString("api.endpoint"))
+	grpcServer := api.NewAPIServer(zkAddr, mesosDriver, ctx)
+
+	if err := detector.Detect(grpcServer); err != nil {
+		log.WithError(err).Fatal("Failed to start mesos detector")
+	}
+
+	// Run gRPC API Server after the first mesos master detection.
+	go func() {
+		if err := grpcServer.Serve(grpcListener); err != nil {
+			log.WithError(err).Fatal("Failed ")
+		}
+	}()
+
+	defer func() {
+		// Graceful stop functions
+		detector.Cancel()
+		<-detector.Done()
+		grpcServer.GracefulStop()
+	}()
+
+	if stat, err := mesosDriver.Run(); err != nil {
+		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
+	}
 }
 
 func main() {

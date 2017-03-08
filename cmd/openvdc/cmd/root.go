@@ -36,6 +36,7 @@ func Execute() {
 	RootCmd.AddCommand(showCmd)
 	RootCmd.AddCommand(TemplateCmd)
 	RootCmd.AddCommand(logCmd)
+	RootCmd.AddCommand(rebootCmd)
 	RootCmd.AddCommand(listCmd)
 	RootCmd.AddCommand(cmd.VersionCmd)
 	if err := RootCmd.Execute(); err != nil {
@@ -49,13 +50,10 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
-	viper.SetDefault("mesos.master", "127.0.0.1:5050")
 	viper.SetDefault("api.endpoint", "127.0.0.1:5000")
 
 	pfs := RootCmd.PersistentFlags()
 	pfs.String("config", filepath.Join(util.UserConfDir, "config.toml"), "Load config file from the path")
-	pfs.String("master", viper.GetString("mesos.master"), "Mesos Master node address")
-	viper.BindPFlag("mesos.master", pfs.Lookup("master"))
 	pfs.String("server", viper.GetString("api.endpoint"), "gRPC API server address")
 	pfs.SetAnnotation("server", cobra.BashCompSubdirsInDir, []string{})
 	viper.BindPFlag("api.endpoint", pfs.Lookup("server"))

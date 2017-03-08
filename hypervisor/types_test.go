@@ -32,6 +32,10 @@ func (d *testDriver) StopInstance() error {
 	return nil
 }
 
+func (d *testDriver) RebootInstance() error {
+	return nil
+}
+
 func (d *testDriver) InstanceConsole() Console {
 	return &testConsole{}
 }

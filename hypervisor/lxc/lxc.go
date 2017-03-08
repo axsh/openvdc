@@ -149,20 +149,20 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 	// Append comment header
 	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n")
 
-	if lxc.VersionAtLeast(1,1,0) {
+	if lxc.VersionAtLeast(1, 1, 0) {
 		/*
-		https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
-		lxc.network
-		may be used without a value to clear all previous network options.
+			https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html
+			lxc.network
+			may be used without a value to clear all previous network options.
 
-		However requires the change 6b0d5538.
-		https://github.com/lxc/lxc/commit/6b0d553864a16462850d87d4d2e9056ea136ebad
+			However requires the change 6b0d5538.
+			https://github.com/lxc/lxc/commit/6b0d553864a16462850d87d4d2e9056ea136ebad
 		*/
 		fmt.Fprintf(lxcconf, "# Here clear all network options.\nlxc.network=\n")
-	}else{
+	} else {
 		/*
-		lxc.network.type with no value does same thing.
-		https://github.com/lxc/lxc/blob/stable-1.0/src/lxc/confile.c#L369-L377
+			lxc.network.type with no value does same thing.
+			https://github.com/lxc/lxc/blob/stable-1.0/src/lxc/confile.c#L369-L377
 		*/
 		fmt.Fprintf(lxcconf, "# Here clear all network options.\nlxc.network.type=\n")
 	}
@@ -185,10 +185,10 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 				DownScript string
 				IFIndex    int
 			}{
-				IFace:   i,
-				IFIndex: idx,
-				TapName: fmt.Sprintf("%s_%02d", d.container.Name(), idx),
-				UpScript: filepath.Join(d.containerDir(), "up.sh"),
+				IFace:      i,
+				IFIndex:    idx,
+				TapName:    fmt.Sprintf("%s_%02d", d.container.Name(), idx),
+				UpScript:   filepath.Join(d.containerDir(), "up.sh"),
 				DownScript: filepath.Join(d.containerDir(), "down.sh"),
 			}
 			if err := nwTemplate.Execute(lxcconf, tval); err != nil {
@@ -250,7 +250,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	// Force reload the modified container config.
 	d.container.ClearConfig()
-	if err := d.container.LoadConfigFile( d.container.ConfigFileName() ); err != nil {
+	if err := d.container.LoadConfigFile(d.container.ConfigFileName()); err != nil {
 		return errors.Wrap(err, "Failed lxc.LoadConfigFile")
 	}
 
@@ -316,6 +316,23 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 	if ok := d.container.Wait(lxc.STOPPED, 30*time.Second); !ok {
 		return errors.New("Failed or timedout to wait for STOPPED")
 	}
+	return nil
+}
+
+func (d *LXCHypervisorDriver) RebootInstance() error {
+
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+	if err != nil {
+		d.log.Errorln(err)
+		return err
+	}
+
+	d.log.Infoln("Rebooting lxc-container..")
+	if err := c.Reboot(); err != nil {
+		d.log.Errorln(err)
+		return err
+	}
+
 	return nil
 }
 

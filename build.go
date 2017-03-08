@@ -1,6 +1,8 @@
-// Build script for OpenVDC
+// +build ignore
 
 package main
+
+// Build script for OpenVDC
 
 import (
 	"bufio"
@@ -11,6 +13,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -101,6 +104,13 @@ func determineGHRef() string {
 }
 
 func main() {
+	// Apppend $GOBIN and $GOPATH/bin to $PATH
+	if dir, ok := os.LookupEnv("GOBIN"); ok {
+		os.Setenv("PATH", os.Getenv("PATH") + string(filepath.ListSeparator) + dir)
+	}
+	for _, dir := range filepath.SplitList(os.Getenv("GOPATH")) {
+		os.Setenv("PATH", os.Getenv("PATH") + string(filepath.ListSeparator) + filepath.Join(dir, "bin"))
+	}
 	var with_gogen bool
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of build.go:\n")
