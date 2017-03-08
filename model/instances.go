@@ -158,7 +158,12 @@ func (i *instances) UpdateConnectionStatus(id string, connStatus ConnectionStatu
 	if err != nil {
 		return err
 	}
-	instance.ConnectionStatus.Status = connStatus
+
+	cStatus := &ConnectionStatus{
+		Status: connStatus,
+	}
+
+	instance.ConnectionStatus = cStatus
 	bk, err := i.connection()
 	if err != nil {
 		return err
