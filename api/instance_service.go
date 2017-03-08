@@ -7,6 +7,7 @@ import (
 
 	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
 	util "github.com/mesos/mesos-go/mesosutil"
 	"github.com/pkg/errors"
@@ -28,6 +29,20 @@ func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateRep
 	return &CreateReply{InstanceId: inst.Id}, nil
 }
 
+func checkSupportAPI(t *model.Template, method string) bool {
+	rt, ok := t.Item.(model.ResourceTemplate)
+	if !ok {
+		log.Errorf("Invalid type: %T", t.Item)
+		return false
+	}
+	h, ok := handlers.FindByType(rt.ResourceName())
+	if !ok {
+		log.Errorf("Unknown resource name: %s", rt.ResourceName())
+		return false
+	}
+	return h.IsSupportAPI(method)
+}
+
 func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {
 	if in.GetInstanceId() == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
@@ -36,6 +51,9 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	if err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
+	}
+	if !checkSupportAPI(inst.GetTemplate(), "/api.Instance/Start") {
+		return nil, fmt.Errorf("/api.Instance/Start is not supported: %T", inst.GetTemplate().Item)
 	}
 	lastState := inst.GetLastState()
 	flog := log.WithFields(log.Fields{
@@ -71,6 +89,9 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 }
 
 func (s *InstanceAPI) Run(ctx context.Context, in *CreateRequest) (*RunReply, error) {
+	if !checkSupportAPI(in.GetTemplate(), "/api.Instance/Run") {
+		return nil, fmt.Errorf("/api.Instance/Run is not supported: %T", in.GetTemplate().Item)
+	}
 	res1, err := s.Create(ctx, &CreateRequest{Template: in.GetTemplate()})
 	if err != nil {
 		log.WithError(err).Error("Failed InstanceAPI.Run at Create")
@@ -125,7 +146,9 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
-
+	if !checkSupportAPI(inst.GetTemplate(), "/api.Instance/Reboot") {
+		return nil, fmt.Errorf("/api.Instance/Reboot is not supported: %T", inst.GetTemplate().Item)
+	}
 	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
 		log.WithFields(log.Fields{
 			"instance_id": in.GetInstanceId(),
@@ -195,6 +218,9 @@ func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*Console
 	if err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
+	}
+	if checkSupportAPI(inst.GetTemplate(), "/api.Instance/Console") {
+		return nil, fmt.Errorf("/api.Instance/Console is not supported: %T", inst.GetTemplate().Item)
 	}
 	lastState := inst.GetLastState()
 	if err := lastState.ReadyForConsole(); err != nil {
@@ -294,6 +320,14 @@ func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*Insta
 }
 
 func (s *InstanceAPI) Log(in *InstanceLogRequest, stream Instance_LogServer) error {
+	inst, err := model.Instances(stream.Context()).FindByID(in.Target.GetID())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.Target.GetID()).Error("Failed to find the instance")
+		return err
+	}
+	if checkSupportAPI(inst.GetTemplate(), "/api.Instance/Log") {
+		return fmt.Errorf("/api.Instance/Log is not supported: %T", inst.GetTemplate().Item)
+	}
 	masterAddr := s.api.GetMesosMasterAddr()
 	if masterAddr == nil {
 		return errors.New("Mesos master address is not detected")
