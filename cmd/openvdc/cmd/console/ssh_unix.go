@@ -20,8 +20,8 @@ root@i-00000001#
 % cat test.sh | openvdc console i-000000001
 `
 
-func (s *SshConsole) bindFDs(session *ssh.Session) (func(), error) {
-	closeFunc := func() {}
+func (s *SshConsole) bindFDs(session *ssh.Session) (func() error, error) {
+	closeFunc := func() error { return nil }
 	if terminal.IsTerminal(int(os.Stdin.Fd())) {
 		w, h, err := terminal.GetSize(int(os.Stdout.Fd()))
 		if err != nil {
@@ -43,12 +43,13 @@ func (s *SshConsole) bindFDs(session *ssh.Session) (func(), error) {
 			return nil, errors.Wrap(err, "Failed terminal.MakeRaw")
 		}
 
-		closeFunc = func() {
+		closeFunc = func() error {
 			if err := terminal.Restore(int(os.Stdin.Fd()), origstate); err != nil {
 				if errno, ok := err.(syscall.Errno); (ok && errno != 0) || !ok {
-					log.WithError(err).Error("Failed terminal.Restore")
+					return errors.Wrap(err, "Failed terminal.Restore")
 				}
 			}
+			return nil
 		}
 	}
 

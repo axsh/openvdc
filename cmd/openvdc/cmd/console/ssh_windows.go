@@ -18,8 +18,8 @@ PS> openvdc console i-000000001
 root@i-00000001#
 `
 
-func (s *SshConsole) bindFDs(session *ssh.Session) (func(), error) {
-	closeFunc := func() {}
+func (s *SshConsole) bindFDs(session *ssh.Session) (func() error, error) {
+	closeFunc := func() error { return nil }
 	session.Stdin = os.Stdin
 	session.Stdout = newAnsiWriter(os.Stdout)
 	session.Stderr = newAnsiWriter(os.Stderr)

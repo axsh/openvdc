@@ -53,7 +53,12 @@ func (s *SshConsole) Run(destAddr string) error {
 	if err != nil {
 		return err
 	}
-	defer closeFunc()
+	defer func() {
+		err := closeFunc()
+		if err != nil {
+			log.WithError(err).Error("Failed close process")
+		}
+	}()
 
 	if err := session.Shell(); err != nil {
 		return errors.Wrap(err, "Failed session.Shell")
