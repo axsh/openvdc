@@ -18,11 +18,12 @@ PS> openvdc console i-000000001
 root@i-00000001#
 `
 
-func (s *SshConsole) bindFDs(session *ssh.Session) error {
+func (s *SshConsole) bindFDs(session *ssh.Session) (func(), error) {
+	closeFunc := func() {}
 	session.Stdin = os.Stdin
 	session.Stdout = newAnsiWriter(os.Stdout)
 	session.Stderr = newAnsiWriter(os.Stderr)
-	return nil
+	return closeFunc, nil
 }
 
 func (s *SshConsole) getWinSize(fd uintptr) (int, int, error) {

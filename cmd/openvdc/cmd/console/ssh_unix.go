@@ -20,15 +20,42 @@ root@i-00000001#
 % cat test.sh | openvdc console i-000000001
 `
 
-func (s *SshConsole) bindFDs(session *ssh.Session) error {
+func (s *SshConsole) bindFDs(session *ssh.Session) (func(), error) {
+	closeFunc := func() {}
+	if terminal.IsTerminal(int(os.Stdin.Fd())) {
+		w, h, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
+			log.WithError(err).Warn("Failed to get console size. Set to 80x40")
+			w = 80
+			h = 40
+		}
+		modes := ssh.TerminalModes{}
+		term, ok := os.LookupEnv("TERM")
+		if !ok {
+			term = defaultTermInfo
+		}
+		if err := session.RequestPty(term, h, w, modes); err != nil {
+			return nil, errors.Wrap(err, "Failed session.RequestPty")
+		}
+
+		origstate, err := terminal.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed terminal.MakeRaw")
+		}
+
+		closeFunc = func() {
+			if err := terminal.Restore(int(os.Stdin.Fd()), origstate); err != nil {
+				if errno, ok := err.(syscall.Errno); (ok && errno != 0) || !ok {
+					log.WithError(err).Error("Failed terminal.Restore")
+				}
+			}
+		}
+	}
+
 	session.Stdin = os.Stdin
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
-	return nil
-}
-
-func (s *SshConsole) getWinSize(fd uintptr) (int, int, error) {
-	return terminal.GetSize(int(fd))
+	return closeFunc, nil
 }
 
 func (s *SshConsole) signal(c chan<- os.Signal) error {
