@@ -178,5 +178,6 @@ Environment Variables:
 	// Build Acceptance Test binary
 	os.Chdir("./ci/acceptance-test/tests")
 	cmd("govendor", "sync")
+	cmd("go", "generate", "-v", "-tags=acceptance", ".")
 	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test")
 }
