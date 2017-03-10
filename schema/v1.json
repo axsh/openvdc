@@ -83,6 +83,37 @@
           "type": "integer",
           "default": 1
         },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "veth",
+                  "none",
+                  "empty",
+                  "vlan",
+                  "macvlan",
+                  "phys"
+                ]
+              },
+              "macaddr": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{2}[0-9a-fA-F:]+$"
+              },
+              "ipv4addr": {
+                "type": "string",
+                "format": "ipv4"
+              },
+              "bridge": {
+                "type": "string"
+              }
+            }
+          }
+        },
         "lxc_image": {
           "type": "object",
           "properties": {
@@ -98,36 +129,6 @@
             },
             "checksum": {
               "type": "string"
-            }
-          },
-          "interfaces": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "veth",
-                    "none",
-                    "empty",
-                    "vlan",
-                    "macvlan",
-                    "phys"
-                  ]
-                },
-                "macaddr": {
-                  "type": "string",
-                  "pattern": "^[0-9a-fA-F]{2}[0-9a-fA-F:]+$"
-                },
-                "ipv4addr": {
-                  "type": "string",
-                  "format": "ipv4"
-                },
-                "bridge" : {
-                  "type": "string"
-                }
-              }
             }
           },
           "required": [
