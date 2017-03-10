@@ -17,6 +17,7 @@ import (
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	lxc "gopkg.in/lxc/go-lxc.v2"
+	"runtime"
 )
 
 func init() {
@@ -35,8 +36,6 @@ func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.H
 		log:     log.WithField("hypervisor", "lxc"),
 		lxcpath: lxc.DefaultConfigPath(),
 		name:    containerName,
-		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
-		template: lxc.DownloadTemplateOptions,
 	}, nil
 }
 
@@ -49,9 +48,15 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
+var lxcArch = map[string]string {
+	"amd64": "amd64",
+	"386": "i386",
+	// TODO: powerpc, arm, arm64
+}
+
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
 
-	lxcTmpl, ok := in.(*model.LxcTemplate)
+	lxcResTmpl, ok := in.(*model.LxcTemplate)
 
 	if !ok {
 
@@ -70,6 +75,28 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	}
 
 	d.log.Infoln("Creating lxc-container...")
+	lxcTmpl := lxcResTmpl.GetLxcTemplate()
+	d.template = lxc.TemplateOptions {
+		Template: lxcTmpl.Template,
+		Arch: lxcTmpl.Arch,
+		ExtraArgs: lxcTmpl.ExtraArgs,
+	}
+	switch lxcTmpl.Template {
+	case "download":
+		d.template.Distro = lxcTmpl.Distro
+		d.template.Release = lxcTmpl.Release
+		d.template.Varian = lxcTmpl.Variant
+	default:
+		d.template.Release = lxcTmpl.Release
+	}
+
+	if d.template.Arch == "" {
+		// Guess LXC Arch name
+		d.template.Arch = lxcArch[runtime.GOARCH]
+		if d.template.Arch == "" {
+			return errors.Errorf("Unable to guess LXC arch name")
+		}
+	}
 
 	if err := c.Create(d.template); err != nil {
 
@@ -81,7 +108,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	var conf string
 
-	for _, i := range lxcTmpl.GetInterfaces() {
+	for _, i := range lxcResTmpl.GetInterfaces() {
 
 		if i.GetIpv4Addr() == "" {
 
