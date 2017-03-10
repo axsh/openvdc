@@ -3,14 +3,13 @@
 package tests
 
 import (
-	"io/ioutil"
 	"testing"
 )
 
 //go:generate go-bindata -pkg tests -o fixtures.bindata.go ./fixtures
 
 func init() {
-	if err := ioutil.WriteFile("/var/tmp/lxc.json", Asset("fixtures/lxc.json"), 644); err != nil {
+	if err := RestoreAsset("/var/tmp", "fixtures/lxc.json"), 644); err != nil {
 		panic(err)
 	}
 }
