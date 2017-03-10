@@ -87,7 +87,9 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "type": {
                 "type": "string",
@@ -111,6 +113,77 @@
               "bridge": {
                 "type": "string"
               }
+            }
+          }
+        },
+        "lxc_template": {
+          "type": "object",
+          "definitions": {
+            "basic_template": {
+              "type": "object",
+              "properties": {
+                "_comment": {
+                  "type": "string"
+                },
+                "release": {
+                  "type": "string"
+                },
+                "arch": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "maxProperties": 1,
+          "minProperties": 1,
+          "properties": {
+            "download": {
+              "type": "object",
+              "required": [
+                "distro",
+                "release"
+              ],
+              "properties": {
+                "_comment": {
+                  "type": "string"
+                },
+                "distro": {
+                  "type": "string"
+                },
+                "release": {
+                  "type": "string"
+                },
+                "variant": {
+                  "type": "string"
+                },
+                "arch": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "string"
+                }
+              }
+            },
+            "archlinux": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "busybox": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "centos": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "debian": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "fedora": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "ubuntu": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
             }
           }
         },

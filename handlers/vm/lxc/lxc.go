@@ -25,8 +25,8 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 	}
 
 	// Validation
-	if tmpl.GetLxcImage() == nil {
-		return nil, handlers.ErrInvalidTemplate(h, "lxc_image must exist")
+	if tmpl.GetLxcImage() == nil && tmpl.GetLxcTemplate() == nil {
+		return nil, handlers.ErrInvalidTemplate(h, "lxc_image or lxc_template must exist")
 	}
 
 	return tmpl, nil
