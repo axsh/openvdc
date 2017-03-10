@@ -91,6 +91,8 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	}
 	n.ConnectionStatus = initConnectionStatus
 
+	n.Autorecovery = true
+
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
