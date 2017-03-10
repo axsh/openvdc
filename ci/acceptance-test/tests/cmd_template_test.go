@@ -2,11 +2,7 @@
 
 package tests
 
-import (
-	"strings"
-	"testing"
-	"time"
-)
+import "testing"
 
 func TestCmdTemplateValidate(t *testing.T) {
 	RunCmdAndReportFail(t, "openvdc", "template", "validate", "centos/7/lxc")
