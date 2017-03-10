@@ -151,15 +151,16 @@ Environment Variables:
 		determineGHRef(),
 	)
 
+	if_not_exists("go-bindata", func() {
+		cmd("go", "get", "-u", "github.com/jteeuwen/go-bindata/...")
+	})
+
 	if with_gogen {
 		if_not_exists("protoc", func() {
 			log.Fatal("Unable to find protoc. Download pre-compiled binary from https://github.com/google/protobuf/releases")
 		})
 		if_not_exists("protoc-gen-go", func() {
 			cmd("go", "get", "-u", "-v", "github.com/golang/protobuf/protoc-gen-go")
-		})
-		if_not_exists("go-bindata", func() {
-			cmd("go", "get", "-u", "github.com/jteeuwen/go-bindata/...")
 		})
 		cmd("go", "generate", "-v", "./api/...", "./model", "./registry")
 	}
