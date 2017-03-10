@@ -85,7 +85,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	case "download":
 		d.template.Distro = lxcTmpl.Distro
 		d.template.Release = lxcTmpl.Release
-		d.template.Varian = lxcTmpl.Variant
+		d.template.Variant = lxcTmpl.Variant
 	default:
 		d.template.Release = lxcTmpl.Release
 	}
