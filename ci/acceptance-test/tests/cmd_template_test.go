@@ -16,12 +16,12 @@ func init() {
 
 func TestCmdTemplateValidate(t *testing.T) {
 	RunCmdAndReportFail(t, "openvdc", "template", "validate", "centos/7/lxc")
-	RunCmdAndReportFail(t, "openvdc", "template", "validate", "/var/tmp/lxc.json")
+	RunCmdAndReportFail(t, "openvdc", "template", "validate", "/var/tmp/fixtures/lxc.json")
 	RunCmdAndReportFail(t, "openvdc", "template", "validate", "https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json")
 }
 
 func TestCmdTemplateShow(t *testing.T) {
 	RunCmdAndReportFail(t, "openvdc", "template", "show", "centos/7/lxc")
-	RunCmdAndReportFail(t, "openvdc", "template", "show", "/var/tmp/lxc.json")
+	RunCmdAndReportFail(t, "openvdc", "template", "show", "/var/tmp/fixtures/lxc.json")
 	RunCmdAndReportFail(t, "openvdc", "template", "show", "https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json")
 }
