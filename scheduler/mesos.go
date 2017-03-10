@@ -16,6 +16,7 @@ import (
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	util "github.com/mesos/mesos-go/mesosutil"
 	sched "github.com/mesos/mesos-go/scheduler"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
@@ -26,7 +27,6 @@ type SchedulerSettings struct {
 	ID              string
 	FailoverTimeout float64
 	ExecutorPath    string
-	AutoReconnect   bool
 }
 
 type VDCScheduler struct {
@@ -90,27 +90,23 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-func getHypervisorName(offer *mesos.Offer) string {
-	for _, attr := range offer.Attributes {
-		if attr.GetName() == "hypervisor" &&
-			attr.GetType() == mesos.Value_TEXT {
-			return attr.GetText().GetValue()
-		}
+func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
+
+	checkAgents(offers, ctx)
+
+	disconnected := getDisconnectedInstances(offers, ctx, driver)
+
+	if len(disconnected) > 0 {
+		sched.InstancesRelaunching(driver, offers, ctx, disconnected)
+	} else {
+		sched.InstancesQueued(driver, offers, ctx)
 	}
-	return ""
+
+	return nil
 }
 
-func getAgentID(offer *mesos.Offer) string {
-	for _, attr := range offer.Attributes {
-		if attr.GetName() == "openvdc-node-id" &&
-			attr.GetType() == mesos.Value_TEXT {
-			return attr.GetText().GetValue()
-		}
-	}
-	return ""
-}
+func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver sched.SchedulerDriver) []*model.Instance {
 
-func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context) []*model.Instance {
 	disconnectedInstances := []*model.Instance{}
 
 	for _, offer := range offers {
@@ -122,20 +118,29 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context) []*mod
 
 		if disconnectedAgent != nil {
 			if disconnectedAgent.GetReconnected() == false {
-
-				log.Infoln("Node '%s' reconnected.", disconnectedAgent.GetAgentID)
-				model.CrashedNodes(ctx).SetReconnected(disconnectedAgent)
-				disconnected, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
+				instances, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
 
 				if err != nil {
 					log.WithError(err).Error("Failed to retrieve disconnected instances.")
 				}
 
-				if len(disconnected) > 0 {
-					for _, instance := range disconnected {
-						log.Infoln("Added instance '%s' to relaunch-queue.", instance.GetId())
-						disconnectedInstances = append(disconnectedInstances, instance)
+				if len(instances) > 0 {
+					for _, instance := range instances {
+						connStatus := instance.GetConnectionStatus()
+
+						if connStatus.Status == model.ConnectionStatus_NOT_CONNECTED {
+							log.Infoln(fmt.Sprintf("Added instance %s to relaunch-queue.", instance.GetId()))
+							disconnectedInstances = append(disconnectedInstances, instance)
+						}
+						//TODO: Also update the slaveID of the instances
+						//TODO: Check if instance has AutoRecovery set to true or not
 					}
+				}
+
+				if len(disconnectedInstances) == 0 {
+					model.CrashedNodes(ctx).SetReconnected(disconnectedAgent)
+					agentID := disconnectedAgent.GetAgentID()
+					log.Infoln(fmt.Sprintf("Node '%s' reconnected.", agentID))
 				}
 			}
 		}
@@ -143,21 +148,44 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context) []*mod
 	return disconnectedInstances
 }
 
-func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
-	for _, offer := range offers {
-		err := model.Nodes(ctx).Add(&model.AgentNode{
-			Agentmesosid: *offer.SlaveId.Value,
-			Agentid:      getAgentID(offer),
-		})
-		if err != nil {
-			log.Infoln(err)
+func (sched *VDCScheduler) InstancesRelaunching(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context, relaunchQueued []*model.Instance) error {
+
+	tasks := []*mesos.TaskInfo{}
+	acceptIDs := []*mesos.OfferID{}
+
+OutsideLoop:
+	for _, instance := range relaunchQueued {
+		for _, offer := range offers {
+			if instance.SlaveId != offer.SlaveId.GetValue() {
+				continue
+			}
+
+			for i, _ := range acceptIDs {
+				if acceptIDs[i] == offer.Id {
+					offer = nil
+					continue OutsideLoop
+				}
+			}
+
+			hypervisorName := getHypervisorName(offer)
+
+			model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_CONNECTED)
+
+			task := sched.NewTask(instance, util.NewSlaveID(instance.SlaveId), ctx, sched.NewExecutor(hypervisorName))
+			tasks = append(tasks, task)
+			acceptIDs = append(acceptIDs, offer.Id)
 		}
 	}
 
-	queued, err := model.Instances(ctx).FilterByState(model.InstanceState_QUEUED)
-	if err != nil {
-		return err
-	}
+	sched.LaunchTasks(driver, tasks, acceptIDs, offers)
+	sched.refreshOffers(driver, offers, acceptIDs)
+
+	return nil
+}
+
+func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
+
+	queued, _ := model.Instances(ctx).FilterByState(model.InstanceState_QUEUED)
 
 	if len(queued) == 0 {
 		log.Infoln("Skip offers since no allocation requests.")
@@ -170,42 +198,11 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		return nil
 	}
 
-	findMatching := func(i *model.Instance) *mesos.Offer {
-		for _, offer := range offers {
-			hypervisorName := getHypervisorName(offer)
-			if hypervisorName == "" {
-				continue
-			}
-
-			r, err := i.Resource(ctx)
-			if err != nil {
-				log.WithError(err).WithFields(log.Fields{
-					"instance_id": i.GetId(),
-					"resource_id": i.GetResourceId(),
-				}).Error("Failed to retrieve resource object")
-				continue
-			}
-			// TODO: Avoid type switch to find template types.
-			switch t := r.GetTemplate().GetItem(); t.(type) {
-			case *model.Template_Lxc:
-				if hypervisorName == "lxc" {
-					return offer
-				}
-			case *model.Template_Null:
-				if hypervisorName == "null" {
-					return offer
-				}
-			default:
-				log.Warnf("Unknown template type")
-			}
-		}
-		return nil
-	}
-
 	tasks := []*mesos.TaskInfo{}
 	acceptIDs := []*mesos.OfferID{}
+
 	for _, i := range queued {
-		found := findMatching(i)
+		found := findMatching(i, offers, ctx)
 		for i, _ := range acceptIDs {
 			if acceptIDs[i] == found.Id {
 				found = nil
@@ -217,22 +214,79 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		}
 
 		hypervisorName := getHypervisorName(found)
+
 		log.WithFields(log.Fields{
 			"instance_id": i.GetId(),
 			"hypervisor":  hypervisorName,
 		}).Info("Found matching offer")
 
-		executor := &mesos.ExecutorInfo{
-			ExecutorId: util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
-			Name:       proto.String("VDC Executor"),
-			Command: &mesos.CommandInfo{
-				Value: proto.String(fmt.Sprintf("%s --hypervisor=%s --zk=%s",
-					ExecutorPath, hypervisorName, sched.zkAddr.String())),
-			},
+		task := sched.NewTask(i, found.SlaveId, ctx, sched.NewExecutor(hypervisorName))
+		tasks = append(tasks, task)
+		acceptIDs = append(acceptIDs, found.Id)
+
+		i.SlaveId = found.SlaveId.GetValue()
+		model.Instances(ctx).Update(i)
+	}
+
+	sched.LaunchTasks(driver, tasks, acceptIDs, offers)
+	sched.refreshOffers(driver, offers, acceptIDs)
+
+	return nil
+}
+
+func (sched *VDCScheduler) NewTask(i *model.Instance, slaveID *mesos.SlaveID, ctx context.Context, executor *mesos.ExecutorInfo) *mesos.TaskInfo {
+	r, err := i.Resource(ctx)
+	if err != nil {
+		log.WithError(err).WithFields(log.Fields{
+			"instance_id": i.GetId(),
+			"resource_id": i.GetResourceId(),
+		}).Error("Failed to retrieve resource object")
+	}
+	taskId := util.NewTaskID(i.GetId())
+	task := &mesos.TaskInfo{
+		Name:     proto.String("VDC" + "_" + taskId.GetValue()),
+		TaskId:   taskId,
+		SlaveId:  slaveID,
+		Data:     []byte("instance_id=" + i.GetId()),
+		Executor: executor,
+		Resources: []*mesos.Resource{
+			util.NewScalarResource("cpus", float64(r.GetTemplate().GetLxc().GetVcpu())),
+			util.NewScalarResource("mem", float64(r.GetTemplate().GetLxc().GetMemoryGb()*1024)),
+		},
+	}
+	return task
+}
+
+func (sched *VDCScheduler) NewExecutor(hypervisorName string) *mesos.ExecutorInfo {
+	executor := &mesos.ExecutorInfo{
+		ExecutorId: util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
+		Name:       proto.String("VDC Executor"),
+		Command: &mesos.CommandInfo{
+			Value: proto.String(fmt.Sprintf("%s --hypervisor=%s --zk=%s",
+				ExecutorPath, hypervisorName, sched.zkAddr.String())),
+		},
+	}
+	return executor
+}
+
+func (sched *VDCScheduler) LaunchTasks(driver sched.SchedulerDriver, tasks []*mesos.TaskInfo, acceptIDs []*mesos.OfferID, offers []*mesos.Offer) error {
+	_, err := driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to launch tasks. Tasks: %s", tasks)
+	}
+	sched.tasksLaunched++
+
+	return nil
+}
+
+func findMatching(i *model.Instance, offers []*mesos.Offer, ctx context.Context) *mesos.Offer {
+	for _, offer := range offers {
+		hypervisorName := getHypervisorName(offer)
+		if hypervisorName == "" {
+			continue
 		}
 
 		r, err := i.Resource(ctx)
-
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{
 				"instance_id": i.GetId(),
@@ -240,53 +294,77 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			}).Error("Failed to retrieve resource object")
 			continue
 		}
-
-		taskId := util.NewTaskID(i.GetId())
-		task := &mesos.TaskInfo{
-			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
-			TaskId:   taskId,
-			SlaveId:  found.SlaveId,
-			Data:     []byte("instance_id=" + i.GetId()),
-			Executor: executor,
-			Resources: []*mesos.Resource{
-				util.NewScalarResource("cpus", float64(r.GetTemplate().GetLxc().GetVcpu())),
-				util.NewScalarResource("mem", float64(r.GetTemplate().GetLxc().GetMemoryGb()*1024)),
-			},
-		}
-
-		tasks = append(tasks, task)
-		acceptIDs = append(acceptIDs, found.Id)
-
-		// Associate mesos Slave ID to the instance.
-
-		agentMesosId := found.SlaveId.GetValue()
-
-		i.SlaveId = agentMesosId
-		model.Instances(ctx).Update(i)
-
-	}
-	_, err = driver.LaunchTasks(acceptIDs, tasks, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
-	if err != nil {
-		log.WithError(err).Error("Faild to response LaunchTasks.")
-	}
-
-	exists := func(s []*mesos.OfferID, i *mesos.OfferID) bool {
-		for _, o := range s {
-			if o.GetValue() == i.GetValue() {
-				return true
+		// TODO: Avoid type switch to find template types.
+		switch t := r.GetTemplate().GetItem(); t.(type) {
+		case *model.Template_Lxc:
+			if hypervisorName == "lxc" {
+				return offer
 			}
-		}
-		return false
-	}
-	for _, offer := range offers {
-		if !exists(acceptIDs, offer.GetId()) {
-			_, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
-			if err != nil {
-				log.WithError(err).Error("Failed to response DeclineOffer.")
+		case *model.Template_Null:
+			if hypervisorName == "null" {
+				return offer
 			}
+		default:
+			log.Warnf("Unknown template type")
 		}
 	}
 	return nil
+}
+
+func (sched *VDCScheduler) refreshOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, acceptIDs []*mesos.OfferID) {
+	for _, offer := range offers {
+		if !offerExists(acceptIDs, offer.Id) {
+			_, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
+			if err != nil {
+				log.WithError(err).Error("Failed to DeclineOffer.")
+			}
+		}
+	}
+}
+
+func offerExists(s []*mesos.OfferID, i *mesos.OfferID) bool {
+	for _, o := range s {
+		if o.GetValue() == i.GetValue() {
+			return true
+		}
+	}
+	return false
+}
+
+func checkAgents(offers []*mesos.Offer, ctx context.Context) error {
+	for _, offer := range offers {
+		slaveID := offer.SlaveId.GetValue()
+		agentID := getAgentID(offer)
+
+		err := model.Nodes(ctx).Add(&model.AgentNode{
+			Agentmesosid: slaveID,
+			Agentid:      agentID,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getAgentID(offer *mesos.Offer) string {
+	for _, attr := range offer.Attributes {
+		if attr.GetName() == "openvdc-node-id" &&
+			attr.GetType() == mesos.Value_TEXT {
+			return attr.GetText().GetValue()
+		}
+	}
+	return ""
+}
+
+func getHypervisorName(offer *mesos.Offer) string {
+	for _, attr := range offer.Attributes {
+		if attr.GetName() == "hypervisor" &&
+			attr.GetType() == mesos.Value_TEXT {
+			return attr.GetText().GetValue()
+		}
+	}
+	return ""
 }
 
 func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *mesos.TaskStatus) {
@@ -302,6 +380,7 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 		status.GetState() == mesos.TaskState_TASK_FAILED ||
 		status.GetState() == mesos.TaskState_TASK_KILLED {
 		sched.tasksErrored++
+		driver.ReviveOffers()
 	}
 }
 
@@ -321,6 +400,21 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 	ctx, err := model.Connect(context.Background(), sched.zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
+	}
+
+	instances, err := model.Instances(ctx).FilterByAgentMesosID(agentMesosID)
+
+	if err != nil {
+		log.WithError(err).Error("Failed to retrieve instances.")
+	}
+
+	if len(instances) > 0 {
+		for _, instance := range instances {
+			err := model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
+			if err != nil {
+				log.Infoln(err)
+			}
+		}
 	}
 
 	res, err := model.Nodes(ctx).FindByAgentMesosID(agentMesosID)
@@ -379,14 +473,11 @@ func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMast
 
 	ExecutorPath = settings.ExecutorPath
 
-	cp := true
-
 	FrameworkInfo := &mesos.FrameworkInfo{
 		User:            proto.String(""),
 		Name:            proto.String(settings.Name),
 		FailoverTimeout: proto.Float64(settings.FailoverTimeout),
 		Id:              util.NewFrameworkID(settings.ID),
-		Checkpoint:      &cp,
 	}
 
 	config := sched.DriverConfig{
