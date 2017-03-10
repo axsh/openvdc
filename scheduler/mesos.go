@@ -92,6 +92,10 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
 
+	if sched.tasksLaunched == 0 {
+		sched.CheckForCrashedNodes(offers, ctx)
+	}
+
 	checkAgents(offers, ctx)
 
 	disconnected := getDisconnectedInstances(offers, ctx, driver)
@@ -102,6 +106,47 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		sched.InstancesQueued(driver, offers, ctx)
 	}
 
+	return nil
+}
+
+func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx context.Context) error {
+	for _, offer := range offers {
+		instances, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
+
+		if err != nil {
+			return errors.Wrapf(err, "Failed to retrieve instances.")
+		}
+	CheckInstances:
+		for _, instance := range instances {
+			if instance.GetLastState().State != model.InstanceState_REGISTERED &&
+				instance.GetLastState().State != model.InstanceState_QUEUED &&
+				instance.GetLastState().State != model.InstanceState_TERMINATED {
+
+				disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
+
+				if err != nil {
+					return errors.Wrapf(err, "Failed to check if crashed node existed.")
+				}
+
+				if disconnectedAgent == nil {
+					err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
+						Agentid:      getAgentID(offer),
+						Agentmesosid: *offer.SlaveId.Value,
+						Reconnected:  false,
+					})
+
+					if err != nil {
+						return errors.Wrapf(err, "Failed to add '%s' to lost of crashed agents.", getAgentID(offer))
+					}
+
+					log.Infoln("Added '%s' to list of crashed agents", getAgentID(offer))
+					break CheckInstances
+				}
+			}
+		}
+
+		//TODO: Update instance ConnectionStatus
+	}
 	return nil
 }
 
