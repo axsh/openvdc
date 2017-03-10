@@ -113,8 +113,6 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 
 		agentID := getAgentID(offer)
 
-		log.Infoln(agentID)
-
 		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentID(agentID)
 
 		if err != nil {
@@ -132,13 +130,13 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 				if len(instances) > 0 {
 					for _, instance := range instances {
 						connStatus := instance.GetConnectionStatus()
+						autoRecovery := instance.GetAutoRecovery()
 
-						if connStatus.Status == model.ConnectionStatus_NOT_CONNECTED {
+						if connStatus.Status == model.ConnectionStatus_NOT_CONNECTED && autoRecovery == true {
 							log.Infoln(fmt.Sprintf("Added instance %s to relaunch-queue.", instance.GetId()))
 							disconnectedInstances = append(disconnectedInstances, instance)
 						}
 						//TODO: Also update the slaveID of the instances
-						//TODO: Check if instance has AutoRecovery set to true or not
 					}
 				}
 
