@@ -16,6 +16,7 @@ const defaultTermInfo = "vt100"
 type SshConsole struct {
 	instanceID   string
 	ClientConfig *ssh.ClientConfig
+	log          *log.Entry
 }
 
 func NewSshConsole(instanceID string, config *ssh.ClientConfig) *SshConsole {
@@ -27,6 +28,7 @@ func NewSshConsole(instanceID string, config *ssh.ClientConfig) *SshConsole {
 	return &SshConsole{
 		instanceID:   instanceID,
 		ClientConfig: config,
+		log:          log.WithField("connection", "ssh"),
 	}
 }
 
@@ -37,6 +39,7 @@ func (s *SshConsole) Run(destAddr string) error {
 		return errors.Wrap(err, "Failed ssh.Dial")
 	}
 	defer conn.Close()
+	s.log = s.log.WithField("peer", destAddr)
 
 	session, err := conn.NewSession()
 	if err != nil {

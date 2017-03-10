@@ -25,7 +25,7 @@ func (s *SshConsole) bindFDs(session *ssh.Session) (func() error, error) {
 	if terminal.IsTerminal(int(os.Stdin.Fd())) {
 		w, h, err := terminal.GetSize(int(os.Stdout.Fd()))
 		if err != nil {
-			log.WithError(err).Warn("Failed to get console size. Set to 80x40")
+			s.log.WithError(err).Warn("Failed to get console size. Set to 80x40")
 			w = 80
 			h = 40
 		}
