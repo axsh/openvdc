@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,12 +25,41 @@ func (r *RemoteRegistry) LocateURI(name string) string {
 }
 
 func (r *RemoteRegistry) Find(templateName string) (*RegistryTemplate, error) {
+	reader, err := r.fetch(templateName)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	tmpl, err := parseResourceTemplate(reader)
+	if err != nil {
+		return nil, err
+	}
+	rt := &RegistryTemplate{
+		Name:     templateName,
+		Template: tmpl,
+		source:   r,
+	}
+	return rt, nil
+}
+
+func (r *RemoteRegistry) LoadRaw(templateName string) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	reader, err := r.fetch(templateName)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	if _, err := io.Copy(buf, reader); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (r *RemoteRegistry) fetch(templateName string) (io.ReadCloser, error) {
 	uri, err := url.Parse(templateName)
 	if err != nil {
 		return nil, err
 	}
-
-	var input io.Reader
 	switch uri.Scheme {
 	case "http", "https":
 		var res *http.Response
@@ -54,18 +84,8 @@ func (r *RemoteRegistry) Find(templateName string) (*RegistryTemplate, error) {
 			return nil, fmt.Errorf("Invalid response from remote server: %s", res.Status)
 		}
 
-		input = res.Body
+		return res.Body, nil
 	default:
 		return nil, fmt.Errorf("Unsupported download method: %s", uri.String())
 	}
-	tmpl, err := parseResourceTemplate(input)
-	if err != nil {
-		return nil, err
-	}
-	rt := &RegistryTemplate{
-		Name:     templateName,
-		Template: tmpl,
-		source:   r,
-	}
-	return rt, nil
 }
