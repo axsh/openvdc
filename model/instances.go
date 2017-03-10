@@ -86,6 +86,11 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	}
 	n.LastState = initState
 
+	initConnectionStatus := &ConnectionStatus{
+		Status: ConnectionStatus_NOT_CONNECTED,
+	}
+	n.ConnectionStatus = initConnectionStatus
+
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
