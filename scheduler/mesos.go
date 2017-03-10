@@ -110,7 +110,12 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 	disconnectedInstances := []*model.Instance{}
 
 	for _, offer := range offers {
-		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
+
+		agentID := getAgentID(offer)
+
+		log.Infoln(agentID)
+
+		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentID(agentID)
 
 		if err != nil {
 			log.WithError(err).Error("Failed to retrieve crashed node.")
