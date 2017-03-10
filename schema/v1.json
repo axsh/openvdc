@@ -17,13 +17,13 @@
       "type": "object",
       "oneOf": [
         {
-          "$ref": "#/templates/none"
+          "$ref": "#/definitions/none"
         },
         {
-          "$ref": "#/templates/lxc"
+          "$ref": "#/definitions/lxc"
         },
         {
-          "$ref": "#/templates/null"
+          "$ref": "#/definitions/null"
         }
       ]
     }
@@ -32,7 +32,7 @@
     "title",
     "template"
   ],
-  "templates": {
+  "definitions": {
     "none": {
       "required": [
         "type"
