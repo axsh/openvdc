@@ -9,7 +9,7 @@ import (
 //go:generate go-bindata -pkg tests -o fixtures.bindata.go ./fixtures
 
 func init() {
-	if err := RestoreAsset("/var/tmp", "fixtures/lxc.json"), 644); err != nil {
+	if err := RestoreAsset("/var/tmp", "fixtures/lxc.json"); err != nil {
 		panic(err)
 	}
 }
