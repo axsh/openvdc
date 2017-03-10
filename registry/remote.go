@@ -74,7 +74,6 @@ func (r *RemoteRegistry) fetch(templateName string) (io.ReadCloser, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer res.Body.Close()
 		switch res.StatusCode {
 		case http.StatusOK:
 			// Pass through.
@@ -84,6 +83,7 @@ func (r *RemoteRegistry) fetch(templateName string) (io.ReadCloser, error) {
 			return nil, fmt.Errorf("Invalid response from remote server: %s", res.Status)
 		}
 
+		// Caller has to .Close() as necessary.
 		return res.Body, nil
 	default:
 		return nil, fmt.Errorf("Unsupported download method: %s", uri.String())
