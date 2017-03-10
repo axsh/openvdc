@@ -108,7 +108,7 @@ func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, er
 func (i *crashedNodes) FindByAgentID(agentID string) (*CrashedNode, error) {
 	res := []*CrashedNode{}
 	err := i.Filter(1, func(node *CrashedNode) int {
-		if node.GetAgentID() == agentID {
+		if node.GetAgentID() == agentID && node.GetReconnected() == false {
 			res = append(res, node)
 		}
 		return len(res)
