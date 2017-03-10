@@ -153,27 +153,27 @@ func (sched *VDCScheduler) InstancesRelaunching(driver sched.SchedulerDriver, of
 	tasks := []*mesos.TaskInfo{}
 	acceptIDs := []*mesos.OfferID{}
 
-OutsideLoop:
 	for _, instance := range relaunchQueued {
 		for _, offer := range offers {
 			if instance.SlaveId != offer.SlaveId.GetValue() {
 				continue
 			}
 
+			alreadyAdded := false
+
 			for i, _ := range acceptIDs {
 				if acceptIDs[i] == offer.Id {
-					offer = nil
-					continue OutsideLoop
+					alreadyAdded = true
 				}
 			}
 
-			hypervisorName := getHypervisorName(offer)
-
-			model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_CONNECTED)
-
-			task := sched.NewTask(instance, util.NewSlaveID(instance.SlaveId), ctx, sched.NewExecutor(hypervisorName))
-			tasks = append(tasks, task)
-			acceptIDs = append(acceptIDs, offer.Id)
+			if alreadyAdded != true {
+				hypervisorName := getHypervisorName(offer)
+				model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_CONNECTED)
+				task := sched.NewTask(instance, util.NewSlaveID(instance.SlaveId), ctx, sched.NewExecutor(hypervisorName))
+				tasks = append(tasks, task)
+				acceptIDs = append(acceptIDs, offer.Id)
+			}
 		}
 	}
 
