@@ -182,7 +182,7 @@ func (sched *VDCScheduler) InstancesRelaunching(driver sched.SchedulerDriver, of
 	}
 
 	sched.LaunchTasks(driver, tasks, acceptIDs, offers)
-	sched.refreshOffers(driver, offers, acceptIDs)
+	sched.DeclineUnusedOffers(driver, offers, acceptIDs)
 
 	return nil
 }
@@ -233,7 +233,7 @@ func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers 
 	}
 
 	sched.LaunchTasks(driver, tasks, acceptIDs, offers)
-	sched.refreshOffers(driver, offers, acceptIDs)
+	sched.DeclineUnusedOffers(driver, offers, acceptIDs)
 
 	return nil
 }
@@ -315,24 +315,24 @@ func findMatching(i *model.Instance, offers []*mesos.Offer, ctx context.Context)
 	return nil
 }
 
-func (sched *VDCScheduler) refreshOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, acceptIDs []*mesos.OfferID) {
+func (sched *VDCScheduler) DeclineUnusedOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, acceptIDs []*mesos.OfferID) {
+	exists := func(s []*mesos.OfferID, i *mesos.OfferID) bool {
+		for _, o := range s {
+			if o.GetValue() == i.GetValue() {
+				return true
+			}
+		}
+		return false
+	}
+
 	for _, offer := range offers {
-		if !offerExists(acceptIDs, offer.Id) {
+		if !exists(acceptIDs, offer.Id) {
 			_, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
 			if err != nil {
-				log.WithError(err).Error("Failed to DeclineOffer.")
+				log.WithError(err).Error("Failed to decline offer.")
 			}
 		}
 	}
-}
-
-func offerExists(s []*mesos.OfferID, i *mesos.OfferID) bool {
-	for _, o := range s {
-		if o.GetValue() == i.GetValue() {
-			return true
-		}
-	}
-	return false
 }
 
 func checkAgents(offers []*mesos.Offer, ctx context.Context) error {
