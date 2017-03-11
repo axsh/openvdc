@@ -21,14 +21,10 @@ func (e *ErrInvalidTemplate) Dump(out io.Writer) {
 	}
 }
 
-//go:generate go-bindata -mode 420 -pkg registry -o schema.bindata.go ../schema
+//go:generate go-bindata-assetfs -mode 420 -pkg registry -prefix ../ ../schema/...
 
 func ValidateTemplate(in []byte) error {
-	buf, err := Asset("../schema/v1.json")
-	if err != nil {
-		return err
-	}
-	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(buf))
+	schema, err := gojsonschema.NewSchema(gojsonschema.NewReferenceLoaderFileSystem("file://schema/v1.json", assetFS()))
 	if err != nil {
 		return err
 	}
