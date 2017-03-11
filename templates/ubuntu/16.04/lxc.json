@@ -1,0 +1,12 @@
+{
+  "title": "Ubuntu 16.04.2 LTS (Xenial Xerus)",
+  "template": {
+    "type": "vm/lxc",
+    "lxc_template": {
+      "download": {
+        "distro": "ubuntu",
+        "release": "xenial"
+      }
+    }
+  }
+}

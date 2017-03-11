@@ -17,13 +17,13 @@
       "type": "object",
       "oneOf": [
         {
-          "$ref": "#/templates/none"
+          "$ref": "#/definitions/none"
         },
         {
-          "$ref": "#/templates/lxc"
+          "$ref": "#/definitions/lxc"
         },
         {
-          "$ref": "#/templates/null"
+          "$ref": "#/definitions/null"
         }
       ]
     }
@@ -32,7 +32,7 @@
     "title",
     "template"
   ],
-  "templates": {
+  "definitions": {
     "none": {
       "required": [
         "type"
@@ -83,6 +83,110 @@
           "type": "integer",
           "default": 1
         },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "veth",
+                  "none",
+                  "empty",
+                  "vlan",
+                  "macvlan",
+                  "phys"
+                ]
+              },
+              "macaddr": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{2}[0-9a-fA-F:]+$"
+              },
+              "ipv4addr": {
+                "type": "string",
+                "format": "ipv4"
+              },
+              "bridge": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "lxc_template": {
+          "type": "object",
+          "definitions": {
+            "basic_template": {
+              "type": "object",
+              "properties": {
+                "_comment": {
+                  "type": "string"
+                },
+                "release": {
+                  "type": "string"
+                },
+                "arch": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "maxProperties": 1,
+          "minProperties": 1,
+          "properties": {
+            "download": {
+              "type": "object",
+              "required": [
+                "distro",
+                "release"
+              ],
+              "properties": {
+                "_comment": {
+                  "type": "string"
+                },
+                "distro": {
+                  "type": "string"
+                },
+                "release": {
+                  "type": "string"
+                },
+                "variant": {
+                  "type": "string"
+                },
+                "arch": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "string"
+                }
+              }
+            },
+            "archlinux": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "busybox": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "centos": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "debian": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "fedora": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            },
+            "ubuntu": {
+              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
+            }
+          }
+        },
         "lxc_image": {
           "type": "object",
           "properties": {
@@ -98,36 +202,6 @@
             },
             "checksum": {
               "type": "string"
-            }
-          },
-          "interfaces": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "veth",
-                    "none",
-                    "empty",
-                    "vlan",
-                    "macvlan",
-                    "phys"
-                  ]
-                },
-                "macaddr": {
-                  "type": "string",
-                  "pattern": "^[0-9a-fA-F]{2}[0-9a-fA-F:]+$"
-                },
-                "ipv4addr": {
-                  "type": "string",
-                  "format": "ipv4"
-                },
-                "bridge" : {
-                  "type": "string"
-                }
-              }
             }
           },
           "required": [
