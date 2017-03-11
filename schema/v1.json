@@ -3,6 +3,10 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "description": "OpenVDC Resource Template Schema",
   "type": "object",
+  "required": [
+    "title",
+    "template"
+  ],
   "properties": {
     "_comment": {
       "type": "string"
@@ -17,221 +21,15 @@
       "type": "object",
       "oneOf": [
         {
-          "$ref": "#/definitions/none"
+          "$ref": "./none.json#"
         },
         {
-          "$ref": "#/definitions/lxc"
+          "$ref": "./vm/lxc.json#"
         },
         {
-          "$ref": "#/definitions/null"
+          "$ref": "./vm/null.json#"
         }
       ]
-    }
-  },
-  "required": [
-    "title",
-    "template"
-  ],
-  "definitions": {
-    "none": {
-      "required": [
-        "type"
-      ],
-      "properties": {
-        "_comment": {
-          "type": "string"
-        },
-        "type": {
-          "enum": [
-            "none"
-          ]
-        },
-        "param1": {
-          "type": "string"
-        },
-        "param2": {
-          "type": "string"
-        }
-      }
-    },
-    "lxc": {
-      "required": [
-        "type"
-      ],
-      "properties": {
-        "_comment": {
-          "type": "string"
-        },
-        "type": {
-          "enum": [
-            "vm/lxc"
-          ]
-        },
-        "min_vcpu": {
-          "type": "integer",
-          "default": 1
-        },
-        "min_memory_gb": {
-          "type": "integer",
-          "default": 1
-        },
-        "vcpu": {
-          "type": "integer",
-          "default": 1
-        },
-        "memory_gb": {
-          "type": "integer",
-          "default": 1
-        },
-        "interfaces": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "type"
-            ],
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": [
-                  "veth",
-                  "none",
-                  "empty",
-                  "vlan",
-                  "macvlan",
-                  "phys"
-                ]
-              },
-              "macaddr": {
-                "type": "string",
-                "pattern": "^[0-9a-fA-F]{2}[0-9a-fA-F:]+$"
-              },
-              "ipv4addr": {
-                "type": "string",
-                "format": "ipv4"
-              },
-              "bridge": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "lxc_template": {
-          "type": "object",
-          "definitions": {
-            "basic_template": {
-              "type": "object",
-              "properties": {
-                "_comment": {
-                  "type": "string"
-                },
-                "release": {
-                  "type": "string"
-                },
-                "arch": {
-                  "type": "string"
-                },
-                "args": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "maxProperties": 1,
-          "minProperties": 1,
-          "properties": {
-            "download": {
-              "type": "object",
-              "required": [
-                "distro",
-                "release"
-              ],
-              "properties": {
-                "_comment": {
-                  "type": "string"
-                },
-                "distro": {
-                  "type": "string"
-                },
-                "release": {
-                  "type": "string"
-                },
-                "variant": {
-                  "type": "string"
-                },
-                "arch": {
-                  "type": "string"
-                },
-                "args": {
-                  "type": "string"
-                }
-              }
-            },
-            "archlinux": {
-              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
-            },
-            "busybox": {
-              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
-            },
-            "centos": {
-              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
-            },
-            "debian": {
-              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
-            },
-            "fedora": {
-              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
-            },
-            "ubuntu": {
-              "$ref": "#/definitions/lxc/properties/lxc_template/definitions/basic_template"
-            }
-          }
-        },
-        "lxc_image": {
-          "type": "object",
-          "properties": {
-            "_comment": {
-              "type": "string"
-            },
-            "download_url": {
-              "type": "string",
-              "format": "uri"
-            },
-            "checksum_type": {
-              "type": "string"
-            },
-            "checksum": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "download_url"
-          ]
-        }
-      }
-    },
-    "null": {
-      "required": [
-        "type"
-      ],
-      "properties": {
-        "_comment": {
-          "type": "string"
-        },
-        "type": {
-          "enum": [
-            "vm/null"
-          ]
-        },
-        "min_vcpu": {
-          "type": "integer",
-          "default": 1
-        },
-        "min_memory_gb": {
-          "type": "integer",
-          "default": 1
-        }
-      }
     }
   }
 }
