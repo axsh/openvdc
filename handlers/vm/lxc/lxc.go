@@ -2,6 +2,7 @@ package lxc
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 
 	"flag"
@@ -22,6 +23,29 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 	tmpl := &model.LxcTemplate{}
 	if err := json.Unmarshal(in, tmpl); err != nil {
 		return nil, err
+	}
+
+	// Parse "lxc_template" section if exists.
+	var json_template struct {
+		Template map[string]json.RawMessage `json:"lxc_template,omitempty"`
+	}
+	if err := json.Unmarshal(in, &json_template); err != nil {
+		return nil, err
+	}
+	if json_template.Template != nil {
+		if len(json_template.Template) != 1 {
+			return nil, fmt.Errorf("lxc_template section must contain one JSON object")
+		}
+		// Take only head item
+		for k, raw := range json_template.Template {
+			tmpl.LxcTemplate = &model.LxcTemplate_Template{
+				Template: k,
+			}
+			if err := json.Unmarshal(raw, tmpl.LxcTemplate); err != nil {
+				return nil, err
+			}
+			break
+		}
 	}
 
 	// Validation
