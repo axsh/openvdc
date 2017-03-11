@@ -154,6 +154,9 @@ Environment Variables:
 	if_not_exists("go-bindata", func() {
 		cmd("go", "get", "-u", "github.com/jteeuwen/go-bindata/...")
 	})
+	if_not_exists("go-bindata-assetfs", func() {
+		cmd("go", "get", "-u", "github.com/elazarl/go-bindata-assetfs/...")
+	})
 
 	if with_gogen {
 		if_not_exists("protoc", func() {
