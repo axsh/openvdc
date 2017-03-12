@@ -19,11 +19,16 @@ install:
   - cinst jdk8
   - ps: New-Item C:\ZooKeeper -type directory
   - powershell -ExecutionPolicy Bypass .\ci\appveyor\install-zk.ps1 C:\ZooKeeper
-  - ps: $ZkProcess = Start-Process C:\ZooKeeper\bin\zkServer -PassThru
+  - ps: $ZkProcess = Start-Process -FilePath "C:\ZooKeeper\bin\zkServer.cmd" -PassThru -NoNewWindow
 
 build_script:
   - set PATH=C:\gopath\bin;%PATH%
   - go run ./build.go
+
+test_script:
+  - set ZK=127.0.0.1
+  - set GITHUB_DEFAULT_REF=%APPVEYOR_REPO_BRANCH%
+  - ps: $(go list ./...).split() | Select-String -NotMatch "github.com/axsh/openvdc/vendor" | ForEach-Object { go test -v $_ }
 
 on_finish:
   - ps: Stop-Process -Id $ZkProcess.Id -ErrorAction Ignore
