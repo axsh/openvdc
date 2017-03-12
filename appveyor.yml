@@ -12,6 +12,15 @@ cache:
 platform:
   - x64
 
+init:
+  - git config --global core.autocrlf input
+  - netsh advfirewall firewall add rule name="Zookeeper - in" dir=in action=allow protocol=TCP localport=2181
+  - netsh advfirewall firewall add rule name="Zookeeper - out" dir=out action=allow protocol=TCP localport=2181
+  - netsh advfirewall firewall add rule name="Zookeeper quorum - in" dir=in action=allow protocol=TCP localport=2888
+  - netsh advfirewall firewall add rule name="Zookeeper quorum - out" dir=out action=allow protocol=TCP localport=2888
+  - netsh advfirewall firewall add rule name="Zookeeper leader - in" dir=in action=allow protocol=TCP localport=3888
+  - netsh advfirewall firewall add rule name="Zookeeper leader - out" dir=out action=allow protocol=TCP localport=3888
+
 install:
   # some helpful output for debugging builds
   - go version
