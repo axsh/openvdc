@@ -5,6 +5,26 @@ package api;
 option go_package = "github.com/axsh/openvdc/api";
 
 import "model.proto";
+import "cluster.proto";
+
+service InstanceConsole {
+  rpc Attach(stream ConsoleIn) returns (stream ConsoleOut){}
+}
+
+message ConsoleIn {
+  string buf = 1;
+  string instance_id = 2;
+}
+
+message ConsoleOut {
+  enum Channel {
+    stdout = 0;
+    stderr = 1;
+  }
+  Channel ch = 1;
+  string buf = 2;
+}
+
 
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
@@ -12,9 +32,11 @@ service Instance {
   rpc Run (ResourceRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
+  rpc Reboot (RebootRequest) returns (RebootReply){}
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
+  rpc Log (InstanceLogRequest) returns (stream InstanceLogReply){}
 }
 
 message RunReply {
@@ -41,6 +63,8 @@ message ConsoleRequest{
 }
 message ConsoleReply {
   string instance_id = 1;
+  model.Console.Transport type = 2;
+  string address = 3;
 }
 
 message CreateRequest{
@@ -54,6 +78,13 @@ message StartRequest {
   string instance_id = 1;
 }
 message StartReply {
+  string instance_id = 1;
+}
+
+message RebootRequest {
+  string instance_id = 1;
+}
+message RebootReply {
   string instance_id = 1;
 }
 
@@ -93,6 +124,14 @@ message InstanceListReply {
     model.InstanceState.State state = 2;
   }
   repeated InstanceListItem items = 2;
+}
+
+message InstanceLogRequest {
+  InstanceIDRequest Target = 1;
+}
+
+message InstanceLogReply {
+  repeated string Line = 1;
 }
 
 service Resource {

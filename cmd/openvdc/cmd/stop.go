@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/axsh/openvdc/api"
@@ -31,12 +29,11 @@ var stopCmd = &cobra.Command{
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 
-			res, err := c.Stop(context.Background(), req)
+			_, err := c.Stop(context.Background(), req)
 			if err != nil {
 				log.WithError(err).Fatal("Disconnected abnormally")
 				return err
 			}
-			fmt.Println(res)
 			return err
 		})
 	},

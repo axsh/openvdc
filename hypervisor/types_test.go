@@ -1,6 +1,7 @@
 package hypervisor
 
 import (
+	"io"
 	"testing"
 
 	"github.com/axsh/openvdc/model"
@@ -26,8 +27,12 @@ func (d *testDriver) StopInstance() error {
 	return nil
 }
 
-func (d *testDriver) InstanceConsole() error {
+func (d *testDriver) RebootInstance() error {
 	return nil
+}
+
+func (d *testDriver) InstanceConsole() Console {
+	return &testConsole{}
 }
 
 func (d *testDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
@@ -35,6 +40,21 @@ func (d *testDriver) CreateInstance(*model.Instance, model.ResourceTemplate) err
 }
 
 func (d *testDriver) DestroyInstance() error {
+	return nil
+}
+
+type testConsole struct {
+}
+
+func (d *testConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
+	return nil
+}
+
+func (d *testConsole) Wait() error {
+	return nil
+}
+
+func (d *testConsole) ForceClose() error {
 	return nil
 }
 

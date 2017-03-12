@@ -3,10 +3,13 @@ package api
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
 	util "github.com/mesos/mesos-go/mesosutil"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
@@ -136,6 +139,36 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 	return &StopReply{InstanceId: instanceID}, nil
 }
 
+func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootReply, error) {
+
+	if in.GetInstanceId() == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       inst.GetLastState().GetState(),
+		}).Error(err)
+
+		return nil, err
+	}
+
+	instanceID := in.InstanceId
+	if err := s.sendCommand(ctx, "reboot", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(reboot)")
+		return nil, err
+	}
+
+	return &RebootReply{InstanceId: instanceID}, nil
+}
+
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
 	instanceID := in.InstanceId
@@ -158,9 +191,19 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 		}).Error(err)
 		return nil, err
 	}
-	if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
-		log.WithError(err).Error("Failed sendCommand(destroy)")
-		return nil, err
+
+	currentState := inst.GetLastState().GetState()
+
+	if currentState == model.InstanceState_REGISTERED {
+		err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_TERMINATED)
+		if err != nil {
+			log.WithError(err).Error("Failed to update instance state.")
+		}
+	} else {
+		if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
+			log.WithError(err).Error("Failed sendCommand(destroy)")
+			return nil, err
+		}
 	}
 
 	return &DestroyReply{InstanceId: instanceID}, nil
@@ -169,12 +212,34 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
 
 	instanceID := in.InstanceId
-	if err := s.sendCommand(ctx, "console", instanceID); err != nil {
-		log.WithError(err).Error("Failed sendCommand(console)")
+	if instanceID == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+	lastState := inst.GetLastState()
+	if err := lastState.ReadyForConsole(); err != nil {
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error(err)
+		return nil, err
+	}
+	node := &model.ExecutorNode{}
+	if err := model.Cluster(ctx).Find(inst.GetSlaveId(), node); err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
 
-	return &ConsoleReply{InstanceId: instanceID}, nil
+	return &ConsoleReply{
+		InstanceId: instanceID,
+		Type:       node.Console.Type,
+		Address:    node.Console.BindAddr,
+	}, nil
 }
 
 func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID string) error {
@@ -194,8 +259,9 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 		slaveID = inst.SlaveId
 	}
 
+	hypervisorName := strings.TrimPrefix(res.ResourceTemplate().ResourceName(), "vm/")
 	_, err = s.api.scheduler.SendFrameworkMessage(
-		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", res.ResourceTemplate().ResourceName())),
+		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 		util.NewSlaveID(slaveID),
 		fmt.Sprintf("%s_%s", cmd, instanceID),
 	)
@@ -255,4 +321,57 @@ func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*Insta
 		},
 		Items: results,
 	}, nil
+}
+
+func (s *InstanceAPI) Log(in *InstanceLogRequest, stream Instance_LogServer) error {
+	masterAddr := s.api.GetMesosMasterAddr()
+	if masterAddr == nil {
+		return errors.New("Mesos master address is not detected")
+	}
+	cl, err := mlog.NewMesosClientWithOptions(
+		masterAddr.GetIp(),
+		int(masterAddr.GetPort()),
+		&mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+	if err != nil {
+		log.WithError(err).Error("Couldn't connect to Mesos master: ", masterAddr)
+		return errors.Wrap(err, "mlog.NewMesosClientWithOptions")
+	}
+
+	taskID := fmt.Sprintf("VDC_%s", in.Target.GetID())
+	result, err := cl.GetLog(taskID, mlog.STDERR, "")
+	if err != nil {
+		log.WithError(err).Error("Error fetching log")
+		return errors.Wrap(err, "cl.GetLog")
+	}
+
+	for _, log := range result {
+		err := stream.Send(&InstanceLogReply{
+			Line: []string{log.Log},
+		})
+		if err != nil {
+			return errors.Wrap(err, "stream.Send")
+		}
+	}
+	return nil
+}
+
+type InstanceConsoleAPI struct {
+	api *APIServer
+}
+
+func (i *InstanceConsoleAPI) Attach(stream InstanceConsole_AttachServer) error {
+	in, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+	instanceID := in.GetInstanceId()
+	if instanceID == "" {
+		// Return error if no instance ID is set to the first request.
+		return fmt.Errorf("instance_id not found")
+	}
+	_, err = model.Instances(stream.Context()).FindByID(instanceID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

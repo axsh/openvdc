@@ -11,12 +11,20 @@ import (
 )
 
 func withConnect(t *testing.T, c func(context.Context)) error {
-
-	ctx, err := Connect(context.Background(), []string{unittest.TestZkServer})
+	ze := &backend.ZkEndpoint{}
+	if err := ze.Set(unittest.TestZkServer); err != nil {
+		t.Fatal("Invalid zookeeper address:", unittest.TestZkServer)
+	}
+	ctx, err := Connect(context.Background(), ze)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer Close(ctx)
+	defer func() {
+		err := Close(ctx)
+		if err != nil {
+			t.Error("Failed to Close:", err)
+		}
+	}()
 	err = InstallSchemas(GetBackendCtx(ctx).(backend.ModelSchema))
 	if err != nil {
 		t.Fatal(err)
@@ -79,13 +87,15 @@ func TestUpdateStateInstance(t *testing.T) {
 		got, err := Instances(ctx).Create(n)
 		assert.NoError(err)
 		assert.Equal(InstanceState_REGISTERED, got.GetLastState().State)
-		assert.Error(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))
+		assert.Error(Instances(ctx).UpdateState(got.GetId(), InstanceState_SHUTTINGDOWN))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_QUEUED))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STARTING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STOPPING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STOPPED))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_STARTING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
+		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_REBOOTING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_RUNNING))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_SHUTTINGDOWN))
 		assert.NoError(Instances(ctx).UpdateState(got.GetId(), InstanceState_TERMINATED))

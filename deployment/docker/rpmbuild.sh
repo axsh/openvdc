@@ -62,6 +62,9 @@ else
   img_tag="openvdc.$(git rev-parse --abbrev-ref HEAD).${BUILD_OS}"
   build_cache_base="${BUILD_CACHE_DIR}"
 fi
+# Docker 1.10 fails with uppercase image tag name. need letter case translation.
+# https://github.com/docker/docker/issues/20056
+img_tag="${img_tag,,}"
 
 ### This is the location on the dh machine where the openvdc yum repo is to be placed
 RPM_ABSOLUTE="/var/www/html/openvdc-repos/${BRANCH}"
@@ -86,6 +89,16 @@ if [[ -n "$BUILD_CACHE_DIR" && -d "${build_cache_base}" ]]; then
   done
 fi
 
+
+# We remove the Sources repository to work around some weird behaviour of yum-builddep
+# First of all these repositories are completely broken. They are referring to
+# http://vault.centos.org/centos/7 which does not exist. Usually this is not a
+# problem because they are disabled but yum-builddep always enables all disables repos.
+# This is fixed in an upstream commit but Centos 7 doesn't include that change yet.
+# https://github.com/rpm-software-management/yum-utils/commit/f957e6684cde8132321ff0a6d8aa4bc9ba7490b8
+# Until that fix is included in Centos, we work around it by removing the broken sources repo.
+docker exec -t "${CID}" /bin/bash -c "rm -f /etc/yum.repos.d/CentOS-Sources.repo"
+
 # Install build dependencies
 docker exec -t "${CID}" /bin/bash -c "yum-builddep -y ${OPENVDC_ROOT_DOCKER}/pkg/rhel/openvdc.spec"
 
@@ -97,8 +110,8 @@ docker exec -t "${CID}" /bin/bash -c "yum-builddep -y ${OPENVDC_ROOT_DOCKER}/pkg
 docker exec -t "${CID}" /bin/bash -c "cd ${OPENVDC_ROOT_DOCKER} ; rpmbuild -ba --define \"_topdir ${WORK_DIR}\"  --define \"dev_release_suffix ${RELEASE_SUFFIX}\"  pkg/rhel/openvdc.spec"
 
 # Build the yum repository
-docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/" 
-docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/" 
+docker exec -t "${CID}" /bin/bash -c "mkdir -p /var/tmp/${RELEASE_SUFFIX}/"
+docker exec  -t "${CID}" /bin/bash -c "mv /var/tmp/rpmbuild/RPMS/*  /var/tmp/${RELEASE_SUFFIX}/"
 
 docker exec -t "${CID}" /bin/bash -c "cd /var/tmp/${RELEASE_SUFFIX}/ ; createrepo . "
 
@@ -127,9 +140,13 @@ fi
 # Pull compiled yum repository
 # $SSH_REMOTE is set within the Jenkins configuration ("Manage Jenkins" --> "Configure System")
 $SSH_REMOTE mkdir -p ${RPM_ABSOLUTE}
+
+
 docker cp "${CID}:/var/tmp/${RELEASE_SUFFIX}/" - | $SSH_REMOTE tar xf - -C "${RPM_ABSOLUTE}"
 
 $SSH_REMOTE /bin/bash <<EOS
 rm -f "${RPM_ABSOLUTE}/current"
 ln -s "${RPM_ABSOLUTE}/${RELEASE_SUFFIX}" "${RPM_ABSOLUTE}/current"
+chgrp -R repoci "${RPM_ABSOLUTE}"
+chmod -R g+w "${RPM_ABSOLUTE}"
 EOS

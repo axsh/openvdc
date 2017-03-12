@@ -7,17 +7,23 @@ import (
 
 	"github.com/axsh/openvdc/internal/unittest"
 	"github.com/pborman/uuid"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
 
 func withConnect(t *testing.T, c func(z *Zk)) (err error) {
+	ze := &ZkEndpoint{}
+	if err := ze.Set(unittest.TestZkServer); err != nil {
+		t.Fatal("Invalid zookeeper address:", unittest.TestZkServer)
+	}
+	ze.Path = "/" + uuid.New()
+
 	z := NewZkBackend()
-	z.basePath = "/" + uuid.New()
 	defer func() {
 		err = z.Delete(z.basePath)
 		z.Close()
 	}()
-	err = z.Connect([]string{unittest.TestZkServer})
+	err = z.Connect(ze)
 	if err != err {
 		t.Fatal(err)
 	}
@@ -26,11 +32,29 @@ func withConnect(t *testing.T, c func(z *Zk)) (err error) {
 	return
 }
 
+func TestZkEndpoint(t *testing.T) {
+	assert := assert.New(t)
+
+	ze := &ZkEndpoint{}
+	assert.Implements((*ConnectionAddress)(nil), ze)
+	assert.Implements((*pflag.Value)(nil), ze)
+}
+
 func TestNewZkBackend(t *testing.T) {
 	assert := assert.New(t)
 
 	z := NewZkBackend()
+	assert.Implements((*BackendConnection)(nil), z)
 	assert.Implements((*ModelBackend)(nil), z)
+	assert.Implements((*ModelSchema)(nil), z)
+}
+
+func TestNewZkClusterBackend(t *testing.T) {
+	assert := assert.New(t)
+
+	z := NewZkClusterBackend()
+	assert.Implements((*BackendConnection)(nil), z)
+	assert.Implements((*ClusterBackend)(nil), z)
 	assert.Implements((*ModelSchema)(nil), z)
 }
 

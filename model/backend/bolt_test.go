@@ -16,7 +16,7 @@ func TestBoltConnect(t *testing.T) {
 	assert := assert.New(t)
 	z := NewBoltBackend()
 	defer z.Close()
-	err := z.Connect([]string{"my.db"})
+	err := z.Connect(BoltDBPath("my.db"))
 	assert.NoError(err)
 }
 
@@ -24,7 +24,7 @@ func TestBoltCreate(t *testing.T) {
 	assert := assert.New(t)
 	z := NewBoltBackend()
 	defer z.Close()
-	err := z.Connect([]string{"my.db"})
+	err := z.Connect(BoltDBPath("my.db"))
 	assert.NoError(err)
 	err = z.Create("/test1", []byte{})
 	assert.NoError(err)

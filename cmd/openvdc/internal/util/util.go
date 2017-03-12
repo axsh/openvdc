@@ -8,12 +8,15 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
@@ -21,13 +24,25 @@ import (
 	"google.golang.org/grpc"
 )
 
-var ServerAddr string
 var UserConfDir string
 
-func RemoteCall(c func(*grpc.ClientConn) error) error {
-	conn, err := grpc.Dial(ServerAddr, grpc.WithInsecure())
+func init() {
+	// UserConfDir variable is referenced from init() in cmd/root.go
+	// so that it has to be initialized eagerly.
+	//http://stackoverflow.com/questions/7922270/obtain-users-home-directory
+	path, err := homedir.Dir()
 	if err != nil {
-		log.WithField("endpoint", ServerAddr).Fatalf("Cannot connect to OpenVDC gRPC endpoint: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to locate user home path: %v", err)
+		os.Exit(1)
+	}
+	UserConfDir = filepath.Join(path, ".openvdc")
+}
+
+func RemoteCall(c func(*grpc.ClientConn) error) error {
+	serverAddr := viper.GetString("api.endpoint")
+	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+	if err != nil {
+		log.WithField("endpoint", serverAddr).Fatalf("Cannot connect to OpenVDC gRPC endpoint: %v", err)
 	}
 	defer conn.Close()
 	return c(conn)

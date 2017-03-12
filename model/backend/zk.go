@@ -2,13 +2,15 @@ package backend
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"path"
 	"sort"
 	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-
+	"github.com/pkg/errors"
 	"github.com/samuel/go-zookeeper/zk"
 )
 
@@ -19,26 +21,72 @@ var ErrFindLastKey = func(key string) error {
 	return fmt.Errorf("Unable to find znode with last key: %s", key)
 }
 
-type Zk struct {
+const DefaultBasePath = "/openvdc"
+
+// Implements pflag.Value and backend.ConnectionAddress
+type ZkEndpoint struct {
+	Path  string
+	Hosts []string // "host" or "host:port"
+}
+
+func (ZkEndpoint) isConnectionAddress() {}
+
+func (ze *ZkEndpoint) String() string {
+	return fmt.Sprintf("zk://%s%s", strings.Join(ze.Hosts, ","), ze.Path)
+}
+
+func (ze *ZkEndpoint) Set(value string) error {
+	if strings.HasPrefix(value, "zk://") {
+		zkurl, err := url.Parse(value)
+		if err != nil {
+			return errors.Wrap(err, "Invalid zk URL")
+		}
+		ze.Hosts = strings.Split(zkurl.Host, ",")
+		ze.Path = zkurl.Path
+	} else {
+		host, port, err := net.SplitHostPort(value)
+		if err != nil {
+			host = value
+			port = "2181"
+		}
+		if host == "" {
+			host = "localhost"
+		}
+		ze.Hosts = []string{net.JoinHostPort(host, port)}
+	}
+	if ze.Path == "" {
+		ze.Path = DefaultBasePath
+	}
+	return nil
+}
+
+func (ZkEndpoint) Type() string {
+	return "ZkEndpoint"
+}
+
+type zkConnection struct {
 	conn     *zk.Conn
-	basePath string
 	ev       <-chan zk.Event
+	basePath string
 	// TODO: Add mutex
 }
 
-func NewZkBackend() *Zk {
-	return &Zk{
-		basePath: "/openvdc",
-	}
-}
-
-func (z *Zk) Connect(servers []string) error {
+func (z *zkConnection) Connect(dest ConnectionAddress) error {
 	if z.isConnected() {
 		return ErrConnectionExists
 	}
-	c, ev, err := zk.Connect(servers, 10*time.Second)
+	zkAddr, ok := dest.(ZkEndpoint)
+	if !ok {
+		p, ok := dest.(*ZkEndpoint)
+		if !ok {
+			return fmt.Errorf("Invalid connection address type: %T", dest)
+		}
+		zkAddr = *p
+	}
+	z.basePath = zkAddr.Path
+	c, ev, err := zk.Connect(zkAddr.Hosts, 10*time.Second)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed zk.Connect")
 	}
 
 	for e := range ev {
@@ -58,7 +106,7 @@ func (z *Zk) Connect(servers []string) error {
 	return nil
 }
 
-func (z *Zk) Close() error {
+func (z *zkConnection) Close() error {
 	if z.conn == nil {
 		return ErrConnectionNotReady
 	}
@@ -68,20 +116,47 @@ func (z *Zk) Close() error {
 	}()
 	z.conn.Close()
 	for ev := range z.ev {
+		if ev.Type != zk.EventSession {
+			// Ignore Node events.
+			continue
+		}
 		if ev.State == zk.StateDisconnected {
 			return nil
-		} else {
-			log.Warn("ZK disconnecting... ", ev.State.String())
 		}
+		log.Warn("ZK disconnecting... ", ev.State)
 	}
 	return nil
 }
 
-func (z *Zk) isConnected() bool {
+func (z *zkConnection) connection() *zk.Conn {
+	return z.conn
+}
+
+func (z *zkConnection) isConnected() bool {
 	if z.conn == nil {
 		return false
 	}
 	return z.conn.State() == zk.StateHasSession
+}
+
+func (z *zkConnection) canonKey(key string) (absKey string, dir string) {
+	absKey = path.Clean(path.Join(z.basePath, key))
+	dir, _ = path.Split(absKey)
+	dir = strings.TrimSuffix(dir, "/")
+	return absKey, dir
+}
+
+func (z *zkConnection) Schema() SchemaHandler {
+	return &zkSchemaHandler{zk: z}
+}
+
+type Zk struct {
+	zkConnection
+	// TODO: Add mutex
+}
+
+func NewZkBackend() *Zk {
+	return &Zk{}
 }
 
 func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
@@ -89,19 +164,19 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 		return "", ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
-	nkey, err := z.conn.Create(absKey, value, zk.FlagSequence, defaultACL)
+	nkey, err := z.connection().Create(absKey, value, zk.FlagSequence, defaultACL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Failed zk.Create with sequence %s", absKey)
 	}
 
 	// Treat the parent key as the sequence store to save the last ID
 	seqNode, nid := path.Split(nkey)
 	seqNode = strings.TrimSuffix(seqNode, "/")
-	_, err = z.conn.Set(seqNode, []byte(nid), versionAny)
+	_, err = z.connection().Set(seqNode, []byte(nid), versionAny)
 	if err != nil {
 		// Rollback by deleting new key node.
-		z.conn.Delete(nkey, versionAny)
-		return "", err
+		z.connection().Delete(nkey, versionAny)
+		return "", errors.Wrapf(err, "Failed updating last sequence ID zk.Set %s", seqNode)
 	}
 	return nkey[len(z.basePath):], nil
 }
@@ -111,9 +186,9 @@ func (z *Zk) Create(key string, value []byte) error {
 		return ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
-	_, err := z.conn.Create(absKey, value, int32(0), defaultACL)
+	_, err := z.connection().Create(absKey, value, int32(0), defaultACL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed zk.Create %s", absKey)
 	}
 	return nil
 }
@@ -125,24 +200,29 @@ func (z *Zk) Update(key string, value []byte) error {
 	var err error
 	absKey, _ := z.canonKey(key)
 
-	ok, stat, err := z.conn.Exists(absKey)
+	ok, stat, err := z.connection().Exists(absKey)
 	if err != nil {
 		return err
 	}
 	if !ok {
 		return ErrUnknownKey(absKey)
 	}
-	_, err = z.conn.Set(absKey, value, stat.Version)
-	return err
+	if _, err := z.connection().Set(absKey, value, stat.Version); err != nil {
+		return errors.Wrapf(err, "Failed zk.Set %s", absKey)
+	}
+	return nil
 }
 
-func (z *Zk) Find(key string) (value []byte, err error) {
+func (z *Zk) Find(key string) ([]byte, error) {
 	if !z.isConnected() {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
-	value, _, err = z.conn.Get(absKey)
-	return
+	value, _, err := z.connection().Get(absKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed zk.Get %s", absKey)
+	}
+	return value, nil
 }
 
 func (z *Zk) FindLastKey(prefixKey string) (string, error) {
@@ -150,7 +230,7 @@ func (z *Zk) FindLastKey(prefixKey string) (string, error) {
 		return "", ErrConnectionNotReady
 	}
 	_, base := z.canonKey(prefixKey)
-	buf, _, err := z.conn.Get(base)
+	buf, _, err := z.connection().Get(base)
 	if err != nil {
 		return "", ErrFindLastKey(err.Error())
 	}
@@ -161,19 +241,12 @@ func (z *Zk) FindLastKey(prefixKey string) (string, error) {
 	return lastKey[len(z.basePath):], nil
 }
 
-func (z *Zk) canonKey(key string) (absKey string, dir string) {
-	absKey = path.Clean(path.Join(z.basePath, key))
-	dir, _ = path.Split(absKey)
-	dir = strings.TrimSuffix(dir, "/")
-	return absKey, dir
-}
-
 func (z *Zk) Delete(key string) error {
 	if !z.isConnected() {
 		return ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
-	return z.conn.Delete(absKey, 1)
+	return errors.Wrapf(z.connection().Delete(absKey, 1), "Failed zk.Delete %s", absKey)
 }
 
 // TODO: Add mutex for thread safety.
@@ -203,21 +276,17 @@ func (z *Zk) Keys(parentKey string) (KeyIterator, error) {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(parentKey)
-	children, _, err := z.conn.Children(absKey)
+	children, _, err := z.connection().Children(absKey)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Failed zk.Children %s", absKey)
 	}
 	// Sort keys in client side.
 	sort.Strings(children)
 	return &childIt{children: &children, cur: -1}, nil
 }
 
-func (z *Zk) Schema() SchemaHandler {
-	return &zkSchemaHandler{zk: z}
-}
-
 type zkSchemaHandler struct {
-	zk *Zk
+	zk *zkConnection
 }
 
 func (z *zkSchemaHandler) Install(subkeys []string) error {
@@ -229,7 +298,7 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 		// Install the root key if not exists.
 		ok, _, err := conn.Exists(z.zk.basePath)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed zk.Exists %s", z.zk.basePath)
 		}
 		if !ok {
 			// TODO: Set the current schema version to the root key node.
@@ -237,7 +306,7 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 			_, err = conn.Create(z.zk.basePath, []byte{}, int32(0), defaultACL)
 			if err != nil {
 				log.WithError(err).Error("Failed to setup the root key.")
-				return err
+				return errors.Wrapf(err, "Failed zk.Create %s", z.zk.basePath)
 			}
 		}
 	}
@@ -245,13 +314,13 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 		absKey, _ := z.zk.canonKey(key)
 		ok, _, err := conn.Exists(absKey)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed zk.Exists %s", absKey)
 		}
 		if !ok {
 			_, err := conn.Create(absKey, []byte{}, int32(0), defaultACL)
 			if err != nil {
 				log.WithError(err).Errorf("Failed to setup the schema key: %s (%s)", key, absKey)
-				return err
+				return errors.Wrapf(err, "Failed zk.Create %s", absKey)
 			}
 		}
 	}

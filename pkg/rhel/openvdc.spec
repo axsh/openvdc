@@ -28,45 +28,53 @@ Requires: openvdc-scheduler
 #Suggests: mesosphere-zookeeper mesos
 
 %description
-This is an empty metapackage that depends on all OpenVNet services and the vnctl client. Just a conventient way to install everything at once on a single machine.
+An empty metapackage that depends on all OpenVDC services. Just a conventient way to install everything at once on a single machine.
 
 %files
 # Metapackage, so no files!
 
 
 %build
+# rpmbuild resets $PATH so ensure to have "$GOPATH/bin".
+export PATH="$PATH:${GOPATH}/bin"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 (
-  ./build.sh
+  VERSION=%{version} go run ./build.go
 )
 
 %install
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
+mkdir -p "$RPM_BUILD_ROOT"/usr/bin
+ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
-mkdir -p "$RPM_BUILD_ROOT"/etc/sysconfig
-cp pkg/rhel/sysconfig-openvdc "$RPM_BUILD_ROOT"/etc/sysconfig/openvdc
-
+mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
+cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
+cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 
 %package cli
-Summary: openvdc cli
+Summary: OpenVDC cli
 
 %description cli
-This is an empty message to fulfill the requirement that this file has a "%description" header.
+The OpenVDC commandline interface.
 
 %files cli
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
+/usr/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc
-%config(noreplace) /etc/sysconfig/openvdc
 
+#TODO: Different packages for executor-lxc and executor-null
 %package executor
-Summary: openvdc executor
+Summary: OpenVDC executor
 Requires: lxc
+Requires: lxc-templates
+Requires: bridge-utils
 
 %description executor
 This is a 'stub'. An appropriate message must be substituted at some point.
@@ -75,10 +83,11 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-executor
+%dir /etc/openvdc
+%config(noreplace) /etc/openvdc/executor.toml
 
 %package scheduler
-Summary: openvdc scheduler
-
+Summary: OpenVDC scheduler
 
 %description scheduler
 This is a 'stub'. An appropriate message must be substituted at some point.
@@ -88,7 +97,7 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-scheduler
 %{_unitdir}/openvdc-scheduler.service
-
+%config(noreplace) /etc/openvdc/scheduler.toml
 
 %post
 %{systemd_post openvdc-scheduler.service}
@@ -98,3 +107,15 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 
 %preun
 %{systemd_preun openvdc-scheduler.service}
+
+%package acceptance-test
+Summary: The OpenVDC acceptance test used in its CI process.
+Requires: openvdc-cli
+
+%description acceptance-test
+An acceptance test designed to run on a specifically designed environment. The environment building scripts can be found in the OpenVDC source code repository. The average OpenVDC user will not need to install this.
+
+%files acceptance-test
+%dir /opt/axsh/openvdc
+%dir /opt/axsh/openvdc/bin
+/opt/axsh/openvdc/bin/openvdc-acceptance-test

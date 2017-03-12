@@ -2,6 +2,7 @@ package hypervisor
 
 import (
 	"fmt"
+	"io"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
@@ -9,7 +10,7 @@ import (
 
 type HypervisorProvider interface {
 	Name() string
-	CreateDriver(string) (HypervisorDriver, error)
+	CreateDriver(instanceID string) (HypervisorDriver, error)
 }
 
 type HypervisorDriver interface {
@@ -17,7 +18,14 @@ type HypervisorDriver interface {
 	DestroyInstance() error
 	StartInstance() error
 	StopInstance() error
-	InstanceConsole() error
+	RebootInstance() error
+	InstanceConsole() Console
+}
+
+type Console interface {
+	Attach(stdin io.Reader, stdout, stderr io.Writer) error
+	Wait() error
+	ForceClose() error
 }
 
 var (
