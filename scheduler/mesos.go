@@ -5,8 +5,6 @@ import (
 	"net"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/pkg/errors"
-
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -116,6 +114,9 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 		if err != nil {
 			return errors.Wrapf(err, "Failed to retrieve instances.")
 		}
+
+		foundCrashedNode := false
+
 	CheckInstances:
 		for _, instance := range instances {
 			if instance.GetLastState().State != model.InstanceState_REGISTERED &&
@@ -129,23 +130,40 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 				}
 
 				if disconnectedAgent == nil {
-					err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
-						Agentid:      getAgentID(offer),
-						Agentmesosid: *offer.SlaveId.Value,
-						Reconnected:  false,
-					})
-
-					if err != nil {
-						return errors.Wrapf(err, "Failed to add '%s' to lost of crashed agents.", getAgentID(offer))
-					}
-
-					log.Infoln("Added '%s' to list of crashed agents", getAgentID(offer))
+					foundCrashedNode = true
 					break CheckInstances
 				}
 			}
 		}
 
-		//TODO: Update instance ConnectionStatus
+		if foundCrashedNode == true {
+			err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
+				Agentid:      getAgentID(offer),
+				Agentmesosid: *offer.SlaveId.Value,
+				Reconnected:  false,
+			})
+
+			if err != nil {
+				return errors.Wrapf(err, "Failed to add '%s' to lost of crashed agents.", getAgentID(offer))
+			}
+
+			log.Infoln("Added '%s' to list of crashed agents", getAgentID(offer))
+
+			instances, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
+
+			if err != nil {
+				return errors.Wrapf(err, "Failed to retrieve instances.")
+			}
+
+			if len(instances) > 0 {
+				for _, instance := range instances {
+					err := model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
+					if err != nil {
+						log.Infoln(err)
+					}
+				}
+			}
+		}
 	}
 	return nil
 }
