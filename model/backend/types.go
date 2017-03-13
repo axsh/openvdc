@@ -28,6 +28,32 @@ type ModelBackend interface {
 	FindLastKey(prefixKey string) (string, error)
 }
 
+type WatchEvent int
+
+const (
+	EventErr WatchEvent = iota
+	EventUnknown
+	EventCreated
+	EventDeleted
+	EventModified
+)
+
+var eventToName = map[WatchEvent]string{
+	EventErr:      "Error",
+	EventUnknown:  "Unknown",
+	EventCreated:  "Created",
+	EventDeleted:  "Deleted",
+	EventModified: "Modified",
+}
+
+func (e WatchEvent) String() string {
+	return eventToName[e]
+}
+
+type ModelWatcher interface {
+	Watch(key string) (WatchEvent, error)
+}
+
 type ModelSchema interface {
 	Schema() SchemaHandler
 }
