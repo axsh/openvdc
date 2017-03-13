@@ -490,6 +490,27 @@ func (m *LxcTemplate_Image) String() string            { return proto.CompactTex
 func (*LxcTemplate_Image) ProtoMessage()               {}
 func (*LxcTemplate_Image) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6, 0} }
 
+func (m *LxcTemplate_Image) GetDownloadUrl() string {
+	if m != nil {
+		return m.DownloadUrl
+	}
+	return ""
+}
+
+func (m *LxcTemplate_Image) GetChksumType() string {
+	if m != nil {
+		return m.ChksumType
+	}
+	return ""
+}
+
+func (m *LxcTemplate_Image) GetChksum() string {
+	if m != nil {
+		return m.Chksum
+	}
+	return ""
+}
+
 type LxcTemplate_Interface struct {
 	Type     string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
 	Macaddr  string `protobuf:"bytes,2,opt,name=macaddr" json:"macaddr,omitempty"`
