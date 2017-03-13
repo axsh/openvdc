@@ -109,7 +109,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx context.Context) error {
 	for _, offer := range offers {
-		instances, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
+		instances, err := model.Instances(ctx).FilterByAgentMesosID(node.GetAgentMesosID())
 
 		if err != nil {
 			return errors.Wrapf(err, "Failed to retrieve instances.")
@@ -137,17 +137,25 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 		}
 
 		if foundCrashedNode == true {
+
+			agentID := getAgentID(offer)
+
+			err := model.Nodes(ctx).UpdateAgentMesosID(agentID, *offer.SlaveId.Value)
+			if err != nil {
+				log.WithError(err).Error("Failed to update node agentMesosID. node: '%s'", agentID)
+			}
+
 			err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
-				Agentid:      getAgentID(offer),
+				Agentid:      agentID,
 				Agentmesosid: *offer.SlaveId.Value,
 				Reconnected:  false,
 			})
 
 			if err != nil {
-				return errors.Wrapf(err, "Failed to add '%s' to lost of crashed agents.", getAgentID(offer))
+				return errors.Wrapf(err, "Failed to add '%s' to lost of crashed agents.", agentID)
 			}
 
-			log.Infoln("Added '%s' to list of crashed agents", getAgentID(offer))
+			log.Infoln("Added '%s' to list of crashed agents", agentID)
 
 			instances, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
 
@@ -159,7 +167,7 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 				for _, instance := range instances {
 					err := model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
 					if err != nil {
-						log.Infoln(err)
+						return errors.Wrapf(err, "Failed to update instance ConnectionStatus. instance: '%s' ConnectionStatus: '%s'", instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
 					}
 				}
 			}
@@ -208,6 +216,11 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 					model.CrashedNodes(ctx).SetReconnected(disconnectedAgent)
 					agentID := disconnectedAgent.GetAgentID()
 					log.Infoln(fmt.Sprintf("Node '%s' reconnected.", agentID))
+
+					err := model.Nodes(ctx).UpdateAgentMesosID(agentID, *offer.SlaveId.Value)
+					if err != nil {
+						log.WithError(err).Error("Failed to update node agentMesosID. node: '%s'", agentID)
+					}
 				}
 			}
 		}
@@ -479,7 +492,7 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 		for _, instance := range instances {
 			err := model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
 			if err != nil {
-				log.Infoln(err)
+				log.WithError(err).Error("Failed to update instance ConnectionStatus. instance: '%s' ConnectionStatus: '%s'", instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
 			}
 		}
 	}
