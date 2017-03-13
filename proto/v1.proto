@@ -142,8 +142,8 @@ message InstanceEventRequest {
 
 message InstanceEventReply {
   enum EventType {
-    None = 0;
-    State = 1;
+    EventNone = 0;
+    EventState = 1;
   }
   EventType event_type = 1;
   google.protobuf.Timestamp event_at = 2;
