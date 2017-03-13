@@ -24,6 +24,7 @@ type NodeOps interface {
 	FindByAgentMesosID(agentMesosID string) (*AgentNode, error)
 	FindByAgentID(agentID string) (*AgentNode, error)
 	Filter(limit int, cb func(*AgentNode) int) error
+	UpdateAgentMesosID(agentID string, agentMesosID string) error
 }
 
 type nodes struct {
@@ -115,4 +116,20 @@ func (i *nodes) Filter(limit int, cb func(*AgentNode) int) error {
 		}
 	}
 	return nil
+}
+
+func (i *nodes) UpdateAgentMesosID(agentID string, agentMesosID string) error {
+	node, err := i.FindByAgentID(agentID)
+	if err != nil {
+		return err
+	}
+
+	node.Agentmesosid = agentMesosID
+
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+
+	return bk.Update(fmt.Sprintf("/%s/%s/", nodesBaseKey, node.Agentid), node)
 }
