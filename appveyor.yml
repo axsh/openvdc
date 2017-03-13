@@ -39,7 +39,7 @@ build_script:
 test_script:
   - set ZK=127.0.0.1
   - set GITHUB_DEFAULT_REF=%APPVEYOR_REPO_BRANCH%
-  - ps: $(go list ./...).split() | Select-String -NotMatch "github.com/axsh/openvdc/vendor" | ForEach-Object { go test -v $_ }
+  - ps: go list ./... | Select-String -NotMatch "/vendor/" | ForEach-Object { go test -v $_.Line }
 
 on_finish:
   - ps: Stop-Process -Id $ZkProcess.Id -ErrorAction Ignore
