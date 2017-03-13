@@ -90,11 +90,11 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
 
+	checkAgents(offers, ctx)
+
 	if sched.tasksLaunched == 0 {
 		sched.CheckForCrashedNodes(offers, ctx)
 	}
-
-	checkAgents(offers, ctx)
 
 	disconnected := getDisconnectedInstances(offers, ctx, driver)
 
@@ -109,6 +109,15 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 
 func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx context.Context) error {
 	for _, offer := range offers {
+		node, err := model.Nodes(ctx).FindByAgentID(getAgentID(offer))
+		if err != nil {
+			log.WithError(err).Error("Failed to get node")
+		}
+
+		if node == nil {
+			continue
+		}
+
 		instances, err := model.Instances(ctx).FilterByAgentMesosID(node.GetAgentMesosID())
 
 		if err != nil {
@@ -129,7 +138,7 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 					return errors.Wrapf(err, "Failed to check if crashed node existed.")
 				}
 
-				if disconnectedAgent == nil {
+				if disconnectedAgent == nil || disconnectedAgent.GetReconnected() == true {
 					foundCrashedNode = true
 					break CheckInstances
 				}
@@ -173,6 +182,7 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -191,7 +201,7 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 
 		if disconnectedAgent != nil {
 			if disconnectedAgent.GetReconnected() == false {
-				instances, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
+				instances, err := model.Instances(ctx).FilterByAgentMesosID(disconnectedAgent.GetAgentMesosID())
 
 				if err != nil {
 					log.WithError(err).Error("Failed to retrieve disconnected instances.")
