@@ -131,5 +131,9 @@ func (i *nodes) UpdateAgentMesosID(agentID string, agentMesosID string) error {
 		return err
 	}
 
-	return bk.Update(fmt.Sprintf("/%s/%s/", nodesBaseKey, node.Agentid), node)
+	err = bk.Update(fmt.Sprintf("/%s/%s/", nodesBaseKey, node.Agentid), node)
+	if err != nil {
+		return err
+	}
+	return nil
 }
