@@ -5,6 +5,7 @@ clone_depth: 10
 
 environment:
   GOPATH: C:\gopath
+  JAVA_HOME: C:\Program Files\Java\jdk1.8.0_121
 
 cache:
   - '%GOPATH%\.cache -> vendor\vendor.json'
@@ -29,6 +30,7 @@ install:
   - ps: New-Item C:\ZooKeeper -type directory
   - powershell -ExecutionPolicy Bypass .\ci\appveyor\install-zk.ps1 C:\ZooKeeper
   - ps: $ZkProcess = Start-Process -FilePath "C:\ZooKeeper\bin\zkServer.cmd" -PassThru -NoNewWindow
+  - ps: $ZkProcess | fl
 
 build_script:
   - set PATH=C:\gopath\bin;%PATH%
