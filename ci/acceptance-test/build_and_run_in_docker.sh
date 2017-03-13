@@ -15,6 +15,8 @@ set -a
 set +a
 
 DATA_DIR="${DATA_DIR:-/data2}"
+CACHE_DIR="/data/openvdc-ci/branches"
+
 repo_and_tag="openvdc/acceptance-test:${BRANCH}.${RELEASE_SUFFIX}"
 
 function cleanup() {
@@ -28,6 +30,11 @@ function cleanup() {
   else
     echo "LEAVE_CONTAINER was set and not 0. Skip container cleanup."
   fi
+
+  # Give the newly created cache to this user instead of root so we can clean it up
+  # later without needing sudo
+  local user=$(/usr/bin/id -run)
+  sudo chown -R $user:$user "${CACHE_DIR}"/"${BRANCH}"
 }
 trap "cleanup" EXIT
 

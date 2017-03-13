@@ -5,9 +5,11 @@ import (
 	"os"
 	"strings"
 
+	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
 	util "github.com/mesos/mesos-go/mesosutil"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
@@ -135,6 +137,36 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 	}
 
 	return &StopReply{InstanceId: instanceID}, nil
+}
+
+func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootReply, error) {
+
+	if in.GetInstanceId() == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       inst.GetLastState().GetState(),
+		}).Error(err)
+
+		return nil, err
+	}
+
+	instanceID := in.InstanceId
+	if err := s.sendCommand(ctx, "reboot", instanceID); err != nil {
+		log.WithError(err).Error("Failed sendCommand(reboot)")
+		return nil, err
+	}
+
+	return &RebootReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
@@ -289,6 +321,38 @@ func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*Insta
 		},
 		Items: results,
 	}, nil
+}
+
+func (s *InstanceAPI) Log(in *InstanceLogRequest, stream Instance_LogServer) error {
+	masterAddr := s.api.GetMesosMasterAddr()
+	if masterAddr == nil {
+		return errors.New("Mesos master address is not detected")
+	}
+	cl, err := mlog.NewMesosClientWithOptions(
+		masterAddr.GetIp(),
+		int(masterAddr.GetPort()),
+		&mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+	if err != nil {
+		log.WithError(err).Error("Couldn't connect to Mesos master: ", masterAddr)
+		return errors.Wrap(err, "mlog.NewMesosClientWithOptions")
+	}
+
+	taskID := fmt.Sprintf("VDC_%s", in.Target.GetID())
+	result, err := cl.GetLog(taskID, mlog.STDERR, "")
+	if err != nil {
+		log.WithError(err).Error("Error fetching log")
+		return errors.Wrap(err, "cl.GetLog")
+	}
+
+	for _, log := range result {
+		err := stream.Send(&InstanceLogReply{
+			Line: []string{log.Log},
+		})
+		if err != nil {
+			return errors.Wrap(err, "stream.Send")
+		}
+	}
+	return nil
 }
 
 type InstanceConsoleAPI struct {

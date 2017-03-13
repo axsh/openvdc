@@ -4,7 +4,6 @@ package lxc
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"io"
 	"os"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	"time"
 	"unsafe"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/kr/pty"
@@ -197,6 +197,23 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 		d.log.Errorln("Failed or timedout to wait for STOPPED")
 		return fmt.Errorf("Failed or timedout to wait for STOPPED")
 	}
+	return nil
+}
+
+func (d *LXCHypervisorDriver) RebootInstance() error {
+
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+	if err != nil {
+		d.log.Errorln(err)
+		return err
+	}
+
+	d.log.Infoln("Rebooting lxc-container..")
+	if err := c.Reboot(); err != nil {
+		d.log.Errorln(err)
+		return err
+	}
+
 	return nil
 }
 
