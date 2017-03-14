@@ -328,21 +328,25 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 }
 
 func (z *Zk) Watch(key string) (WatchEvent, error) {
+	if !z.isConnected() {
+		return EventErr, ErrConnectionNotReady
+	}
+	absKey, _ := z.canonKey(key)
 	var err error
 	var ev <-chan zk.Event
-	if strings.HasSuffix(key, "/*") {
-		_, _, ev, err = z.conn.ChildrenW(path.Dir(key))
+	if strings.HasSuffix(absKey, "/*") {
+		_, _, ev, err = z.conn.ChildrenW(path.Dir(absKey))
 		if err != nil {
 			return EventErr, errors.Wrap(err, "conn.ChildrenW")
 		}
 	} else {
 		var exists bool
-		exists, _, ev, err = z.conn.ExistsW(key)
+		exists, _, ev, err = z.conn.ExistsW(absKey)
 		if err != nil {
 			return EventErr, errors.Wrap(err, "conn.ExistsW")
 		}
 		if !exists {
-			return EventErr, errors.Errorf("Unknown key: %s", key)
+			return EventErr, errors.Errorf("Unknown key: %s", absKey)
 		}
 	}
 	received := <-ev

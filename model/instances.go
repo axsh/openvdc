@@ -244,13 +244,13 @@ func (i *instances) WaitStateUpdate(id string) (*InstanceState, error) {
 		return nil, errors.Errorf("Unexpected event: %s", ev)
 	}
 
-	lkey, err := bk.FindLastKey(i.fmtKey(id, "/state"))
+	lkey, err := bk.FindLastKey(i.fmtKey(id, "/state/state-"))
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed FindLaskKey(%s)", i.fmtKey(id, "/state"))
+		return nil, errors.Wrapf(err, "Failed FindLaskKey(%s)", i.fmtKey(id, "/state/state-"))
 	}
 	res := &InstanceState{}
 	if err := bk.Find(lkey, res); err != nil {
-		return nil, errors.Wrapf(err, "Failed Find(%s)", i.fmtKey(id, "/state", lkey))
+		return nil, errors.Wrapf(err, "Failed Find(%s)", lkey)
 	}
 	return res, nil
 }
