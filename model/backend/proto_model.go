@@ -19,6 +19,7 @@ type ProtoModelBackend interface {
 	Delete(key string) error
 	Keys(parentKey string) (KeyIterator, error)
 	FindLastKey(prefixKey string) (string, error)
+	ModelWatcher
 }
 
 type ProtoFilter interface {
@@ -130,4 +131,8 @@ func (p *ProtoWrapper) Keys(parentKey string) (KeyIterator, error) {
 
 func (p *ProtoWrapper) FindLastKey(prefixKey string) (string, error) {
 	return p.backend.FindLastKey(prefixKey)
+}
+
+func (p *ProtoWrapper) Watch(key string) (WatchEvent, error) {
+	return p.backend.(ModelWatcher).Watch(key)
 }
