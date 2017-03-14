@@ -43,6 +43,16 @@ var waitCmd = &cobra.Command{
 
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
+			ctx := context.Background()
+			inst, err := c.Show(ctx, req.Target)
+			if err != nil {
+				log.WithError(err).Fatal("Failed Call /api.Instance/Show")
+				return err
+			}
+			if inst.GetInstance().GetLastState().GetState() == model.InstanceState_State(goalState) {
+				// Quit immediatly if the given goal state is identical.
+				return nil
+			}
 
 			stream, err := c.Event(context.Background(), req)
 			if err != nil {
