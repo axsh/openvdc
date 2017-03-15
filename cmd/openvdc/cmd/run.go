@@ -45,7 +45,7 @@ var runCmd = &cobra.Command{
 				break
 			}
 		}
-		req := prepareRegisterAPICall(templateSlug, left)
+		req := prepareCreateAPICall(templateSlug, left)
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 			res, err := c.Run(context.Background(), req)
