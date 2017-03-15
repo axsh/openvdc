@@ -5,8 +5,8 @@ import (
 	"net"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 
-	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -19,23 +19,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-const (
-	CPUS_PER_EXECUTOR = 0.01
-	CPUS_PER_TASK     = 1
-	MEM_PER_EXECUTOR  = 64
-	MEM_PER_TASK      = 64
-)
+var ExecutorPath string
 
-var FrameworkInfo = &mesos.FrameworkInfo{
-	User: proto.String(""),
-	Name: proto.String("OpenVDC"),
+type SchedulerSettings struct {
+	Name            string
+	ID              string
+	FailoverTimeout float64
+	ExecutorPath    string
 }
-
-const ExecutorPath = "openvdc-executor"
-
-var (
-	taskCount = 10
-)
 
 type VDCScheduler struct {
 	tasksLaunched int
@@ -49,7 +40,6 @@ type VDCScheduler struct {
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
 	return &VDCScheduler{
-		totalTasks: taskCount,
 		listenAddr: listenAddr,
 		zkAddr:     zkAddr,
 		ctx:        ctx,
@@ -71,6 +61,12 @@ func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId 
 
 func (sched *VDCScheduler) Reregistered(driver sched.SchedulerDriver, masterInfo *mesos.MasterInfo) {
 	log.Println("Framework Re-Registered with Master ", masterInfo)
+
+	_, err := driver.ReconcileTasks([]*mesos.TaskStatus{})
+
+	if err != nil {
+		log.Errorln("Failed to reconcile tasks: %v", err)
+	}
 }
 
 func (sched *VDCScheduler) Disconnected(sched.SchedulerDriver) {
@@ -180,6 +176,16 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			},
 		}
 
+		r, err := i.Resource(ctx)
+
+		if err != nil {
+			log.WithError(err).WithFields(log.Fields{
+				"instance_id": i.GetId(),
+				"resource_id": i.GetResourceId(),
+			}).Error("Failed to retrieve resource object")
+			continue
+		}
+
 		taskId := util.NewTaskID(i.GetId())
 		task := &mesos.TaskInfo{
 			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
@@ -188,8 +194,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			Data:     []byte("instance_id=" + i.GetId()),
 			Executor: executor,
 			Resources: []*mesos.Resource{
-				util.NewScalarResource("cpus", CPUS_PER_TASK),
-				util.NewScalarResource("mem", MEM_PER_TASK),
+				util.NewScalarResource("cpus", float64(r.GetTemplate().GetLxc().GetVcpu())),
+				util.NewScalarResource("mem", float64(r.GetTemplate().GetLxc().GetMemoryGb()*1024)),
 			},
 		}
 
@@ -241,37 +247,26 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 }
 
 func (sched *VDCScheduler) OfferRescinded(_ sched.SchedulerDriver, oid *mesos.OfferID) {
-	log.Fatalf("offer rescinded: %v", oid)
+	log.Infoln("offer rescinded: %v", oid)
 }
 
 func (sched *VDCScheduler) FrameworkMessage(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, msg string) {
-	log.Fatalf("framework message from executor %q slave %q: %q", eid, sid, msg)
+	log.Infoln("framework message from executor %q slave %q: %q", eid, sid, msg)
 }
 
 func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID) {
-	log.Fatalf("slave lost: %v", sid)
+	log.Errorln("slave lost: %v", sid)
 }
 
 func (sched *VDCScheduler) ExecutorLost(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, code int) {
-	log.Fatalf("executor %q lost on slave %q code %d", eid, sid, code)
+	log.Errorln("executor %q lost on slave %q code %d", eid, sid, code)
 }
 
 func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
-	log.Fatalf("Scheduler received error: %v", err)
+	log.Errorln("Scheduler received error: %v", err)
 }
 
-func startAPIServer(ctx context.Context, laddr string, zkAddr backend.ZkEndpoint, driver sched.SchedulerDriver) *api.APIServer {
-	lis, err := net.Listen("tcp", laddr)
-	if err != nil {
-		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
-	}
-	log.Println("Listening gRPC API on: ", laddr)
-	s := api.NewAPIServer(zkAddr, driver, ctx)
-	go s.Serve(lis)
-	return s
-}
-
-func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint) {
+func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint, settings SchedulerSettings) (*sched.MesosSchedulerDriver, error) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
@@ -280,8 +275,18 @@ func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMast
 	cred = nil
 	bindingAddrs, err := net.LookupIP(listenAddr)
 	if err != nil {
-		log.Fatalln("Invalid Address to -listen option: ", err)
+		return nil, errors.Wrapf(err, "Invalid listen address: %s", listenAddr)
 	}
+
+	ExecutorPath = settings.ExecutorPath
+
+	FrameworkInfo := &mesos.FrameworkInfo{
+		User:            proto.String(""),
+		Name:            proto.String(settings.Name),
+		FailoverTimeout: proto.Float64(settings.FailoverTimeout),
+		Id:              util.NewFrameworkID(settings.ID),
+	}
+
 	config := sched.DriverConfig{
 		Scheduler:      newVDCScheduler(ctx, listenAddr, zkAddr),
 		Framework:      FrameworkInfo,
@@ -296,15 +301,7 @@ func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMast
 	}
 	driver, err := sched.NewMesosSchedulerDriver(config)
 	if err != nil {
-		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
+		return nil, errors.Wrap(err, "Unable to create SchedulerDriver")
 	}
-
-	apiServer := startAPIServer(ctx, apiListenAddr, zkAddr, driver)
-	defer func() {
-		apiServer.GracefulStop()
-	}()
-
-	if stat, err := driver.Run(); err != nil {
-		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
-	}
+	return driver, nil
 }

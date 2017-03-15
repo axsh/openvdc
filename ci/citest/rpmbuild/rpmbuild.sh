@@ -3,8 +3,8 @@
 
 set -ex -o pipefail
 
-OPENVDC_ROOT_HOST="$(cd "$(dirname $(readlink -f "$0"))/../../" && pwd -P)"
-SCRIPT_DIR="${OPENVDC_ROOT_HOST}/deployment/docker"
+SCRIPT_DIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
+OPENVDC_ROOT_HOST="$(cd "${SCRIPT_DIR}/../../.." && pwd -P)"
 
 CID=
 TMPDIR=$(mktemp -d)

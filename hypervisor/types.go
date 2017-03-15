@@ -18,6 +18,7 @@ type HypervisorDriver interface {
 	DestroyInstance() error
 	StartInstance() error
 	StopInstance() error
+	RebootInstance() error
 	InstanceConsole() Console
 }
 
