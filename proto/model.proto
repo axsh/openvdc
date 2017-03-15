@@ -9,9 +9,10 @@ option go_package = "github.com/axsh/openvdc/model";
 message Instance {
   string id = 1;
   string slave_id = 2;
-  string resource_id = 3;
+  //string resource_id = 3; // Obsolete
   InstanceState last_state = 4;
   google.protobuf.Timestamp created_at = 5;
+  Template template = 6;
 }
 
 message InstanceState {
@@ -28,16 +29,6 @@ message InstanceState {
   }
   State state = 1;
   google.protobuf.Timestamp created_at = 2;
-}
-
-message Resource {
-  string id = 1;
-  enum State {
-    REGISTERED = 0;
-    UNREGISTERED = 1;
-  }
-  State state = 3;
-  Template template = 4;
 }
 
 message Template {
@@ -113,4 +104,7 @@ message LxcTemplate {
   Template lxc_template = 7;
 }
 
-message NullTemplate {}
+message NullTemplate {
+  int32 vcpu = 1;
+  int32 memory_gb = 2;
+}

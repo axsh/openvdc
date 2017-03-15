@@ -36,6 +36,7 @@ type ResourceHandler interface {
 	// Ugly method... due to the "oneof" protobuf type implementation in Go.
 	// https://developers.google.com/protocol-buffers/docs/reference/go-generated#oneof
 	SetTemplateItem(t *model.Template, m model.ResourceTemplate)
+	IsSupportAPI(m string) bool
 }
 
 type CLIHandler interface {

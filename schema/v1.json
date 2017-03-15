@@ -223,6 +223,14 @@
             "vm/null"
           ]
         },
+        "vcpu": {
+          "type": "integer",
+          "default": 1
+        },
+        "memory_gb": {
+          "type": "integer",
+          "default": 1
+        },
         "min_vcpu": {
           "type": "integer",
           "default": 1
