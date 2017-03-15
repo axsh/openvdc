@@ -16,5 +16,7 @@
       ],
       "url": "./schema/v1.json"
     }
-  ]
+  ],
+  // go formatter/lint called by vscode fails sources under ci/*.
+  "go.buildTags": "acceptance"
 }

@@ -30,8 +30,6 @@ func Execute() {
 	RootCmd.AddCommand(runCmd)
 	RootCmd.AddCommand(stopCmd)
 	RootCmd.AddCommand(consoleCmd)
-	RootCmd.AddCommand(registerCmd)
-	RootCmd.AddCommand(unregisterCmd)
 	RootCmd.AddCommand(startCmd)
 	RootCmd.AddCommand(showCmd)
 	RootCmd.AddCommand(TemplateCmd)

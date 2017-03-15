@@ -123,14 +123,9 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		log.WithError(err).Error("Failed Instances.FindyByID")
 		return err
 	}
-	res, err := inst.Resource(ctx)
-	if err != nil {
-		log.WithError(err).Error("Failed Instances.Resource")
-		return err
-	}
 
 	log.Infof("Creating instance")
-	err = hv.CreateInstance(inst, res.ResourceTemplate())
+	err = hv.CreateInstance(inst, inst.ResourceTemplate())
 	if err != nil {
 		log.WithError(err).Error("Failed CreateInstance")
 		return err
