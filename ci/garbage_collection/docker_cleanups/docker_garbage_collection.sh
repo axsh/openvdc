@@ -26,7 +26,7 @@ function remove_images {
 
   ## Remove all directories whose branch (on git) no longer exists
   ## or which has not beenm pushed to within $time_limit days.
-  for docker_image in $(docker images -q ${repo_prefix} | sort -u); do
+  for docker_image in $(docker images -q ${repo_prefix}* | sort -u); do
      image_date=$(docker_image_date ${docker_image})
 
      if [[ "${image_date}" < "${cutoff_date}" ]]; then
