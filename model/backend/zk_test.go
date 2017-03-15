@@ -166,7 +166,7 @@ func TestZkKeys(t *testing.T) {
 func TestZk_Watch(t *testing.T) {
 	assert := assert.New(t)
 	withConnect(t, func(z *Zk) {
-		assert.Implements((ModelWatcher)(nil), z)
+		assert.Implements((*ModelWatcher)(nil), z, "Zk implements ModelWatcher")
 		err := z.Create("/test1", []byte{1})
 		assert.NoError(err)
 		defer z.Delete("/test1")
