@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -ex -o pipefail
+SCRIPT_DIR="$(cd "$(dirname $(readlink -f "$0"))" && pwd -P)"
 
 CID=
 docker_rm() {
@@ -37,7 +38,7 @@ fi
 # https://github.com/docker/docker/issues/20056
 img_tag="${img_tag,,}"
 
-docker build -t "${img_tag}" -f "./deployment/docker/${BUILD_OS}-unit-tests.Dockerfile" .
+docker build -t "${img_tag}" -f "${SCRIPT_DIR}/${BUILD_OS}-unit-tests.Dockerfile" .
 CID=$(docker run --add-host="devrepo:${IPV4_DEVREPO:-192.168.56.60}" -d ${BUILD_ENV_PATH:+--env-file $BUILD_ENV_PATH} "${img_tag}")
 
 
