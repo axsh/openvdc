@@ -15,5 +15,5 @@
 			"revisionTime": "2016-08-30T17:39:30Z"
 		}
 	],
-	"rootPath": "github.com/axsh/openvdc/ci/acceptance-test/tests"
+	"rootPath": "github.com/axsh/openvdc/ci/citest/acceptance-test/tests"
 }

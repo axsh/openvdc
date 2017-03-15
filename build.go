@@ -177,7 +177,7 @@ Environment Variables:
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'", "-v", "./cmd/openvdc-scheduler")
 
 	// Build Acceptance Test binary
-	os.Chdir("./ci/acceptance-test/tests")
+	os.Chdir("./ci/citest/acceptance-test/tests")
 	cmd("govendor", "sync")
 	cmd("go", "generate", "-v", "-tags=acceptance", ".")
 	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test")
