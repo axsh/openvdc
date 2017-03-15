@@ -5,7 +5,6 @@ package tests
 import (
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestCmdConsole_ShowOption(t *testing.T) {
