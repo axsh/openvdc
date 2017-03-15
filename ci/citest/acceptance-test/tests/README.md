@@ -1,8 +1,8 @@
 
-Running acceptance/CI tests under ``ci/acceptance-test/tests``:
+Running acceptance/CI tests under ``ci/citest/acceptance-test/tests``:
 
 ```
-cd ci/acceptance-test/tests
+cd ci/citest/acceptance-test/tests
 go test -tags=acceptance ./...
 ```
 

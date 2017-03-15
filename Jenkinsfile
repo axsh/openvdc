@@ -56,7 +56,7 @@ def stage_unit_test(label) {
     stage "Units Tests ${label}"
     checkout_and_merge()
     write_build_env(label)
-    sh "./deployment/docker/unit-tests.sh ./build.env"
+    sh "./ci/citest/unit-tests/unit-tests.sh ./build.env"
   }
 }
 
@@ -65,7 +65,7 @@ def stage_rpmbuild(label) {
     stage "RPM Build ${label}"
     checkout_and_merge()
     write_build_env(label)
-    sh "./deployment/docker/rpmbuild.sh ./build.env"
+    sh "./ci/citest/rpmbuild/rpmbuild.sh ./build.env"
   }
 }
 
@@ -74,7 +74,7 @@ def stage_acceptance(label) {
     stage "Acceptance Test ${label}"
     checkout_and_merge()
     write_build_env(label)
-    sh "./ci/acceptance-test/build_and_run_in_docker.sh ./build.env"
+    sh "./ci/citest/acceptance-test/build_and_run_in_docker.sh ./build.env"
   }
 }
 
