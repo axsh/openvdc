@@ -8,6 +8,7 @@ import (
 	"flag"
 
 	"github.com/axsh/openvdc/handlers"
+	"github.com/axsh/openvdc/handlers/vm"
 	"github.com/axsh/openvdc/model"
 	"github.com/golang/protobuf/proto"
 )
@@ -17,6 +18,7 @@ func init() {
 }
 
 type LxcHandler struct {
+	vm.Base
 }
 
 func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {

@@ -5,7 +5,9 @@ import (
 	"io"
 
 	"github.com/axsh/openvdc/handlers"
+	"github.com/axsh/openvdc/handlers/vm"
 	"github.com/axsh/openvdc/model"
+	"github.com/gogo/protobuf/proto"
 )
 
 func init() {
@@ -13,6 +15,7 @@ func init() {
 }
 
 type NullHandler struct {
+	vm.Base
 }
 
 func (h *NullHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
@@ -29,11 +32,16 @@ func (h *NullHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplat
 	}
 }
 
-func (h *NullHandler) MergeArgs(dst model.ResourceTemplate, args []string) error {
-	_, ok := dst.(*model.NullTemplate)
+func (h *NullHandler) Merge(dst, src model.ResourceTemplate) error {
+	mdst, ok := dst.(*model.NullTemplate)
 	if !ok {
 		return handlers.ErrMergeDstType(new(model.NullTemplate), dst)
 	}
+	msrc, ok := src.(*model.NullTemplate)
+	if !ok {
+		return handlers.ErrMergeSrcType(new(model.NullTemplate), src)
+	}
+	proto.Merge(mdst, msrc)
 	return nil
 }
 
