@@ -13,6 +13,6 @@ func TestOpenVDCLog(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 	defer RunCmd("openvdc", "destroy", instance_id)
 
-	WaitInstance(t, 5 * time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "RUNNING")
 	RunCmdAndReportFail(t, "openvdc", "log", instance_id)
 }
