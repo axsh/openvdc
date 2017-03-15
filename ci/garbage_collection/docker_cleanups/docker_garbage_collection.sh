@@ -4,7 +4,7 @@ set -e
 
 . ../prune_branches.sh
 
-time_limit=${TIME_LIMIT:-14}  ## Days. Set this to give the "deadline". 
+time_limit=${TIME_LIMIT:-14}  ## Days. Set this to give the "deadline".
                               ## All branches older than this a removed.
 
 function docker_image_date {
@@ -12,7 +12,7 @@ function docker_image_date {
 
     creation_date=$(docker inspect --format='{{.Created}}' --type=image ${image})
 
-    ## The date is in the format: yyyy-mm-ddThh:mm:ss.xxxx  
+    ## The date is in the format: yyyy-mm-ddThh:mm:ss.xxxx
     ## We want: yyyymmdd
     creation_date=${creation_date%T*}
 
