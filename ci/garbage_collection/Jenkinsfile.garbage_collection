@@ -12,6 +12,7 @@ runs[0]= {
     checkout scm
     sh "git remote prune origin"
     sh "cd ci/garbage_collection/cache_cleanups/ ; ./cache_garbage_collection.sh"
+    sh "cd ci/garbage_collection/docker_cleanups ; ./docker_garbage_collection.sh"
   }
 }
 

@@ -42,3 +42,4 @@ function remove_images {
 
 remove_images "citest"
 remove_images "unit-tests.citest"
+remove_images "openvdc/acceptance-test"
