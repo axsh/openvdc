@@ -10,7 +10,7 @@ time_limit=${TIME_LIMIT:-14}  ## Days. Set this to give the "deadline".
 function docker_image_date {
     image=${1?"No image passed to docker_image_date!"}
 
-    creation_date=$(docker inspect --format='{{.Created}}' --type=image ${image})
+    creation_date=$(sudo docker inspect --format='{{.Created}}' --type=image ${image})
 
     ## The date is in the format: yyyy-mm-ddThh:mm:ss.xxxx
     ## We want: yyyymmdd
@@ -26,12 +26,12 @@ function remove_images {
 
   ## Remove all directories whose branch (on git) no longer exists
   ## or which has not beenm pushed to within $time_limit days.
-  for docker_image in $(docker images -q ${repo_prefix}* | sort -u); do
-     image_date=$(docker_image_date ${docker_image})
+  for docker_image in $(sudo docker images -q ${repo_prefix}* | sort -u); do
+     image_date=$(sudo docker_image_date ${docker_image})
 
      if [[ "${image_date}" < "${cutoff_date}" ]]; then
          echo "docker rmi \"${docker_image}\""
-         docker rmi "${docker_image}"
+         sudo docker rmi "${docker_image}"
      fi
 
   done
