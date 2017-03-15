@@ -19,20 +19,26 @@ function docker_image_date {
     echo ${creation_date//-/}    ## Remove the '-' between yyyy & mm, mm & dd
 }
 
+function remove_images {
+  local repo_prefix="$1"
+
+  cutoff_date=$(get_cutoff_date ${time_limit})   ## Images older than this are removed
+
+  ## Remove all directories whose branch (on git) no longer exists
+  ## or which has not beenm pushed to within $time_limit days.
+  for docker_image in $(docker images -q ${repo_prefix} | sort -u); do
+     image_date=$(docker_image_date ${docker_image})
+
+     if [[ "${image_date}" < "${cutoff_date}" ]]; then
+         echo "docker rmi \"${docker_image}\""
+         docker rmi "${docker_image}"
+     fi
+
+  done
+}
+
 #-------------------------------------------------------------------------#
 # main()
 
-cutoff_date=$(get_cutoff_date ${time_limit})   ## Images older than this are removed
-
-## Remove all directories whose branch (on git) no longer exists
-## or which has not beenm pushed to within $time_limit days.
-for docker_image in $(docker images -q | sort -u); do
-   image_date=$(docker_image_date ${docker_image})
-
-   if [[ "${image_date}" < "${cutoff_date}" ]]; then
-       echo "docker rmi \"${docker_image}\""
-       docker rmi "${docker_image}"
-   fi
-
-done
- 
+remove_images "citest"
+remove_images "unit-tests.citest"
