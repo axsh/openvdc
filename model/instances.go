@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 )
 
@@ -15,6 +17,7 @@ type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
 	FindByID(string) (*Instance, error)
 	AddFailureMessage(id string, failureMessage FailureMessage_ErrorType) error
+	//GetLatestFailureMessage(id string) (*FailureMessage, error)
 	UpdateState(id string, next InstanceState_State) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
 	Update(*Instance) error
@@ -150,23 +153,20 @@ func (i *instances) AddFailureMessage(id string, failureMessage FailureMessage_E
 	if err != nil {
 		return err
 	}
-
 	bk, err := i.connection()
 	if err != nil {
 		return err
 	}
-
+	failedAt, _ := ptypes.TimestampProto(time.Now())
 	nFailure := &FailureMessage{
 		ErrorType: failureMessage,
+		FailedAt:  failedAt,
 	}
-
 	instance.LatestFailure = nFailure
-
 	_, err = bk.CreateWithID(fmt.Sprintf("%s/%s/failure-messages/failure-", instancesBaseKey, id), nFailure)
 	if err != nil {
 		return err
 	}
-
 	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), instance)
 }
 
