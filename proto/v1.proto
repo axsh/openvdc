@@ -29,7 +29,7 @@ message ConsoleOut {
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
   rpc Start (StartRequest) returns (StartReply){}
-  rpc Run (ResourceRequest) returns (RunReply){}
+  rpc Run (CreateRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
   rpc Reboot (RebootRequest) returns (RebootReply){}
@@ -41,7 +41,7 @@ service Instance {
 
 message RunReply {
   string instance_id = 1;
-  string resource_id = 2;
+  //string resource_id = 2; // Obsolete
 }
 
 message StopRequest{
@@ -68,7 +68,8 @@ message ConsoleReply {
 }
 
 message CreateRequest{
-  string resource_id = 1;
+  //string resource_id = 1; // Obsolete
+  model.Template template = 2;
 }
 message CreateReply{
   string instance_id = 1;
@@ -132,25 +133,4 @@ message InstanceLogRequest {
 
 message InstanceLogReply {
   repeated string Line = 1;
-}
-
-service Resource {
-  rpc Register(ResourceRequest) returns (ResourceReply){}
-  rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
-  rpc Show(ResourceIDRequest) returns (ResourceReply){}
-}
-
-message ResourceRequest {
-  model.Template template = 1;
-}
-message ResourceReply {
-  string ID = 1;
-  model.Resource resource = 2;
-}
-
-message ResourceIDRequest{
-  oneof Key {
-    string ID = 1;
-    string Name = 2;
-  }
 }
