@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-var ErrInstanceMissingResource = errors.New("Resource is not associated")
 var ErrInvalidID = errors.New("ID is missing")
 
 type InstanceOps interface {
@@ -81,10 +80,6 @@ func Instances(ctx context.Context) InstanceOps {
 }
 
 func (i *instances) Create(n *Instance) (*Instance, error) {
-	if n.GetResourceId() == "" {
-		return nil, ErrInstanceMissingResource
-	}
-
 	initState := &InstanceState{
 		State: InstanceState_REGISTERED,
 	}
@@ -95,7 +90,7 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	}
 	n.ConnectionStatus = initConnectionStatus
 
-	n.Autorecovery = true
+	n.AutoRecovery = true
 
 	bk, err := i.connection()
 	if err != nil {
@@ -261,8 +256,8 @@ func (i *instances) Filter(limit int, cb func(*Instance) int) error {
 	return nil
 }
 
-func (i *Instance) Resource(ctx context.Context) (*Resource, error) {
-	return Resources(ctx).FindByID(i.GetResourceId())
+func (i *Instance) ResourceTemplate() ResourceTemplate {
+	return GetResourceTemplate(i.GetTemplate())
 }
 
 func (i *InstanceState) ValidateNextState(next InstanceState_State) error {

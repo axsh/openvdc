@@ -325,13 +325,6 @@ func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers 
 }
 
 func (sched *VDCScheduler) NewTask(i *model.Instance, slaveID *mesos.SlaveID, ctx context.Context, executor *mesos.ExecutorInfo) *mesos.TaskInfo {
-	r, err := i.Resource(ctx)
-	if err != nil {
-		log.WithError(err).WithFields(log.Fields{
-			"instance_id": i.GetId(),
-			"resource_id": i.GetResourceId(),
-		}).Error("Failed to retrieve resource object")
-	}
 	taskId := util.NewTaskID(i.GetId())
 	task := &mesos.TaskInfo{
 		Name:     proto.String("VDC" + "_" + taskId.GetValue()),
@@ -340,8 +333,8 @@ func (sched *VDCScheduler) NewTask(i *model.Instance, slaveID *mesos.SlaveID, ct
 		Data:     []byte("instance_id=" + i.GetId()),
 		Executor: executor,
 		Resources: []*mesos.Resource{
-			util.NewScalarResource("cpus", float64(r.GetTemplate().GetLxc().GetVcpu())),
-			util.NewScalarResource("mem", float64(r.GetTemplate().GetLxc().GetMemoryGb()*1024)),
+			util.NewScalarResource("cpus", float64(i.GetTemplate().GetLxc().GetVcpu())),
+			util.NewScalarResource("mem", float64(i.GetTemplate().GetLxc().GetMemoryGb()*1024)),
 		},
 	}
 	return task
@@ -376,16 +369,8 @@ func findMatching(i *model.Instance, offers []*mesos.Offer, ctx context.Context)
 			continue
 		}
 
-		r, err := i.Resource(ctx)
-		if err != nil {
-			log.WithError(err).WithFields(log.Fields{
-				"instance_id": i.GetId(),
-				"resource_id": i.GetResourceId(),
-			}).Error("Failed to retrieve resource object")
-			continue
-		}
 		// TODO: Avoid type switch to find template types.
-		switch t := r.GetTemplate().GetItem(); t.(type) {
+		switch t := i.GetTemplate().GetItem(); t.(type) {
 		case *model.Template_Lxc:
 			if hypervisorName == "lxc" {
 				return offer

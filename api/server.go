@@ -12,6 +12,7 @@ import (
 	sched "github.com/mesos/mesos-go/scheduler"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 //go:generate protoc -I../proto -I${GOPATH}/src --go_out=plugins=grpc:${GOPATH}/src ../proto/v1.proto
@@ -24,14 +25,45 @@ type APIServer struct {
 	mMesosMasterAddr sync.Mutex
 }
 
+type serverStreamWithContext struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (ss *serverStreamWithContext) Context() context.Context {
+	return ss.ctx
+}
+
 func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDriver, ctx context.Context) *APIServer {
 	// Assert the ctx has "cluster.backend" key
 	model.GetClusterBackendCtx(ctx)
 
+	// Nest UnaryInterceptor and StreamInterceptor
+	modelInterceptor := model.GrpcInterceptor(modelAddr, ctx)
+	insertFullMethod := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		md, ok := metadata.FromContext(ctx)
+		if ok {
+			md = metadata.Join(md, metadata.Pairs("fullmethod", info.FullMethod))
+		} else {
+			log.Error("Failed metadata.FromContext")
+		}
+		return modelInterceptor(metadata.NewContext(ctx, md), req, info, handler)
+	}
+	modelStreamInterceptor := model.GrpcStreamInterceptor(modelAddr, ctx)
+	insertFullMethodStream := func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		md, ok := metadata.FromContext(ss.Context())
+		if ok {
+			md = metadata.Join(md, metadata.Pairs("fullmethod", info.FullMethod))
+		} else {
+			log.Error("Failed metadata.FromContext")
+		}
+		ss = &serverStreamWithContext{ss, metadata.NewContext(ctx, md)}
+		return modelStreamInterceptor(srv, ss, info, handler)
+	}
+
 	sopts := []grpc.ServerOption{
-		// Setup request middleware for the model.backend database connection.
-		grpc.UnaryInterceptor(model.GrpcInterceptor(modelAddr, ctx)),
-		grpc.StreamInterceptor(model.GrpcStreamInterceptor(modelAddr, ctx)),
+		grpc.UnaryInterceptor(insertFullMethod),
+		grpc.StreamInterceptor(insertFullMethodStream),
 	}
 	s := &APIServer{
 		server:         grpc.NewServer(sopts...),
@@ -40,7 +72,6 @@ func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDri
 	}
 
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})
-	RegisterResourceServer(s.server, &ResourceAPI{api: s})
 	RegisterInstanceConsoleServer(s.server, &InstanceConsoleAPI{api: s})
 	return s
 }
