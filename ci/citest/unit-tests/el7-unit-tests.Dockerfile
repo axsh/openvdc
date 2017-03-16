@@ -6,7 +6,7 @@ RUN yum-config-manager --enable centosplus
 # epel-release.rpm from CentOS/extra contains deprecated index for mirror sites.
 RUN yum install -y http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
 
-RUN yum install -y git go
+RUN yum install -y git golang
 ENV GOPATH=/var/tmp/go
 ENV PATH=$PATH:$GOPATH/bin
 RUN mkdir $GOPATH
