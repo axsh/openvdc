@@ -15,8 +15,7 @@ func TestCmdReboot(t *testing.T) {
 
 	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "RUNNING")
 
-	testCmdReboot_Ubuntu14(t, instance_id)
-	//testCmdReboot_Centos7(t, instance_id)
+	testCmdReboot_Centos7(t, instance_id)
 
 	RunCmdAndReportFail(t, "openvdc", "destroy", instance_id)
 	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "TERMINATED")
