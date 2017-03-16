@@ -70,6 +70,7 @@ message ConsoleReply {
 message CreateRequest{
   //string resource_id = 1; // Obsolete
   model.Template template = 2;
+  bool auto_recovery = 3;
 }
 message CreateReply{
   string instance_id = 1;

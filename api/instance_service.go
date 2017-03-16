@@ -21,7 +21,8 @@ type InstanceAPI struct {
 
 func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateReply, error) {
 	inst, err := model.Instances(ctx).Create(&model.Instance{
-		Template: in.GetTemplate(),
+		Template:     in.GetTemplate(),
+		AutoRecovery: in.GetAutoRecovery(),
 	})
 	if err != nil {
 		log.WithError(err).Error()
@@ -92,7 +93,10 @@ func (s *InstanceAPI) Run(ctx context.Context, in *CreateRequest) (*RunReply, er
 	if err := checkSupportAPI(in.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
-	res1, err := s.Create(ctx, &CreateRequest{Template: in.GetTemplate()})
+	res1, err := s.Create(ctx, &CreateRequest{
+		Template:     in.GetTemplate(),
+		AutoRecovery: in.GetAutoRecovery(),
+	})
 	if err != nil {
 		log.WithError(err).Error("Failed InstanceAPI.Run at Create")
 		return nil, err
