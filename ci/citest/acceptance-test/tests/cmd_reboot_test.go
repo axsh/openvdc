@@ -15,8 +15,7 @@ func TestCmdReboot(t *testing.T) {
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
-	testCmdReboot_Ubuntu14(t, instance_id)
-	//testCmdReboot_Centos7(t, instance_id)
+	testCmdReboot_Centos7(t, instance_id)
 
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
