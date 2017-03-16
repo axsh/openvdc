@@ -81,7 +81,7 @@
         "yum install -y bridge-utils lsof bind-utils iproute tree tmux screen",
         "curl -L https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz | tar -C /usr/local -xzf -",
         "yum install -y java-1.8.0-openjdk-devel",
-        "cd /usr/local; (curl -L https://github.com/google/protobuf/releases/download/v3.1.0/protoc-3.1.0-linux-x86_64.zip | jar xvf /dev/stdin)",
+        "cd /usr/local; (curl -L https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip | jar xvf /dev/stdin)",
         "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm",
         "yum install -y mesosphere-zookeeper mesos",
         "echo 'mesos' > /etc/mesos-slave/containerizers",
