@@ -274,7 +274,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		return errors.Wrap(err, "Failed lxc.Create")
 	}
 
-	if err := d.modifyConf(lxcTmpl); err != nil {
+	if err := d.modifyConf(lxcResTmpl); err != nil {
 		return err
 	}
 
