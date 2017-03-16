@@ -78,6 +78,7 @@
         "yum-config-manager --enable centosplus",
         "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm",
         "yum-builddep -y /tmp/openvdc.spec",
+        "yum install -y lxc-templates lxc",
         "yum install -y bridge-utils lsof bind-utils iproute tree tmux screen",
         "curl -L https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz | tar -C /usr/local -xzf -",
         "yum install -y java-1.8.0-openjdk-devel",
