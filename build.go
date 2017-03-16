@@ -33,7 +33,7 @@ func cmd(cmd string, args ...string) string {
 		io.Copy(os.Stdout, outbuf)
 	}()
 	if err := run.Run(); err != nil {
-		log.Fatal("ERROR: ", err, ": ", cmd, strings.Join(args, " "))
+		log.Fatalf("ERROR: %s: %s %s", err, cmd, strings.Join(args, " "))
 	}
 	return strings.TrimSpace(outbuf.String())
 }
