@@ -76,7 +76,7 @@
         "cp /tmp/fastestmirror.conf /etc/yum/pluginconf.d/fastestmirror.conf",
         "yum install -y yum-utils rpm-build",
         "yum-config-manager --enable centosplus",
-        "yum install -y http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm",
+        "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm",
         "yum-builddep -y /tmp/openvdc.spec",
         "yum install -y bridge-utils lsof bind-utils iproute tree tmux screen",
         "curl -L https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz | tar -C /usr/local -xzf -",
