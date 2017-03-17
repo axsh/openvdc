@@ -3,6 +3,7 @@ package openvdc
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
 )
@@ -74,7 +75,7 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 
 	stdout, _, err := RunCmd("openvdc", "run", d.Get("template").(string), cmdOpts.String())
 	if err != nil {
-		return err
+		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s", err, d.Get("template").(string), cmdOpts.String())
 	}
 
 	d.SetId(strings.TrimSpace(stdout.String()))
@@ -85,7 +86,11 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
 	_, _, err := RunCmd("openvdc", "destroy", d.Id())
 
-	return err
+	if err != nil {
+		return fmt.Errorf("The following command returned error:%v\nopenvdc destroy %s", err, d.Id())
+	}
+
+	return nil
 }
 
 //TODO: Never ever use this again
