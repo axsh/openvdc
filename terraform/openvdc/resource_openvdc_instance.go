@@ -60,8 +60,13 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 	var cmdOpts bytes.Buffer
 
 	cmdOpts.WriteString("{\"interfaces\":[")
+	newElement := false
 	if x := d.Get("interface"); x != nil {
 		for _, y := range x.(*schema.Set).List() {
+			if newElement {
+				cmdOpts.WriteString(",")
+			}
+
 			z := y.(map[string]interface{})
 			bytes, err := json.Marshal(z)
 			if err != nil {
@@ -69,6 +74,7 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 			}
 
 			cmdOpts.Write(bytes)
+			newElement = true
 		}
 	}
 	cmdOpts.WriteString("]}")
