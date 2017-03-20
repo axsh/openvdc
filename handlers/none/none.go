@@ -40,3 +40,7 @@ func (h *NoneHandler) MergeArgs(dst model.ResourceTemplate, args []string) error
 func (h *NoneHandler) Usage(out io.Writer) error {
 	return nil
 }
+
+func (h *NoneHandler) IsSupportAPI(method string) bool {
+	return false
+}

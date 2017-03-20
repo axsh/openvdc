@@ -29,18 +29,19 @@ message ConsoleOut {
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
   rpc Start (StartRequest) returns (StartReply){}
-  rpc Run (ResourceRequest) returns (RunReply){}
+  rpc Run (CreateRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
   rpc Reboot (RebootRequest) returns (RebootReply){}
   rpc Console (ConsoleRequest) returns (ConsoleReply){}
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
+  rpc Log (InstanceLogRequest) returns (stream InstanceLogReply){}
 }
 
 message RunReply {
   string instance_id = 1;
-  string resource_id = 2;
+  //string resource_id = 2; // Obsolete
 }
 
 message StopRequest{
@@ -67,7 +68,8 @@ message ConsoleReply {
 }
 
 message CreateRequest{
-  string resource_id = 1;
+  //string resource_id = 1; // Obsolete
+  model.Template template = 2;
 }
 message CreateReply{
   string instance_id = 1;
@@ -125,23 +127,10 @@ message InstanceListReply {
   repeated InstanceListItem items = 2;
 }
 
-service Resource {
-  rpc Register(ResourceRequest) returns (ResourceReply){}
-  rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
-  rpc Show(ResourceIDRequest) returns (ResourceReply){}
+message InstanceLogRequest {
+  InstanceIDRequest Target = 1;
 }
 
-message ResourceRequest {
-  model.Template template = 1;
-}
-message ResourceReply {
-  string ID = 1;
-  model.Resource resource = 2;
-}
-
-message ResourceIDRequest{
-  oneof Key {
-    string ID = 1;
-    string Name = 2;
-  }
+message InstanceLogReply {
+  repeated string Line = 1;
 }

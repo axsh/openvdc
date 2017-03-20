@@ -5,8 +5,8 @@ import (
 	"net"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 
-	"github.com/axsh/openvdc/api"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -116,22 +116,15 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	}
 
 	findMatching := func(i *model.Instance) *mesos.Offer {
+		log := log.WithField("instance_id", i.GetId())
 		for _, offer := range offers {
 			hypervisorName := getHypervisorName(offer)
 			if hypervisorName == "" {
 				continue
 			}
 
-			r, err := i.Resource(ctx)
-			if err != nil {
-				log.WithError(err).WithFields(log.Fields{
-					"instance_id": i.GetId(),
-					"resource_id": i.GetResourceId(),
-				}).Error("Failed to retrieve resource object")
-				continue
-			}
 			// TODO: Avoid type switch to find template types.
-			switch t := r.GetTemplate().GetItem(); t.(type) {
+			switch t := i.GetTemplate().GetItem(); t.(type) {
 			case *model.Template_Lxc:
 				if hypervisorName == "lxc" {
 					return offer
@@ -176,16 +169,6 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			},
 		}
 
-		r, err := i.Resource(ctx)
-
-		if err != nil {
-			log.WithError(err).WithFields(log.Fields{
-				"instance_id": i.GetId(),
-				"resource_id": i.GetResourceId(),
-			}).Error("Failed to retrieve resource object")
-			continue
-		}
-
 		taskId := util.NewTaskID(i.GetId())
 		task := &mesos.TaskInfo{
 			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
@@ -194,8 +177,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			Data:     []byte("instance_id=" + i.GetId()),
 			Executor: executor,
 			Resources: []*mesos.Resource{
-				util.NewScalarResource("cpus", float64(r.GetTemplate().GetLxc().GetVcpu())),
-				util.NewScalarResource("mem", float64(r.GetTemplate().GetLxc().GetMemoryGb()*1024)),
+				util.NewScalarResource("cpus", float64(i.GetTemplate().GetLxc().GetVcpu())),
+				util.NewScalarResource("mem", float64(i.GetTemplate().GetLxc().GetMemoryGb()*1024)),
 			},
 		}
 
@@ -266,19 +249,7 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Errorln("Scheduler received error: %v", err)
 }
 
-func startAPIServer(ctx context.Context, laddr string, zkAddr backend.ZkEndpoint, driver sched.SchedulerDriver) *api.APIServer {
-	lis, err := net.Listen("tcp", laddr)
-	if err != nil {
-		log.Fatalln("Faild to bind address for gRPC API: ", laddr)
-	}
-	log.Println("Listening gRPC API on: ", laddr)
-	s := api.NewAPIServer(zkAddr, driver, ctx)
-	go s.Serve(lis)
-	return s
-}
-
-func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint, settings SchedulerSettings) {
-
+func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint, settings SchedulerSettings) (*sched.MesosSchedulerDriver, error) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
@@ -287,7 +258,7 @@ func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMast
 	cred = nil
 	bindingAddrs, err := net.LookupIP(listenAddr)
 	if err != nil {
-		log.Fatalln("Invalid Address to -listen option: ", err)
+		return nil, errors.Wrapf(err, "Invalid listen address: %s", listenAddr)
 	}
 
 	ExecutorPath = settings.ExecutorPath
@@ -313,15 +284,7 @@ func Run(ctx context.Context, listenAddr string, apiListenAddr string, mesosMast
 	}
 	driver, err := sched.NewMesosSchedulerDriver(config)
 	if err != nil {
-		log.Fatalln("Unable to create a SchedulerDriver ", err.Error())
+		return nil, errors.Wrap(err, "Unable to create SchedulerDriver")
 	}
-
-	apiServer := startAPIServer(ctx, apiListenAddr, zkAddr, driver)
-	defer func() {
-		apiServer.GracefulStop()
-	}()
-
-	if stat, err := driver.Run(); err != nil {
-		log.Printf("Framework stopped with status %s and error: %s\n", stat.String(), err.Error())
-	}
+	return driver, nil
 }
