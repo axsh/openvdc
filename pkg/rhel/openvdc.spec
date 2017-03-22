@@ -56,6 +56,8 @@ cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
+mkdir -p "$RPM_BUILD_ROOT"%{_prefix}/lib/firewalld/services
+cp pkg/rhel/conf/firewalld/* "$RPM_BUILD_ROOT"%{_prefix}/lib/firewalld/services
 
 %package cli
 Summary: OpenVDC cli
@@ -75,6 +77,8 @@ Summary: OpenVDC executor
 Requires: lxc
 Requires: lxc-templates
 Requires: bridge-utils
+Requires: firewalld-filesystem
+Requires(post): firewalld-filesystem
 
 %description executor
 This is a 'stub'. An appropriate message must be substituted at some point.
@@ -85,9 +89,15 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-executor
 %dir /etc/openvdc
 %config(noreplace) /etc/openvdc/executor.toml
+%{_prefix}/lib/firewalld/services/vdc-executor.xml
+
+%post executor
+%{firewalld_reload}
 
 %package scheduler
 Summary: OpenVDC scheduler
+Requires: firewalld-filesystem
+Requires(post): firewalld-filesystem
 
 %description scheduler
 This is a 'stub'. An appropriate message must be substituted at some point.
@@ -98,14 +108,16 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-scheduler
 %{_unitdir}/openvdc-scheduler.service
 %config(noreplace) /etc/openvdc/scheduler.toml
+%{_prefix}/lib/firewalld/services/vdc-scheduler.xml
 
-%post
+%post scheduler
 %{systemd_post openvdc-scheduler.service}
+%{firewalld_reload}
 
-%postun
+%postun scheduler
 %{systemd_postun openvdc-scheduler.service}
 
-%preun
+%preun scheduler
 %{systemd_preun openvdc-scheduler.service}
 
 %package acceptance-test
