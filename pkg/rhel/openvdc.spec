@@ -14,7 +14,7 @@ License: LGPLv3
 BuildArch: x86_64
 
 BuildRequires: rpmdevtools lxc-devel git
-BuildRequires: golang >= 1.6
+BuildRequires: golang >= 1.7
 
 Requires: mesosphere-zookeeper mesos
 Requires: bridge-utils

@@ -2,6 +2,7 @@ package backend
 
 import (
 	"testing"
+	"time"
 
 	"strings"
 
@@ -159,5 +160,24 @@ func TestZkKeys(t *testing.T) {
 		assert.Equal("test2", it.Value())
 		z.Delete("/test1")
 		z.Delete("/test2")
+	})
+}
+
+func TestZk_Watch(t *testing.T) {
+	assert := assert.New(t)
+	withConnect(t, func(z *Zk) {
+		assert.Implements((*ModelWatcher)(nil), z, "Zk implements ModelWatcher")
+		err := z.Create("/test1", []byte{1})
+		assert.NoError(err)
+		defer z.Delete("/test1")
+
+		go func() {
+			time.Sleep(2 * time.Second)
+			err := z.Update("/test1", []byte{2})
+			assert.NoError(err)
+		}()
+		ev, err := z.Watch("/test1")
+		assert.NoError(err)
+		assert.Equal(EventModified, ev)
 	})
 }

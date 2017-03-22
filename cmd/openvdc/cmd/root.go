@@ -37,6 +37,7 @@ func Execute() {
 	RootCmd.AddCommand(rebootCmd)
 	RootCmd.AddCommand(listCmd)
 	RootCmd.AddCommand(cmd.VersionCmd)
+	RootCmd.AddCommand(waitCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
