@@ -8,12 +8,16 @@ import (
 	"time"
 )
 
-func TestCmdConsole_ShowOption(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc")
+func TestCmdRun_NullTemplate(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/null")
 	instance_id := strings.TrimSpace(stdout.String())
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunCmdAndReportFail(t, "openvdc", "console", instance_id, "--show")
+
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
+}
+
+func TestCmdRun_NoneTemplate(t *testing.T) {
+	RunCmdAndExpectFail(t, "openvdc", "run", "none")
 }

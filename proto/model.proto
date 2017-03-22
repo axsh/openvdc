@@ -9,10 +9,11 @@ option go_package = "github.com/axsh/openvdc/model";
 message Instance {
   string id = 1;
   string slave_id = 2;
-  string resource_id = 3;
+  //string resource_id = 3; // Obsolete
   InstanceState last_state = 4;
   FailureMessage latest_failure = 5;
   google.protobuf.Timestamp created_at = 6;
+  Template template = 7;
 }
 
 message InstanceState {
@@ -41,16 +42,6 @@ message FailureMessage {
   }
   ErrorType error_type = 1;
   google.protobuf.Timestamp failed_at = 2;
-}
-
-message Resource {
-  string id = 1;
-  enum State {
-    REGISTERED = 0;
-    UNREGISTERED = 1;
-  }
-  State state = 3;
-  Template template = 4;
 }
 
 message Template {
@@ -83,6 +74,50 @@ message LxcTemplate {
     string bridge = 4;
   }
   repeated Interface interfaces = 6;
+  message Template {
+    // Template specifies the name of the template.
+	  string template = 1;
+
+    // Backend specifies the type of the backend.
+    int32 backend = 2;
+
+    // Distro specifies the name of the distribution.
+    string distro = 3;
+
+    // Release specifies the name/version of the distribution.
+    string release = 4;
+
+    // Arch specified the architecture of the container.
+    string arch = 5;
+
+    // Variant specifies the variant of the image (default: "default").
+    string variant = 6;
+
+    // Image server (default: "images.linuxcontainers.org").
+    string server = 7;
+
+    // GPG keyid (default: 0x...).
+    string key_id = 8;
+
+    // GPG keyserver to use.
+    string key_server = 9;
+
+    // Disable GPG validation (not recommended).
+    bool disable_gpg_validation = 10;
+
+    // Flush the local copy (if present).
+    bool flush_cache = 11;
+
+    // Force the use of the local copy even if expired.
+    bool force_cache = 12;
+
+    // ExtraArgs provides a way to specify template specific args.
+    repeated string extra_args = 13;
+  }
+  Template lxc_template = 7;
 }
 
-message NullTemplate {}
+message NullTemplate {
+  int32 vcpu = 1;
+  int32 memory_gb = 2;
+}

@@ -1,6 +1,5 @@
 {
-  "version": "0.1.0",
-  "echoCommand": true,
+  "version": "2.0.0",
   "showOutput": "silent",
   "tasks": [
     {

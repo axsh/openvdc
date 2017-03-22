@@ -6,6 +6,7 @@ option go_package = "github.com/axsh/openvdc/api";
 
 import "model.proto";
 import "cluster.proto";
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
 
 service InstanceConsole {
   rpc Attach(stream ConsoleIn) returns (stream ConsoleOut){}
@@ -29,7 +30,7 @@ message ConsoleOut {
 service Instance {
   rpc Create (CreateRequest) returns (CreateReply){}
   rpc Start (StartRequest) returns (StartReply){}
-  rpc Run (ResourceRequest) returns (RunReply){}
+  rpc Run (CreateRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
   rpc Destroy (DestroyRequest) returns (DestroyReply){}
   rpc Reboot (RebootRequest) returns (RebootReply){}
@@ -37,11 +38,12 @@ service Instance {
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
   rpc Log (InstanceLogRequest) returns (stream InstanceLogReply){}
+  rpc Event (InstanceEventRequest) returns (stream InstanceEventReply){}
 }
 
 message RunReply {
   string instance_id = 1;
-  string resource_id = 2;
+  //string resource_id = 2; // Obsolete
 }
 
 message StopRequest{
@@ -68,7 +70,8 @@ message ConsoleReply {
 }
 
 message CreateRequest{
-  string resource_id = 1;
+  //string resource_id = 1; // Obsolete
+  model.Template template = 2;
 }
 message CreateReply{
   string instance_id = 1;
@@ -134,23 +137,19 @@ message InstanceLogReply {
   repeated string Line = 1;
 }
 
-service Resource {
-  rpc Register(ResourceRequest) returns (ResourceReply){}
-  rpc Unregister(ResourceIDRequest) returns (ResourceReply){}
-  rpc Show(ResourceIDRequest) returns (ResourceReply){}
+message InstanceEventRequest {
+  InstanceIDRequest Target = 1;
 }
 
-message ResourceRequest {
-  model.Template template = 1;
-}
-message ResourceReply {
-  string ID = 1;
-  model.Resource resource = 2;
-}
-
-message ResourceIDRequest{
-  oneof Key {
-    string ID = 1;
-    string Name = 2;
+message InstanceEventReply {
+  enum EventType {
+    EventNone = 0;
+    EventState = 1;
+  }
+  EventType event_type = 1;
+  google.protobuf.Timestamp event_at = 2;
+  oneof Body {
+    model.InstanceState state = 3;
   }
 }
+

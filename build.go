@@ -33,7 +33,7 @@ func cmd(cmd string, args ...string) string {
 		io.Copy(os.Stdout, outbuf)
 	}()
 	if err := run.Run(); err != nil {
-		log.Fatal("ERROR: ", err, ": ", cmd, strings.Join(args, " "))
+		log.Fatalf("ERROR: %s: %s %s", err, cmd, strings.Join(args, " "))
 	}
 	return strings.TrimSpace(outbuf.String())
 }
@@ -176,7 +176,7 @@ Environment Variables:
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'", "-v", "./cmd/openvdc-scheduler")
 
 	// Build Acceptance Test binary
-	os.Chdir("./ci/acceptance-test/tests")
+	os.Chdir("./ci/citest/acceptance-test/tests")
 	cmd("govendor", "sync")
 	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test")
 }

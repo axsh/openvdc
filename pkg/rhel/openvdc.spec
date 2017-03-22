@@ -14,7 +14,7 @@ License: LGPLv3
 BuildArch: x86_64
 
 BuildRequires: rpmdevtools lxc-devel git
-BuildRequires: golang >= 1.6
+BuildRequires: golang >= 1.7
 
 Requires: mesosphere-zookeeper mesos
 %{systemd_requires}
@@ -51,7 +51,7 @@ ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
-cp ci/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp ci/citest/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"

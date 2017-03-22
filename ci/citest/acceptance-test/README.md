@@ -12,7 +12,7 @@ This is the environment used on the OpenVDC CI to run the integration tests. To 
 BRANCH="master"
 RELEASE_SUFFIX="current"
 
-# Set to "1" if you don't want to remove the Docker container after running
+# Set to "1" if you want to remove the Docker container after running
 REBUILD="0"
 
 # This variable holds the directory on the *host* that will be bind mounted
@@ -40,7 +40,7 @@ mkdir -p $HOME/work/openvdc-multibox-data/openvdc-ci/boxes
 mkdir -p $HOME/work/openvdc-multibox-data/openvdc-ci/branches
 ```
 
-Now edit `ci/acceptance-test/multibox/config.source` and tell it to use those directories.
+Now edit `ci/citest/acceptance-test/multibox/config.source` and tell it to use those directories.
 
 ```
 #BOXES_DIR="/data/openvdc-ci/boxes"
@@ -53,7 +53,7 @@ CACHE_DIR="$HOME/work/openvdc-multibox-data/openvdc-ci/branches"
 Now build the environment.
 
 ```
-cd ci/acceptance-test/multibox/
+cd ci/citest/acceptance-test/multibox/
 BRANCH=master RELEASE_SUFFIX=current REBUILD=false ./build.sh
 ```
 
@@ -75,13 +75,13 @@ Set up `.openvdc/config.toml` with the correct configuration so the `openvdc` co
 
 ```
 mkdir ~/.openvdc
-cp ci/acceptance-test/dot_openvdc-config.toml ~/.openvdc/config.toml
+cp ci/citest/acceptance-test/dot_openvdc-config.toml ~/.openvdc/config.toml
 ```
 
 Now you can run the tests
 
 ```
-cd ci/acceptance-test/tests
+cd ci/citest/acceptance-test/tests
 go test -v -tags=acceptance ./...
 ```
 
