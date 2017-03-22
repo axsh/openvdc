@@ -30,8 +30,6 @@ func Execute() {
 	RootCmd.AddCommand(runCmd)
 	RootCmd.AddCommand(stopCmd)
 	RootCmd.AddCommand(consoleCmd)
-	RootCmd.AddCommand(registerCmd)
-	RootCmd.AddCommand(unregisterCmd)
 	RootCmd.AddCommand(startCmd)
 	RootCmd.AddCommand(showCmd)
 	RootCmd.AddCommand(TemplateCmd)
@@ -39,6 +37,7 @@ func Execute() {
 	RootCmd.AddCommand(rebootCmd)
 	RootCmd.AddCommand(listCmd)
 	RootCmd.AddCommand(cmd.VersionCmd)
+	RootCmd.AddCommand(waitCmd)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
