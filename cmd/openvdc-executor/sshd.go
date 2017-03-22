@@ -135,7 +135,8 @@ Done:
 		select {
 		case r := <-req:
 			if r == nil {
-				break Done
+				quit <- errors.New("Session request is nil")
+				break
 			}
 			log := log.WithField("sshreq", r.Type)
 			reply := true
