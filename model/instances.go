@@ -1,10 +1,11 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"path"
 
+	"github.com/axsh/openvdc/model/backend"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
@@ -19,6 +20,7 @@ type InstanceOps interface {
 	FilterByAgentMesosID(agentID string) ([]*Instance, error)
 	Update(*Instance) error
 	Filter(limit int, cb func(*Instance) int) error
+	WaitStateUpdate(id string) (*InstanceState, error)
 }
 
 const instancesBaseKey = "instances"
@@ -252,6 +254,42 @@ func (i *instances) Filter(limit int, cb func(*Instance) int) error {
 		}
 	}
 	return nil
+}
+
+func (i *instances) fmtKey(id string, subkeys ...string) string {
+	key := path.Join("/", instancesBaseKey, id)
+	if len(subkeys) > 0 {
+		key += "/" + path.Join(subkeys...)
+	}
+	return path.Clean(key)
+}
+
+func (i *instances) WaitStateUpdate(id string) (*InstanceState, error) {
+	bk, err := i.connection()
+	if err != nil {
+		return nil, err
+	}
+	watcher, ok := bk.(backend.ModelWatcher)
+	if !ok {
+		return nil, errors.Errorf("%T does not support backend.ModelWatcher", bk)
+	}
+	ev, err := watcher.Watch(i.fmtKey(id, "/state"))
+	if err != nil {
+		return nil, err
+	}
+	if ev != backend.EventModified {
+		return nil, errors.Errorf("Unexpected event: %s", ev)
+	}
+
+	lkey, err := bk.FindLastKey(i.fmtKey(id, "/state/state-"))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed FindLaskKey(%s)", i.fmtKey(id, "/state/state-"))
+	}
+	res := &InstanceState{}
+	if err := bk.Find(lkey, res); err != nil {
+		return nil, errors.Wrapf(err, "Failed Find(%s)", lkey)
+	}
+	return res, nil
 }
 
 func (i *Instance) ResourceTemplate() ResourceTemplate {

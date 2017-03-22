@@ -6,6 +6,7 @@ option go_package = "github.com/axsh/openvdc/api";
 
 import "model.proto";
 import "cluster.proto";
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
 
 service InstanceConsole {
   rpc Attach(stream ConsoleIn) returns (stream ConsoleOut){}
@@ -37,6 +38,7 @@ service Instance {
   rpc Show (InstanceIDRequest) returns (InstanceReply){}
   rpc List (InstanceListRequest) returns (InstanceListReply){}
   rpc Log (InstanceLogRequest) returns (stream InstanceLogReply){}
+  rpc Event (InstanceEventRequest) returns (stream InstanceEventReply){}
 }
 
 message RunReply {
@@ -135,3 +137,20 @@ message InstanceLogRequest {
 message InstanceLogReply {
   repeated string Line = 1;
 }
+
+message InstanceEventRequest {
+  InstanceIDRequest Target = 1;
+}
+
+message InstanceEventReply {
+  enum EventType {
+    EventNone = 0;
+    EventState = 1;
+  }
+  EventType event_type = 1;
+  google.protobuf.Timestamp event_at = 2;
+  oneof Body {
+    model.InstanceState state = 3;
+  }
+}
+

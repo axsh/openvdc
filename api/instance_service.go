@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
+	"github.com/golang/protobuf/ptypes"
 	util "github.com/mesos/mesos-go/mesosutil"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -358,6 +360,43 @@ func (s *InstanceAPI) Log(in *InstanceLogRequest, stream Instance_LogServer) err
 	for _, log := range result {
 		err := stream.Send(&InstanceLogReply{
 			Line: []string{log.Log},
+		})
+		if err != nil {
+			return errors.Wrap(err, "stream.Send")
+		}
+	}
+	return nil
+}
+
+func (s *InstanceAPI) Event(in *InstanceEventRequest, stream Instance_EventServer) error {
+	// in.Key takes nil possibly.
+	if in.GetTarget() == nil || in.GetTarget().GetKey() == nil {
+		log.Error("Invalid instance identifier")
+		return fmt.Errorf("Invalid instance identifier")
+	}
+
+	// TODO: handle the case for in.GetName() is received.
+	_, err := model.Instances(stream.Context()).FindByID(in.GetTarget().GetID())
+	if err != nil {
+		log.WithError(err).WithField("key", in.GetTarget().GetID()).Error("Failed Instances.FindByID")
+		return err
+	}
+
+	for {
+		lastState, err := model.Instances(stream.Context()).WaitStateUpdate(in.GetTarget().GetID())
+		if err != nil {
+			return errors.Wrap(err, "model.Instances.WaitStateUpdate")
+		}
+		pnow, err := ptypes.TimestampProto(time.Now())
+		if err != nil {
+			return errors.Wrap(err, "ptypes.TimestampProto")
+		}
+		err = stream.Send(&InstanceEventReply{
+			EventType: InstanceEventReply_EventState,
+			EventAt:   pnow,
+			Body: &InstanceEventReply_State{
+				State: lastState,
+			},
 		})
 		if err != nil {
 			return errors.Wrap(err, "stream.Send")
