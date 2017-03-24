@@ -38,7 +38,7 @@ func init() {
 		Goals: []InstanceState_State{InstanceState_QUEUED, InstanceState_TERMINATED},
 	}
 	instanceStateDefs[InstanceState_QUEUED] = &stateDef{
-		Nexts: []InstanceState_State{InstanceState_STARTING},
+		Nexts: []InstanceState_State{InstanceState_STARTING, InstanceState_RUNNING},
 		Goals: []InstanceState_State{InstanceState_RUNNING, InstanceState_STOPPED},
 	}
 	instanceStateDefs[InstanceState_STARTING] = &stateDef{
