@@ -31,13 +31,18 @@ func TestLXCInstance_NICx2(t *testing.T) {
 	`{"interfaces":[{"type":"veth", "bridge":"linux"}, {"type":"veth", "bridge":"linux"}]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
-	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
+	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "RUNNING")
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
-	stdout, _, err := RunSsh(executor_lxc_ip, "brctl show br0")
+	stdout, _, err := RunSsh(executor_lxc_ip, "/usr/sbin/brctl show br0")
 	if err != nil {
 		t.Error(err)
 	}
+	/* Expected Output
+	bridge name bridge id         STP  enabled interfaces
+	br0         8000.fe0e49305657	no		       i-0000000001_00
+	                                           i-0000000001_01
+	*/
 	lines := bufio.NewScanner(stdout)
 	lines.Scan() // Skip "brctl show" header
 	lines.Scan()
@@ -48,20 +53,20 @@ func TestLXCInstance_NICx2(t *testing.T) {
 	line_if00.Scan()
 	line_if00.Scan()
 	line_if00.Scan()
-	if line_if00.Text() != instance_id + "_01" {
+	t.Log(line_if00.Text())
+	if line_if00.Text() != instance_id + "_00" {
 		t.Errorf("Interface %s is not attached", instance_id+"_00")
 	}
+	lines.Scan()
 	line_if01 := bufio.NewScanner(bytes.NewReader(lines.Bytes()))
 	line_if01.Split(bufio.ScanWords)
-	// "br0          8000.080027a02faf       no              i-00000000_01"
+	// "                                    i-00000000_01"
 	line_if01.Scan()
-	line_if01.Scan()
-	line_if01.Scan()
-	line_if01.Scan()
+	t.Log(line_if01.Text())
 	if line_if01.Text() != instance_id + "_01" {
 		t.Errorf("Interface %s is not attached", instance_id+"_01")
 	}
 
-	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "TERMINATED")
 }
