@@ -34,8 +34,8 @@ func TestCmdTemplateShow(t *testing.T) {
 	{
 		stdout, _ := RunCmdAndReportFail(t, "openvdc", "template", "show", "/var/tmp/fixtures/lxc.json")
 		js := gjson.ParseBytes(stdout.Bytes())
-		if !js.Get("lxcTemplate").Exists() {
-			t.Error("lxcTemplate key not found")
+		if !js.Get("lxcImage").Exists() {
+			t.Error("lxcImage key not found")
 		}
 	}
 
