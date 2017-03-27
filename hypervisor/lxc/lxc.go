@@ -76,10 +76,14 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-var lxcArch = map[string]string {
+var lxcArch = map[string]string{
 	"amd64": "amd64",
-	"386": "i386",
+	"386":   "i386",
 	// TODO: powerpc, arm, arm64
+}
+
+func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
+	return nil
 }
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
@@ -104,9 +108,9 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	d.log.Infoln("Creating lxc-container...")
 	lxcTmpl := lxcResTmpl.GetLxcTemplate()
-	d.template = lxc.TemplateOptions {
-		Template: lxcTmpl.Template,
-		Arch: lxcTmpl.Arch,
+	d.template = lxc.TemplateOptions{
+		Template:  lxcTmpl.Template,
+		Arch:      lxcTmpl.Arch,
 		ExtraArgs: lxcTmpl.ExtraArgs,
 	}
 	switch lxcTmpl.Template {

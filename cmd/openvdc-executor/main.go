@@ -72,11 +72,17 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.WithError(err).Error("Couldn't send status update")
 	}
 
-	instanceState, containerState, err := exec.getStates(driver, taskInfo.GetTaskId().GetValue())
+	instanceID := taskInfo.GetTaskId().GetValue()
 
+	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
-		log.WithError(err).Error("Failed to get instance states")
+		log.WithError(err).Error("Failed model.Connect")
 	}
+	instance, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch instance %s", instanceID)
+	}
+	instanceState := instance.GetLastState()
 
 	if instanceState.State == model.InstanceState_QUEUED {
 		err = exec.bootInstance(driver, taskInfo)
@@ -90,57 +96,18 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			}
 		}
 	} else {
-		err = exec.recoverInstance(driver, taskInfo.GetTaskId().GetValue(), instanceState, containerState)
+		err = exec.recoverInstance(taskInfo.GetTaskId().GetValue(), *instanceState)
 	}
 }
 
-func (exec *VDCExecutor) recoverInstance(driver exec.ExecutorDriver, instanceID string, instanceState model.InstanceState, containerState hypervisor.ContainerState) error {
-	switch instanceState.State {
-
-	//TODO: Handle all other possible scenarios as well.
-
-	case model.InstanceState_RUNNING:
-		if containerState == hypervisor.ContainerState_STOPPED {
-			hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-			if err != nil {
-				return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instanceID)
-			}
-
-			err = hv.StartInstance()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to start instance:  %s", instanceID)
-			}
-		}
-
-	case model.InstanceState_STOPPED:
-		if containerState == hypervisor.ContainerState_STOPPED {
-			hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-			if err != nil {
-				return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instanceID)
-			}
-
-			err = hv.StartInstance()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to start instance:  %s", instanceID)
-			}
-
-			err = hv.StopInstance()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to stop instance:  %s", instanceID)
-			}
-		}
-
-		//case model.InstanceState_STARTING:
-
-		//case model.InstanceState_STOPPING:
-
-		//case model.InstanceState_SHUTTINGDOWN:
-
-		//case model.InstanceState_TERMINATED:
-
-	default:
-		err := fmt.Errorf("Couldn't recover instance due to state mismatch:")
-		return errors.Wrapf(err, "InstanceState:%s,  ContainerState:%v", instanceState.State, containerState)
+func (exec *VDCExecutor) recoverInstance(instanceID string, instanceState model.InstanceState) error {
+	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	if err != nil {
+		return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instanceID)
+	}
+	err = hv.Recover(instanceState)
+	if err != nil {
+		return errors.Wrapf(err, "Hypervisor failed to recover instance. InstanceID: %s", instanceID)
 	}
 	return nil
 }

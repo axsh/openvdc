@@ -28,6 +28,11 @@ func (h *NullHypervisorDriver) GetContainerState(*model.Instance) (hypervisor.Co
 	return hypervisor.ContainerState_NONE, nil
 }
 
+func (h *NullHypervisorDriver) Recover(instanceState model.InstanceState) error {
+	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("Recover")
+	return nil
+}
+
 func (h *NullHypervisorDriver) StartInstance() error {
 	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("StartInstance")
 	return nil

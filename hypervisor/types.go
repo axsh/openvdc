@@ -25,6 +25,7 @@ type HypervisorProvider interface {
 }
 
 type HypervisorDriver interface {
+	Recover(model.InstanceState) error
 	CreateInstance(*model.Instance, model.ResourceTemplate) error
 	DestroyInstance() error
 	StartInstance() error
