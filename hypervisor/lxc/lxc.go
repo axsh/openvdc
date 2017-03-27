@@ -31,34 +31,6 @@ func (p *LXCHypervisorProvider) Name() string {
 	return "lxc"
 }
 
-func (d *LXCHypervisorDriver) GetContainerState(i *model.Instance) (hypervisor.ContainerState, error) {
-
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
-
-	if err != nil {
-		return hypervisor.ContainerState_NONE, err
-	}
-
-	var containerState hypervisor.ContainerState
-
-	switch c.State() {
-	case lxc.STOPPED:
-		containerState = hypervisor.ContainerState_STOPPED
-	case lxc.STARTING:
-		containerState = hypervisor.ContainerState_STARTING
-	case lxc.RUNNING:
-		containerState = hypervisor.ContainerState_RUNNING
-	case lxc.STOPPING:
-		containerState = hypervisor.ContainerState_STOPPING
-	case lxc.ABORTING:
-		containerState = hypervisor.ContainerState_ABORTING
-	default:
-		containerState = hypervisor.ContainerState_NONE
-	}
-
-	return containerState, err
-}
-
 func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
 	return &LXCHypervisorDriver{
 		log:     log.WithField("hypervisor", "lxc"),
@@ -83,6 +55,16 @@ var lxcArch = map[string]string{
 }
 
 func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+
+	if err != nil {
+		return errors.Wrapf(err, "HypervisorDriver failed to find container. InstanceID: %s", d.name)
+	}
+
+	switch c.State() {
+	default:
+	}
+
 	return nil
 }
 

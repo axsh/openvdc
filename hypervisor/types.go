@@ -32,7 +32,6 @@ type HypervisorDriver interface {
 	StopInstance() error
 	RebootInstance() error
 	InstanceConsole() Console
-	GetContainerState(*model.Instance) (ContainerState, error)
 }
 
 type Console interface {
