@@ -112,33 +112,6 @@ func (exec *VDCExecutor) recoverInstance(instanceID string, instanceState model.
 	return nil
 }
 
-func (exec *VDCExecutor) getStates(driver exec.ExecutorDriver, instanceID string) (model.InstanceState, hypervisor.ContainerState, error) {
-	ctx, err := model.Connect(context.Background(), &zkAddr)
-	if err != nil {
-		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Failed model.Connect")
-	}
-
-	instance, err := model.Instances(ctx).FindByID(instanceID)
-
-	if err != nil {
-		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Failed to fetch instance %s", instanceID)
-	}
-
-	instanceState := instance.GetLastState()
-
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Failed to create hypervisor driver. InstanceID: %s", instanceID)
-	}
-
-	containerState, err := hv.GetContainerState(instance)
-	if err != nil {
-		return model.InstanceState{}, hypervisor.ContainerState_NONE, errors.Wrapf(err, "Hypervisor failed to get container state. InstanceID: %s", instanceID)
-	}
-
-	return *instanceState, containerState, nil
-}
-
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
 	instanceID := taskInfo.GetTaskId().GetValue()
 	log := log.WithFields(logrus.Fields{
