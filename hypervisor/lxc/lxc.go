@@ -61,7 +61,26 @@ func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
 		return errors.Wrapf(err, "HypervisorDriver failed to find container. InstanceID: %s", d.name)
 	}
 
-	switch c.State() {
+	switch instanceState.State {
+	case model.InstanceState_RUNNING:
+		if c.State() == lxc.STOPPED {
+			err := d.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.name)
+			}
+		}
+
+	case model.InstanceState_STOPPED:
+		if c.State() == lxc.STOPPED {
+			err := d.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.name)
+			}
+			err = d.StopInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to stop instance:  %s", d.name)
+			}
+		}
 	default:
 	}
 
