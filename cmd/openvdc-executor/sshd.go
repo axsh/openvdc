@@ -18,20 +18,24 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+type HypervisorProviderFinder interface {
+	GetHypervisorProvider() hypervisor.HypervisorProvider
+}
+
 type SSHServer struct {
 	config   *ssh.ServerConfig
 	listener net.Listener
-	provider hypervisor.HypervisorProvider
+	finder   HypervisorProviderFinder
 }
 
-func NewSSHServer(provider hypervisor.HypervisorProvider) *SSHServer {
+func NewSSHServer(finder HypervisorProviderFinder) *SSHServer {
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
 
 	return &SSHServer{
-		config:   config,
-		provider: provider,
+		config: config,
+		finder: finder,
 	}
 }
 
@@ -90,7 +94,13 @@ func (sshd *SSHServer) handleChannels(chans <-chan ssh.NewChannel, instanceID st
 			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 			continue
 		}
-		session := sshSession{instanceID: instanceID, sshd: sshd}
+		provider := sshd.finder.GetHypervisorProvider()
+		if provider == nil {
+			log.Error("HypervisorProvider is not ready")
+			newChannel.Reject(ssh.Prohibited, "HypervisorProvider is not ready")
+			continue
+		}
+		session := sshSession{instanceID: instanceID, sshd: sshd, provider: provider}
 		go session.handleChannel(newChannel)
 	}
 }
@@ -98,6 +108,7 @@ func (sshd *SSHServer) handleChannels(chans <-chan ssh.NewChannel, instanceID st
 type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
+	provider   hypervisor.HypervisorProvider
 }
 
 func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
@@ -123,7 +134,7 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		log.WithField("instance_id", session.instanceID).Info("Session closed")
 	}()
 
-	driver, err := session.sshd.provider.CreateDriver(session.instanceID)
+	driver, err := session.provider.CreateDriver(session.instanceID)
 	if err != nil {
 		log.Error(err)
 		return
