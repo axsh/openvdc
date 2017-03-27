@@ -43,8 +43,8 @@ func (d *testDriver) DestroyInstance() error {
 	return nil
 }
 
-func (d *testDriver) GetContainerState(*model.Instance) (ContainerState, error) {
-	return ContainerState_NONE, nil
+func (d *testDriver) Recover(model.InstanceState) error {
+	return nil
 }
 
 type testConsole struct {
