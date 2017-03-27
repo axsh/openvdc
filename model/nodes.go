@@ -56,7 +56,7 @@ func (i *nodes) Add(n Node) error {
 		return err
 	}
 
-	if err = bk.Backend().Create(fmt.Sprintf("%s/%v", nodesBaseKey, n.GetAgentID()), buf); err != nil {
+	if err = bk.Backend().Create(fmt.Sprintf("%s/%s", nodesBaseKey, n.GetAgentID()), buf); err != nil {
 		return nil
 	}
 
