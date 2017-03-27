@@ -345,8 +345,8 @@ func (sched *VDCScheduler) NewExecutor(hypervisorName string) *mesos.ExecutorInf
 		ExecutorId: util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 		Name:       proto.String("VDC Executor"),
 		Command: &mesos.CommandInfo{
-			Value: proto.String(fmt.Sprintf("%s --hypervisor=%s --zk=%s",
-				ExecutorPath, hypervisorName, sched.zkAddr.String())),
+			Value: proto.String(fmt.Sprintf("%s --zk=%s",
+				ExecutorPath, sched.zkAddr.String())),
 		},
 	}
 	return executor

@@ -545,7 +545,6 @@ func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executo
 }
 
 func init() {
-	viper.SetDefault("hypervisor.driver", "null")
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
 	viper.SetDefault("executor-api.listen", "0.0.0.0:"+defaultExecutorAPIPort)
 	viper.SetDefault("executor-api.advertise-ip", "")
@@ -555,8 +554,6 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
 	pfs.String("config", DefaultConfPath, "Load config file from the path")
-	pfs.String("hypervisor", viper.GetString("hypervisor.driver"), "Hypervisor driver name")
-	viper.BindPFlag("hypervisor.driver", pfs.Lookup("hypervisor"))
 	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper address")
 	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
 }
