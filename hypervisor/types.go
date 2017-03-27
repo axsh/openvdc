@@ -10,15 +10,6 @@ import (
 
 type ContainerState int
 
-const (
-	ContainerState_STOPPED ContainerState = iota + 1
-	ContainerState_STARTING
-	ContainerState_RUNNING
-	ContainerState_STOPPING
-	ContainerState_ABORTING
-	ContainerState_NONE
-)
-
 type HypervisorProvider interface {
 	Name() string
 	CreateDriver(instanceID string) (HypervisorDriver, error)
