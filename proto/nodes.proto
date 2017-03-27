@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+
+package model;
+
+option go_package = "github.com/axsh/openvdc/model";
+
+message AgentNode {
+  string agentmesosid = 1;
+  string agentid = 2;
+  google.protobuf.Timestamp created_at = 3;
+}

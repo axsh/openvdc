@@ -17,9 +17,10 @@ var hostName string
 
 func init() {
 	createCmd.PersistentFlags().StringVarP(&hostName, "name", "n", "", "Existing host name")
+	createCmd.Flags().Bool("auto-recovery", true, "Set auto recovery flag")
 }
 
-func prepareCreateAPICall(templateSlug string, args []string) *api.CreateRequest {
+func prepareCreateAPICall(templateSlug string, args []string, flags *pflag.FlagSet) *api.CreateRequest {
 	rt, err := util.FetchTemplate(templateSlug)
 	if err != nil {
 		switch err {
@@ -32,8 +33,10 @@ func prepareCreateAPICall(templateSlug string, args []string) *api.CreateRequest
 	if len(args) > 1 {
 		rt.Template.Template = util.MergeTemplateParams(rt, args[1:])
 	}
+	autoRecovery, _ := flags.GetBool("auto-recovery")
 	req := &api.CreateRequest{
-		Template: rt.ToModel(),
+		Template:     rt.ToModel(),
+		AutoRecovery: autoRecovery,
 	}
 	log.Printf("Found template: %s", templateSlug)
 	return req
@@ -56,7 +59,7 @@ var createCmd = &cobra.Command{
 		}
 
 		templateSlug := args[0]
-		req := prepareCreateAPICall(templateSlug, args)
+		req := prepareCreateAPICall(templateSlug, args, cmd.Flags())
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 			res, err := c.Create(context.Background(), req)

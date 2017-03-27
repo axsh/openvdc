@@ -13,6 +13,16 @@ message Instance {
   InstanceState last_state = 4;
   google.protobuf.Timestamp created_at = 5;
   Template template = 6;
+  bool auto_recovery = 7;
+  ConnectionStatus connection_status = 8;
+}
+
+message ConnectionStatus {
+  enum Status {
+    CONNECTED = 0;
+    NOT_CONNECTED = 1;
+  }
+  Status status = 1;
 }
 
 message InstanceState {

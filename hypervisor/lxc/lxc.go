@@ -12,10 +12,10 @@ import (
 	"unsafe"
 
 	log "github.com/Sirupsen/logrus"
-  "github.com/kr/pty"
-	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
+	"github.com/kr/pty"
+	"github.com/pkg/errors"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 	"runtime"
 )
@@ -29,6 +29,34 @@ type LXCHypervisorProvider struct {
 
 func (p *LXCHypervisorProvider) Name() string {
 	return "lxc"
+}
+
+func (d *LXCHypervisorDriver) GetContainerState(i *model.Instance) (hypervisor.ContainerState, error) {
+
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+
+	if err != nil {
+		return hypervisor.ContainerState_NONE, err
+	}
+
+	var containerState hypervisor.ContainerState
+
+	switch c.State() {
+	case lxc.STOPPED:
+		containerState = hypervisor.ContainerState_STOPPED
+	case lxc.STARTING:
+		containerState = hypervisor.ContainerState_STARTING
+	case lxc.RUNNING:
+		containerState = hypervisor.ContainerState_RUNNING
+	case lxc.STOPPING:
+		containerState = hypervisor.ContainerState_STOPPING
+	case lxc.ABORTING:
+		containerState = hypervisor.ContainerState_ABORTING
+	default:
+		containerState = hypervisor.ContainerState_NONE
+	}
+
+	return containerState, err
 }
 
 func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
@@ -227,11 +255,11 @@ func (d *LXCHypervisorDriver) newContainer() (*lxc.Container, error) {
 }
 
 type lxcConsole struct {
-	lxc *LXCHypervisorDriver
+	lxc      *LXCHypervisorDriver
 	attached *os.Process
-	wg *sync.WaitGroup
-	pty *os.File
-	tty string
+	wg       *sync.WaitGroup
+	pty      *os.File
+	tty      string
 }
 
 func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
@@ -246,8 +274,8 @@ func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
 		return fmt.Errorf("lxc-container can not perform console")
 	}
 
-  return con.attachShell(c, stdin, stdout, stderr)
-  //return con.console(c, stdin, stdout, stderr)
+	return con.attachShell(c, stdin, stdout, stderr)
+	//return con.console(c, stdin, stdout, stderr)
 }
 
 func (con *lxcConsole) Wait() error {
@@ -290,7 +318,7 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 	defer ftty.Close()
 
 	wg.Add(1)
-	go func(){
+	go func() {
 		defer wg.Done()
 		io.Copy(fpty, stdin)
 	}()
@@ -317,7 +345,7 @@ func (con *lxcConsole) attachShell(c *lxc.Container, stdin io.Reader, stdout, st
 	}
 
 	options := lxc.DefaultAttachOptions
-	options.StdinFd	= ftty.Fd()
+	options.StdinFd = ftty.Fd()
 	options.StdoutFd = ftty.Fd()
 	options.StderrFd = ftty.Fd()
 	options.ClearEnv = true
@@ -355,9 +383,9 @@ func (con *lxcConsole) console(c *lxc.Container, stdin io.Reader, stdout, stderr
 	go io.Copy(stderr, os.Stderr)
 
 	options := lxc.DefaultConsoleOptions
-	options.StdinFd					= ftty.Fd()
-	options.StdoutFd				= ftty.Fd()
-	options.StderrFd				= ftty.Fd()
+	options.StdinFd = ftty.Fd()
+	options.StdoutFd = ftty.Fd()
+	options.StderrFd = ftty.Fd()
 	options.EscapeCharacter = '~'
 
 	if err := c.Console(options); err != nil {
