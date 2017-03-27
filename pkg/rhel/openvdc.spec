@@ -56,6 +56,8 @@ cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
+mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share
+install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc
 
 %package cli
 Summary: OpenVDC cli
@@ -69,22 +71,56 @@ The OpenVDC commandline interface.
 /usr/bin/openvdc
 /opt/axsh/openvdc/bin/openvdc
 
-#TODO: Different packages for executor-lxc and executor-null
 %package executor
 Summary: OpenVDC executor
-Requires: lxc
-Requires: lxc-templates
-Requires: bridge-utils
 
 %description executor
-This is a 'stub'. An appropriate message must be substituted at some point.
+OpenVDC executor common package.
 
 %files executor
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-executor
 %dir /etc/openvdc
+
+%package executor-null
+Summary: OpenVDC executor (null driver)
+Requires: openvdc-executor
+
+%post executor-null
+if [ -d /etc/mesos-slave ]; then
+  if [ ! -f /etc/mesos-slave/attributes ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.null /etc/mesos-slave/attributes
+  fi
+fi
+
+
+%description executor-null
+Null driver configuration package for OpenVDC executor.
+
+%files executor-null
 %config(noreplace) /etc/openvdc/executor.toml
+
+%package executor-lxc
+Summary: OpenVDC executor (LXC driver)
+Requires: openvdc-executor
+Requires: lxc
+Requires: lxc-templates
+Requires: bridge-utils
+
+%description executor-lxc
+LXC driver configuration package for OpenVDC executor.
+
+%files executor-lxc
+%config(noreplace) /etc/openvdc/executor.toml
+
+%post executor-lxc
+if [ -d /etc/mesos-slave ]; then
+  if [ ! -f /etc/mesos-slave/attributes ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.lxc /etc/mesos-slave/attributes
+  fi
+fi
+
 
 %package scheduler
 Summary: OpenVDC scheduler
