@@ -81,6 +81,10 @@ OpenVDC executor common package.
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-executor
+%dir /opt/axsh/openvdc/share
+%dir /opt/axsh/openvdc/share/mesos-slave
+/opt/axsh/openvdc/share/mesos-slave/attributes.null
+/opt/axsh/openvdc/share/mesos-slave/attributes.lxc
 %dir /etc/openvdc
 
 %package executor-null
