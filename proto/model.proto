@@ -11,9 +11,9 @@ message Instance {
   string slave_id = 2;
   //string resource_id = 3; // Obsolete
   InstanceState last_state = 4;
-  FailureMessage latest_failure = 5;
-  google.protobuf.Timestamp created_at = 6;
-  Template template = 7;
+  google.protobuf.Timestamp created_at = 5;
+  Template template = 6;
+  FailureMessage latest_failure = 7;
 }
 
 message InstanceState {
