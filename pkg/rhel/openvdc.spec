@@ -17,6 +17,7 @@ BuildRequires: rpmdevtools lxc-devel git
 BuildRequires: golang >= 1.7
 
 Requires: mesosphere-zookeeper mesos
+Requires: bridge-utils
 %{systemd_requires}
 Requires: openvdc-cli
 Requires: openvdc-executor
@@ -46,6 +47,8 @@ cd "${GOPATH}/src/github.com/axsh/openvdc"
 cd "${GOPATH}/src/github.com/axsh/openvdc"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
+mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc
+mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
@@ -53,7 +56,7 @@ cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp ci/citest/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
-mkdir -p "${RPM_BUILD_ROOT}/etc/openvdc"
+cp -r pkg/conf/scripts/ "$RPM_BUILD_ROOT"/etc/openvdc
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 
@@ -85,6 +88,7 @@ This is a 'stub'. An appropriate message must be substituted at some point.
 /opt/axsh/openvdc/bin/openvdc-executor
 %dir /etc/openvdc
 %config(noreplace) /etc/openvdc/executor.toml
+%config(noreplace) /etc/openvdc/scripts/*
 
 %package scheduler
 Summary: OpenVDC scheduler
