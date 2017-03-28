@@ -3,12 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math/rand"
 	"net"
 	"os"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api/executor"
@@ -130,7 +127,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -195,7 +192,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -214,7 +211,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	log.Infof("Starting instance")
 	err = hv.StartInstance()
 	if err != nil {
-		log.Error("Failed StartInstance")
+		log.WithError(err).Error("Failed StartInstance")
 		return err
 	}
 	log.Infof("Instance started successfully")
@@ -247,7 +244,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -345,7 +342,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
-			log.WithField("state", finState).Error("Failed Instances.UpdateState")
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
@@ -375,7 +372,7 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 
 	err = hv.DestroyInstance()
 	if err != nil {
-		log.Error("Failed DestroyInstance")
+		log.WithError(err).Error("Failed DestroyInstance")
 		return err
 	}
 	log.Infof("Instance terminated successfully")
@@ -458,8 +455,7 @@ var DefaultConfPath string
 var zkAddr backend.ZkEndpoint
 
 const defaultExecutorAPIPort = "19372"
-
-var defaultSSHPortRange = [2]int{29876, 39876}
+const defaultSSHPort = "29876"
 
 func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executor.ExecutorAPIServer {
 	s := executor.NewExecutorAPIServer(&zkAddr, ctx)
@@ -470,9 +466,9 @@ func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executo
 func init() {
 	viper.SetDefault("hypervisor.driver", "null")
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
-	viper.SetDefault("executor-api.listen", "0.0.0.0:19372")
+	viper.SetDefault("executor-api.listen", "0.0.0.0:"+defaultExecutorAPIPort)
 	viper.SetDefault("executor-api.advertise-ip", "")
-	viper.SetDefault("console.ssh.listen", "")
+	viper.SetDefault("console.ssh.listen", "0.0.0.0:"+defaultSSHPort)
 	viper.SetDefault("console.ssh.advertise-ip", "")
 
 	cobra.OnInitialize(initConfig)
@@ -482,11 +478,6 @@ func init() {
 	viper.BindPFlag("hypervisor.driver", pfs.Lookup("hypervisor"))
 	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper address")
 	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
-}
-
-func randomPort(min, max int) int {
-	rand.Seed(time.Now().Unix())
-	return rand.Intn(max-min) + min
 }
 
 func initConfig() {
@@ -504,7 +495,7 @@ func initConfig() {
 			// Ignore default conf file does not exist.
 			return
 		}
-		log.Fatalf("Failed to load config %s: %v", viper.ConfigFileUsed(), err)
+		log.WithError(err).Fatalf("Failed to load config %s", viper.ConfigFileUsed())
 	}
 }
 
@@ -524,6 +515,9 @@ func execute(cmd *cobra.Command, args []string) {
 	if ok == false {
 		log.Fatalln("Unknown hypervisor name:", viper.GetString("hypervisor.driver"))
 	}
+	if err := provider.LoadConfig(viper.GetViper()); err != nil {
+		log.WithError(err).Fatal("Failed to apply hypervisor configuration")
+	}
 	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
 
 	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
@@ -533,13 +527,13 @@ func execute(cmd *cobra.Command, args []string) {
 	defer func() {
 		err := model.ClusterClose(ctx)
 		if err != nil {
-			log.Error(err)
+			log.WithError(err).Error("Failed ClusterClose")
 		}
 	}()
 
 	executorAPIListener, err := net.Listen("tcp", viper.GetString("executor-api.listen"))
 	if err != nil {
-		log.Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
+		log.WithError(err).Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
 	}
 	s := startExecutorAPIServer(ctx, executorAPIListener)
 	defer s.GracefulStop()
@@ -554,20 +548,9 @@ func execute(cmd *cobra.Command, args []string) {
 		log.Infof("Exposed Executor gRPC API on %s", exposedExecutorAPIAddr)
 	}
 
-	sshPort := strconv.Itoa(randomPort(defaultSSHPortRange[0], defaultSSHPortRange[1]))
-	sshListenIP := "0.0.0.0"
-	if viper.GetString("console.ssh.listen") != "" {
-		var port string
-		sshListenIP, port, err = net.SplitHostPort(viper.GetString("console.ssh.listen"))
-		if err != nil {
-			log.WithError(err).Fatal("Failed to parse host:port: ", viper.GetString("console.ssh.listen"))
-		}
-		sshPort = port
-	}
-	sshListenAddr := net.JoinHostPort(sshListenIP, sshPort)
-	sshListener, err := net.Listen("tcp", sshListenAddr)
+	sshListener, err := net.Listen("tcp", viper.GetString("console.ssh.listen"))
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to listen SSH on %s", sshListenAddr)
+		log.WithError(err).Fatalf("Failed to listen SSH on %s", sshListener.Addr().String())
 	}
 	defer sshListener.Close()
 
@@ -576,10 +559,14 @@ func execute(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatal("Failed to setup SSH Server")
 	}
 	go sshd.Run(sshListener)
-	log.Infof("Listening SSH on %s", sshListenAddr)
+	log.Infof("Listening SSH on %s", sshListener.Addr().String())
 	exposedSSHAddr := sshListener.Addr().String()
 	if viper.GetString("console.ssh.advertise-ip") != "" {
-		exposedSSHAddr = net.JoinHostPort(viper.GetString("console.ssh.advertise-ip"), sshPort)
+		_, port, err := net.SplitHostPort(exposedSSHAddr)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to parse host:port: ", exposedSSHAddr)
+		}
+		exposedSSHAddr = net.JoinHostPort(viper.GetString("console.ssh.advertise-ip"), port)
 		log.Infof("Exposed SSH on %s", exposedSSHAddr)
 	}
 
@@ -595,24 +582,25 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {
-		log.Fatalln("Couldn't create ExecutorDriver ", err)
+		log.WithError(err).Fatal("Couldn't create ExecutorDriver")
 	}
 
 	_, err = driver.Start()
 	if err != nil {
-		log.Fatalln("ExecutorDriver wasn't able to start: ", err)
+		log.WithError(err).Fatalln("ExecutorDriver wasn't able to start")
 	}
 	log.Infoln("Process running")
 
 	_, err = driver.Join()
 	if err != nil {
-		log.Fatalln("Something went wrong with the driver: ", err)
+		log.WithError(err).Fatalln("Something went wrong with the driver")
 	}
 	log.Infoln("Executor shutting down")
 }
 
 func main() {
 	logrus.SetFormatter(&cmd.LogFormatter{})
+	logrus.SetLevel(logrus.DebugLevel)
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

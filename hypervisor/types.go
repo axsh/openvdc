@@ -6,6 +6,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
+	"github.com/spf13/viper"
 )
 
 type ContainerState int
@@ -13,6 +14,7 @@ type ContainerState int
 type HypervisorProvider interface {
 	Name() string
 	CreateDriver(instanceID string) (HypervisorDriver, error)
+	LoadConfig(viper *viper.Viper) error
 }
 
 type HypervisorDriver interface {

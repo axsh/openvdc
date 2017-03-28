@@ -21,6 +21,12 @@
 			"revisionTime": "2016-11-08T19:08:11Z"
 		},
 		{
+			"checksumSHA1": "63vHVSiItUfflK3tUwe6mrI84BQ=",
+			"path": "github.com/Sirupsen/logrus/hooks/syslog",
+			"revision": "1445b7a38228c041834afc69231b7966b9943397",
+			"revisionTime": "2016-11-08T19:08:11Z"
+		},
+		{
 			"checksumSHA1": "Z/gwISedxg/Os0Y4hhvDF9dCipw=",
 			"path": "github.com/boltdb/bolt",
 			"revision": "315c65d4cf4f5278c73477a35fb1f9b08365d340",
@@ -389,10 +395,10 @@
 			"revisionTime": "2015-08-08T06:50:54Z"
 		},
 		{
-			"checksumSHA1": "vLmkhv7RXt4uOoS564cBIMzLT88=",
+			"checksumSHA1": "yuSXFgYAa6NfA3+8Kv1s7pYdFZE=",
 			"path": "github.com/xeipuuv/gojsonschema",
-			"revision": "e18f0065e8c148fcf567ac43a3f8f5b66ac0720b",
-			"revisionTime": "2016-11-19T18:01:51Z"
+			"revision": "ff0417f4272e480246b4507459b3f6ae721a87ac",
+			"revisionTime": "2017-02-25T17:21:24Z"
 		},
 		{
 			"checksumSHA1": "dwOedwBJ1EIK9+S3t108Bx054Y8=",
