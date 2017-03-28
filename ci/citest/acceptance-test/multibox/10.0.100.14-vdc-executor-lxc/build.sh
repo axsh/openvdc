@@ -16,7 +16,6 @@ IND_STEPS=(
     "hosts"
     "disable-firewalld"
     "epel"
-    "bridge-utils"
     "lxc"
     "mesosphere"
     "mesos"
@@ -28,4 +27,4 @@ build "${IND_STEPS[@]}"
 # the cached images. We want a clean cache without OpenVDC so we can install a
 # different version to test every the CI runs.
 install_openvdc_yum_repo
-install_yum_package_over_ssh "openvdc-executor"
+install_yum_package_over_ssh "openvdc-executor-lxc"
