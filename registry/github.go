@@ -2,6 +2,7 @@ package registry
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -76,14 +77,8 @@ func (r *GithubRegistry) localCachePath() string {
 
 // Find queries resource template details from local registry cache.
 func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
-	if !r.ValidateCache() {
-		return nil, ErrLocalCacheNotReady
-	}
-	f, err := os.Open(filepath.Join(r.localCachePath(), templateName+".json"))
+	f, err := r.openCached(templateName)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, ErrUnknownTemplateName
-		}
 		return nil, err
 	}
 	defer f.Close()
@@ -98,6 +93,33 @@ func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
 		Template: tmpl,
 	}
 	return rt, nil
+}
+
+func (r *GithubRegistry) LoadRaw(templateName string) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	f, err := r.openCached(templateName)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if _, err := io.Copy(buf, f); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (r *GithubRegistry) openCached(templateName string) (*os.File, error) {
+	if !r.ValidateCache() {
+		return nil, ErrLocalCacheNotReady
+	}
+	f, err := os.Open(filepath.Join(r.localCachePath(), templateName+".json"))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrUnknownTemplateName
+		}
+		return nil, err
+	}
+	return f, nil
 }
 
 // ValidateCache validates the local cache folder items.
