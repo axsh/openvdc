@@ -76,6 +76,7 @@ func (r *RegistryTemplate) ToModel() *model.Template {
 type TemplateFinder interface {
 	Find(templateName string) (*RegistryTemplate, error)
 	LocateURI(templateName string) string
+	LoadRaw(templateName string) ([]byte, error)
 }
 
 type CachedRegistry interface {

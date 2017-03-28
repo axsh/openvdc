@@ -109,9 +109,7 @@ func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.H
 	}
 
 	return &LXCHypervisorDriver{
-		log: log.WithFields(log.Fields{"hypervisor": "lxc", "instance_id": containerName}),
-		// Set pre-defined template option from gopkg.in/lxc/go-lxc.v2/options.go
-		template:  lxc.DownloadTemplateOptions,
+		log:       log.WithFields(log.Fields{"hypervisor": "lxc", "instance_id": containerName}),
 		container: c,
 	}, nil
 }
