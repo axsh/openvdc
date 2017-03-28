@@ -1,5 +1,4 @@
 [hypervisor]
-driver = "lxc"
 script-path = "/etc/openvdc/scripts/"
 
 [zookeeper]
