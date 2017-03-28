@@ -72,7 +72,7 @@ func SetupGithubRegistryCache() (registry.TemplateFinder, error) {
 	return reg, nil
 }
 
-func FetchTemplate(templateSlug string) (*registry.RegistryTemplate, error) {
+func TemplateFinder(templateSlug string) (registry.TemplateFinder, error) {
 	var finder registry.TemplateFinder
 	if strings.HasSuffix(templateSlug, ".json") {
 		u, err := url.Parse(templateSlug)
@@ -91,6 +91,14 @@ func FetchTemplate(templateSlug string) (*registry.RegistryTemplate, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	return finder, nil
+}
+
+func FetchTemplate(templateSlug string) (*registry.RegistryTemplate, error) {
+	finder, err := TemplateFinder(templateSlug)
+	if err != nil {
+		return nil, err
 	}
 	return finder.Find(templateSlug)
 }
