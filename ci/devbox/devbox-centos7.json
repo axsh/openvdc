@@ -89,7 +89,7 @@
         "systemctl enable zookeeper",
         "systemctl enable mesos-master",
         "systemctl enable mesos-slave",
-        "echo 'hypervisor:lxc' > /etc/mesos-slave/attributes",
+        "echo 'hypervisor:lxc;openvdc-node-id:lxc1' > /etc/mesos-slave/attributes",
         "echo 'false' > /etc/mesos-slave/switch_user",
         "echo '{\"PATH\":\"/home/vagrant/go/src/github.com/axsh/openvdc:/usr/libexec/mesos:/usr/bin:/usr/sbin:/usr/local/bin\"}' > /etc/mesos-slave/executor_environment_variables",
         "#firewall-cmd --permanent --zone=public --add-port=5050/tcp",

@@ -31,34 +31,6 @@ func (p *LXCHypervisorProvider) Name() string {
 	return "lxc"
 }
 
-func (d *LXCHypervisorDriver) GetContainerState(i *model.Instance) (hypervisor.ContainerState, error) {
-
-	c, err := lxc.NewContainer(d.name, d.lxcpath)
-
-	if err != nil {
-		return hypervisor.ContainerState_NONE, err
-	}
-
-	var containerState hypervisor.ContainerState
-
-	switch c.State() {
-	case lxc.STOPPED:
-		containerState = hypervisor.ContainerState_STOPPED
-	case lxc.STARTING:
-		containerState = hypervisor.ContainerState_STARTING
-	case lxc.RUNNING:
-		containerState = hypervisor.ContainerState_RUNNING
-	case lxc.STOPPING:
-		containerState = hypervisor.ContainerState_STOPPING
-	case lxc.ABORTING:
-		containerState = hypervisor.ContainerState_ABORTING
-	default:
-		containerState = hypervisor.ContainerState_NONE
-	}
-
-	return containerState, err
-}
-
 func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
 	return &LXCHypervisorDriver{
 		log:     log.WithField("hypervisor", "lxc"),
@@ -76,10 +48,43 @@ type LXCHypervisorDriver struct {
 	name      string
 }
 
-var lxcArch = map[string]string {
+var lxcArch = map[string]string{
 	"amd64": "amd64",
-	"386": "i386",
+	"386":   "i386",
 	// TODO: powerpc, arm, arm64
+}
+
+func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
+	c, err := lxc.NewContainer(d.name, d.lxcpath)
+
+	if err != nil {
+		return errors.Wrapf(err, "HypervisorDriver failed to find container. InstanceID: %s", d.name)
+	}
+
+	switch instanceState.State {
+	case model.InstanceState_RUNNING:
+		if c.State() == lxc.STOPPED {
+			err := d.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.name)
+			}
+		}
+
+	case model.InstanceState_STOPPED:
+		if c.State() == lxc.STOPPED {
+			err := d.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.name)
+			}
+			err = d.StopInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to stop instance:  %s", d.name)
+			}
+		}
+	default:
+	}
+
+	return nil
 }
 
 func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
@@ -104,9 +109,9 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	d.log.Infoln("Creating lxc-container...")
 	lxcTmpl := lxcResTmpl.GetLxcTemplate()
-	d.template = lxc.TemplateOptions {
-		Template: lxcTmpl.Template,
-		Arch: lxcTmpl.Arch,
+	d.template = lxc.TemplateOptions{
+		Template:  lxcTmpl.Template,
+		Arch:      lxcTmpl.Arch,
 		ExtraArgs: lxcTmpl.ExtraArgs,
 	}
 	switch lxcTmpl.Template {
