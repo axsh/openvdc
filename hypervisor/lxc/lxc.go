@@ -239,7 +239,7 @@ func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
 		if d.container.State() == lxc.STOPPED {
 			err := d.StartInstance()
 			if err != nil {
-				return errors.Wrapf(err, "Failed to start instance:  %s", d.name)
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.container.Name())
 			}
 		}
 
@@ -247,11 +247,11 @@ func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
 		if d.container.State() == lxc.STOPPED {
 			err := d.StartInstance()
 			if err != nil {
-				return errors.Wrapf(err, "Failed to start instance:  %s", d.name)
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.container.Name())
 			}
 			err = d.StopInstance()
 			if err != nil {
-				return errors.Wrapf(err, "Failed to stop instance:  %s", d.name)
+				return errors.Wrapf(err, "Failed to stop instance:  %s", d.container.Name())
 			}
 		}
 	default:
