@@ -30,7 +30,7 @@
 (
     $starting_step "Start kvm for ${vm_name}"
     sudo kill -0 $(sudo cat "${NODE_DIR}/${vm_name}.pid" 2> /dev/null) 2> /dev/null
-    $skip_step_if_already_done;
+    $skip_step_if_already_done; set -ex
     boot_img="${NODE_DIR}/${vm_name}.qcow2"
 
     sudo $(cat <<EOS
