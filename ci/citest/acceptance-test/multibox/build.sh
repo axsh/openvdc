@@ -53,6 +53,7 @@ for box in ${BOXES} ; do
 done
 
 create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
+create_bridge "vdcenv_instbr"
 
 if [[ "$REBUILD" == "true" ]]; then
     (

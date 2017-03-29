@@ -15,6 +15,7 @@ for node in ${scheduled_nodes[@]} ; do
 done
 
 destroy_bridge "vdc_env_br0"
+destroy_bridge "vdcenv_instbr"
 stop_masquerade "${NETWORK}/${PREFIX}"
 
 (
