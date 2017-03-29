@@ -114,7 +114,7 @@ Summary: OpenVDC executor (LXC driver)
 Requires: openvdc-executor
 Requires: lxc
 # lxc-templates does not resolve its sub dependencies
-Requires: lxc-templates wget gpg sed awk coreutils rsync debootstrap dropbear
+Requires: lxc-templates wget gpg sed gawk coreutils rsync debootstrap dropbear
 Requires: bridge-utils
 
 %description executor-lxc
