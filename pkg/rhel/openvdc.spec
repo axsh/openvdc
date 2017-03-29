@@ -113,7 +113,8 @@ Null driver configuration package for OpenVDC executor.
 Summary: OpenVDC executor (LXC driver)
 Requires: openvdc-executor
 Requires: lxc
-Requires: lxc-templates
+# lxc-templates does not resolve its sub dependencies
+Requires: lxc-templates wget gpg sed awk coreutils rsync debootstrap dropbear
 Requires: bridge-utils
 
 %description executor-lxc
