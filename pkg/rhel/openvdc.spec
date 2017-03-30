@@ -107,7 +107,6 @@ Null driver configuration package for OpenVDC executor.
 
 %files executor-null
 %config(noreplace) /etc/openvdc/executor.toml
-%config(noreplace) /etc/openvdc/scripts/*
 
 %package executor-lxc
 Summary: OpenVDC executor (LXC driver)
@@ -122,6 +121,8 @@ LXC driver configuration package for OpenVDC executor.
 
 %files executor-lxc
 %config(noreplace) /etc/openvdc/executor.toml
+%dir /etc/openvdc/scripts
+%config(noreplace) /etc/openvdc/scripts/*
 
 %post executor-lxc
 if [ -d /etc/mesos-slave ]; then
