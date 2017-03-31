@@ -8,16 +8,13 @@ TMP_ROOT="${NODE_DIR}/tmp_root"
 . "${NODE_DIR}/vmspec.conf"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 
-
-mesos_master=true
-
 IND_STEPS=(
     "box"
     "ssh"
     "hosts"
     "disable-firewalld"
     "mesosphere-repo"
-    "mesos"
+    "mesos-master"
 )
 
 build "${IND_STEPS[@]}"
