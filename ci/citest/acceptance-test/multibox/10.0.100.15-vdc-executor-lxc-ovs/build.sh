@@ -8,16 +8,15 @@ TMP_ROOT="${NODE_DIR}/tmp_root"
 . "${NODE_DIR}/vmspec.conf"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 
-mesos_agent=true
-
 IND_STEPS=(
     "box"
     "ssh"
     "hosts"
     "disable-firewalld"
     "epel"
-    "cgroups"
     "openvswitch"
+    "cgroups"
+    "mesos-agent"
 )
 
 build "${IND_STEPS[@]}"
