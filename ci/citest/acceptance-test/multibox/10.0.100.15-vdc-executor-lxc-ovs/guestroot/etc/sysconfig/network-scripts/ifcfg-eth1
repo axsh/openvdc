@@ -1,4 +1,4 @@
 DEVICE=eth1
 ONBOOT=yes
-TYPE=Ethernet
-BRIDGE=br0
+TYPE=OVSPort
+OVS_BRIDGE=br-eth0

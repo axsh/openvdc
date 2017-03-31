@@ -16,6 +16,7 @@ IND_STEPS=(
     "hosts"
     "disable-firewalld"
     "epel"
+    "openvswitch"
     "lxc" #TODO: Remove this?
 )
 
