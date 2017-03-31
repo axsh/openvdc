@@ -17,7 +17,7 @@ IND_STEPS=(
     "disable-firewalld"
     "epel"
     "cgroups"
-    "mesosphere"
+    "mesosphere-repo"
     "mesos"
 )
 

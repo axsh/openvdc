@@ -16,7 +16,7 @@ IND_STEPS=(
     "hosts"
     "disable-firewalld"
     "epel"
-    "mesosphere"
+    "mesosphere-repo"
     "mesos"
 )
 
