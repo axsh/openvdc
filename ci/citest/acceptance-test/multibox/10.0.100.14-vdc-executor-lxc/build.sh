@@ -16,7 +16,6 @@ IND_STEPS=(
     "hosts"
     "disable-firewalld"
     "epel"
-    "lxc"
     "mesosphere"
     "mesos"
 )

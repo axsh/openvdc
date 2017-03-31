@@ -17,7 +17,6 @@ IND_STEPS=(
     "disable-firewalld"
     "epel"
     "openvswitch"
-    "lxc" #TODO: Remove this?
 )
 
 build "${IND_STEPS[@]}"
