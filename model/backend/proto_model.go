@@ -133,6 +133,6 @@ func (p *ProtoWrapper) FindLastKey(prefixKey string) (string, error) {
 	return p.backend.FindLastKey(prefixKey)
 }
 
-func (p *ProtoWrapper) Watch(key string) (WatchEvent, error) {
-	return p.backend.(ModelWatcher).Watch(key)
+func (p *ProtoWrapper) Watch(key string, stopCh <-chan struct{}) (<-chan WatchEvent, error) {
+	return p.backend.(ModelWatcher).Watch(key, stopCh)
 }

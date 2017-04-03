@@ -50,8 +50,14 @@ func (e WatchEvent) String() string {
 	return eventToName[e]
 }
 
+type WatchResponse struct {
+	Event     WatchEvent
+	Value     []byte
+	LastIndex uint64
+}
+
 type ModelWatcher interface {
-	Watch(key string) (WatchEvent, error)
+	Watch(key string, stopCh <-chan struct{}) (<-chan *WatchResponse, error)
 }
 
 type ModelSchema interface {

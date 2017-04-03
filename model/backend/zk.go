@@ -327,9 +327,9 @@ func (z *zkSchemaHandler) Install(subkeys []string) error {
 	return nil
 }
 
-func (z *Zk) Watch(key string) (WatchEvent, error) {
+func (z *Zk) Watch(key string, stopCh <-chan struct{}) (<-chan *WatchResponse, error) {
 	if !z.isConnected() {
-		return EventErr, ErrConnectionNotReady
+		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
 	var err error
@@ -337,27 +337,40 @@ func (z *Zk) Watch(key string) (WatchEvent, error) {
 	if strings.HasSuffix(absKey, "/*") {
 		_, _, ev, err = z.conn.ChildrenW(path.Dir(absKey))
 		if err != nil {
-			return EventErr, errors.Wrap(err, "conn.ChildrenW")
+			return nil, errors.Wrap(err, "conn.ChildrenW")
 		}
 	} else {
 		var exists bool
 		exists, _, ev, err = z.conn.ExistsW(absKey)
 		if err != nil {
-			return EventErr, errors.Wrap(err, "conn.ExistsW")
+			return nil, errors.Wrap(err, "conn.ExistsW")
 		}
 		if !exists {
-			return EventErr, errors.Errorf("Unknown key: %s", absKey)
+			return nil, errors.Errorf("Unknown key: %s", absKey)
 		}
 	}
-	received := <-ev
-	switch received.Type {
-	case zk.EventNodeCreated:
-		return EventCreated, nil
-	case zk.EventNodeDeleted:
-		return EventDeleted, nil
-	case zk.EventNodeDataChanged:
-		return EventModified, nil
-	}
 
-	return EventUnknown, nil
+	watchCh := make(chan WatchEvent)
+
+	go func() {
+		defer close(watchCh)
+
+		select {
+		case received := <-ev:
+			switch received.Type {
+			case zk.EventNodeCreated:
+				watchCh <- EventCreated
+			case zk.EventNodeDeleted:
+				watchCh <- EventDeleted
+			case zk.EventNodeDataChanged:
+				watchCh <- EventModified
+			}
+
+			watchCh <- EventUnknown
+
+		case <-stopCh:
+			return
+		}
+	}()
+
 }
