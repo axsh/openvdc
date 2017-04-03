@@ -123,7 +123,7 @@ func WaitInstance(t *testing.T, d time.Duration, instanceID string, goalState st
 		if err != nil {
 			return err
 		}
-		result := gjson.GetBytes(buf, "instance.lastState.state")
+		result := gjson.GetBytes(buf, "instance.last_state.state")
 		if result.String() == goalState {
 			return nil
 		} else if interimStates != nil {
