@@ -13,12 +13,12 @@ func TestCmdReboot(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc")
 	instance_id := strings.TrimSpace(stdout.String())
 
-	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "RUNNING")
+	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
 	testCmdReboot_Centos7(t, instance_id)
 
-	RunCmdAndReportFail(t, "openvdc", "destroy", instance_id)
-	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "TERMINATED")
+	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
 
 func testCmdReboot_Ubuntu14(t *testing.T, instance_id string) {
