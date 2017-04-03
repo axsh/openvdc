@@ -3,10 +3,11 @@
 package tests
 
 import (
-	"strings"
-	"testing"
 	"bufio"
 	"bytes"
+	"strings"
+	"testing"
+	"time"
 )
 
 func TestLXCInstance(t *testing.T) {
@@ -14,11 +15,11 @@ func TestLXCInstance(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
-	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "RUNNING")
+	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 	//TODO: Run only once after we've waited for RUNNING
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
-	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "TERMINATED")
+	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 
 	//TODO: Don't rely on the standard 'command failed' error.
 	//It's more clear to say "container didn't get destroyed after calling openvdc destroy"
@@ -32,7 +33,7 @@ func TestLXCInstance_NICx2(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
-	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "RUNNING")
+	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 	stdout, _, err := RunSsh(executor_lxc_ip, "/usr/sbin/brctl show br0")
 	if err != nil {
@@ -68,5 +69,5 @@ func TestLXCInstance_NICx2(t *testing.T) {
 	}
 
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
-	RunCmdAndReportFail(t, "openvdc", "wait", instance_id, "TERMINATED")
+	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }

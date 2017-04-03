@@ -30,24 +30,24 @@ func TestCmdTemplateShow(t *testing.T) {
 	{
 		stdout, _ := RunCmdAndReportFail(t, "openvdc", "template", "show", "centos/7/lxc")
 		js := gjson.ParseBytes(stdout.Bytes())
-		if !js.Get("lxcTemplate").Exists() {
-			t.Error("lxcTemplate key not found")
+		if !js.Get("lxc_template").Exists() {
+			t.Error("lxc_template key not found")
 		}
 	}
 
 	{
 		stdout, _ := RunCmdAndReportFail(t, "openvdc", "template", "show", "/var/tmp/fixtures/lxc.json")
 		js := gjson.ParseBytes(stdout.Bytes())
-		if !js.Get("lxcImage").Exists() {
-			t.Error("lxcImage key not found")
+		if !js.Get("lxc_image").Exists() {
+			t.Error("lxc_image key not found")
 		}
 	}
 
 	{
 		stdout, _ := RunCmdAndReportFail(t, "openvdc", "template", "show", "https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json")
 		js := gjson.ParseBytes(stdout.Bytes())
-		if !js.Get("lxcTemplate").Exists() {
-			t.Error("lxcTemplate key not found")
+		if !js.Get("lxc_template").Exists() {
+			t.Error("lxc_template key not found")
 		}
 	}
 }
