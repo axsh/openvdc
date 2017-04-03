@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+const ProtocVersion = "libprotoc 3.2.0"
 var verbose = true
 
 // Similar to "$()" or "``" in sh
@@ -159,6 +160,15 @@ Environment Variables:
 		if_not_exists("protoc", func() {
 			log.Fatal("Unable to find protoc. Download pre-compiled binary from https://github.com/google/protobuf/releases")
 		})
+		// Check protoc version
+		ver, err := exec.Command("protoc", "--version").Output()
+		if err != nil {
+			log.Fatalf("Failed to check protoc version: %v", err)
+		}
+		ver_str := strings.TrimSpace(string(ver))
+		if ver_str != ProtocVersion {
+			log.Fatalf("Unexpected protoc version: %s (expected: %s)", ver_str, ProtocVersion)
+		}
 		if_not_exists("protoc-gen-go", func() {
 			cmd("go", "get", "-u", "-v", "github.com/golang/protobuf/protoc-gen-go")
 		})
