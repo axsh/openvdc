@@ -11,21 +11,21 @@ message Console {
     SSH = 0;
   }
   Transport type = 1;
-  string bind_addr = 2;
+  string bind_addr = 2 [json_name="bind_addr"];
 }
 
 message ExecutorNode {
   string id = 1;
-  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 
   Console console = 3;
-  string grpc_addr = 4;
-  NodeState last_state = 5;
+  string grpc_addr = 4 [json_name="grpc_addr"];
+  NodeState last_state = 5 [json_name="last_state"];
 }
 
 message SchedulerNode {
   string id = 1;
-  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
 
 message NodeState {
@@ -33,5 +33,5 @@ message NodeState {
     REGISTERED = 0;
   }
   State state = 1;
-  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
