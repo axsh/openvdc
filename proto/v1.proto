@@ -14,7 +14,7 @@ service InstanceConsole {
 
 message ConsoleIn {
   string buf = 1;
-  string instance_id = 2;
+  string instance_id = 2 [json_name="instance_id"];
 }
 
 message ConsoleOut {
@@ -42,29 +42,29 @@ service Instance {
 }
 
 message RunReply {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
   //string resource_id = 2; // Obsolete
 }
 
 message StopRequest{
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 message StopReply {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 
 message DestroyRequest{
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 message DestroyReply {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 
 message ConsoleRequest{
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 message ConsoleReply {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
   model.Console.Transport type = 2;
   string address = 3;
 }
@@ -74,21 +74,21 @@ message CreateRequest{
   model.Template template = 2;
 }
 message CreateReply{
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 
 message StartRequest {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 message StartReply {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 
 message RebootRequest {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 message RebootReply {
-  string instance_id = 1;
+  string instance_id = 1 [json_name="instance_id"];
 }
 
 message InstanceIDRequest {
@@ -146,8 +146,8 @@ message InstanceEventReply {
     EventNone = 0;
     EventState = 1;
   }
-  EventType event_type = 1;
-  google.protobuf.Timestamp event_at = 2;
+  EventType event_type = 1 [json_name="event_type"];
+  google.protobuf.Timestamp event_at = 2 [json_name="event_at"];
   oneof Body {
     model.InstanceState state = 3;
   }
