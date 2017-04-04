@@ -59,6 +59,11 @@ func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.
 		log.WithError(err).Error("Failed to find 'hypervisor' attribute")
 		return
 	}
+	if err := exec.hypervisorProvider.LoadConfig(viper.GetViper()); err != nil {
+		log.WithError(err).Error("Failed hypervisorProvider.LoadConfig")
+		driver.Abort()
+		return
+	}
 
 	exec.nodeInfo.Id = slaveInfo.GetId().GetValue()
 	err := model.Cluster(exec.ctx).Register(exec.nodeInfo)
