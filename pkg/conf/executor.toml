@@ -1,6 +1,7 @@
 [hypervisor]
 # driver = "null"
 # script-path = "/etc/openvdc/scripts/"
+# image-server = "images.linuxcontainers.org"
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"
