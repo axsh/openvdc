@@ -259,6 +259,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Distro = lxcTmpl.Distro
 		d.template.Release = lxcTmpl.Release
 		d.template.Variant = lxcTmpl.Variant
+		d.template.Server = settings.ImageServer
 	default:
 		d.template.Release = lxcTmpl.Release
 	}
