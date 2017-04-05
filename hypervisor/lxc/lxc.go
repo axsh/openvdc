@@ -45,6 +45,7 @@ func (t BridgeType) String() string {
 
 var settings struct {
 	ScriptPath      string
+	ImageServer     string
 	BridgeName      string
 	BridgeType      BridgeType
 	LinuxUpScript   string
@@ -56,6 +57,7 @@ var settings struct {
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
 	viper.SetDefault("hypervisor.script-path", "/etc/openvdc/scripts")
+	viper.SetDefault("hypervisor.image-server", "images.linuxcontainers.org")
 	// Default script file names in pkg/conf/scripts/*
 	viper.SetDefault("bridges.linux.up-script", "linux-bridge-up.sh.tmpl")
 	viper.SetDefault("bridges.linux.down-script", "linux-bridge-down.sh.tmpl")
@@ -95,6 +97,7 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 
 	// They have default value.
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
+	settings.ImageServer = sub.GetString("hypervisor.image-server")
 	settings.LinuxUpScript = sub.GetString("bridges.linux.up-script")
 	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
 	settings.OvsUpScript = sub.GetString("bridges.ovs.up-script")
