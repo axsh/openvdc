@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "OpenVDC Resource Template: none (For testing only)",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "none"
+      ]
+    },
+    "param1": {
+      "type": "string"
+    },
+    "param2": {
+      "type": "string"
+    }
+  }
+}
