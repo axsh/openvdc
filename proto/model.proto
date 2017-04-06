@@ -13,6 +13,7 @@ message Instance {
   InstanceState last_state = 4 [json_name="last_state"];
   google.protobuf.Timestamp created_at = 5 [json_name="created_at"];
   Template template = 6;
+  FailureMessage latest_failure = 7;
 }
 
 message InstanceState {
@@ -29,6 +30,18 @@ message InstanceState {
   }
   State state = 1;
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
+}
+
+message FailureMessage {
+  enum ErrorType {
+    FAILED_BOOT = 0;
+    FAILED_START = 1;
+    FAILED_STOP = 2;
+    FAILED_REBOOT = 3;
+    FAILED_TERMINATE = 4;
+  }
+  ErrorType error_type = 1;
+  google.protobuf.Timestamp failed_at = 2;
 }
 
 message Template {

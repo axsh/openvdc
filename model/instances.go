@@ -3,8 +3,10 @@ package model
 import (
 	"fmt"
 	"path"
+	"time"
 
 	"github.com/axsh/openvdc/model/backend"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
@@ -14,6 +16,8 @@ var ErrInvalidID = errors.New("ID is missing")
 type InstanceOps interface {
 	Create(*Instance) (*Instance, error)
 	FindByID(string) (*Instance, error)
+	AddFailureMessage(id string, failureMessage FailureMessage_ErrorType) error
+	//GetLatestFailureMessage(id string) (*FailureMessage, error)
 	UpdateState(id string, next InstanceState_State) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
 	Update(*Instance) error
@@ -105,6 +109,10 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 		return nil, err
 	}
 
+	if err = bk.Backend().Create(fmt.Sprintf("%s/failure-messages", nkey), []byte{}); err != nil {
+		return nil, err
+	}
+
 	return n, nil
 }
 
@@ -135,6 +143,28 @@ func (i *instances) FindByID(id string) (*Instance, error) {
 	}
 	n.Id = id
 	return n, nil
+}
+
+func (i *instances) AddFailureMessage(id string, failureMessage FailureMessage_ErrorType) error {
+	instance, err := i.FindByID(id)
+	if err != nil {
+		return err
+	}
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	failedAt, _ := ptypes.TimestampProto(time.Now())
+	nFailure := &FailureMessage{
+		ErrorType: failureMessage,
+		FailedAt:  failedAt,
+	}
+	instance.LatestFailure = nFailure
+	_, err = bk.CreateWithID(fmt.Sprintf("%s/%s/failure-messages/failure-", instancesBaseKey, id), nFailure)
+	if err != nil {
+		return err
+	}
+	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), instance)
 }
 
 func (i *instances) findLastState(id string) (*InstanceState, error) {
