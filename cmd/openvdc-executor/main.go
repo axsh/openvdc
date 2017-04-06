@@ -92,11 +92,13 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 				log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
 			}
 			if err := exec.Failure(taskInfo.GetTaskId().GetValue(), model.FailureMessage_FAILED_BOOT); err != nil {
-				log.Errorln(err)
+				log.WithError(err).Errorf("Failed to record failure message: %s", model.FailureMessage_FAILED_BOOT.String())
 			}
 		}
 	} else {
-		err = exec.recoverInstance(taskInfo.GetTaskId().GetValue(), *instanceState)
+		if err := exec.recoverInstance(taskInfo.GetTaskId().GetValue(), *instanceState); err != nil {
+			log.WithError(err).Error("Failed recoverInstance")
+		}
 	}
 }
 
