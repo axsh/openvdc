@@ -30,7 +30,9 @@ install:
   - ps: New-Item C:\ZooKeeper -type directory
   - powershell -ExecutionPolicy Bypass .\ci\appveyor\install-zk.ps1 C:\ZooKeeper
   - ps: $ZkProcess = Start-Process -FilePath "C:\ZooKeeper\bin\zkServer.cmd" -PassThru -NoNewWindow
+  - dir C:\ZooKeeper
   - ps: $ZkProcess | fl
+  - ps: if ( $ZkProcess.HasExited -eq $True ) { Write-Error "Failed to start zookeeper"; exit 1; }
 
 build_script:
   - set PATH=C:\gopath\bin;%PATH%
