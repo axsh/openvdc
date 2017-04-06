@@ -117,9 +117,14 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			if err != nil {
 				log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
 			}
+			if err := exec.Failure(taskInfo.GetTaskId().GetValue(), model.FailureMessage_FAILED_BOOT); err != nil {
+				log.WithError(err).Errorf("Failed to record failure message: %s", model.FailureMessage_FAILED_BOOT.String())
+			}
 		}
 	} else {
-		err = exec.recoverInstance(taskInfo.GetTaskId().GetValue(), *instanceState)
+		if err := exec.recoverInstance(taskInfo.GetTaskId().GetValue(), *instanceState); err != nil {
+			log.WithError(err).Error("Failed recoverInstance")
+		}
 	}
 }
 
@@ -429,15 +434,27 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 		if err != nil {
 			log.WithError(err).Error("Failed to start instance")
 		}
+		err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_START)
+		if err != nil {
+			log.Errorln(err)
+		}
 	case "stop":
 		err = exec.stopInstance(driver, taskId.GetValue())
 		if err != nil {
 			log.WithError(err).Error("Failed to stop instance")
+			err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_STOP)
+			if err != nil {
+				log.Errorln(err)
+			}
 		}
 	case "reboot":
 		err = exec.rebootInstance(driver, taskId.GetValue())
 		if err != nil {
 			log.WithError(err).Error("Failed to reboot instance")
+			err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_REBOOT)
+			if err != nil {
+				log.Errorln(err)
+			}
 		}
 	case "destroy":
 		var tstatus *mesos.TaskStatus
@@ -447,6 +464,10 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 			tstatus = &mesos.TaskStatus{
 				TaskId: taskId,
 				State:  mesos.TaskState_TASK_FAILED.Enum(),
+			}
+			err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_TERMINATE)
+			if err != nil {
+				log.Errorln(err)
 			}
 		} else {
 			tstatus = &mesos.TaskStatus{
@@ -460,6 +481,19 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 	default:
 		log.WithField("msg", msg).Errorln("FrameworkMessage unrecognized.")
 	}
+}
+
+func (exec *VDCExecutor) Failure(instanceID string, failureMessage model.FailureMessage_ErrorType) error {
+	ctx, err := model.Connect(context.Background(), &zkAddr)
+	if err != nil {
+		return err
+	}
+	err = model.Instances(ctx).AddFailureMessage(instanceID, failureMessage)
+	if err != nil {
+		return err
+	}
+	model.Close(ctx)
+	return nil
 }
 
 func (exec *VDCExecutor) Shutdown(driver exec.ExecutorDriver) {
