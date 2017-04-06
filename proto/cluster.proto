@@ -21,6 +21,7 @@ message ExecutorNode {
   Console console = 3;
   string grpc_addr = 4 [json_name="grpc_addr"];
   NodeState last_state = 5 [json_name="last_state"];
+  string node_id = 6 [json_name="node_id"];
 }
 
 message SchedulerNode {

@@ -52,7 +52,14 @@ func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.
 			if !ok {
 				log.Errorf("Unknown hypervisor driver: %s", attr.GetText().GetValue())
 			}
+		case "openvdc-node-id":
+			exec.nodeInfo.NodeId = attr.GetText().GetValue()
 		}
+	}
+	if exec.nodeInfo.NodeId == "" {
+		_, err := driver.Abort()
+		log.WithError(err).Error("Failed to find 'openvdc-node-id' attribute")
+		return
 	}
 	if exec.hypervisorProvider == nil {
 		_, err := driver.Abort()
