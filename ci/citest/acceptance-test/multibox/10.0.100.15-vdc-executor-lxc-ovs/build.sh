@@ -16,6 +16,7 @@ IND_STEPS=(
     "epel"
     "openvswitch"
     "cgroups"
+    "mesosphere-repo"
     "mesos-agent"
 )
 
