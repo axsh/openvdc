@@ -16,6 +16,7 @@ message Instance {
   FailureMessage latest_failure = 7 [json_name="latest_failure"];
   bool auto_recovery = 8 [json_name="auto_recovery"];
   ConnectionStatus connection_status = 9 [json_name="connection_status"];
+  string node_id = 10 [json_name="node_id"];
 }
 
 message ConnectionStatus {

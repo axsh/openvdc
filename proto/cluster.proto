@@ -15,13 +15,13 @@ message Console {
 }
 
 message ExecutorNode {
-  string id = 1;
+  string node_id = 1 [json_name="node_id"];
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 
   Console console = 3;
   string grpc_addr = 4 [json_name="grpc_addr"];
   NodeState last_state = 5 [json_name="last_state"];
-  string node_id = 6 [json_name="node_id"];
+  string mesos_slave_id = 6 [json_name="mesos_slave_id"];
 }
 
 message SchedulerNode {

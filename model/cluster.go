@@ -22,7 +22,10 @@ type ClusterNode interface {
 	GetId() string
 }
 
-func (ExecutorNode) isClusterNode()  {}
+func (ExecutorNode) isClusterNode() {}
+func (n *ExecutorNode) GetId() string {
+	return n.NodeId
+}
 func (SchedulerNode) isClusterNode() {}
 
 type ClusterOps interface {

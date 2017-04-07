@@ -70,7 +70,7 @@ func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.
 		return
 	}
 
-	exec.nodeInfo.Id = slaveInfo.GetId().GetValue()
+	exec.nodeInfo.MesosSlaveId = slaveInfo.GetId().GetValue()
 	err := model.Cluster(exec.ctx).Register(exec.nodeInfo)
 	if err != nil {
 		driver.Abort()

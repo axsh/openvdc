@@ -326,6 +326,13 @@ func (i *Instance) ResourceTemplate() ResourceTemplate {
 	return GetResourceTemplate(i.GetTemplate())
 }
 
+func (i *Instance) FindMesosAgentID(ctx context.Context) (string, error) {
+	if i.GetNodeId() == "" {
+		return "", errors.Errorf("node_id is not assigned")
+	}
+	Cluster(ctx).Find(i.GetNodeId())
+}
+
 func (i *InstanceState) ValidateNextState(next InstanceState_State) error {
 	if i.GetState() == next || i.GetState() == InstanceState_TERMINATED {
 		return fmt.Errorf("Instance is already %s", i.GetState().String())
