@@ -40,6 +40,12 @@
 			"revisionTime": "2016-09-25T22:06:09Z"
 		},
 		{
+			"checksumSHA1": "7DxViusFRJ7UPH0jZqYatwDrOkY=",
+			"path": "github.com/elazarl/go-bindata-assetfs",
+			"revision": "30f82fa23fd844bd5bb1e5f216db87fd77b5eb43",
+			"revisionTime": "2017-02-27T21:27:28Z"
+		},
+		{
 			"checksumSHA1": "hveFTNQ9YEyYRs6SWuXM+XU9qRI=",
 			"path": "github.com/fsnotify/fsnotify",
 			"revision": "fd9ec7deca8bf46ecd2a795baaacf2b3a9be1197",
@@ -383,10 +389,10 @@
 			"revisionTime": "2016-09-25T22:06:09Z"
 		},
 		{
-			"checksumSHA1": "drSl/ipSHSsHWWTrp3WZw4LN/No=",
+			"checksumSHA1": "B9K+5clCq0PU8n8/utbKT0QjQyU=",
 			"path": "github.com/xeipuuv/gojsonpointer",
-			"revision": "e0fe6f68307607d540ed8eac07a342c33fa1b54a",
-			"revisionTime": "2015-10-27T08:21:46Z"
+			"revision": "6fe8760cad3569743d51ddbb243b26f8456742dc",
+			"revisionTime": "2017-02-25T23:34:18Z"
 		},
 		{
 			"checksumSHA1": "pSoUW+qY6LwIJ5lFwGohPU5HUpg=",
