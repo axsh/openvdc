@@ -41,6 +41,7 @@ func (t BridgeType) String() string {
 	default:
 		return "none"
 	}
+
 }
 
 var settings struct {
@@ -250,16 +251,21 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	d.log.Infoln("Creating lxc-container...")
 	lxcTmpl := lxcResTmpl.GetLxcTemplate()
 	d.template = lxc.TemplateOptions{
-		Template:  lxcTmpl.Template,
 		Arch:      lxcTmpl.Arch,
 		ExtraArgs: lxcTmpl.ExtraArgs,
+		Server:    settings.ImageServer,
 	}
 	switch lxcTmpl.Template {
 	case "download":
 		d.template.Distro = lxcTmpl.Distro
 		d.template.Release = lxcTmpl.Release
 		d.template.Variant = lxcTmpl.Variant
-		d.template.Server = settings.ImageServer
+		d.template.Template = lxcTmpl.Template
+	case "local":
+		d.template.Distro = lxcTmpl.Distro
+		d.template.Release = lxcTmpl.Release
+		d.template.Variant = lxcTmpl.Variant
+		d.template.Template = lxcTmpl.Template
 	default:
 		d.template.Release = lxcTmpl.Release
 	}
