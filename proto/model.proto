@@ -8,11 +8,12 @@ option go_package = "github.com/axsh/openvdc/model";
 
 message Instance {
   string id = 1;
-  string slave_id = 2;
+  string slave_id = 2 [json_name="slave_id"];
   //string resource_id = 3; // Obsolete
-  InstanceState last_state = 4;
-  google.protobuf.Timestamp created_at = 5;
+  InstanceState last_state = 4 [json_name="last_state"];
+  google.protobuf.Timestamp created_at = 5 [json_name="created_at"];
   Template template = 6;
+  FailureMessage latest_failure = 7;
 }
 
 message InstanceState {
@@ -28,32 +29,44 @@ message InstanceState {
     TERMINATED = 8;
   }
   State state = 1;
-  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
+}
+
+message FailureMessage {
+  enum ErrorType {
+    FAILED_BOOT = 0;
+    FAILED_START = 1;
+    FAILED_STOP = 2;
+    FAILED_REBOOT = 3;
+    FAILED_TERMINATE = 4;
+  }
+  ErrorType error_type = 1;
+  google.protobuf.Timestamp failed_at = 2;
 }
 
 message Template {
-  string template_uri = 1;
+  string template_uri = 1 [json_name="template_uri"];
   oneof Item {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
   }
-  google.protobuf.Timestamp created_at = 2;
+  google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
 
 message NoneTemplate {}
 
 message LxcTemplate {
   int32 vcpu = 1;
-  int32 memory_gb = 2;
-  int32 min_vcpu = 3;
-  int32 min_memory_gb = 4;
+  int32 memory_gb = 2 [json_name="memory_gb"];
+  int32 min_vcpu = 3 [json_name="min_vcpu"];
+  int32 min_memory_gb = 4 [json_name="min_memory_gb"];
   message Image {
-    string download_url = 1;
-    string chksum_type = 2;
+    string download_url = 1 [json_name="download_url"];
+    string chksum_type = 2 [json_name="chksum_type"];
     string chksum = 3;
   }
-  Image lxc_image = 5;
+  Image lxc_image = 5 [json_name="lxc_image"];
   message Interface {
     string type = 1;
     string macaddr = 2;
@@ -84,27 +97,27 @@ message LxcTemplate {
     string server = 7;
 
     // GPG keyid (default: 0x...).
-    string key_id = 8;
+    string key_id = 8 [json_name="key_id"];
 
     // GPG keyserver to use.
-    string key_server = 9;
+    string key_server = 9 [json_name="key_server"];
 
     // Disable GPG validation (not recommended).
-    bool disable_gpg_validation = 10;
+    bool disable_gpg_validation = 10 [json_name="disable_gpg_validation"];
 
     // Flush the local copy (if present).
-    bool flush_cache = 11;
+    bool flush_cache = 11 [json_name="flush_cache"];
 
     // Force the use of the local copy even if expired.
-    bool force_cache = 12;
+    bool force_cache = 12 [json_name="force_cache"];
 
     // ExtraArgs provides a way to specify template specific args.
-    repeated string extra_args = 13;
+    repeated string extra_args = 13 [json_name="extra_args"] ;
   }
-  Template lxc_template = 7;
+  Template lxc_template = 7 [json_name="lxc_template"];
 }
 
 message NullTemplate {
   int32 vcpu = 1;
-  int32 memory_gb = 2;
+  int32 memory_gb = 2 [json_name="memory_gb"];
 }
