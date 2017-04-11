@@ -2,11 +2,9 @@ package hypervisor
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	"xi2.org/x/xz"
