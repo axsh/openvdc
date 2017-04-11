@@ -10,11 +10,11 @@ import (
 	"xi2.org/x/xz"
 )
 
-func PrepareCache(cacheFolderPath string, img string) error {
+func PrepareCache(cacheFolderPath string, imgPath string) error {
 
 	folderState := CacheFolderExists(cacheFolderPath)
 	if folderState == false {
-		err := createCacheFolder(cacheFolderPath)
+		err := CreateCacheFolder(cacheFolderPath)
 		if err != nil {
 			return err
 		}
