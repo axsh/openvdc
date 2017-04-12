@@ -1,8 +1,10 @@
 # OpenVDC Acceptance Test
 
-![Test environment drawing](illustrations/acceptance-test.svg)
+This is the environment used on the OpenVDC CI to run the integration tests.
 
-This is the environment used on the OpenVDC CI to run the integration tests. To run this environment locally first make a file containing the following environment variables.
+You can view an illustration of the environment here: ![Test environment drawing](illustrations/acceptance-test.svg) If you need to update this illustration, please follow the instructions in [its readme](illustrations).
+
+To run this environment locally first make a file containing the following environment variables.
 
 ```
 # The following two lines make up the yum repository from which we'll download OpenVDC packages to test
