@@ -15,6 +15,7 @@ IND_STEPS=(
     "ssh"
     "hosts"
     "disable-firewalld"
+    "apache"
 )
 
 build "${IND_STEPS[@]}"
