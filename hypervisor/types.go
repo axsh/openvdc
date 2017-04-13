@@ -27,10 +27,49 @@ type HypervisorDriver interface {
 	InstanceConsole() Console
 }
 
+type Closed error
+
+type ConsoleWaitError interface {
+	error
+	ExitCode() int
+}
+
 type Console interface {
-	Attach(stdin io.Reader, stdout, stderr io.Writer) error
+	Attach(param *ConsoleParam) (<-chan Closed, error)
+	Exec(param *ConsoleParam, args []string) (<-chan Closed, error)
 	Wait() error
 	ForceClose() error
+}
+
+type PtyConsole interface {
+	AttachPty(param *ConsoleParam, ptyreq *SSHPtyReq) (<-chan Closed, error)
+	UpdateWindowSize(w, h uint32) error
+}
+
+type ConsoleParam struct {
+	Stdin  io.Reader
+	Stdout io.Writer
+	Stderr io.Writer
+	Envs   map[string]string
+}
+
+func NewConsoleParam(stdin io.Reader, stdout, stderr io.Writer) *ConsoleParam {
+	return &ConsoleParam{
+		Stdin:  stdin,
+		Stdout: stdout,
+		Stderr: stderr,
+		Envs:   make(map[string]string),
+	}
+}
+
+// Compatible with "type ptyRequestMsg struct" in golang.org/x/crypto/ssh/session.go
+type SSHPtyReq struct {
+	Term     string
+	Columns  uint32
+	Rows     uint32
+	Width    uint32
+	Height   uint32
+	Modelist string
 }
 
 var (

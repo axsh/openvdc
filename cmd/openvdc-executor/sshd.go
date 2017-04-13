@@ -3,17 +3,16 @@ package main
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
 	"io"
 	"net"
 
-	"github.com/pkg/errors"
-
-	"crypto/elliptic"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 )
@@ -66,6 +65,10 @@ func (sshd *SSHServer) Setup() error {
 		}
 		sshd.config.AddHostKey(sshSigner)
 	}
+
+	if provider := sshd.finder.GetHypervisorProvider(); provider == nil {
+		return errors.New("HypervisorProvider is not ready")
+	}
 	return nil
 }
 
@@ -81,27 +84,23 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 			log.Error("Failed to handshake:", err)
 			continue
 		}
-		instanceID := sshConn.User()
 		log.Printf("New SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
 		go ssh.DiscardRequests(reqs)
-		go sshd.handleChannels(chans, instanceID)
-	}
-}
-
-func (sshd *SSHServer) handleChannels(chans <-chan ssh.NewChannel, instanceID string) {
-	for newChannel := range chans {
-		if t := newChannel.ChannelType(); t != "session" {
-			newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
-			continue
-		}
-		provider := sshd.finder.GetHypervisorProvider()
-		if provider == nil {
-			log.Error("HypervisorProvider is not ready")
-			newChannel.Reject(ssh.Prohibited, "HypervisorProvider is not ready")
-			continue
-		}
-		session := sshSession{instanceID: instanceID, sshd: sshd, provider: provider}
-		go session.handleChannel(newChannel)
+		go func() {
+			for newChannel := range chans {
+				if t := newChannel.ChannelType(); t != "session" {
+					newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
+					continue
+				}
+				session := sshSession{
+					instanceID: sshConn.User(),
+					sshd:       sshd,
+					peer:       sshConn.RemoteAddr(),
+					provider:   sshd.finder.GetHypervisorProvider(),
+				}
+				go session.handleChannel(newChannel)
+			}
+		}()
 	}
 }
 
@@ -109,29 +108,27 @@ type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
 	provider   hypervisor.HypervisorProvider
+	peer       net.Addr
+	ptyreq     *hypervisor.SSHPtyReq
+	console    *hypervisor.ConsoleParam
 }
 
 func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
+	log := log.WithField("instance_id", session.instanceID).WithField("peer", session.peer.String())
 	connection, req, err := newChannel.Accept()
 	if err != nil {
 		log.Error("Could not accept channel:", err)
 		return
 	}
+	session.console = hypervisor.NewConsoleParam(connection, connection, connection.Stderr())
 	defer func() {
-		msg := struct {
-			ExitStatus uint32
-		}{uint32(0)}
-		_, err := connection.SendRequest("exit-status", false, ssh.Marshal(&msg))
-		if err != nil {
-			log.WithError(err).Error("Failed to send exit-status")
-		}
 		if err := connection.CloseWrite(); err != nil && err != io.EOF {
 			log.WithError(err).Warn("Failed CloseWrite()")
 		}
 		if err := connection.Close(); err != nil && err != io.EOF {
 			log.WithError(err).Warn("Invalid close sequence")
 		}
-		log.WithField("instance_id", session.instanceID).Info("Session closed")
+		log.Info("Session closed")
 	}()
 
 	driver, err := session.provider.CreateDriver(session.instanceID)
@@ -148,22 +145,34 @@ Done:
 		select {
 		case r := <-req:
 			if r == nil {
-				break Done
+				quit <- errors.New("Session request is nil")
+				break
 			}
+			log := log.WithField("sshreq", r.Type)
+			reply := true
 			switch r.Type {
 			case "shell":
-				if err := console.Attach(connection, connection, connection.Stderr()); err != nil {
-					log.Error(err)
-					return
+				ptycon, ok := console.(hypervisor.PtyConsole)
+				if session.ptyreq != nil && ok {
+					_, err := ptycon.AttachPty(session.console, session.ptyreq)
+					if err != nil {
+						reply = false
+						log.WithError(err).Error("Failed console.AttachPty")
+						break
+					}
+				} else {
+					_, err := console.Attach(session.console)
+					if err != nil {
+						reply = false
+						log.WithError(err).Error("Failed console.Attach")
+						break
+					}
 				}
-
 				go func() {
-					quit <- console.Wait()
+					err := console.Wait()
+					log.WithError(err).Info("Console released")
+					quit <- err
 				}()
-				if err := r.Reply(true, nil); err != nil {
-					log.WithError(err).Warn("Failed to reply")
-				}
-
 			case "signal":
 				var msg struct {
 					Signal string
@@ -181,29 +190,95 @@ Done:
 					log.Warn("FIXME: Uncovered signal request: ", msg.Signal)
 				}
 			case "pty-req":
-				var ptyReq struct {
-					Term     string
-					Columns  uint32
-					Rows     uint32
-					Width    uint32
-					Height   uint32
-					Modelist string
+				ptyreq := new(hypervisor.SSHPtyReq)
+				if err := ssh.Unmarshal(r.Payload, ptyreq); err != nil {
+					reply = false
+					log.WithError(errors.WithStack(err)).Error("Failed to parse message")
+				} else {
+					session.ptyreq = ptyreq
 				}
-				if err := ssh.Unmarshal(r.Payload, &ptyReq); err != nil {
-					log.WithError(err).Error("Failed to parse pty-req message")
+			case "env":
+				var envReq struct {
+					Name  string
+					Value string
 				}
-				if err := r.Reply(true, nil); err != nil {
-					log.WithError(err).Warn("Failed to reply")
+				if err := ssh.Unmarshal(r.Payload, &envReq); err != nil {
+					log.WithError(errors.WithStack(err)).Error("Failed to parse env request body")
+					reply = false
+					break
 				}
+				session.console.Envs[envReq.Name] = envReq.Value
+			case "window-change":
+				winchMsg := struct {
+					Columns uint32
+					Rows    uint32
+					Width   uint32
+					Height  uint32
+				}{}
+				if err := ssh.Unmarshal(r.Payload, &winchMsg); err != nil {
+					log.WithError(errors.WithStack(err)).Error("Failed to parse window-change request body")
+					reply = false
+					break
+				}
+				ptycon, ok := console.(hypervisor.PtyConsole)
+				if session.ptyreq != nil && ok {
+					if err := ptycon.UpdateWindowSize(winchMsg.Columns, winchMsg.Rows); err != nil {
+						log.WithError(err).Error("Failed UpdateWindowSize")
+						reply = false
+						break
+					}
+				} else {
+					log.Warn("window-change sshreq for non-tty session")
+				}
+			case "exec":
+				var execMsg struct {
+					Command string
+				}
+				if err := ssh.Unmarshal(r.Payload, &execMsg); err != nil {
+					log.WithError(errors.WithStack(err)).Error("Failed to parse exec request body")
+					reply = false
+					break
+				}
+
+				// TODO: Skip /bin/sh -c if .Command does not contain shell keywords.
+				if _, err := console.Exec(session.console, []string{"/bin/sh", "-c", execMsg.Command}); err != nil {
+					log.WithError(err).Error("Failed console.Exec")
+					reply = false
+					break
+				}
+				go func() {
+					quit <- console.Wait()
+				}()
 			default:
-				if r.WantReply {
-					r.Reply(false, nil)
+				reply = false
+				log.Warn("Unsupported session request")
+			}
+
+			if r.WantReply {
+				if err := r.Reply(reply, nil); err != nil {
+					log.WithError(errors.WithStack(err)).Warn("Failed to reply")
 				}
-				log.Warn("Unsupported session request: ", r.Type)
 			}
 		case err := <-quit:
-			if err != nil {
-				log.WithError(err).Error("")
+			sendExitStatus := func(code uint32) {
+				msg := struct {
+					ExitStatus uint32
+				}{uint32(code)}
+				_, err := connection.SendRequest("exit-status", false, ssh.Marshal(&msg))
+				if err != nil {
+					log.WithError(err).Error("Failed to send exit-status")
+				} else {
+					log.WithField("exit-status", msg.ExitStatus).Info("Reply exit-status")
+				}
+			}
+
+			if exiterr, ok := err.(hypervisor.ConsoleWaitError); ok {
+				sendExitStatus(uint32(exiterr.ExitCode()))
+			} else if err != nil {
+				log.WithError(err).Error("Unknown Error")
+			} else {
+				// err == nil
+				sendExitStatus(0)
 			}
 			break Done
 		}

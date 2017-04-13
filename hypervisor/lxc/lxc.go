@@ -390,8 +390,7 @@ func (d *LXCHypervisorDriver) InstanceConsole() hypervisor.Console {
 type lxcConsole struct {
 	lxc      *LXCHypervisorDriver
 	attached *os.Process
-	wg       *sync.WaitGroup
-	pty      *os.File
+	fds      []*os.File
 	tty      string
 }
 
@@ -399,13 +398,198 @@ func (con *lxcConsole) container() *lxc.Container {
 	return con.lxc.container
 }
 
-func (con *lxcConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
+func (con *lxcConsole) Exec(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
+	return con.pipeAttach(param, args)
+}
+
+func (con *lxcConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
+	return con.pipeAttach(param, []string{"/bin/bash"})
+}
+
+func (con *lxcConsole) pipeAttach(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
 	if con.container().State() != lxc.RUNNING {
-		return errors.New("lxc-container can not perform console")
+		return nil, errors.New("lxc-container can not perform console")
 	}
 
-	return con.attachShell(stdin, stdout, stderr)
+	fds := make([]*os.File, 6)
+	closeAll := func() {
+		for _, fd := range fds {
+			fd.Close()
+		}
+	}
+
+	var err error
+	rIn, wIn, err := os.Pipe() // stdin
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed os.Pipe for stdin")
+	}
+	fds = append(fds, rIn, wIn)
+	con.fds = append(con.fds, wIn)
+	rOut, wOut, err := os.Pipe() // stdout
+	if err != nil {
+		defer closeAll()
+		return nil, errors.Wrap(err, "Failed os.Pipe for stdout")
+	}
+	fds = append(fds, rOut, wOut)
+	con.fds = append(con.fds, rOut)
+	rErr, wErr, err := os.Pipe() // stderr
+	if err != nil {
+		defer closeAll()
+		return nil, errors.Wrap(err, "Failed os.Pipe for stderr")
+	}
+	fds = append(fds, rErr, wErr)
+	con.fds = append(con.fds, rErr)
+
+	waitClosed := new(sync.WaitGroup)
+	closeChan := make(chan hypervisor.Closed, 3)
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(wIn, param.Stdin)
+		if err == nil {
+			// param.Stdin was closed due to EOF so needs to send EOF to pipe as well
+			wIn.Close()
+		}
+		// TODO: handle err is not nil case
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stdout, rOut)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stderr, rErr)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	go func() {
+		waitClosed.Wait()
+		defer close(closeChan)
+	}()
+
+	err = con.attachShell(rIn, wOut, wErr, param.Envs, args)
+	if err != nil {
+		defer func() {
+			closeAll()
+			con.fds = []*os.File{}
+		}()
+		return nil, err
+	}
+
+	// Close file descriptors for child process.
+	defer func() {
+		rIn.Close()
+		wOut.Close()
+		wErr.Close()
+	}()
+
+	return closeChan, nil
+}
+
+func (con *lxcConsole) AttachPty(param *hypervisor.ConsoleParam, ptyreq *hypervisor.SSHPtyReq) (<-chan hypervisor.Closed, error) {
+	if con.container().State() != lxc.RUNNING {
+		return nil, errors.New("lxc-container can not perform console")
+	}
+
+	fpty, ftty, err := pty.Open()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to open tty")
+	}
+	// Close primary socket
+	defer ftty.Close()
+	con.fds = append(con.fds, fpty)
+
+	waitClosed := new(sync.WaitGroup)
+	closeChan := make(chan hypervisor.Closed, 3)
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(fpty, param.Stdin)
+		if err == nil {
+			// param.Stdin was closed due to EOF so needs to send EOF to pty as well
+			fpty.Close()
+		}
+		// TODO: handle err is not nil case
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stdout, fpty)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	waitClosed.Add(1)
+	go func() {
+		_, err := io.Copy(param.Stderr, fpty)
+		closeChan <- err
+		defer waitClosed.Done()
+	}()
+	go func() {
+		waitClosed.Wait()
+		defer close(closeChan)
+	}()
+
+	SetWinsize(ftty.Fd(), &Winsize{Height: uint16(ptyreq.Rows), Width: uint16(ptyreq.Columns)})
+	/*
+		modes, err := TcGetAttr(ftty.Fd())
+		if err != nil {
+			return errors.Wrap(err, "Failed TcGetAttr")
+		}
+		modes.Lflag &^= syscall.ECHO
+		modes.Iflag |= syscall.IGNCR
+		err = TcSetAttr(ftty.Fd(), modes)
+		if err != nil {
+			return errors.Wrap(err, "Failed TcSetAttr")
+		}
+	*/
+
+	if ptyreq.Term != "" {
+		param.Envs["TERM"] = ptyreq.Term
+	}
+	err = con.attachShell(ftty, ftty, ftty, param.Envs, []string{"/bin/bash"})
+	if err != nil {
+		defer func() {
+			fpty.Close()
+			con.fds = []*os.File{}
+		}()
+		return nil, err
+	}
+	con.tty = ftty.Name()
+	return closeChan, nil
 	//return con.console(stdin, stdout, stderr)
+}
+
+func (con *lxcConsole) UpdateWindowSize(w, h uint32) error {
+	if !(len(con.fds) == 1) {
+		return errors.New("tty is not opened")
+	}
+	return SetWinsize(con.fds[0].Fd(), &Winsize{
+		Width:  uint16(w),
+		Height: uint16(h),
+	})
+}
+
+type consoleWaitError struct {
+	os.ProcessState
+}
+
+func (c *consoleWaitError) Error() string {
+	return c.ProcessState.String()
+}
+
+func (c *consoleWaitError) ExitCode() int {
+	// http://stackoverflow.com/questions/10385551/get-exit-code-go
+	if status, ok := c.Sys().(syscall.WaitStatus); ok {
+		return status.ExitStatus()
+	}
+	log.Warnf("This platform %s does not support syscall.WaitStatus", runtime.GOOS)
+	if !c.Success() {
+		return 1
+	}
+	return 0
 }
 
 func (con *lxcConsole) Wait() error {
@@ -413,20 +597,32 @@ func (con *lxcConsole) Wait() error {
 		return errors.New("No process is found")
 	}
 	defer func() {
-		err := con.pty.Close()
-		log.WithFields(log.Fields{
-			"tty": con.tty,
-			"pid": con.attached.Pid,
-		}).WithError(errors.WithStack(err)).Info("TTY session closed")
-		con.pty = nil
+		log := log.WithField("pid", con.attached.Pid)
+		if con.tty != "" {
+			log = log.WithField("tty", con.tty)
+		}
+
+		for _, fd := range con.fds {
+			fd.Close()
+		}
+		con.fds = nil
 		con.attached = nil
+		con.tty = ""
+		log.Info("Closed attached session")
 	}()
 
-	_, err := con.attached.Wait()
+	state, err := con.attached.Wait()
 	if err != nil {
 		con.attached.Release()
+		return errors.Wrap(err, "Failed Process.Wait")
 	}
-	return errors.Wrap(err, "Failed Process.Wait")
+
+	if !state.Success() {
+		return &consoleWaitError{
+			ProcessState: *state,
+		}
+	}
+	return nil
 }
 
 func (con *lxcConsole) ForceClose() error {
@@ -438,92 +634,43 @@ func (con *lxcConsole) ForceClose() error {
 	return errors.WithStack(con.attached.Kill())
 }
 
-func (con *lxcConsole) attachShell(stdin io.Reader, stdout, stderr io.Writer) error {
-	var wg sync.WaitGroup
-	fpty, ftty, err := pty.Open()
-	if err != nil {
-		return errors.Wrapf(err, "Failed to open tty")
-	}
-	// Close primary socket
-	defer ftty.Close()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		io.Copy(fpty, stdin)
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		io.Copy(stdout, fpty)
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		io.Copy(stderr, fpty)
-	}()
-
-	modes, err := TcGetAttr(ftty.Fd())
-	if err != nil {
-		return errors.Wrap(err, "Failed TcGetAttr")
-	}
-	modes.Lflag &^= syscall.ECHO
-	modes.Iflag |= syscall.IGNCR
-	err = TcSetAttr(ftty.Fd(), modes)
-	if err != nil {
-		return errors.Wrap(err, "Failed TcSetAttr")
-	}
-
+func (con *lxcConsole) attachShell(stdin, stdout, stderr *os.File, envs map[string]string, args []string) error {
 	options := lxc.DefaultAttachOptions
-	options.StdinFd = ftty.Fd()
-	options.StdoutFd = ftty.Fd()
-	options.StderrFd = ftty.Fd()
+	options.StdinFd = stdin.Fd()
+	options.StdoutFd = stdout.Fd()
+	options.StderrFd = stderr.Fd()
 	options.ClearEnv = true
+	if len(envs) > 0 {
+		s := make([]string, len(envs))
+		for k, v := range envs {
+			s = append(s, fmt.Sprintf("%s=%s", k, v))
+		}
+		options.Env = s
+	}
 
-	pid, err := con.container().RunCommandNoWait([]string{"/bin/bash"}, options)
+	pid, err := con.container().RunCommandNoWait(args, options)
 	if err != nil {
-		err = errors.WithStack(err)
-		con.lxc.log.WithError(err).Errorln("Failed to AttachShell")
-		defer fpty.Close()
-		return err
+		return errors.Wrap(err, "Failed lxc.RunCommandNoWait")
 	}
 
 	proc, err := os.FindProcess(pid)
 	if err != nil {
-		err = errors.WithStack(err)
-		con.lxc.log.WithError(err).Errorf("Failed to find attached shell process: %d", pid)
-		defer fpty.Close()
-		return err
+		return errors.Wrapf(err, "Failed os.FindProcess: %d", pid)
 	}
 	con.attached = proc
-	con.wg = &wg
-	con.pty = fpty
-	con.tty = ftty.Name()
+
 	return nil
 }
 
-func (con *lxcConsole) console(stdin io.Reader, stdout, stderr io.Writer) error {
-	fpty, ftty, err := pty.Open()
-	if err != nil {
-		return errors.Wrapf(err, "Failed to open tty")
-	}
-	defer ftty.Close()
-	defer fpty.Close()
-
-	go io.Copy(fpty, stdin)
-	go io.Copy(stdout, fpty)
-	go io.Copy(stderr, os.Stderr)
-
+func (con *lxcConsole) console(stdin, stdout, stderr *os.File) error {
 	options := lxc.DefaultConsoleOptions
-	options.StdinFd = ftty.Fd()
-	options.StdoutFd = ftty.Fd()
-	options.StderrFd = ftty.Fd()
+	options.StdinFd = stdin.Fd()
+	options.StdoutFd = stdout.Fd()
+	options.StderrFd = stderr.Fd()
 	options.EscapeCharacter = '~'
 
 	if err := con.container().Console(options); err != nil {
-		err = errors.WithStack(err)
-		con.lxc.log.WithError(err).Error("Failed lxc.Console")
-		return err
+		return errors.Wrap(err, "Failed lxc.Console")
 	}
 	return nil
 }
@@ -543,4 +690,20 @@ func TcGetAttr(fd uintptr) (*syscall.Termios, error) {
 		return nil, err
 	}
 	return termios, nil
+}
+
+//https://github.com/creack/termios/blob/master/win/win.go
+// Winsize stores the Heighty and Width of a terminal.
+type Winsize struct {
+	Height uint16
+	Width  uint16
+	x      uint16 // unused
+	y      uint16 // unused
+}
+
+func SetWinsize(fd uintptr, ws *Winsize) error {
+	if _, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TIOCSWINSZ), uintptr(unsafe.Pointer(ws))); err != 0 {
+		return err
+	}
+	return nil
 }

@@ -1,7 +1,6 @@
 package hypervisor
 
 import (
-	"io"
 	"testing"
 
 	"github.com/axsh/openvdc/model"
@@ -55,8 +54,12 @@ func (d *testDriver) Recover(model.InstanceState) error {
 type testConsole struct {
 }
 
-func (d *testConsole) Attach(stdin io.Reader, stdout, stderr io.Writer) error {
-	return nil
+func (d *testConsole) Attach(param *ConsoleParam) (<-chan Closed, error) {
+	return nil, nil
+}
+
+func (d *testConsole) Exec(param *ConsoleParam, args []string) (<-chan Closed, error) {
+	return nil, nil
 }
 
 func (d *testConsole) Wait() error {
