@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api/executor"
 	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/hypervisor"
@@ -20,8 +20,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 )
-
-var log = logrus.WithField("context", "vdc-executor")
 
 type VDCExecutor struct {
 	hypervisorProvider hypervisor.HypervisorProvider
@@ -86,7 +84,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
 	instanceID := taskInfo.GetTaskId().GetValue()
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -144,7 +142,7 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 }
 
 func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -189,7 +187,7 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 }
 
 func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -234,7 +232,7 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 }
 
 func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -280,7 +278,7 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 }
 
 func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceID string) error {
-	log := log.WithFields(logrus.Fields{
+	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
 	})
@@ -589,8 +587,8 @@ func execute(cmd *cobra.Command, args []string) {
 }
 
 func main() {
-	logrus.SetFormatter(&cmd.LogFormatter{})
-	logrus.SetLevel(logrus.DebugLevel)
+	log.SetFormatter(&cmd.LogFormatter{})
+	log.SetLevel(log.DebugLevel)
 	rootCmd.AddCommand(cmd.VersionCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
