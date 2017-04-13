@@ -242,5 +242,5 @@ function download_container_image () {
 
 for img in "${IMAGES[@]}"
 do
-	download_container_image "${img}"
+	#download_container_image "${img}"
 done
