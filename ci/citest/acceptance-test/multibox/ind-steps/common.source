@@ -211,3 +211,36 @@ function enable_service_over_ssh() {
     run_ssh root@${IP_ADDR} "systemctl enable ${service}"
   ) ; prev_cmd_failed
 }
+
+function download_container_image () {
+	local img="${1}"
+	(
+		meta="meta.tar.xz"
+		rootfs="rootfs.tar.xz"
+
+		imgHost="https://uk.images.linuxcontainers.org"
+		imgHostIndex="https://uk.images.linuxcontainers.org/meta/1.0/index-system"
+		imgIndex=$(curl -s "$imgHostIndex")
+
+		for item in ${imgIndex//\\n/}
+		do
+			if [[ $item =~ $img ]]
+			then
+				IFS=';' read -a parts <<< "$item"
+
+				imageFolder=${parts[-1]}
+				imgHost+=$imageFolder
+				imgDirFolder=${img//";"/"-"}
+				
+				mkdir -p "$IMG_DIR/$imgDirFolder"
+				curl -o "$IMG_DIR/$imgDirFolder/$meta" "$imgHost/$meta"
+				curl -o "$IMG_DIR/$imgDirFolder/$rootfs" "$imgHost/$rootfs"
+			fi
+		done
+	) #; prev_cmd_failed. 
+}
+
+for img in "${IMAGES[@]}"
+do
+	download_container_image "${img}"
+done

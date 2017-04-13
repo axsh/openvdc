@@ -16,9 +16,15 @@ BOXES=(
     "minimal-7.2.1511-x86_64.kvm.box"
 )
 
+IMAGES=(
+	"centos;7;amd64"
+	"ubuntu;trusty;amd64"
+)
+
 # When a branch is built for the first time it will copy the cache from this branch
 # unless the REBUILD flag is set
 BASE_BRANCH="${BASE_BRANCH:-master}"
 
 BOXES_DIR="/data/openvdc-ci/boxes"
 CACHE_DIR="/data/openvdc-ci/branches"
+IMG_DIR="/data/openvdc-ci/images"
