@@ -66,9 +66,6 @@ func (sshd *SSHServer) Setup() error {
 		sshd.config.AddHostKey(sshSigner)
 	}
 
-	if provider := sshd.finder.GetHypervisorProvider(); provider == nil {
-		return errors.New("HypervisorProvider is not ready")
-	}
 	return nil
 }
 
@@ -92,11 +89,17 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 					newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 					continue
 				}
+				provider := sshd.finder.GetHypervisorProvider()
+				if provider == nil {
+					log.Error("HypervisorProvider is not ready")
+					newChannel.Reject(ssh.Prohibited, "HypervisorProvider is not ready")
+					continue
+				}
 				session := sshSession{
 					instanceID: sshConn.User(),
 					sshd:       sshd,
 					peer:       sshConn.RemoteAddr(),
-					provider:   sshd.finder.GetHypervisorProvider(),
+					provider:   provider,
 				}
 				go session.handleChannel(newChannel)
 			}
