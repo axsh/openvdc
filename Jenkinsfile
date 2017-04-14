@@ -53,14 +53,14 @@ def checkout_and_merge() {
 
 def stage_unittest_rpmbuild(label) {
   node(label) {
-    stage "Prepare build environment ${label}" {
+    stage("Prepare build environment ${label}") {
       checkout_and_merge()
       write_build_env(label)
     }
-    stage "Run Unit Tests ${label}" {
+    stage("Run Unit Tests ${label}") {
       sh "./ci/citest/unit-tests/unit-tests.sh ./build.env"
     }
-    stage "RPM Build ${label}" {
+    stage("RPM Build ${label}") {
       sh "./ci/citest/rpmbuild/rpmbuild.sh ./build.env"
     }
   }
