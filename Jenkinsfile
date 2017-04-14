@@ -51,21 +51,18 @@ def checkout_and_merge() {
 @Field RELEASE_SUFFIX=null
 @Field SHA=null
 
-def stage_unit_test(label) {
+def stage_unittest_rpmbuild(label) {
   node(label) {
-    stage "Units Tests ${label}"
-    checkout_and_merge()
-    write_build_env(label)
-    sh "./ci/citest/unit-tests/unit-tests.sh ./build.env"
-  }
-}
-
-def stage_rpmbuild(label) {
-  node(label) {
-    stage "RPM Build ${label}"
-    checkout_and_merge()
-    write_build_env(label)
-    sh "./ci/citest/rpmbuild/rpmbuild.sh ./build.env"
+    stage "Prepare build environment ${label}" {
+      checkout_and_merge()
+      write_build_env(label)
+    }
+    stage "Run Unit Tests ${label}" {
+      sh "./ci/citest/unit-tests/unit-tests.sh ./build.env"
+    }
+    stage "RPM Build ${label}" {
+      sh "./ci/citest/rpmbuild/rpmbuild.sh ./build.env"
+    }
   }
 }
 
@@ -102,7 +99,6 @@ if( buildParams.BUILD_OS != "all" ){
 
 // Using .each{} hits "a CPS-transformed closure is not yet supported (JENKINS-26481)"
 for( label in build_nodes) {
-  stage_unit_test(label)
-  stage_rpmbuild(label)
+  stage_unittest_rpmbuild(label)
   stage_acceptance(label)
 }
