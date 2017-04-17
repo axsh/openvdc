@@ -31,12 +31,6 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 func GetFile(cacheFolderPath string, extFolderPath string, fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
-	f, err := os.Create(filePath)
-
-	if err != nil {
-		return err
-	}
-	defer f.Close()
 
 	res, err := http.Get(extFolderPath + fileName)
 	if err != nil {
@@ -49,6 +43,13 @@ func GetFile(cacheFolderPath string, extFolderPath string, fileName string) erro
 	if err != nil {
 		return err
 	}
+
+	f, err := os.Create(filePath)
+
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 
 	_, err = f.Write(fileContent)
 	if err != nil {
