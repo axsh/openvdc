@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -22,7 +23,7 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 			return err
 		}
 		GetFile(cacheFolderPath, extFolderPath, "meta.tar.xz")
-		DecompressXz(cacheFolderPath, "meta.tar.xz")
+		DecompressXz(cacheFolderPath, "meta.tar.xz", cacheFolderPath)
 	}
 
 	return nil
@@ -31,20 +32,26 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 func GetFile(cacheFolderPath string, extFolderPath string, fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
-
 	f, err := os.Create(filePath)
+
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	res, err := http.Get(filepath.Join(extFolderPath, fileName))
+	res, err := http.Get(extFolderPath + fileName)
 	if err != nil {
 		return err
 	}
+
 	defer res.Body.Close()
 
-	_, err = io.Copy(f, res.Body)
+	fileContent, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write(fileContent)
 	if err != nil {
 		return err
 	}
@@ -68,7 +75,7 @@ func CreateCacheFolder(folderPath string) error {
 	}
 }
 
-func DecompressXz(cacheFolderPath string, fileName string) error {
+func DecompressXz(cacheFolderPath string, fileName string, outputPath string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
@@ -100,7 +107,7 @@ func DecompressXz(cacheFolderPath string, fileName string) error {
 				log.Fatal(err)
 			}
 		case tar.TypeReg, tar.TypeRegA:
-			w, err := os.Create(filepath.Join(cacheFolderPath, hdr.Name))
+			w, err := os.Create(filepath.Join(outputPath, hdr.Name))
 			if err != nil {
 				log.Fatal(err)
 			}
