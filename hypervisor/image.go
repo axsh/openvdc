@@ -2,15 +2,18 @@ package hypervisor
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"xi2.org/x/xz"
 )
 
-func PrepareCache(cacheFolderPath string, imgPath string) error {
+func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 
 	folderState := CacheFolderExists(cacheFolderPath)
 	if folderState == false {
@@ -18,16 +21,33 @@ func PrepareCache(cacheFolderPath string, imgPath string) error {
 		if err != nil {
 			return err
 		}
-		FetchImage(imgPath)
-		DecompressXz(imgPath, cacheFolderPath)
+		GetFile(cacheFolderPath, extFolderPath, "meta.tar.xz")
+		DecompressXz(cacheFolderPath, "meta.tar.xz")
 	}
 
 	return nil
 }
 
-func FetchImage(imgPath) error {
+func GetFile(cacheFolderPath string, extFolderPath string, fileName string) error {
 
-	//TODO: Fetch image from local img server.
+	filePath := filepath.Join(cacheFolderPath, fileName)
+
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	res, err := http.Get(filepath.Join(extFolderPath, fileName))
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	_, err = io.Copy(f, res.Body)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -48,11 +68,13 @@ func CreateCacheFolder(folderPath string) error {
 	}
 }
 
-func DecompressXz(inputFilePath string, outputFilePath string) error {
+func DecompressXz(cacheFolderPath string, fileName string) error {
 
-	f, err := os.Open(inputFilePath)
+	filePath := filepath.Join(cacheFolderPath, fileName)
+
+	f, err := os.Open(filePath)
 	if err != nil {
-		return errors.Wrapf(err, "Failed reading input file: %s", inputFilePath)
+		return errors.Wrapf(err, "Failed reading input file: %s", filePath)
 	}
 
 	r, err := xz.NewReader(f, 0)
@@ -78,7 +100,7 @@ func DecompressXz(inputFilePath string, outputFilePath string) error {
 				log.Fatal(err)
 			}
 		case tar.TypeReg, tar.TypeRegA:
-			w, err := os.Create(outputFilePath + hdr.Name)
+			w, err := os.Create(filepath.Join(cacheFolderPath, hdr.Name))
 			if err != nil {
 				log.Fatal(err)
 			}
