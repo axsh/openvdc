@@ -29,6 +29,10 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 		if err != nil {
 			errors.Wrapf(err, "Failed decompressing file.")
 		}
+		err = GetFile(cacheFolderPath, extFolderPath, "rootfs.tar.xz")
+		if err != nil {
+			errors.Wrapf(err, "Failed downloading file.")
+		}
 	}
 
 	return nil
