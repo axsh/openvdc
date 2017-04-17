@@ -2,7 +2,6 @@ package hypervisor
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
