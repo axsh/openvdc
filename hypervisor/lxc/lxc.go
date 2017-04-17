@@ -255,20 +255,6 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		ExtraArgs: lxcTmpl.ExtraArgs,
 		Server:    settings.ImageServer,
 	}
-	switch lxcTmpl.Template {
-	case "download":
-		d.template.Distro = lxcTmpl.Distro
-		d.template.Release = lxcTmpl.Release
-		d.template.Variant = lxcTmpl.Variant
-		d.template.Template = lxcTmpl.Template
-	case "local":
-		d.template.Distro = lxcTmpl.Distro
-		d.template.Release = lxcTmpl.Release
-		d.template.Variant = lxcTmpl.Variant
-		d.template.Template = lxcTmpl.Template
-	default:
-		d.template.Release = lxcTmpl.Release
-	}
 
 	if d.template.Arch == "" {
 		// Guess LXC Arch name
@@ -278,8 +264,26 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		}
 	}
 
-	if err := d.container.Create(d.template); err != nil {
-		return errors.Wrap(err, "Failed lxc.Create")
+	switch lxcTmpl.Template {
+	case "download":
+		d.template.Distro = lxcTmpl.Distro
+		d.template.Release = lxcTmpl.Release
+		d.template.Variant = lxcTmpl.Variant
+		d.template.Template = lxcTmpl.Template
+
+		if err := d.container.Create(d.template); err != nil {
+			return errors.Wrap(err, "Failed lxc.Create")
+		}
+
+	case "local":
+
+		//TODO: Don't hardcode first part of cache path
+		cachePath := filePath.Join("/var/cache/lxc/", lxcTmpl.Distro, lxcTmpl.Release, lxcTmpl.Variant)
+
+		PrepareCache(cacheFolderPath, settings.ImageServer)
+
+	default:
+		d.template.Release = lxcTmpl.Release
 	}
 
 	if err := d.modifyConf(lxcResTmpl); err != nil {
