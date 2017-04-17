@@ -15,7 +15,7 @@ import (
 
 func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 
-	folderState := CacheFolderExists(cacheFolderPath)
+	folderState := Exists(cacheFolderPath)
 	if folderState == false {
 		err := CreateCacheFolder(cacheFolderPath)
 		if err != nil {
@@ -69,8 +69,8 @@ func GetFile(cacheFolderPath string, extFolderPath string, fileName string) erro
 	return nil
 }
 
-func CacheFolderExists(folderPath string) bool {
-	if _, err := os.Stat(folderPath); err != nil {
+func Exists(path string) bool {
+	if _, err := os.Stat(path); err != nil {
 		return false
 	}
 	return true
