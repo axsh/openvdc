@@ -21,6 +21,9 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if Exists(filepath.Join(cacheFolderPath, "meta.tar.xz")) == false {
 		err = GetFile(cacheFolderPath, extFolderPath, "meta.tar.xz")
 		if err != nil {
 			errors.Wrapf(err, "Failed downloading file.")
@@ -29,6 +32,9 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 		if err != nil {
 			errors.Wrapf(err, "Failed decompressing file.")
 		}
+	}
+
+	if Exists(filepath.Join(cacheFolderPath, "rootfs.tar.xz")) == false {
 		err = GetFile(cacheFolderPath, extFolderPath, "rootfs.tar.xz")
 		if err != nil {
 			errors.Wrapf(err, "Failed downloading file.")
