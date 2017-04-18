@@ -73,6 +73,10 @@ func init() {
 		Nexts: []InstanceState_State{},
 		Goals: []InstanceState_State{},
 	}
+	instanceStateDefs[InstanceState_FAILED] = &stateDef{
+		Nexts: []InstanceState_State{},
+		Goals: []InstanceState_State{},
+	}
 }
 
 type instances struct {
@@ -309,9 +313,17 @@ func (s InstanceStateSlice) Contains(state InstanceState_State) bool {
 	return false
 }
 
+var InstanceTerminalStates InstanceStateSlice = []InstanceState_State{
+	InstanceState_TERMINATED,
+	InstanceState_FAILED,
+}
+
 func (i *InstanceState) ValidateGoalState(goal InstanceState_State) error {
-	if i.GetState() == goal || i.GetState() == InstanceState_TERMINATED {
-		return fmt.Errorf("Instance is already %s", i.GetState().String())
+	if i.GetState() == goal {
+		return fmt.Errorf("Instance is already in goal state: %s", goal)
+	}
+	if InstanceTerminalStates.Contains(i.GetState()) {
+		return fmt.Errorf("Instance is already in terminal state: %s", i.GetState())
 	}
 	if instanceStateDefs[i.GetState()].Goals.Contains(goal) {
 		return nil
