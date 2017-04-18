@@ -26,7 +26,8 @@ message InstanceState {
     STOPPED = 5;
     REBOOTING = 6;
     SHUTTINGDOWN = 7;
-    TERMINATED = 8;
+    TERMINATED = 8; // Terminal
+    FAILED = 9; // Terminal
   }
   State state = 1;
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
