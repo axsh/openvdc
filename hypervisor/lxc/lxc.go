@@ -278,7 +278,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	case "local":
 
 		//TODO: Don't hardcode first part of cache path
-		cachePath := filePath.Join("/var/cache/lxc/", lxcTmpl.Distro, lxcTmpl.Release, lxcTmpl.Variant)
+		cacheFolderPath := filepath.Join("/var/cache/lxc/", lxcTmpl.Distro, lxcTmpl.Release, lxcTmpl.Variant)
 
 		PrepareCache(cacheFolderPath, settings.ImageServer)
 
