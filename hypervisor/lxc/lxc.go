@@ -271,14 +271,14 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Variant = lxcTmpl.Variant
 		d.template.Template = lxcTmpl.Template
 
-		if err := d.container.Create(d.template); err != nil {
-			return errors.Wrap(err, "Failed lxc.Create")
-		}
-
 	case "local":
+		d.template.Distro = lxcTmpl.Distro
+		d.template.Release = lxcTmpl.Release
+		d.template.Variant = lxcTmpl.Variant
+		d.template.Template = "download"
 
 		//TODO: Don't hardcode first part of cache path
-		cacheFolderPath := filepath.Join("/var/cache/lxc/", lxcTmpl.Distro, lxcTmpl.Release, lxcTmpl.Variant)
+		cacheFolderPath := filepath.Join("/var/cache/lxc/", d.template.Distro, d.template.Release, d.template.Arch)
 
 		PrepareCache(cacheFolderPath, settings.ImageServer)
 
@@ -288,6 +288,9 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 	if err := d.modifyConf(lxcResTmpl); err != nil {
 		return err
+	}
+	if err := d.container.Create(d.template); err != nil {
+		return errors.Wrap(err, "Failed lxc.Create")
 	}
 
 	// Force reload the modified container config.
