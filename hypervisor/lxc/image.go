@@ -1,4 +1,4 @@
-package hypervisor
+package lxc
 
 import (
 	"archive/tar"
@@ -50,26 +50,27 @@ func GetFile(cacheFolderPath string, extFolderPath string, fileName string) erro
 
 	res, err := http.Get(extFolderPath + fileName)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed Http.Get for file: %s", fileName)
 	}
 
 	defer res.Body.Close()
 
 	fileContent, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed reading http response for file: %s", fileName)
+
 	}
 
 	f, err := os.Create(filePath)
 
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed creating file: %s", fileName)
 	}
 	defer f.Close()
 
 	_, err = f.Write(fileContent)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed writing to file: %s", fileName)
 	}
 
 	return nil
