@@ -276,6 +276,8 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Release = lxcTmpl.Release
 		d.template.Variant = lxcTmpl.Variant
 		d.template.Template = "download"
+		d.template.DisableGPGValidation = true
+		d.template.ForceCache = true
 
 		//TODO: Don't hardcode first part of cache path
 		cacheFolderPath := filepath.Join("/var/cache/lxc/", d.template.Distro, d.template.Release, d.template.Arch)
