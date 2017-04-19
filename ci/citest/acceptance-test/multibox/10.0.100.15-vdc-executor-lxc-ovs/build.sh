@@ -14,7 +14,7 @@ IND_STEPS=(
     "hosts"
     "disable-firewalld"
     "epel"
-    "bridge-utils"
+    "openvswitch"
     "cgroups"
     "mesosphere-repo"
     "mesos-agent"

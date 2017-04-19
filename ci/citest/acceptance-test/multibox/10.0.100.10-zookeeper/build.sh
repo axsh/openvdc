@@ -15,7 +15,7 @@ IND_STEPS=(
     "ssh"
     "hosts"
     "disable-firewalld"
-    "mesosphere"
+    "mesosphere-repo"
     "zookeeper"
 )
 

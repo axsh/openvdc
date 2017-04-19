@@ -14,7 +14,8 @@ for node in ${scheduled_nodes[@]} ; do
     ${ENV_ROOTDIR}/${node}/destroy_cache.sh
 done
 
-destroy_bridge "vdc_env_br0"
+destroy_bridge "vdc_mngnt"
+destroy_bridge "vdc_insts"
 stop_masquerade "${NETWORK}/${PREFIX}"
 
 (
