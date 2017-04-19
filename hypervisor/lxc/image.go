@@ -47,8 +47,9 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 func GetFile(cacheFolderPath string, extFolderPath string, fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
+	extFilePath := filepath.Join(extFolderPath, fileName)
 
-	res, err := http.Get(extFolderPath + fileName)
+	res, err := http.Get(extFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "Failed Http.Get for file: %s", fileName)
 	}
