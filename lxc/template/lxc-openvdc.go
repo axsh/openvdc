@@ -1,19 +1,47 @@
-package lxc
+package main
 
 import (
-	"archive/tar"
-	"io"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
-	"xi2.org/x/xz"
 )
 
-func PrepareCache(cacheFolderPath string, extFolderPath string) error {
+var lxcPath string
+var cacheFolderPath string
+var imgPath string
+var containerName string
+
+func main() {
+
+	//TODO: Set these depending on passed args
+	cacheFolderPath = "/var/cache/lxc/centos/7/amd64/"
+	containerName = "test"
+	lxcPath = "/var/lib/lxc/"
+	imgPath = "127.0.0.1/images/centos/7/amd64/"
+
+	err := PrepareCache()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	setupContainerDir()
+}
+
+func setupContainerDir() {
+	containerPath := filepath.Join(lxcPath, containerName)
+	rootfsPath := filepath.Join(containerPath, "rootfs")
+
+	os.MkdirAll(rootfsPath, os.ModePerm)
+
+	DecompressXz("rootfs.tar.xz", rootfsPath)
+}
+
+func PrepareCache() error {
 
 	folderState := Exists(cacheFolderPath)
 	if folderState == false {
@@ -24,18 +52,18 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 	}
 
 	if Exists(filepath.Join(cacheFolderPath, "meta.tar.xz")) == false {
-		err := GetFile(cacheFolderPath, extFolderPath, "meta.tar.xz")
+		err := GetFile("meta.tar.xz")
 		if err != nil {
 			errors.Wrapf(err, "Failed downloading file.")
 		}
-		err = DecompressXz(cacheFolderPath, "meta.tar.xz", cacheFolderPath)
+		err = DecompressXz("meta.tar.xz", cacheFolderPath)
 		if err != nil {
 			errors.Wrapf(err, "Failed decompressing file.")
 		}
 	}
 
 	if Exists(filepath.Join(cacheFolderPath, "rootfs.tar.xz")) == false {
-		err := GetFile(cacheFolderPath, extFolderPath, "rootfs.tar.xz")
+		err := GetFile("rootfs.tar.xz")
 		if err != nil {
 			errors.Wrapf(err, "Failed downloading file.")
 		}
@@ -44,12 +72,15 @@ func PrepareCache(cacheFolderPath string, extFolderPath string) error {
 	return nil
 }
 
-func GetFile(cacheFolderPath string, extFolderPath string, fileName string) error {
+func GenerateConfigFile(cacheFolderPath string) {
+
+}
+
+func GetFile(fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
-	extFilePath := filepath.Join(extFolderPath, fileName)
 
-	res, err := http.Get(extFilePath)
+	res, err := http.Get(imgPath + "/" + fileName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed Http.Get for file: %s", fileName)
 	}
@@ -93,51 +124,15 @@ func CreateCacheFolder(folderPath string) error {
 	}
 }
 
-func DecompressXz(cacheFolderPath string, fileName string, outputPath string) error {
+func DecompressXz(fileName string, outputPath string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
-	f, err := os.Open(filePath)
+	err := archiver.TarXZ.Open(filePath, outputPath)
+
 	if err != nil {
-		return errors.Wrapf(err, "Failed reading input file: %s", filePath)
+		return err
 	}
-
-	r, err := xz.NewReader(f, 0)
-	if err != nil {
-		return errors.Wrapf(err, "Failed creating reader.")
-	}
-
-	tr := tar.NewReader(r)
-
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-
-			err = os.MkdirAll(hdr.Name, 0777)
-			if err != nil {
-				log.Fatal(err)
-			}
-		case tar.TypeReg, tar.TypeRegA:
-			w, err := os.Create(filepath.Join(outputPath, hdr.Name))
-			if err != nil {
-				log.Fatal(err)
-			}
-			_, err = io.Copy(w, tr)
-			if err != nil {
-				log.Fatal(err)
-			}
-			w.Close()
-		}
-	}
-
-	f.Close()
 
 	return nil
 }
