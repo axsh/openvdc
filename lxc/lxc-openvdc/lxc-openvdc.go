@@ -82,7 +82,7 @@ func GenerateConfig() {
 
 	if Exists(cfgPath) == false {
 
-		f, err := ioutil.ReadFile(filepath.Join(cacheFolderPath, "config-user"))
+		f, err := ioutil.ReadFile(filepath.Join(cacheFolderPath, "config"))
 		if err != nil {
 			fmt.Print(err)
 		}
