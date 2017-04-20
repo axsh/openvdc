@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
@@ -15,6 +16,8 @@ var lxcPath string
 var cacheFolderPath string
 var imgPath string
 var containerName string
+var containerPath string
+var rootfsPath string
 
 func main() {
 
@@ -23,19 +26,20 @@ func main() {
 	containerName = "test"
 	lxcPath = "/var/lib/lxc/"
 	imgPath = "127.0.0.1/images/centos/7/amd64/"
+	containerPath = filepath.Join(lxcPath, containerName)
+	rootfsPath = filepath.Join(containerPath, "rootfs")
 
 	err := PrepareCache()
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	setupContainerDir()
+	SetupContainerDir()
+
+	GenerateConfig()
 }
 
-func setupContainerDir() {
-	containerPath := filepath.Join(lxcPath, containerName)
-	rootfsPath := filepath.Join(containerPath, "rootfs")
-
+func SetupContainerDir() {
 	os.MkdirAll(rootfsPath, os.ModePerm)
 
 	DecompressXz("rootfs.tar.xz", rootfsPath)
@@ -43,8 +47,7 @@ func setupContainerDir() {
 
 func PrepareCache() error {
 
-	folderState := Exists(cacheFolderPath)
-	if folderState == false {
+	if Exists(cacheFolderPath) == false {
 		err := CreateCacheFolder(cacheFolderPath)
 		if err != nil {
 			return err
@@ -72,8 +75,29 @@ func PrepareCache() error {
 	return nil
 }
 
-func GenerateConfigFile(cacheFolderPath string) {
+func GenerateConfig() {
 
+	lxcCfgPath := filepath.Join(lxcPath, "config")
+	cfgPath := filepath.Join(containerPath, "config")
+
+	if Exists(cfgPath) == false {
+
+		f, err := ioutil.ReadFile(filepath.Join(cacheFolderPath, "config-user"))
+		if err != nil {
+			fmt.Print(err)
+		}
+
+		s := string(f[:])
+		s = strings.Replace(s, "LXC_TEMPLATE_CONFIG", lxcCfgPath, -1)
+		b := []byte(s)
+
+		add := "\n\nlxc.rootfs = " + rootfsPath +
+			"\nlxc.utsname = " + containerName
+
+		res := append(b, add...)
+
+		err = ioutil.WriteFile(cfgPath, res, 0644)
+	}
 }
 
 func GetFile(fileName string) error {
