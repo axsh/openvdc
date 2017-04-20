@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -21,11 +22,17 @@ var rootfsPath string
 
 func main() {
 
+	_dist := flag.String("dist", "centos", "Name of the distribution")
+	_release := flag.String("release", "7", "Release name/version")
+	_arch := flag.String("arch", "amd64", "Container architecture")
+
+	flag.Parse()
+
 	//TODO: Set these depending on passed args
-	cacheFolderPath = "/var/cache/lxc/centos/7/amd64/"
+	cacheFolderPath = filepath.Join("/var/cache/lxc", *_dist, *_release, *_arch)
 	containerName = "test"
 	lxcPath = "/var/lib/lxc/"
-	imgPath = "127.0.0.1/images/centos/7/amd64/"
+	imgPath = filepath.Join("127.0.0.1/images", *_dist, *_release, *_arch)
 	containerPath = filepath.Join(lxcPath, containerName)
 	rootfsPath = filepath.Join(containerPath, "rootfs")
 
@@ -152,6 +159,7 @@ func DecompressXz(fileName string, outputPath string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
+	//TODO: Use some other method for unpacking, this one is slow.
 	err := archiver.TarXZ.Open(filePath, outputPath)
 
 	if err != nil {
