@@ -7,6 +7,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 
+	"strings"
+
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -105,36 +107,69 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		return nil
 	}
 
-	getHypervisorName := func(offer *mesos.Offer) string {
-		for _, attr := range offer.Attributes {
-			if attr.GetName() == "hypervisor" &&
-				attr.GetType() == mesos.Value_TEXT {
-				return attr.GetText().GetValue()
-			}
-		}
-		return ""
-	}
-
 	findMatching := func(i *model.Instance) *mesos.Offer {
 		log := log.WithField("instance_id", i.GetId())
 		for _, offer := range offers {
-			hypervisorName := getHypervisorName(offer)
-			if hypervisorName == "" {
+			log := log.WithField("agent", offer.SlaveId.String())
+			var agentAttrs struct {
+				Hypervisor string   // Required
+				Bridges    []string // Optional
+			}
+			// Read and validate attribute entries from agent offer.
+			for _, attr := range offer.Attributes {
+				switch attr.GetName() {
+				case "hypervisor":
+					if attr.GetType() != mesos.Value_TEXT {
+						log.Error("Invalid value type for 'hypervisor' attribute")
+						break
+					}
+					agentAttrs.Hypervisor = attr.GetText().GetValue()
+
+				case "bridge":
+					if attr.GetType() == mesos.Value_TEXT {
+						if attr.GetText().GetValue() == "" {
+							log.Error("'bridge' attribute must be non-empty string")
+							break
+						}
+						agentAttrs.Bridges = append(agentAttrs.Bridges, attr.GetText().GetValue())
+					} else if attr.GetType() == mesos.Value_SET {
+						agentAttrs.Bridges = attr.GetSet().GetItem()
+					} else {
+						log.Errorf("Invalid value type for 'bridge' attribute: %s", attr.GetText())
+						break
+					}
+				default:
+					log.Warnf("Found unsupported attribute: %s", attr.GetName())
+				}
+			}
+
+			if agentAttrs.Hypervisor == "" {
+				log.Error("Required attributes are not advertised from agent")
 				continue
 			}
 
 			// TODO: Avoid type switch to find template types.
 			switch t := i.GetTemplate().GetItem(); t.(type) {
 			case *model.Template_Lxc:
-				if hypervisorName == "lxc" {
+				if agentAttrs.Hypervisor == "lxc" {
+					lxc := i.GetTemplate().GetLxc()
+					// Check for all requested and offered bridge names.
+					for _, i := range lxc.GetInterfaces() {
+						for _, localbr := range agentAttrs.Bridges {
+							if localbr != i.Bridge {
+								// Does not satisfy request
+								return nil
+							}
+						}
+					}
 					return offer
 				}
 			case *model.Template_Null:
-				if hypervisorName == "null" {
+				if agentAttrs.Hypervisor == "null" {
 					return offer
 				}
 			default:
-				log.Warnf("Unknown template type")
+				log.Warnf("Unknown template type: %T", t)
 			}
 		}
 		return nil
@@ -154,7 +189,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			continue
 		}
 
-		hypervisorName := getHypervisorName(found)
+		hypervisorName := strings.TrimPrefix(i.GetTemplate().ResourceTemplate().ResourceName(), "vm/")
 		log.WithFields(log.Fields{
 			"instance_id": i.GetId(),
 			"hypervisor":  hypervisorName,
