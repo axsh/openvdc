@@ -97,11 +97,10 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return err
 	}
 
-	// Push back to the initial state in case of error.
-	finState := model.InstanceState_REGISTERED
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
 	defer func() {
-		err = model.Instances(ctx).UpdateState(instanceID, finState)
-		if err != nil {
+		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
@@ -152,8 +151,8 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		return err
 	}
 
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_STOPPED
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
@@ -195,8 +194,8 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		return err
 	}
 
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_RUNNING
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
@@ -238,8 +237,8 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 		return err
 	}
 
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_RUNNING
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
@@ -289,8 +288,8 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 
 	originalState := inst.GetLastState().GetState()
 
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_RUNNING
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
 	defer func() {
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
