@@ -275,16 +275,18 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Distro = lxcTmpl.Distro
 		d.template.Release = lxcTmpl.Release
 		d.template.Arch = lxcTmpl.Arch
+		d.template.Template = lxcTmpl.Template
 
 	default:
 		d.template.Release = lxcTmpl.Release
 	}
 
-	if err := d.modifyConf(lxcResTmpl); err != nil {
-		return err
-	}
 	if err := d.container.Create(d.template); err != nil {
 		return errors.Wrap(err, "Failed lxc.Create")
+	}
+
+	if err := d.modifyConf(lxcResTmpl); err != nil {
+		return err
 	}
 
 	// Force reload the modified container config.
