@@ -78,10 +78,22 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		if err != nil {
 			log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
 		}
-		if err := exec.Failure(taskInfo.GetTaskId().GetValue(), model.FailureMessage_FAILED_BOOT); err != nil {
-			log.Errorln(err)
-		}
 	}
+}
+
+func recordFailedState(ctx context.Context, driver exec.ExecutorDriver, instanceID string, failureType model.FailureMessage_ErrorType, lastErr error) error {
+	_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
+		TaskId:  mesosutil.NewTaskID(instanceID),
+		State:   mesos.TaskState_TASK_FAILED.Enum(),
+		Message: proto.String(lastErr.Error()),
+	})
+	if err != nil {
+		log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
+	}
+	if err := model.Instances(ctx).AddFailureMessage(instanceID, failureType); err != nil {
+		log.WithError(err).Errorln("Failed Instances.AddFailureMessage")
+	}
+	return nil
 }
 
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
@@ -100,6 +112,9 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	defer func() {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_BOOT, err)
+		}
 		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
@@ -154,6 +169,9 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	defer func() {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_START, err)
+		}
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
@@ -197,6 +215,9 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	defer func() {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_STOP, err)
+		}
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
@@ -240,6 +261,9 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	defer func() {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_REBOOT, err)
+		}
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
 			log.WithField("state", finState).Error("Failed Instances.UpdateState")
@@ -291,6 +315,9 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	defer func() {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_TERMINATE, err)
+		}
 		err = model.Instances(ctx).UpdateState(instanceID, finState)
 		if err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
@@ -348,56 +375,32 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 	case "start":
 		if err := exec.startInstance(driver, taskId.GetValue()); err != nil {
 			log.WithError(err).Error("Failed to start instance")
-			if err := exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_START); err != nil {
-				log.Errorln(err)
-			}
 		}
 	case "stop":
 		if err := exec.stopInstance(driver, taskId.GetValue()); err != nil {
 			log.WithError(err).Error("Failed to stop instance")
-			if err := exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_STOP); err != nil {
-				log.Errorln(err)
-			}
 		}
 	case "reboot":
 		if err := exec.rebootInstance(driver, taskId.GetValue()); err != nil {
 			log.WithError(err).Error("Failed to reboot instance")
-			if err := exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_REBOOT); err != nil {
-				log.Errorln(err)
-			}
 		}
 	case "destroy":
-		tstatus := &mesos.TaskStatus{
+		if err := exec.terminateInstance(driver, taskId.GetValue()); err != nil {
+			log.WithError(err).Error("Failed to terminate instance")
+			// driver.SendStatusUpdate() with TASK_FAILED message is sent in terminateInstance()
+			break
+		}
+		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 			TaskId: taskId,
 			State:  mesos.TaskState_TASK_FINISHED.Enum(),
 			Source: mesos.TaskStatus_SOURCE_EXECUTOR.Enum(),
-		}
-		if err := exec.terminateInstance(driver, taskId.GetValue()); err != nil {
-			log.WithError(err).Error("Failed to terminate instance")
-			tstatus.State = mesos.TaskState_TASK_FAILED.Enum()
-			tstatus.Message = proto.String(err.Error())
-			if err := exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_TERMINATE); err != nil {
-				log.Errorln(err)
-			}
-		}
-		if _, err := driver.SendStatusUpdate(tstatus); err != nil {
+		})
+		if err != nil {
 			log.WithError(errors.WithStack(err)).Error("Couldn't send status update")
 		}
 	default:
 		log.WithField("msg", msg).Errorln("FrameworkMessage unrecognized.")
 	}
-}
-
-func (exec *VDCExecutor) Failure(instanceID string, failureMessage model.FailureMessage_ErrorType) error {
-	ctx, err := model.Connect(context.Background(), &zkAddr)
-	if err != nil {
-		return err
-	}
-	defer model.Close(ctx)
-	if err := model.Instances(ctx).AddFailureMessage(instanceID, failureMessage); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (exec *VDCExecutor) Shutdown(driver exec.ExecutorDriver) {
