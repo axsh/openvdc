@@ -67,8 +67,13 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	if err != nil {
 		log.WithError(err).Errorln("Couldn't send status update")
 	}
+	log := log.WithFields(log.Fields{
+		"instance_id": taskInfo.GetTaskId().GetValue(),
+		"hypervisor":  exec.hypervisorProvider.Name(),
+	})
+	runner := newRunner(driver, taskInfo.GetTaskId().GetValue(), log)
 
-	err = exec.bootInstance(driver, taskInfo)
+	err = runner.bootInstance()
 	if err != nil {
 		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 			TaskId:  taskInfo.GetTaskId(),
@@ -82,6 +87,88 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			log.Errorln(err)
 		}
 	}
+}
+
+func newRunner(driver exec.ExecutorDriver, instanceID string, log *log.Entry) *runner {
+	return &runner{
+		ctx:        context.Background(),
+		log:        log,
+		instanceID: instanceID,
+		driver:     driver,
+	}
+}
+
+type runner struct {
+	ctx        context.Context
+	driver     exec.ExecutorDriver
+	instanceID string
+	log        *log.Entry
+}
+
+func (r *runner) MesosTaskID() *mesos.TaskID {
+	return mesosutil.NewTaskID(r.instanceID)
+}
+
+func (r *runner) bootInstance() error {
+	ctx, err := model.Connect(context.Background(), &zkAddr)
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
+	}
+
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
+	defer func() {
+		if err := model.Instances(r.ctx).UpdateState(r.instanceID, finState); err != nil {
+			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
+		}
+		if finState == model.InstanceState_FAILED {
+			_, err := r.driver.SendStatusUpdate(&mesos.TaskStatus{
+				TaskId:  r.MesosTaskID(),
+				State:   mesos.TaskState_TASK_FAILED.Enum(),
+				Message: proto.String(err.Error()),
+			})
+			if err != nil {
+				log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
+			}
+			if err := model.Instances(ctx).AddFailureMessage(r.instanceID, model.FailureMessage_FAILED_BOOT); err != nil {
+				log.Errorln(err)
+			}
+		}
+		model.Close(ctx)
+	}()
+
+	log := r.log.WithField("state", model.InstanceState_STARTING.String())
+	if err := model.Instances(r.ctx).UpdateState(r.instanceID, model.InstanceState_STARTING); err != nil {
+		log.WithError(err).Error("Failed Instances.UpdateState")
+		return err
+	}
+
+	hv, err := r.hypervisorProvider.CreateDriver(instanceID)
+	if err != nil {
+		return err
+	}
+
+	inst, err := model.Instances(ctx).FindByID(r.instanceID)
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.FindyByID")
+		return err
+	}
+
+	log.Infof("Creating instance")
+	if err := hv.CreateInstance(inst, inst.ResourceTemplate()); err != nil {
+		log.WithError(err).Error("Failed CreateInstance")
+		return err
+	}
+	log.Infof("Starting instance")
+	if err := hv.StartInstance(); err != nil {
+		log.WithError(err).Error("Failed StartInstance")
+		return err
+	}
+	log.Infof("Instance launched successfully")
+	// Here can bring the instance state to RUNNING finally.
+	finState = model.InstanceState_RUNNING
+	return nil
 }
 
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
