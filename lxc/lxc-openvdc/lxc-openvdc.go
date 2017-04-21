@@ -28,7 +28,10 @@ func main() {
 
 	flag.Parse()
 
-	//TODO: Set these depending on passed args
+	//_dist := "centos"
+	//_release := "7"
+	//_arch := "amd64"
+
 	cacheFolderPath = filepath.Join("/var/cache/lxc", *_dist, *_release, *_arch)
 	containerName = "test"
 	lxcPath = "/var/lib/lxc/"
@@ -111,7 +114,7 @@ func GetFile(fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
-	res, err := http.Get(imgPath + "/" + fileName)
+	res, err := http.Get("http://" + imgPath + "/" + fileName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed Http.Get for file: %s", fileName)
 	}
