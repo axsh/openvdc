@@ -36,7 +36,7 @@ func main() {
 	release := *_release
 	arch := *_arch
 	rootfsPath = *_rootfs
-	containerPath = *_path
+	containerPath = *_containerPath
 	errorLogPath := *_errorLogPath
 	imgPath = *_imgPath
 	cachePath := *_cachePath
@@ -73,9 +73,13 @@ func SetupContainerDir() error {
 		errors.Wrapf(err, "Failed creating container folder.")
 	}
 
-	err = DecompressXz("rootfs.tar.xz", rootfsPath)
-	if err != nil {
-		return err
+	if rootfsPath != "" {
+		err = DecompressXz("rootfs.tar.xz", rootfsPath)
+		if err != nil {
+			return err
+		}
+	} else {
+		return errors.New("RootfsPath not set.")
 	}
 
 	return nil
