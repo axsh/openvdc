@@ -25,19 +25,24 @@ func main() {
 	_dist := flag.String("dist", "centos", "Name of the distribution")
 	_release := flag.String("release", "7", "Release name/version")
 	_arch := flag.String("arch", "amd64", "Container architecture")
+	_containerName := flag.String("name", "", "Container name")
+	_rootfs := flag.String("rootfs", "", "Rootfs path")
+	_path := flag.String("path", "", "Container path")
 
 	flag.Parse()
 
-	//_dist := "centos"
-	//_release := "7"
-	//_arch := "amd64"
+	dist := *_dist
+	release := *_release
+	arch := *_arch
+	containerName := *_containerName
 
-	cacheFolderPath = filepath.Join("/var/cache/lxc", *_dist, *_release, *_arch)
-	containerName = "test"
-	lxcPath = "/var/lib/lxc/"
-	imgPath = filepath.Join("127.0.0.1/images", *_dist, *_release, *_arch)
-	containerPath = filepath.Join(lxcPath, containerName)
-	rootfsPath = filepath.Join(containerPath, "rootfs")
+	lxcPath = "/usr/share/lxc/"
+	cacheFolderPath = filepath.Join("/var/cache/lxc", dist, release, arch)
+	imgPath = filepath.Join("127.0.0.1/images", dist, release, arch)
+
+	containerPath = *_path
+
+	rootfsPath = *_rootfs
 
 	err := PrepareCache()
 	if err != nil {
@@ -86,28 +91,19 @@ func PrepareCache() error {
 }
 
 func GenerateConfig() {
-
 	lxcCfgPath := filepath.Join(lxcPath, "config")
 	cfgPath := filepath.Join(containerPath, "config")
 
-	if Exists(cfgPath) == false {
-
-		f, err := ioutil.ReadFile(filepath.Join(cacheFolderPath, "config"))
-		if err != nil {
-			fmt.Print(err)
-		}
-
-		s := string(f[:])
-		s = strings.Replace(s, "LXC_TEMPLATE_CONFIG", lxcCfgPath, -1)
-		b := []byte(s)
-
-		add := "\n\nlxc.rootfs = " + rootfsPath +
-			"\nlxc.utsname = " + containerName
-
-		res := append(b, add...)
-
-		err = ioutil.WriteFile(cfgPath, res, 0644)
+	f, err := ioutil.ReadFile(filepath.Join(cacheFolderPath, "config"))
+	if err != nil {
+		fmt.Print(err)
 	}
+
+	s := string(f[:])
+	s = strings.Replace(s, "LXC_TEMPLATE_CONFIG", lxcCfgPath, -1)
+	b := []byte(s)
+
+	err = ioutil.WriteFile(cfgPath, b, 0644)
 }
 
 func GetFile(fileName string) error {
@@ -162,7 +158,6 @@ func DecompressXz(fileName string, outputPath string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
-	//TODO: Use some other method for unpacking, this one is slow.
 	err := archiver.TarXZ.Open(filePath, outputPath)
 
 	if err != nil {
