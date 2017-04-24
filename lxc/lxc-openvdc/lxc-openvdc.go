@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -16,7 +16,6 @@ import (
 var lxcPath string
 var cacheFolderPath string
 var imgPath string
-var containerName string
 var containerPath string
 var rootfsPath string
 
@@ -25,39 +24,57 @@ func main() {
 	_dist := flag.String("dist", "centos", "Name of the distribution")
 	_release := flag.String("release", "7", "Release name/version")
 	_arch := flag.String("arch", "amd64", "Container architecture")
-	_containerName := flag.String("name", "", "Container name")
 	_rootfs := flag.String("rootfs", "", "Rootfs path")
 	_path := flag.String("path", "", "Container path")
+	_errorLogPath := flag.String("error-log-path", "", "Error log path")
 
 	flag.Parse()
 
 	dist := *_dist
 	release := *_release
 	arch := *_arch
-	containerName := *_containerName
+	containerPath = *_path
+	rootfsPath = *_rootfs
+	errorLogPath := *_errorLogPath
 
 	lxcPath = "/usr/share/lxc/"
 	cacheFolderPath = filepath.Join("/var/cache/lxc", dist, release, arch)
 	imgPath = filepath.Join("127.0.0.1/images", dist, release, arch)
 
-	containerPath = *_path
-
-	rootfsPath = *_rootfs
+	var errorLog bytes.Buffer
 
 	err := PrepareCache()
 	if err != nil {
-		fmt.Println(err)
+		errorLog.Write([]byte(err.Error() + "\n"))
 	}
 
-	SetupContainerDir()
+	err = SetupContainerDir()
+	if err != nil {
+		errorLog.Write([]byte(err.Error() + "\n"))
+	}
 
-	GenerateConfig()
+	err = GenerateConfig()
+	if err != nil {
+		errorLog.Write([]byte(err.Error() + "\n"))
+	}
+
+	if errorLog.Len() > 0 {
+		ioutil.WriteFile(filepath.Join(errorLogPath, "lxc-openvdc-ERROR.log"), errorLog.Bytes(), 0644)
+	}
 }
 
-func SetupContainerDir() {
-	os.MkdirAll(rootfsPath, os.ModePerm)
+func SetupContainerDir() error {
+	err := os.MkdirAll(rootfsPath, os.ModePerm)
+	if err != nil {
+		errors.Wrapf(err, "Failed creating container folder.")
+	}
 
-	DecompressXz("rootfs.tar.xz", rootfsPath)
+	err = DecompressXz("rootfs.tar.xz", rootfsPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func PrepareCache() error {
@@ -90,13 +107,14 @@ func PrepareCache() error {
 	return nil
 }
 
-func GenerateConfig() {
+func GenerateConfig() error {
 	lxcCfgPath := filepath.Join(lxcPath, "config")
 	cfgPath := filepath.Join(containerPath, "config")
+	cacheCfgPath := filepath.Join(cacheFolderPath, "config")
 
-	f, err := ioutil.ReadFile(filepath.Join(cacheFolderPath, "config"))
+	f, err := ioutil.ReadFile(cacheCfgPath)
 	if err != nil {
-		fmt.Print(err)
+		errors.Wrapf(err, "Failed reading file: %s.", cacheCfgPath)
 	}
 
 	s := string(f[:])
@@ -104,6 +122,11 @@ func GenerateConfig() {
 	b := []byte(s)
 
 	err = ioutil.WriteFile(cfgPath, b, 0644)
+	if err != nil {
+		errors.Wrapf(err, "Failed writing to file: %s.", cfgPath)
+	}
+
+	return nil
 }
 
 func GetFile(fileName string) error {
@@ -161,7 +184,7 @@ func DecompressXz(fileName string, outputPath string) error {
 	err := archiver.TarXZ.Open(filePath, outputPath)
 
 	if err != nil {
-		return err
+		errors.Wrapf(err, "Failed unpacking file: %s.", filePath)
 	}
 
 	return nil
