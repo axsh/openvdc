@@ -15,9 +15,9 @@ import (
 
 var lxcPath string
 var cacheFolderPath string
-var imgPath string
 var containerPath string
 var rootfsPath string
+var imgPath string
 
 func main() {
 
@@ -25,21 +25,25 @@ func main() {
 	_release := flag.String("release", "7", "Release name/version")
 	_arch := flag.String("arch", "amd64", "Container architecture")
 	_rootfs := flag.String("rootfs", "", "Rootfs path")
-	_path := flag.String("path", "", "Container path")
+	_containerPath := flag.String("path", "", "Container path")
 	_errorLogPath := flag.String("error-log-path", "", "Error log path")
+	_imgPath := flag.String("img-path", "127.0.0.1/images", "Image path")
+	_cachePath := flag.String("cache-path", "/var/cache/lxc", "Cache path")
 
 	flag.Parse()
 
 	dist := *_dist
 	release := *_release
 	arch := *_arch
-	containerPath = *_path
 	rootfsPath = *_rootfs
+	containerPath = *_path
 	errorLogPath := *_errorLogPath
+	imgPath = *_imgPath
+	cachePath := *_cachePath
 
 	lxcPath = "/usr/share/lxc/"
-	cacheFolderPath = filepath.Join("/var/cache/lxc", dist, release, arch)
-	imgPath = filepath.Join("127.0.0.1/images", dist, release, arch)
+	cacheFolderPath = filepath.Join(cachePath, dist, release, arch)
+	imgPath = filepath.Join(imgPath, dist, release, arch)
 
 	var errorLog bytes.Buffer
 
