@@ -47,6 +47,8 @@ func (t BridgeType) String() string {
 var settings struct {
 	ScriptPath      string
 	ImageServer     string
+	ErrorLogPath    string
+	CachePath       string
 	BridgeName      string
 	BridgeType      BridgeType
 	LinuxUpScript   string
@@ -58,7 +60,9 @@ var settings struct {
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
 	viper.SetDefault("hypervisor.script-path", "/etc/openvdc/scripts")
-	viper.SetDefault("hypervisor.image-server", "images.linuxcontainers.org")
+	viper.SetDefault("hypervisor.image-server", "127.0.0.1/images")
+	viper.SetDefault("hypervisor.error-log-path", "/etc/openvdc")
+	viper.SetDefault("hypervisor.cache-path", "/var/cache/lxc")
 	// Default script file names in pkg/conf/scripts/*
 	viper.SetDefault("bridges.linux.up-script", "linux-bridge-up.sh.tmpl")
 	viper.SetDefault("bridges.linux.down-script", "linux-bridge-down.sh.tmpl")
@@ -99,6 +103,8 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	// They have default value.
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.ImageServer = sub.GetString("hypervisor.image-server")
+	settings.ErrorLogPath = sub.GetString("hypervisor.error-log-path")
+	settings.CachePath = sub.GetString("hypervisor-cache-path")
 	settings.LinuxUpScript = sub.GetString("bridges.linux.up-script")
 	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
 	settings.OvsUpScript = sub.GetString("bridges.ovs.up-script")
@@ -251,9 +257,25 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 	d.log.Infoln("Creating lxc-container...")
 	lxcTmpl := lxcResTmpl.GetLxcTemplate()
 	d.template = lxc.TemplateOptions{
+		Template:  lxcTmpl.Template,
 		Arch:      lxcTmpl.Arch,
 		ExtraArgs: lxcTmpl.ExtraArgs,
-		Server:    settings.ImageServer,
+	}
+
+	switch lxcTmpl.Template {
+	case "download":
+		d.template.Distro = lxcTmpl.Distro
+		d.template.Release = lxcTmpl.Release
+		d.template.Variant = lxcTmpl.Variant
+
+	case "openvdc":
+		d.template.Distro = lxcTmpl.Distro
+		d.template.Release = lxcTmpl.Release
+		d.template.Arch = lxcTmpl.Arch
+		d.template.ExtraArgs = append(d.template.ExtraArgs, "--img-path=settings.ImagePath --error-log-path=settings.ErrorLogPath --cache-path=settings.CachePath")
+
+	default:
+		d.template.Release = lxcTmpl.Release
 	}
 
 	if d.template.Arch == "" {
@@ -262,23 +284,6 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		if d.template.Arch == "" {
 			return errors.Errorf("Unable to guess LXC arch name")
 		}
-	}
-
-	switch lxcTmpl.Template {
-	case "download":
-		d.template.Distro = lxcTmpl.Distro
-		d.template.Release = lxcTmpl.Release
-		d.template.Variant = lxcTmpl.Variant
-		d.template.Template = lxcTmpl.Template
-
-	case "openvdc":
-		d.template.Distro = lxcTmpl.Distro
-		d.template.Release = lxcTmpl.Release
-		d.template.Arch = lxcTmpl.Arch
-		d.template.Template = lxcTmpl.Template
-
-	default:
-		d.template.Release = lxcTmpl.Release
 	}
 
 	if err := d.container.Create(d.template); err != nil {
