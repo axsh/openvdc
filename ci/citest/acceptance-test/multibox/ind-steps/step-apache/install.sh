@@ -3,5 +3,6 @@
     sudo chroot ${TMP_ROOT} /bin/bash -c "rpm -q httpd" > /dev/null
     $skip_step_if_already_done; set -ex
     sudo chroot ${TMP_ROOT} /bin/bash -c "yum install httpd -y" 
-    sudo chroot ${TMP_ROOT} /bin/bash -c "systemctl disable httpd"
+    sudo chroot ${TMP_ROOT} /bin/bash -c "systemctl start httpd"
+    sudo chroot ${TMP_ROOT} /bin/bash -c "mkdir -p /var/www/html/images"
 ) ; prev_cmd_failed
