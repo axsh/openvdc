@@ -286,6 +286,12 @@
 			"revisionTime": "2016-10-04T19:21:23Z"
 		},
 		{
+			"checksumSHA1": "M6+Y7O6DEpfuJbhHAU7HYQjsk3o=",
+			"path": "github.com/mholt/archiver",
+			"revision": "c55f48c22890807c9698370fe5e08eca3704834b",
+			"revisionTime": "2017-02-16T13:00:38Z"
+		},
+		{
 			"checksumSHA1": "AXacfEchaUqT5RGmPmMXsOWRhv8=",
 			"path": "github.com/mitchellh/go-homedir",
 			"revision": "756f7b183b7ab78acdbbee5c7f392838ed459dda",
