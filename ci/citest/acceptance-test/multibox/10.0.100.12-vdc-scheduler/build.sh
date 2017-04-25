@@ -33,39 +33,41 @@ function download_container_image () {
                 meta="meta.tar.xz"
                 rootfs="rootfs.tar.xz"
 
-                #Image not found, download it.
-                if [ ! -f "$IMG_DIR/$imgDirFolder/$meta" ]
-                then
-                        imgHost="https://uk.images.linuxcontainers.org"
-                        imgHostIndex="https://uk.images.linuxcontainers.org/meta/1.0/index-system"
-                        imgIndex=$(curl -s "$imgHostIndex")
+                imgHost="https://uk.images.linuxcontainers.org"
+                imgHostIndex="https://uk.images.linuxcontainers.org/meta/1.0/index-system"
+                imgIndex=$(curl -s "$imgHostIndex")
 
-                        for item in ${imgIndex//\\n/}
-                        do
-                                if [[ $item =~ $img ]]
-                                then
-                                        IFS=';' read -a parts <<< "$item"
+                for item in ${imgIndex//\\n/}
+                do
+                	if [[ $item =~ $img ]]
+               	 	then
+                		IFS=';' read -a parts <<< "$item"
 
-                                        imageFolder=${parts[-1]}
-                                        imgHost+=$imageFolder
-                                        imgDirFolder=${img//";"/"-"}
+                        	imageFolder=${parts[-1]}
+                        	imgHost+=$imageFolder
+                        	imgDirFolder=${img//";"/"-"}
 
-                                        mkdir -p "$IMG_DIR/$imgDirFolder"
+				if [ ! -d "$IMG_DIR/$imgDirFolder" ]; then
+                        		mkdir -p "$IMG_DIR/$imgDirFolder"
+				fi
 
-                                        printf "\nDownloading file:\n$imgHost$meta\n"
-                                        curl -o "$IMG_DIR/$imgDirFolder/$meta" "$imgHost/$meta"
+                		if [ ! -f "$IMG_DIR/$imgDirFolder/$meta" ]; then
+                        		printf "\nDownloading file:\n$imgHost$meta\n"
+                        		curl -o "$IMG_DIR/$imgDirFolder/$meta" "$imgHost/$meta"
+				fi
 
-                                        printf "\nDownloading file:\n$imgHost$rootfs\n"
-                                        curl -o "$IMG_DIR/$imgDirFolder/$rootfs" "$imgHost/$rootfs"
-                                fi
-                        done
-                fi
+				if [ ! -f "$IMG_DIR/$imgDirFolder/$rootfs" ]; then
+                        		printf "\nDownloading file:\n$imgHost$rootfs\n"
+                        		curl -o "$IMG_DIR/$imgDirFolder/$rootfs" "$imgHost/$rootfs"
+				fi
+                	fi
+               	done
 
                 #Copy image to scheduler box.
 		scp -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$imgHost/$meta" "root@10.0.100.12:/var/www/html/images/"
 
 
-        ) #; prev_cmd_failed. 
+        )
 }
 
 for img in "${IMAGES[@]}"
