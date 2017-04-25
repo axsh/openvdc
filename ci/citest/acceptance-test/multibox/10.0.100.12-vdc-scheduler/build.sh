@@ -41,32 +41,32 @@ function download_container_image () {
                 do
                 	if [[ $item =~ $img ]]
                	 	then
-                		IFS=';' read -a parts <<< "$item"
+				IFS=';' read -a parts <<< "$item"
 
-                        	imageFolder=${parts[-1]}
-                        	imgHost+=$imageFolder
-                        	imgDirFolder=${img//";"/"-"}
+				imgRemoteDir=${parts[-1]}
+				imgHost+=$imgRemoteDir
 
-				if [ ! -d "$IMG_DIR/$imgDirFolder" ]; then
-                        		mkdir -p "$IMG_DIR/$imgDirFolder"
+				IFS=';' eval 'folders=($item)'
+				imgSpec="${folders[0]}/${folders[1]}/${folders[2]}"
+
+				if [ ! -d "$IMG_DIR/$imgSpec" ]; then
+					mkdir -p "$IMG_DIR/$imgSpec"
 				fi
 
-                		if [ ! -f "$IMG_DIR/$imgDirFolder/$meta" ]; then
-                        		printf "\nDownloading file:\n$imgHost$meta\n"
-                        		curl -o "$IMG_DIR/$imgDirFolder/$meta" "$imgHost/$meta"
+				if [ ! -f "$IMG_DIR/$imgSpec/$meta" ]; then
+					printf "\nDownloading file:\n$imgHost$meta\n"
+					curl -o "$IMG_DIR/$imgSpec/$meta" "$imgHost/$meta"
 				fi
 
-				if [ ! -f "$IMG_DIR/$imgDirFolder/$rootfs" ]; then
-                        		printf "\nDownloading file:\n$imgHost$rootfs\n"
-                        		curl -o "$IMG_DIR/$imgDirFolder/$rootfs" "$imgHost/$rootfs"
+				if [ ! -f "$IMG_DIR/$imgSpec/$rootfs" ]; then
+					printf "\nDownloading file:\n$imgHost$rootfs\n"
+					curl -o "$IMG_DIR/$imgSpec/$rootfs" "$imgHost/$rootfs"
 				fi
                 	fi
                	done
 
-                #Copy image to scheduler box.
-		scp -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$imgHost/$meta" "root@10.0.100.12:/var/www/html/images/"
-
-
+		printf "\nCopying $IMG_DIR/$imgSpec/$meta to ${IP_ADDR}:/var/www/html/images/"
+		scp -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$IMG_DIR/$imgSpec/$meta" "root@${IP_ADDR}:/var/www/html/images/"
         )
 }
 
