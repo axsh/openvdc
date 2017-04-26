@@ -65,8 +65,9 @@ function download_container_image () {
                 	fi
                	done
 
-		printf "\nCopying $IMG_DIR/$imgSpec to ${IP_ADDR}:/var/www/html/images/$imgSpec\n"
-		scp -pr -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$IMG_DIR/${folders[0]}" "root@${IP_ADDR}:/var/www/html/images/${folders[0]}"
+		printf "\nCreating folder ${IP_ADDR}:/var/www/html/images/$imgSpec\n"
+		ssh -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "root@${IP_ADDR}" "mkdir -p /var/www/html/images/$imgSpec"
+		scp -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$IMG_DIR/$imgSpec/$meta" "$IMG_DIR/$imgSpec/$rootfs" "root@${IP_ADDR}:/var/www/html/images/$imgSpec"
         )
 }
 
