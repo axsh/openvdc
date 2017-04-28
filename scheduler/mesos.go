@@ -131,9 +131,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 							log.Error("'node-groups' attribute must be non-empty string")
 							break
 						}
-						agentAttrs.NodeGroups = append(agentAttrs.NodeGroups, attr.GetText().GetValue())
-					} else if attr.GetType() == mesos.Value_SET {
-						agentAttrs.NodeGroups = attr.GetSet().GetItem()
+						agentAttrs.NodeGroups = strings.Split(attr.GetText().GetValue(), ",")
 					} else {
 						log.Errorf("Invalid value type for 'bridge' attribute: %s", attr.GetText())
 						break
