@@ -17,17 +17,20 @@ func TestCrashRecovery(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 
 	//Simulate crash
-	RunSshWithTimeoutAndReportFail(t, mesos_master_ip, "systemctl stop mesos-master", 10, 5)
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "systemctl stop mesos-slave", 10, 5)
-	RunSshWithTimeoutAndReportFail(t, scheduler_ip, "systemctl stop openvdc-scheduler", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, mesos_master_ip, "sudo systemctl stop mesos-master", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl stop mesos-slave", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, scheduler_ip, "sudo systemctl stop openvdc-scheduler", 10, 5)
 
-	RunSshWithTimeoutAndReportFail(t, mesos_master_ip, "systemctl start mesos-master", 10, 5)
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "systemctl start mesos-slave", 10, 5)
-	RunSshWithTimeoutAndReportFail(t, scheduler_ip, "systemctl start openvdc-scheduler", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, mesos_master_ip, "sudo systemctl start mesos-master", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl start mesos-slave", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, scheduler_ip, "sudo systemctl start openvdc-scheduler", 10, 5)
 
 	//Give mesos a moment to boot up.
 	time.Sleep(10 * time.Second)
 
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
+	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "stop", instance_id)
+	WaitInstance(t, 5*time.Minute, instance_id, "STOPPED", []string{"RUNNING", "STOPPING"})
+
+	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
