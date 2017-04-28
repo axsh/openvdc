@@ -30,6 +30,13 @@
       "type": "integer",
       "default": 1
     },
+    "node_groups": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": [
+        {"type": "string"}
+      ]
+    },
     "interfaces": {
       "type": "array",
       "items": {
@@ -56,9 +63,6 @@
           "ipv4addr": {
             "type": "string",
             "format": "ipv4"
-          },
-          "bridge": {
-            "type": "string"
           }
         }
       }

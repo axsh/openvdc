@@ -29,6 +29,13 @@
     "memory_gb": {
       "type": "integer",
       "default": 1
+    },
+    "node_groups": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": [
+        {"type": "string"}
+      ]
     }
   }
 }
