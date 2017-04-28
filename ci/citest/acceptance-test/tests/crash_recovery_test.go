@@ -17,13 +17,13 @@ func TestCrashRecovery(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 
 	//Simulate crash
-	_, _ = RunCmdAndReportFail(t, mesos_master_ip, "systemctl stop mesos-master")
-	_, _ = RunCmdAndReportFail(t, executor_lxc_ip, "systemctl stop mesos-slave")
-	_, _ = RunCmdAndReportFail(t, scheduler_ip, "systemctl stop openvdc-scheduler")
+	RunSshWithTimeoutAndReportFail(t, mesos_master_ip, "systemctl stop mesos-master", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "systemctl stop mesos-slave", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, scheduler_ip, "systemctl stop openvdc-scheduler", 10, 5)
 
-	_, _ = RunCmdAndReportFail(t, mesos_master_ip, "systemctl start mesos-master")
-	_, _ = RunCmdAndReportFail(t, executor_lxc_ip, "systemctl start mesos-slave")
-	_, _ = RunCmdAndReportFail(t, scheduler_ip, "systemctl start openvdc-scheduler")
+	RunSshWithTimeoutAndReportFail(t, mesos_master_ip, "systemctl start mesos-master", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "systemctl start mesos-slave", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, scheduler_ip, "systemctl start openvdc-scheduler", 10, 5)
 
 	//Give mesos a moment to boot up.
 	time.Sleep(10 * time.Second)
