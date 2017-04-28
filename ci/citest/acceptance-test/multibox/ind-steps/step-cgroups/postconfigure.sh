@@ -1,7 +1,7 @@
 #!/bin/bash
 
 (
-    $starting_step "Setup LXC"
+    $starting_step "Setup cgroups"
     run_ssh root@${IP_ADDR} "mount | grep -q cgroup"
     $skip_step_if_already_done; set -xe
     run_ssh root@${IP_ADDR} <<EOS
