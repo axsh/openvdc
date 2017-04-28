@@ -33,7 +33,7 @@ func TestLXCInstance_NICx2(t *testing.T) {
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
-	stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("bridge link show dev %s", instance_id+"_00"))
+	stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_00"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,7 +44,7 @@ func TestLXCInstance_NICx2(t *testing.T) {
 			t.Log("bridge link show dev "+instance_id+"_00: ", stdout.String())
 		}
 	}
-	stdout, _, err = RunSsh(executor_lxc_ip, fmt.Sprintf("bridge link show dev %s", instance_id+"_01"))
+	stdout, _, err = RunSsh(executor_lxc_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_01"))
 	if err != nil {
 		t.Error(err)
 	}
