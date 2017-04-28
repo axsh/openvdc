@@ -26,9 +26,10 @@ func TestCrashRecovery(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, scheduler_ip, "sudo systemctl start openvdc-scheduler", 10, 5)
 
 	//Give mesos a moment to boot up.
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 
-	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "stop", instance_id)
+	_, _ := RunCmdAndReportFail(t, "openvdc", "stop", instance_id)
+
 	WaitInstance(t, 5*time.Minute, instance_id, "STOPPED", []string{"RUNNING", "STOPPING"})
 
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
