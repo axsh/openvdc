@@ -11,7 +11,7 @@ import (
 )
 
 func TestLXCInstance(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"interfaces":[{"type":"veth", "bridge":"linux"}]}`)
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"interfaces":[{"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
@@ -26,10 +26,9 @@ func TestLXCInstance(t *testing.T) {
 	RunSshWithTimeoutAndExpectFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 }
 
-
 func TestLXCInstance_NICx2(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc",
-	`{"interfaces":[{"type":"veth", "bridge":"linux"}, {"type":"veth", "bridge":"linux"}]}`)
+		`{"interfaces":[{"type":"veth"}, {"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
@@ -55,7 +54,7 @@ func TestLXCInstance_NICx2(t *testing.T) {
 	line_if00.Scan()
 	line_if00.Scan()
 	t.Log(line_if00.Text())
-	if line_if00.Text() != instance_id + "_00" {
+	if line_if00.Text() != instance_id+"_00" {
 		t.Errorf("Interface %s is not attached", instance_id+"_00")
 	}
 	lines.Scan()
@@ -64,7 +63,7 @@ func TestLXCInstance_NICx2(t *testing.T) {
 	// "                                    i-00000000_01"
 	line_if01.Scan()
 	t.Log(line_if01.Text())
-	if line_if01.Text() != instance_id + "_01" {
+	if line_if01.Text() != instance_id+"_01" {
 		t.Errorf("Interface %s is not attached", instance_id+"_01")
 	}
 
