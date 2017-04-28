@@ -153,14 +153,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			case *model.Template_Lxc:
 				if agentAttrs.Hypervisor == "lxc" {
 					lxc := i.GetTemplate().GetLxc()
-					// Check for all requested and offered  names.
-					for _, i := range lxc.GetInterfaces() {
-						for _, group := range agentAttrs.NodeGroups {
-							if group != i.Bridge {
-								// Does not satisfy request
-								return nil
-							}
-						}
+					if !model.IsMatchingNodeGroups(lxc, agentAttrs.NodeGroups) {
+						return nil
 					}
 					return offer
 				}
