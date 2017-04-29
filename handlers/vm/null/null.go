@@ -48,3 +48,7 @@ func (h *NullHandler) Merge(dst, src model.ResourceTemplate) error {
 func (h *NullHandler) Usage(out io.Writer) error {
 	return nil
 }
+
+func (h *NullHandler) MergeArgs(src model.ResourceTemplate, args []string) error {
+	return nil
+}
