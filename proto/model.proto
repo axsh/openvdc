@@ -121,4 +121,13 @@ message LxcTemplate {
 message NullTemplate {
   int32 vcpu = 1;
   int32 memory_gb = 2 [json_name="memory_gb"];
+  enum CrashStage {
+    NONE  = 0;
+    START = 1;
+    STOP  = 2;
+    CREATE = 3;
+    DESTROY = 4;
+    REBOOT = 5;
+  }
+  CrashStage crash_stage = 3 [json_name="crash_stage"];
 }
