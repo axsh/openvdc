@@ -84,3 +84,17 @@ func (h *NullHandler) Usage(out io.Writer) error {
 func (h *NullHandler) MergeArgs(src model.ResourceTemplate, args []string) error {
 	return nil
 }
+
+func (h *NullHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) error {
+	mdst, ok := dst.(*model.NullTemplate)
+	if !ok {
+		return handlers.ErrMergeDstType(new(model.NullTemplate), dst)
+	}
+	input, err := h.ParseTemplate(in)
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse input JSON")
+	}
+	minput, _ := input.(proto.Message)
+	proto.Merge(mdst, minput)
+	return nil
+}

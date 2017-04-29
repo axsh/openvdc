@@ -158,19 +158,17 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 		}
 
 		if len(buf) > 0 {
-			input, err := rh.ParseTemplate(buf)
-			if err != nil {
-				log.Fatalf("Failed to parse JSON input: %s", err)
-			}
-			if err := rh.Merge(merged, input); err != nil {
-				log.Fatalf("Failed to merge values: %s", err)
+			if err := clihn.MergeJSON(merged, buf); err != nil {
+				log.Fatalf("Failed to merge input values: %s", err)
 			}
 			subargs = subargs[1:]
 		}
 	}
 
-	if err := clihn.MergeArgs(merged, subargs); err != nil {
-		log.Fatalf("Failed to overwrite parameters for %s\n%s", rt.LocationURI(), err)
+	if len(subargs) > 0 {
+		if err := clihn.MergeArgs(merged, subargs); err != nil {
+			log.Fatalf("Failed to overwrite parameters for %s\n%s", rt.LocationURI(), err)
+		}
 	}
 	return merged
 }
