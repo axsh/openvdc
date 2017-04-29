@@ -128,7 +128,7 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 	rh := rt.Template.ResourceHandler()
 	clihn, ok := rh.(handlers.CLIHandler)
 	if !ok {
-		log.Fatal("%s does not support CLI interface", rt.Name)
+		log.Fatalf("%T does not support CLI interface", rh)
 	}
 
 	pb := proto.Clone(rt.Template.Template.(proto.Message))
