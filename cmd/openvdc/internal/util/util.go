@@ -3,7 +3,6 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -159,9 +158,12 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 		}
 
 		if len(buf) > 0 {
-			err = json.Unmarshal(buf, merged)
+			input, err := rh.ParseTemplate(buf)
 			if err != nil {
-				log.Fatal("Invalid variable input:", err)
+				log.Fatalf("Failed to parse JSON input: %s", err)
+			}
+			if err := rh.Merge(merged, input); err != nil {
+				log.Fatalf("Failed to merge values: %s", err)
 			}
 			subargs = subargs[1:]
 		}
