@@ -44,3 +44,13 @@ func (h *NoneHandler) Usage(out io.Writer) error {
 func (h *NoneHandler) IsSupportAPI(method string) bool {
 	return false
 }
+
+func (h *NoneHandler) Merge(dst, src model.ResourceTemplate) error {
+	if _, ok := dst.(*model.NoneTemplate); !ok {
+		return handlers.ErrMergeDstType(new(model.NoneTemplate), dst)
+	}
+	if _, ok := src.(*model.NoneTemplate); !ok {
+		return handlers.ErrMergeSrcType(new(model.NoneTemplate), src)
+	}
+	return nil
+}

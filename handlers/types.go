@@ -37,6 +37,7 @@ type ResourceHandler interface {
 	// https://developers.google.com/protocol-buffers/docs/reference/go-generated#oneof
 	SetTemplateItem(t *model.Template, m model.ResourceTemplate)
 	IsSupportAPI(m string) bool
+	Merge(dst, src model.ResourceTemplate) error
 }
 
 type CLIHandler interface {
