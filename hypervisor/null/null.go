@@ -23,38 +23,39 @@ func (n *NullHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 }
 
 func (n *NullHypervisorProvider) CreateDriver(string) (hypervisor.HypervisorDriver, error) {
-	return &NullHypervisorDriver{}, nil
+	return &NullHypervisorDriver{log: log.WithField("hypervisor", "null")}, nil
 }
 
 type NullHypervisorDriver struct {
+	log                    *log.Entry
 }
 
 func (h *NullHypervisorDriver) StartInstance() error {
-	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("StartInstance")
+	h.log.Infoln("StartInstance")
 	return nil
 }
 
 func (h *NullHypervisorDriver) StopInstance() error {
-	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("StopInstance")
+	h.log.Infoln("StopInstance")
 	return nil
 }
 
 func (h *NullHypervisorDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
-	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("CreateInstance")
+	h.log.Infoln("CreateInstance")
 	return nil
 }
 
 func (h *NullHypervisorDriver) DestroyInstance() error {
-	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("DestroyInstance")
+	h.log.Infoln("DestroyInstance")
 	return nil
 }
 
 func (h *NullHypervisorDriver) RebootInstance() error {
-	log.WithFields(log.Fields{"reboot": "null"}).Infoln("RebootInstance")
+	h.log.Infoln("RebootInstance")
 	return nil
 }
 
 func (h *NullHypervisorDriver) InstanceConsole() hypervisor.Console {
-	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("InstanceConsole")
+	h.log.Infoln("InstanceConsole")
 	return nil
 }
