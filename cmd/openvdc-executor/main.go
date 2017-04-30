@@ -516,6 +516,15 @@ func execute(cmd *cobra.Command, args []string) {
 			log.WithError(err).Error("Failed ClusterClose")
 		}
 	}()
+	ctx, err = model.Connect(ctx, &zkAddr)
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to connecto to model server: %s", zkAddr.String())
+	}
+	defer func() {
+		if err := model.Close(ctx); err != nil {
+			log.WithError(err).Error("Failed model.Close")
+		}
+	}()
 
 	executorAPIListener, err := net.Listen("tcp", viper.GetString("executor-api.listen"))
 	if err != nil {
@@ -540,7 +549,7 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	defer sshListener.Close()
 
-	sshd := NewSSHServer(provider)
+	sshd := NewSSHServer(provider, ctx)
 	if err := sshd.Setup(); err != nil {
 		log.WithError(err).Fatal("Failed to setup SSH Server")
 	}
