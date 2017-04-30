@@ -82,25 +82,26 @@ func TestLXCHypervisorDriver_modifyConf(t *testing.T) {
 	defer os.RemoveAll(lxcpath)
 	c, err := lxc.NewContainer("lxc-test", lxcpath)
 	assert.NoError(err)
+	instTemplate := &model.LxcTemplate{
+		Vcpu:     1,
+		MemoryGb: 256,
+		Interfaces: []*model.LxcTemplate_Interface{
+			&model.LxcTemplate_Interface{
+				Type:     "veth",
+				Ipv4Addr: "192.168.1.1",
+			},
+			&model.LxcTemplate_Interface{
+				Type:     "veth",
+				Macaddr:  "xx:xx:xx:44:55:66",
+				Ipv4Addr: "192.168.1.2",
+			},
+		},
+	}
 	instModel := &model.Instance{
 		Id: "i-xxxxx",
 		Template: &model.Template{
 			Item: &model.Template_Lxc{
-				Lxc: &model.LxcTemplate{
-					Vcpu:     1,
-					MemoryGb: 256,
-					Interfaces: []*model.LxcTemplate_Interface{
-						&model.LxcTemplate_Interface{
-							Type:     "veth",
-							Ipv4Addr: "192.168.1.1",
-						},
-						&model.LxcTemplate_Interface{
-							Type:     "veth",
-							Macaddr:  "xx:xx:xx:44:55:66",
-							Ipv4Addr: "192.168.1.2",
-						},
-					},
-				},
+				Lxc: instTemplate,
 			},
 		},
 	}
@@ -110,7 +111,7 @@ func TestLXCHypervisorDriver_modifyConf(t *testing.T) {
 			Instance: instModel,
 		},
 		container: c,
-		template:  instModel.ResourceTemplate(),
+		template:  instTemplate,
 	}
 	os.MkdirAll(filepath.Join(lxcpath, "lxc-test"), 0755)
 	ioutil.WriteFile(filepath.Join(lxcpath, "lxc-test", "config"), []byte(lxcConfTemplate), 0644)
