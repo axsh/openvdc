@@ -3,23 +3,35 @@
 package lxc
 
 import (
-	"testing"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"testing"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/stretchr/testify/assert"
-	"github.com/Sirupsen/logrus"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 func TestProviderRegistration(t *testing.T) {
+	assert := assert.New(t)
 	p, _ := hypervisor.FindProvider("lxc")
-	if p == nil {
-		t.Error("lxc provider is not registered.")
-	}
+	assert.NotNil(p, "Check lxc provider is registered.")
+	assert.Equal("lxc", p.Name())
+	assert.Implements((*hypervisor.HypervisorProvider)(nil), p)
+}
+
+func TestLXCHypervisorProvider_CreateDriver(t *testing.T) {
+	assert := assert.New(t)
+	p, _ := hypervisor.FindProvider("lxc")
+
+	d, err := p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, &model.LxcTemplate{})
+	assert.NoError(err)
+	assert.Implements((*hypervisor.HypervisorDriver)(nil), d)
+	_, err = p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, nil)
+	assert.Error(err, "LXCHypvisorProvider.CreateDriver should fail if not with *model.LxcTemplate")
 }
 
 func TestLXCHypervisorDriver(t *testing.T) {
@@ -71,23 +83,23 @@ func TestLXCHypervisorDriver_modifyConf(t *testing.T) {
 	c, err := lxc.NewContainer("lxc-test", lxcpath)
 	assert.NoError(err)
 	lxcdrv := &LXCHypervisorDriver{
-		log: logrus.NewEntry(logrus.New()),
+		log:       logrus.NewEntry(logrus.New()),
 		container: c,
-		template: lxc.BusyboxTemplateOptions,
+		template:  lxc.BusyboxTemplateOptions,
 	}
 	os.MkdirAll(filepath.Join(lxcpath, "lxc-test"), 0755)
 	ioutil.WriteFile(filepath.Join(lxcpath, "lxc-test", "config"), []byte(lxcConfTemplate), 0644)
 	err = lxcdrv.modifyConf(&model.LxcTemplate{
-		Vcpu: 1,
+		Vcpu:     1,
 		MemoryGb: 256,
 		Interfaces: []*model.LxcTemplate_Interface{
 			&model.LxcTemplate_Interface{
-				Type: "veth",
+				Type:     "veth",
 				Ipv4Addr: "192.168.1.1",
 			},
 			&model.LxcTemplate_Interface{
-				Type: "veth",
-				Macaddr: "xx:xx:xx:44:55:66",
+				Type:     "veth",
+				Macaddr:  "xx:xx:xx:44:55:66",
 				Ipv4Addr: "192.168.1.2",
 			},
 		},

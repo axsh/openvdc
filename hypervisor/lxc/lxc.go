@@ -102,24 +102,38 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
-func (p *LXCHypervisorProvider) CreateDriver(containerName string) (hypervisor.HypervisorDriver, error) {
+func (p *LXCHypervisorProvider) CreateDriver(instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
+	lxcTmpl, ok := template.(*model.LxcTemplate)
+	if !ok {
+		return nil, errors.Errorf("template type is not *model.LxcTemplate: %T", template)
+	}
+	containerName := instance.GetId()
 	c, err := lxc.NewContainer(containerName, lxc.DefaultConfigPath())
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed lxc.NewContainer")
 	}
 
-	return &LXCHypervisorDriver{
-		log:       log.WithFields(log.Fields{"hypervisor": "lxc", "instance_id": containerName}),
+	driver := &LXCHypervisorDriver{
+		Base: hypervisor.Base{
+			Log:      log.WithFields(log.Fields{"hypervisor": "lxc", "instance_id": containerName}),
+			Instance: instance,
+		},
+		template:  lxcTmpl,
 		container: c,
-	}, nil
+	}
+	return driver, nil
 }
 
 type LXCHypervisorDriver struct {
-	log       *log.Entry
+	hypervisor.Base
+	template  *model.LxcTemplate
 	imageName string
 	hostName  string
-	template  lxc.TemplateOptions
 	container *lxc.Container
+}
+
+func (h *LXCHypervisorDriver) log() *log.Entry {
+	return h.Base.Log
 }
 
 const lxcNetworkTemplate = `
@@ -136,7 +150,7 @@ lxc.network.hwaddr={{$.IFace.Macaddr}}
 {{- end}}
 `
 
-func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
+func (d *LXCHypervisorDriver) modifyConf() error {
 	lxcconf, err := os.OpenFile(d.container.ConfigFileName(), os.O_WRONLY|os.O_APPEND, 0)
 	if err != nil {
 		return errors.Wrapf(err, "Failed opening %s", d.container.ConfigFileName())
@@ -170,13 +184,13 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 		errors.Wrap(err, "Failed to parse lxc.network template")
 	}
 
-	d.log.Debug("resource:", resource)
+	d.log().Debug("resource:", resource)
 
 	if len(resource.Interfaces) > 0 && settings.BridgeType == None {
-		d.log.Errorf("Network interfaces are requested to create but no bridge is configured")
+		d.log().Errorf("Network interfaces are requested to create but no bridge is configured")
 	} else {
 		// Write lxc.network.* entries.
-		for idx, i := range resource.Interfaces {
+		for idx, i := range d.template.Interfaces {
 			tval := struct {
 				IFace      *model.LxcTemplate_Interface
 				TapName    string
@@ -197,9 +211,9 @@ func (d *LXCHypervisorDriver) modifyConf(resource *model.LxcTemplate) error {
 		lxcconf.Sync()
 	}
 
-	if d.log.Level <= log.DebugLevel {
+	if d.log().Level <= log.DebugLevel {
 		buf, _ := ioutil.ReadFile(d.container.ConfigFileName())
-		d.log.Debug(string(buf))
+		d.log().Debug(string(buf))
 	}
 	return nil
 }
@@ -234,45 +248,36 @@ var lxcArch = map[string]string{
 	// TODO: powerpc, arm, arm64
 }
 
-func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.ResourceTemplate) error {
-
-	lxcResTmpl, ok := in.(*model.LxcTemplate)
-
-	if !ok {
-
-		d.log.Fatalf("BUGON: Unsupported model type: %T", in)
-
-	}
-
-	d.log.Infoln("Creating lxc-container...")
-	lxcTmpl := lxcResTmpl.GetLxcTemplate()
-	d.template = lxc.TemplateOptions{
+func (d *LXCHypervisorDriver) CreateInstance() error {
+	d.log().Infoln("Creating lxc-container...")
+	lxcTmpl := d.template.GetLxcTemplate()
+	template := lxc.TemplateOptions{
 		Template:  lxcTmpl.Template,
 		Arch:      lxcTmpl.Arch,
 		ExtraArgs: lxcTmpl.ExtraArgs,
 	}
 	switch lxcTmpl.Template {
 	case "download":
-		d.template.Distro = lxcTmpl.Distro
-		d.template.Release = lxcTmpl.Release
-		d.template.Variant = lxcTmpl.Variant
+		template.Distro = lxcTmpl.Distro
+		template.Release = lxcTmpl.Release
+		template.Variant = lxcTmpl.Variant
 	default:
-		d.template.Release = lxcTmpl.Release
+		template.Release = lxcTmpl.Release
 	}
 
-	if d.template.Arch == "" {
+	if template.Arch == "" {
 		// Guess LXC Arch name
-		d.template.Arch = lxcArch[runtime.GOARCH]
-		if d.template.Arch == "" {
+		template.Arch = lxcArch[runtime.GOARCH]
+		if template.Arch == "" {
 			return errors.Errorf("Unable to guess LXC arch name")
 		}
 	}
 
-	if err := d.container.Create(d.template); err != nil {
+	if err := d.container.Create(template); err != nil {
 		return errors.Wrap(err, "Failed lxc.Create")
 	}
 
-	if err := d.modifyConf(lxcResTmpl); err != nil {
+	if err := d.modifyConf(); err != nil {
 		return err
 	}
 
@@ -308,13 +313,13 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 
 func (d *LXCHypervisorDriver) DestroyInstance() error {
 	if d.container.State() == lxc.RUNNING {
-		d.log.Infoln("Stopping lxc-container..")
+		d.log().Infoln("Stopping lxc-container..")
 		if err := d.container.Stop(); err != nil {
 			return errors.Wrap(err, "Failed lxc.Stop")
 		}
 	}
 
-	d.log.Infoln("Destroying lxc-container..")
+	d.log().Infoln("Destroying lxc-container..")
 	if err := d.container.Destroy(); err != nil {
 		return errors.Wrap(err, "Failed lxc.Destroy")
 	}
@@ -322,12 +327,12 @@ func (d *LXCHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *LXCHypervisorDriver) StartInstance() error {
-	d.log.Infoln("Starting lxc-container...")
+	d.log().Infoln("Starting lxc-container...")
 	if err := d.container.Start(); err != nil {
 		return errors.Wrap(err, "Failed lxc.Start")
 	}
 
-	d.log.Infoln("Waiting for lxc-container to become RUNNING")
+	d.log().Infoln("Waiting for lxc-container to become RUNNING")
 	if ok := d.container.Wait(lxc.RUNNING, 30*time.Second); !ok {
 		return errors.New("Failed or timedout to wait for RUNNING")
 	}
@@ -335,12 +340,12 @@ func (d *LXCHypervisorDriver) StartInstance() error {
 }
 
 func (d *LXCHypervisorDriver) StopInstance() error {
-	d.log.Infoln("Stopping lxc-container..")
+	d.log().Infoln("Stopping lxc-container..")
 	if err := d.container.Stop(); err != nil {
 		return errors.Wrap(err, "Failed lxc.Stop")
 	}
 
-	d.log.Infoln("Waiting for lxc-container to become STOPPED")
+	d.log().Infoln("Waiting for lxc-container to become STOPPED")
 	if ok := d.container.Wait(lxc.STOPPED, 30*time.Second); !ok {
 		return errors.New("Failed or timedout to wait for STOPPED")
 	}
@@ -348,7 +353,7 @@ func (d *LXCHypervisorDriver) StopInstance() error {
 }
 
 func (d *LXCHypervisorDriver) RebootInstance() error {
-	d.log.Infoln("Rebooting lxc-container..")
+	d.log().Infoln("Rebooting lxc-container..")
 	if err := d.container.Reboot(); err != nil {
 		return errors.Wrap(err, "Failed lxc.Reboot")
 	}

@@ -1,18 +1,28 @@
 package null
 
-import "testing"
-import "github.com/axsh/openvdc/hypervisor"
+import (
+	"testing"
+
+	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
+	"github.com/stretchr/testify/assert"
+)
 
 func TestProviderRegistration(t *testing.T) {
+	assert := assert.New(t)
 	p, _ := hypervisor.FindProvider("null")
-	if p == nil {
-		t.Error("null provider is not registered.")
-	}
+	assert.NotNil(p, "Check null provider is registered.")
+	assert.Equal("null", p.Name())
+	assert.Implements((*hypervisor.HypervisorProvider)(nil), p)
 }
 
-func TestNullHypervisorDriver(t *testing.T) {
-	n := &NullHypervisorProvider{}
-	if n.Name() != "null" {
-		t.Error("Invalid provider name")
-	}
+func TestNullHypervisorProvider_CreateDriver(t *testing.T) {
+	assert := assert.New(t)
+	p, _ := hypervisor.FindProvider("null")
+
+	d, err := p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, &model.NullTemplate{})
+	assert.NoError(err)
+	assert.Implements((*hypervisor.HypervisorDriver)(nil), d)
+	_, err = p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, nil)
+	assert.Error(err, "NullHypvisorProvider.CreateDriver should fail if not with *model.NullTemplate")
 }
