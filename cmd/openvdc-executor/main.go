@@ -127,19 +127,19 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return err
 	}
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return err
-	}
-
 	inst, err := model.Instances(ctx).FindByID(instanceID)
 	if err != nil {
 		log.WithError(err).Error("Failed Instances.FindyByID")
 		return err
 	}
 
+	hv, err := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if err != nil {
+		return err
+	}
+
 	log.Infof("Creating instance")
-	if err := hv.CreateInstance(inst, inst.ResourceTemplate()); err != nil {
+	if err := hv.CreateInstance(); err != nil {
 		log.WithError(err).Error("Failed CreateInstance")
 		return err
 	}
@@ -179,7 +179,13 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.FindyByID")
+		return err
+	}
+
+	hv, err := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
 	if err != nil {
 		return err
 	}
@@ -225,7 +231,13 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.FindyByID")
+		return err
+	}
+
+	hv, err := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
 	if err != nil {
 		return err
 	}
@@ -271,7 +283,13 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).Error("Failed Instances.FindyByID")
+		return err
+	}
+
+	hv, err := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
 	if err != nil {
 		return err
 	}
@@ -305,13 +323,6 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return err
 	}
 
-	inst, err := model.Instances(ctx).FindByID(instanceID)
-	if err != nil {
-		log.Errorln(err)
-	}
-
-	originalState := inst.GetLastState().GetState()
-
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	defer func() {
@@ -325,7 +336,15 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.Errorln(err)
+		return errors.Wrap(err, "Failed instances.FindByID")
+	}
+
+	originalState := inst.GetLastState().GetState()
+
+	hv, err := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
 	if err != nil {
 		return err
 	}
