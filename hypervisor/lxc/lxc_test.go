@@ -34,29 +34,6 @@ func TestLXCHypervisorProvider_CreateDriver(t *testing.T) {
 	assert.Error(err, "LXCHypvisorProvider.CreateDriver should fail if not with *model.LxcTemplate")
 }
 
-func TestLXCHypervisorDriver(t *testing.T) {
-	t.Skipf("Currently skipping this test because it requires too many outside dependencies. Will rewrite as integration test later.")
-
-	p, _ := hypervisor.FindProvider("lxc")
-	lxc, _ := p.CreateDriver("lxc-test")
-	err := lxc.CreateInstance(&model.Instance{}, &model.LxcTemplate{})
-	if err != nil {
-		t.Error(err)
-	}
-	err = lxc.StartInstance()
-	if err != nil {
-		t.Error(err)
-	}
-	err = lxc.StopInstance()
-	if err != nil {
-		t.Error(err)
-	}
-	err = lxc.DestroyInstance()
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 const lxcConfTemplate = `
 # Template used to create this container: /usr/share/lxc/templates/lxc-download
 # Parameters passed to the template: --dist ubuntu --release trusty --arch amd64
