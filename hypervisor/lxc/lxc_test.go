@@ -82,28 +82,39 @@ func TestLXCHypervisorDriver_modifyConf(t *testing.T) {
 	defer os.RemoveAll(lxcpath)
 	c, err := lxc.NewContainer("lxc-test", lxcpath)
 	assert.NoError(err)
+	instModel := &model.Instance{
+		Id: "i-xxxxx",
+		Template: &model.Template{
+			Item: &model.Template_Lxc{
+				Lxc: &model.LxcTemplate{
+					Vcpu:     1,
+					MemoryGb: 256,
+					Interfaces: []*model.LxcTemplate_Interface{
+						&model.LxcTemplate_Interface{
+							Type:     "veth",
+							Ipv4Addr: "192.168.1.1",
+						},
+						&model.LxcTemplate_Interface{
+							Type:     "veth",
+							Macaddr:  "xx:xx:xx:44:55:66",
+							Ipv4Addr: "192.168.1.2",
+						},
+					},
+				},
+			},
+		},
+	}
 	lxcdrv := &LXCHypervisorDriver{
-		log:       logrus.NewEntry(logrus.New()),
+		Base: hypervisor.Base{
+			Log:      logrus.NewEntry(logrus.New()),
+			Instance: instModel,
+		},
 		container: c,
-		template:  lxc.BusyboxTemplateOptions,
+		template:  instModel.ResourceTemplate(),
 	}
 	os.MkdirAll(filepath.Join(lxcpath, "lxc-test"), 0755)
 	ioutil.WriteFile(filepath.Join(lxcpath, "lxc-test", "config"), []byte(lxcConfTemplate), 0644)
-	err = lxcdrv.modifyConf(&model.LxcTemplate{
-		Vcpu:     1,
-		MemoryGb: 256,
-		Interfaces: []*model.LxcTemplate_Interface{
-			&model.LxcTemplate_Interface{
-				Type:     "veth",
-				Ipv4Addr: "192.168.1.1",
-			},
-			&model.LxcTemplate_Interface{
-				Type:     "veth",
-				Macaddr:  "xx:xx:xx:44:55:66",
-				Ipv4Addr: "192.168.1.2",
-			},
-		},
-	})
+	err = lxcdrv.modifyConf()
 	assert.NoError(err)
 	net_type := c.ConfigItem("lxc.network.type")
 	assert.NotZero(len(net_type), "lxc.network.type does not apper")

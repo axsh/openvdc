@@ -184,9 +184,9 @@ func (d *LXCHypervisorDriver) modifyConf() error {
 		errors.Wrap(err, "Failed to parse lxc.network template")
 	}
 
-	d.log().Debug("resource:", resource)
+	d.log().Debug("resource:", d.template)
 
-	if len(resource.Interfaces) > 0 && settings.BridgeType == None {
+	if len(d.template.Interfaces) > 0 && settings.BridgeType == None {
 		d.log().Errorf("Network interfaces are requested to create but no bridge is configured")
 	} else {
 		// Write lxc.network.* entries.
