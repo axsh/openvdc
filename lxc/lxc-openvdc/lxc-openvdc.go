@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -16,6 +17,7 @@ import (
 var lxcPath string
 var cacheFolderPath string
 var containerPath string
+var containerName string
 var rootfsPath string
 var imgPath string
 
@@ -25,7 +27,7 @@ func main() {
 	_release := flag.String("release", "7", "Release name/version")
 	_arch := flag.String("arch", "amd64", "Container architecture")
 	_rootfs := flag.String("rootfs", "", "Rootfs path")
-	_ = flag.String("name", "", "Container name")
+	_containerName := flag.String("name", "", "Container name")
 	_containerPath := flag.String("path", "", "Container path")
 	_errorLogPath := flag.String("error-log-path", "/etc/openvdc/", "Error log path")
 	_imgPath := flag.String("img-path", "127.0.0.1/images", "Image path")
@@ -38,6 +40,7 @@ func main() {
 	arch := *_arch
 	rootfsPath = *_rootfs
 	containerPath = *_containerPath
+	containerName = *_containerName
 	errorLogPath := *_errorLogPath
 	imgPath = *_imgPath
 	cachePath := *_cachePath
@@ -126,8 +129,21 @@ func GenerateConfig() error {
 		errors.Wrapf(err, "Failed reading file: %s.", cacheCfgPath)
 	}
 
-	s := string(f[:])
+	s := "\n# Distribution configuration\n" + string(f[:])
 	s = strings.Replace(s, "LXC_TEMPLATE_CONFIG", lxcCfgPath, -1)
+
+	s += fmt.Sprintf(
+`
+# Container specific configuration
+lxc.rootfs = %s
+lxc.utsname = %s
+ 
+# Network configuration
+lxc.network.type = veth
+lxc.network.flags = up
+lxc.network.link = virbr0
+`, rootfsPath, containerName)
+
 	b := []byte(s)
 
 	err = ioutil.WriteFile(cfgPath, b, 0644)
