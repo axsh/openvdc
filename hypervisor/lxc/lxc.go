@@ -272,7 +272,10 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Distro = lxcTmpl.Distro
 		d.template.Release = lxcTmpl.Release
 		d.template.Arch = lxcTmpl.Arch
-		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s --error-log-path=%s --cache-path=%s",settings.ImageServer, settings.ErrorLogPath, settings.CachePath))
+		
+		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s",settings.ImageServer))
+		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--error-log-path=%s",settings.ErrorLogPath))
+		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--cache-path=%s",settings.CachePath)) 
 
 	default:
 		d.template.Release = lxcTmpl.Release
