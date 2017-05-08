@@ -104,7 +104,7 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.ImageServer = sub.GetString("hypervisor.image-server")
 	settings.ErrorLogPath = sub.GetString("hypervisor.error-log-path")
-	settings.CachePath = sub.GetString("hypervisor-cache-path")
+	settings.CachePath = sub.GetString("hypervisor.cache-path")
 	settings.LinuxUpScript = sub.GetString("bridges.linux.up-script")
 	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
 	settings.OvsUpScript = sub.GetString("bridges.ovs.up-script")
