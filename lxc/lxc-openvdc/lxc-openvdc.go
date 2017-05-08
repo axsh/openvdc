@@ -25,8 +25,9 @@ func main() {
 	_release := flag.String("release", "7", "Release name/version")
 	_arch := flag.String("arch", "amd64", "Container architecture")
 	_rootfs := flag.String("rootfs", "", "Rootfs path")
+	_ = flag.String("name", "", "Container name")
 	_containerPath := flag.String("path", "", "Container path")
-	_errorLogPath := flag.String("error-log-path", "", "Error log path")
+	_errorLogPath := flag.String("error-log-path", "/etc/openvdc/", "Error log path")
 	_imgPath := flag.String("img-path", "127.0.0.1/images", "Image path")
 	_cachePath := flag.String("cache-path", "/var/cache/lxc", "Cache path")
 
