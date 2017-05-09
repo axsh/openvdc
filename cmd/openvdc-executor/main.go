@@ -82,16 +82,25 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 }
 
 func recordFailedState(ctx context.Context, driver exec.ExecutorDriver, instanceID string, failureType model.FailureMessage_ErrorType, lastErr error) error {
-	_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
+	log := log.WithFields(log.Fields{
+		"instance_id": instanceID,
+		"error_type":  failureType.String(),
+		"last_error":  lastErr,
+	})
+	_, err1 := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId:  mesosutil.NewTaskID(instanceID),
 		State:   mesos.TaskState_TASK_FAILED.Enum(),
 		Message: proto.String(lastErr.Error()),
 	})
-	if err != nil {
-		log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
+	if err1 != nil {
+		log.WithError(err1).Error("Failed to SendStatusUpdate TASK_FAILED")
 	}
-	if err := model.Instances(ctx).AddFailureMessage(instanceID, failureType); err != nil {
-		log.WithError(err).Errorln("Failed Instances.AddFailureMessage")
+	err2 := model.Instances(ctx).AddFailureMessage(instanceID, failureType)
+	if err2 != nil {
+		log.WithError(err2).Errorln("Failed Instances.AddFailureMessage")
+	}
+	if err1 == nil && err2 == nil {
+		log.Info("Proceeded recording task failure")
 	}
 	return nil
 }
