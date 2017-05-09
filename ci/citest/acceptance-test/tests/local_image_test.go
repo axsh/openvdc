@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestCrashRecovery(t *testing.T) {
+func TestLocalImage(t *testing.T) {
 
 	// Use custom lxc-template.
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"lxc_template":{"template":"openvdc"}}`)
