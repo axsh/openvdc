@@ -67,16 +67,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.WithError(err).Errorln("Couldn't send status update")
 		return
 	}
-
 	if err := exec.bootInstance(driver, taskInfo); err != nil {
-		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
-			TaskId:  taskInfo.GetTaskId(),
-			State:   mesos.TaskState_TASK_FINISHED.Enum(),
-			Message: proto.String(err.Error()),
-		})
-		if err != nil {
-			log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
-		}
 		return
 	}
 
