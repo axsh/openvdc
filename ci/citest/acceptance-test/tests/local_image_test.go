@@ -15,7 +15,7 @@ func TestLocalImage(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "stop", instance_id)
