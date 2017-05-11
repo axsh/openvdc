@@ -130,7 +130,8 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 		for _, instance := range instances {
 			if instance.GetLastState().State != model.InstanceState_REGISTERED &&
 				instance.GetLastState().State != model.InstanceState_QUEUED &&
-				instance.GetLastState().State != model.InstanceState_TERMINATED {
+				instance.GetLastState().State != model.InstanceState_TERMINATED &&
+				instance.GetAutoRecovery() == true {
 
 				disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
 
