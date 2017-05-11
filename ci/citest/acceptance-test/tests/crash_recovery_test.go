@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestCrashRecovery(t *testing.T) {
