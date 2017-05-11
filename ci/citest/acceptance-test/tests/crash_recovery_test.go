@@ -20,10 +20,10 @@ func TestCrashRecovery(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl stop mesos-slave", 10, 5)
 
 	//Give scheduler some time to register crash
-	time.Sleep(2 * time.Minute)
+	time.Sleep(3 * time.Minute)
 
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl start mesos-slave", 10, 5)
-	time.Sleep(2 * time.Minute)
+	time.Sleep(1 * time.Minute)
 
 	stdout, _ = RunCmdAndReportFail(t, "openvdc", "stop", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "STOPPED", []string{"RUNNING", "STOPPING"})
