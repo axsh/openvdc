@@ -30,6 +30,7 @@ enable_service_over_ssh "openvdc-scheduler"
 function download_container_image () {
         local img="${1}"
         (
+		printf "\nPreparing to download image: $img \n"
                 meta="meta.tar.xz"
                 rootfs="rootfs.tar.xz"
 
@@ -51,23 +52,42 @@ function download_container_image () {
 
 				if [ ! -d "$IMG_DIR/$imgSpec" ]; then
 					mkdir -p "$IMG_DIR/$imgSpec"
+				else
+					printf "\nDirectory already exists: $IMG_DIR/$imgSpec\n"
 				fi
 
 				if [ ! -f "$IMG_DIR/$imgSpec/$meta" ]; then
 					printf "\nDownloading file:\n$imgHost$meta\n"
 					curl -o "$IMG_DIR/$imgSpec/$meta" "$imgHost/$meta"
+				else
+					printf "\nFile already exists, skipping download: $IMG_DIR/$imgSpec/$meta\n"
 				fi
 
 				if [ ! -f "$IMG_DIR/$imgSpec/$rootfs" ]; then
 					printf "\nDownloading file:\n$imgHost$rootfs\n"
 					curl -o "$IMG_DIR/$imgSpec/$rootfs" "$imgHost/$rootfs"
+				else
+					printf "\nFile already exists, skipping download: $IMG_DIR/$imgSpec/$rootfs\n"
 				fi
                 	fi
                	done
 
 		printf "\nCreating folder ${IP_ADDR}:/var/www/html/images/$imgSpec\n"
 		ssh -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "root@${IP_ADDR}" "mkdir -p /var/www/html/images/$imgSpec"
-		scp -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$IMG_DIR/$imgSpec/$meta" "$IMG_DIR/$imgSpec/$rootfs" "root@${IP_ADDR}:/var/www/html/images/$imgSpec"
+	
+		if [ -f "$IMG_DIR/$imgSpec/$meta" ]; then
+			printf "\nCopying file: $IMG_DIR/$imgSpec/$meta\n"
+			scp -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$IMG_DIR/$imgSpec/$meta" "root@${IP_ADDR}:/var/www/html/images/$imgSpec"
+		else
+			printf "\nFile not found: $IMG_DIR/$imgSpec/$meta\n"
+		fi
+
+		if [ -f "$IMG_DIR/$imgSpec/$rootfs" ]; then
+                        printf "\nCopying file: $IMG_DIR/$imgSpec/$rootfs\n"
+                        scp -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$IMG_DIR/$imgSpec/$rootfs" "root@${IP_ADDR}:/var/www/html/images/$imgSpec"
+                else
+                        printf "\nFile not found: $IMG_DIR/$imgSpec/$rootfs\n"
+                fi
         )
 }
 
