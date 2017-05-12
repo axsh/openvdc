@@ -26,6 +26,7 @@ build "${IND_STEPS[@]}"
 install_openvdc_yum_repo
 install_yum_package_over_ssh "openvdc-scheduler"
 enable_service_over_ssh "openvdc-scheduler"
+enable_service_over_ssh "httpd"
 
 function download_container_image () {
         local img="${1}"
