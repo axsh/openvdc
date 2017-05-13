@@ -59,25 +59,34 @@ func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
-	runStatus := &mesos.TaskStatus{
+	_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
-		State:  mesos.TaskState_TASK_RUNNING.Enum(),
-	}
-	_, err := driver.SendStatusUpdate(runStatus)
+		State:  mesos.TaskState_TASK_STARTING.Enum(),
+	})
 	if err != nil {
 		log.WithError(err).Errorln("Couldn't send status update")
+		return
 	}
 
-	err = exec.bootInstance(driver, taskInfo)
-	if err != nil {
+	if err := exec.bootInstance(driver, taskInfo); err != nil {
 		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 			TaskId:  taskInfo.GetTaskId(),
-			State:   mesos.TaskState_TASK_FAILED.Enum(),
+			State:   mesos.TaskState_TASK_FINISHED.Enum(),
 			Message: proto.String(err.Error()),
 		})
 		if err != nil {
 			log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
 		}
+		return
+	}
+
+	_, err = driver.SendStatusUpdate(&mesos.TaskStatus{
+		TaskId: taskInfo.GetTaskId(),
+		State:  mesos.TaskState_TASK_RUNNING.Enum(),
+	})
+	if err != nil {
+		log.WithError(err).Errorln("Couldn't send status update")
+		return
 	}
 }
 
@@ -87,17 +96,17 @@ func recordFailedState(ctx context.Context, driver exec.ExecutorDriver, instance
 		"error_type":  failureType.String(),
 		"last_error":  lastErr,
 	})
-	_, err1 := driver.SendStatusUpdate(&mesos.TaskStatus{
+	err1 := model.Instances(ctx).AddFailureMessage(instanceID, failureType)
+	if err1 != nil {
+		log.WithError(err1).Errorln("Failed Instances.AddFailureMessage")
+	}
+	_, err2 := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId:  mesosutil.NewTaskID(instanceID),
-		State:   mesos.TaskState_TASK_FAILED.Enum(),
+		State:   mesos.TaskState_TASK_FINISHED.Enum(),
 		Message: proto.String(lastErr.Error()),
 	})
-	if err1 != nil {
-		log.WithError(err1).Error("Failed to SendStatusUpdate TASK_FAILED")
-	}
-	err2 := model.Instances(ctx).AddFailureMessage(instanceID, failureType)
 	if err2 != nil {
-		log.WithError(err2).Errorln("Failed Instances.AddFailureMessage")
+		log.WithError(err1).Error("Failed to SendStatusUpdate TASK_FAILED")
 	}
 	if err1 == nil && err2 == nil {
 		log.Info("Proceeded recording task failure")
@@ -121,12 +130,15 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	defer func() {
-		if finState == model.InstanceState_FAILED {
-			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_BOOT, err)
-		}
+		log.Debug("Entered defere func() at bootInstance()")
+		lastErr := err
 		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_BOOT, lastErr)
+		}
+		log.WithField("fin_state", finState).Info("Proceeded defer func() at bootInstance()")
 		model.Close(ctx)
 	}()
 
