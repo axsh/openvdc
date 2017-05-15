@@ -47,7 +47,7 @@ func (t BridgeType) String() string {
 
 var settings struct {
 	ScriptPath      string
-	ImageServer     string
+	ImageServerUri  string
 	CachePath       string
 	BridgeName      string
 	BridgeType      BridgeType
@@ -113,7 +113,7 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		return errors.Errorf("Error parsing hypervisor.image-server-uri: %s", u)
 	}
 
-	settings.ImageServer = u
+	settings.ImageServerUri = u
 
 	return nil
 }
@@ -279,7 +279,7 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Release = lxcTmpl.Release
 		d.template.Arch = lxcTmpl.Arch
 
-		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServer))
+		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServerUri))
 		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--cache-path=%s", settings.CachePath))
 
 	default:
