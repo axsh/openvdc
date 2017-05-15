@@ -74,7 +74,7 @@ func main() {
 func SetupContainerDir() error {
 	err := os.MkdirAll(rootfsPath, os.ModePerm)
 	if err != nil {
-		errors.Wrapf(err, "Failed creating container folder.")
+		return errors.Wrapf(err, "Failed creating container folder.")
 	}
 
 	if rootfsPath != "" {
@@ -101,18 +101,18 @@ func PrepareCache() error {
 	if Exists(filepath.Join(cacheFolderPath, "meta.tar.xz")) == false {
 		err := GetFile("meta.tar.xz")
 		if err != nil {
-			errors.Wrapf(err, "Failed downloading file.")
+			return errors.Wrapf(err, "Failed downloading file.")
 		}
 		err = DecompressXz("meta.tar.xz", cacheFolderPath)
 		if err != nil {
-			errors.Wrapf(err, "Failed decompressing file.")
+			return errors.Wrapf(err, "Failed decompressing file.")
 		}
 	}
 
 	if Exists(filepath.Join(cacheFolderPath, "rootfs.tar.xz")) == false {
 		err := GetFile("rootfs.tar.xz")
 		if err != nil {
-			errors.Wrapf(err, "Failed downloading file.")
+			return errors.Wrapf(err, "Failed downloading file.")
 		}
 	}
 
@@ -126,7 +126,7 @@ func GenerateConfig() error {
 
 	f, err := ioutil.ReadFile(cacheCfgPath)
 	if err != nil {
-		errors.Wrapf(err, "Failed reading file: %s.", cacheCfgPath)
+		return errors.Wrapf(err, "Failed reading file: %s.", cacheCfgPath)
 	}
 
 	s := "\n# Distribution configuration\n" + string(f[:])
@@ -148,7 +148,7 @@ lxc.network.link = virbr0
 
 	err = ioutil.WriteFile(cfgPath, b, 0644)
 	if err != nil {
-		errors.Wrapf(err, "Failed writing to file: %s.", cfgPath)
+		return errors.Wrapf(err, "Failed writing to file: %s.", cfgPath)
 	}
 
 	return nil
