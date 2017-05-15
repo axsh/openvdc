@@ -61,7 +61,7 @@ cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/lxc-templates
-cp lxc/lxc-openvdc/lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
+cp lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
 install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc
 
 %package cli

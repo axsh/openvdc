@@ -190,7 +190,7 @@ Environment Variables:
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'", "-v", "./cmd/openvdc-scheduler")
 
 	//Build lxc-template
-	cmd("go", "build", "-o", "./lxc/lxc-openvdc/lxc-openvdc", "./lxc/lxc-openvdc")
+	cmd("go", "build", "-o", "./lxc-openvdc", "./cmd/lxc-openvdc/")
 
 	// Build Acceptance Test binary
 	os.Chdir("./ci/citest/acceptance-test/tests")
