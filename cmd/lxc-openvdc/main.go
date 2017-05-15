@@ -133,7 +133,7 @@ func GenerateConfig() error {
 	s = strings.Replace(s, "LXC_TEMPLATE_CONFIG", lxcCfgPath, -1)
 
 	s += fmt.Sprintf(
-`
+		`
 # Container specific configuration
 lxc.rootfs = %s
 lxc.utsname = %s
@@ -209,7 +209,7 @@ func DecompressXz(fileName string, outputPath string) error {
 	err := archiver.TarXZ.Open(filePath, outputPath)
 
 	if err != nil {
-		errors.Wrapf(err, "Failed unpacking file: %s.", filePath)
+		return errors.Wrapf(err, "Failed unpacking file: %s.", filePath)
 	}
 
 	return nil
