@@ -10,4 +10,4 @@ ACTION=$3  # up/down
 IFTYPE=$4  # veth,macvlan,etc...
 IFNAME=$5
 
-brctl addif {{.BridgeName}} "${IFNAME}"
+ip link set dev "${IFNAME}" master {{.BridgeName}}
