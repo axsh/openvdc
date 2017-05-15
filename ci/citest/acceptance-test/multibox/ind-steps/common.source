@@ -7,9 +7,9 @@ function create_bridge() {
 
   (
     $starting_step "Create bridge ${name}"
-    brctl show | grep -q "${name}"
+    ip link show dev "${name}" > /dev/null
     $skip_step_if_already_done ; set -xe
-    sudo brctl addbr "${name}"
+    sudo ip link add name "${name}" type bridge
     sudo ip link set "${name}" up
 
     if [[ -n "${ip_addr}" ]]; then
@@ -128,12 +128,12 @@ function destroy_bridge() {
 
   (
     $starting_step "Destroy bridge ${name}"
-    brctl show | grep -q "${name}"
+    ip link show dev "${name}" > /dev/null
     [ "$?" != "0" ]
     $skip_step_if_already_done ; set -x +e
     # Ignore errors for complete teardown.
-    sudo ip link set "${1}" down
-    sudo brctl delbr "${1}"
+    sudo ip link set "${name}" down
+    sudo ip link delete dev "${name}"
   ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 }
 
