@@ -2,7 +2,6 @@
 driver = "lxc"
 script-path = "/etc/openvdc/scripts/"
 image-server = "10.0.100.12/images"
-error-log-path = "/etc/openvdc/"
 cache-path = "/var/cache/lxc/"
 
 [zookeeper]

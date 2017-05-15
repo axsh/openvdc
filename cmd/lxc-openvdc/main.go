@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
 )
@@ -29,7 +29,6 @@ func main() {
 	_rootfs := flag.String("rootfs", "", "Rootfs path")
 	_containerName := flag.String("name", "", "Container name")
 	_containerPath := flag.String("path", "", "Container path")
-	_errorLogPath := flag.String("error-log-path", "/etc/openvdc/", "Error log path")
 	_imgPath := flag.String("img-path", "127.0.0.1/images", "Image path")
 	_cachePath := flag.String("cache-path", "/var/cache/lxc", "Cache path")
 
@@ -41,7 +40,6 @@ func main() {
 	rootfsPath = *_rootfs
 	containerPath = *_containerPath
 	containerName = *_containerName
-	errorLogPath := *_errorLogPath
 	imgPath = *_imgPath
 	cachePath := *_cachePath
 
@@ -49,25 +47,19 @@ func main() {
 	cacheFolderPath = filepath.Join(cachePath, dist, release, arch)
 	imgPath = filepath.Join(imgPath, dist, release, arch)
 
-	var errorLog bytes.Buffer
-
 	err := PrepareCache()
 	if err != nil {
-		errorLog.Write([]byte(err.Error() + "\n"))
+		log.WithError(err).Error("Failed preparing cache.")
 	}
 
 	err = SetupContainerDir()
 	if err != nil {
-		errorLog.Write([]byte(err.Error() + "\n"))
+		log.WithError(err).Error("Failed setting up container directory.")
 	}
 
 	err = GenerateConfig()
 	if err != nil {
-		errorLog.Write([]byte(err.Error() + "\n"))
-	}
-
-	if errorLog.Len() > 0 {
-		ioutil.WriteFile(filepath.Join(errorLogPath, "lxc-openvdc-ERROR.log"), errorLog.Bytes(), 0644)
+		log.WithError(err).Error("Failed generating lxc config file.")
 	}
 }
 

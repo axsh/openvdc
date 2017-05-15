@@ -48,7 +48,6 @@ func (t BridgeType) String() string {
 var settings struct {
 	ScriptPath      string
 	ImageServer     string
-	ErrorLogPath    string
 	CachePath       string
 	BridgeName      string
 	BridgeType      BridgeType
@@ -62,7 +61,6 @@ func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
 	viper.SetDefault("hypervisor.script-path", "/etc/openvdc/scripts")
 	viper.SetDefault("hypervisor.image-server-uri", "127.0.0.1/images")
-	viper.SetDefault("hypervisor.error-log-path", "/etc/openvdc")
 	viper.SetDefault("hypervisor.cache-path", "/var/cache/lxc")
 	// Default script file names in pkg/conf/scripts/*
 	viper.SetDefault("bridges.linux.up-script", "linux-bridge-up.sh.tmpl")
@@ -103,7 +101,6 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 
 	// They have default value.
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
-	settings.ErrorLogPath = sub.GetString("hypervisor.error-log-path")
 	settings.CachePath = sub.GetString("hypervisor.cache-path")
 	settings.LinuxUpScript = sub.GetString("bridges.linux.up-script")
 	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
@@ -283,7 +280,6 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Arch = lxcTmpl.Arch
 
 		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServer))
-		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--error-log-path=%s", settings.ErrorLogPath))
 		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--cache-path=%s", settings.CachePath))
 
 	default:
