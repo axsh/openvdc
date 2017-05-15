@@ -134,11 +134,8 @@ if [ -d /etc/mesos-slave ]; then
     cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.lxc /etc/mesos-slave/attributes
   fi
 fi
-if [ -d /usr/share/lxc/templates ]; then
-  if [ ! -f /usr/share/lxc/templates/lxc-openvdc ]; then
-    cp /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc /usr/share/lxc/templates/lxc-openvdc
-  fi
-fi
+
+cp /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc /usr/share/lxc/templates/lxc-openvdc
 
 
 %package scheduler
