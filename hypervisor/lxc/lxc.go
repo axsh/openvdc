@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -102,13 +103,21 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 
 	// They have default value.
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
-	settings.ImageServer = sub.GetString("hypervisor.image-server")
 	settings.ErrorLogPath = sub.GetString("hypervisor.error-log-path")
 	settings.CachePath = sub.GetString("hypervisor.cache-path")
 	settings.LinuxUpScript = sub.GetString("bridges.linux.up-script")
 	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
 	settings.OvsUpScript = sub.GetString("bridges.ovs.up-script")
 	settings.OvsDownScript = sub.GetString("bridges.ovs.down-script")
+
+	u := sub.GetString("hypervisor.image-server-uri")
+	_, err := url.ParseRequestURI(u)
+	if err != nil {
+		return errors.Errorf("Error parsing hypervisor.image-server-uri: %s", u)
+	}
+
+	settings.ImageServer = u
+
 	return nil
 }
 
@@ -272,10 +281,10 @@ func (d *LXCHypervisorDriver) CreateInstance(i *model.Instance, in model.Resourc
 		d.template.Distro = lxcTmpl.Distro
 		d.template.Release = lxcTmpl.Release
 		d.template.Arch = lxcTmpl.Arch
-		
-		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s",settings.ImageServer))
-		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--error-log-path=%s",settings.ErrorLogPath))
-		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--cache-path=%s",settings.CachePath)) 
+
+		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServer))
+		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--error-log-path=%s", settings.ErrorLogPath))
+		d.template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--cache-path=%s", settings.CachePath))
 
 	default:
 		d.template.Release = lxcTmpl.Release
