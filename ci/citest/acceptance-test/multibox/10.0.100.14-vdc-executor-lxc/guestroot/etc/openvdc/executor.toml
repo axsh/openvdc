@@ -1,7 +1,7 @@
 [hypervisor]
 driver = "lxc"
 script-path = "/etc/openvdc/scripts/"
-image-server = "10.0.100.12/images"
+image-server-uri = "10.0.100.12/images"
 cache-path = "/var/cache/lxc/"
 
 [zookeeper]
