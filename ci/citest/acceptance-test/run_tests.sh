@@ -75,6 +75,9 @@ TITLE
 (
   trap dump_logs EXIT
   systemctl_status_all
+  # Show Zookeeper cluster status
+  echo "stat" | nc 10.0.100.10 2181
+  echo "srvr" | nc 10.0.100.10 2181
   # Run the actual tests as axsh user. Root should never be required to run the openvdc command
   su axsh -c "/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v"
 )
