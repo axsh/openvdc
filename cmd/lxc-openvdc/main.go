@@ -3,14 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log/syslog"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
-	"path"
 
 	log "github.com/Sirupsen/logrus"
 	logrus_syslog "github.com/Sirupsen/logrus/hooks/syslog"
@@ -163,35 +164,32 @@ lxc.network.link = virbr0
 func GetFile(fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
-	
+
 	u, err := url.Parse(imgPath)
-	u.Path = path.Join(u.Path, dist, release, arch, fileName)	
-	
+	u.Path = path.Join(u.Path, dist, release, arch, fileName)
+
 	downloadUrl := u.String()
-	
+
 	res, err := http.Get(downloadUrl)
 	if err != nil {
 		return errors.Wrapf(err, "Failed Http.Get for file: %s", fileName)
 	}
- 
-	defer res.Body.Close()
 
-	fileContent, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return errors.Wrapf(err, "Failed reading http response for file: %s", fileName)
-
+	if res.StatusCode != 200 {
+		return errors.New(fmt.Sprintf("Http status code: %s", res.StatusCode))
 	}
 
-	f, err := os.Create(filePath)
+	defer res.Body.Close()
 
+	f, err := os.Create(filePath)
 	if err != nil {
 		return errors.Wrapf(err, "Failed creating file: %s", fileName)
 	}
 	defer f.Close()
 
-	_, err = f.Write(fileContent)
+	_, err = io.Copy(f, res.Body)
 	if err != nil {
-		return errors.Wrapf(err, "Failed writing to file: %s", fileName)
+		return errors.Wrapf(err, "Failed io.Copy")
 	}
 
 	return nil
