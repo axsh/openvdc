@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log/syslog"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,6 +24,9 @@ var containerPath string
 var containerName string
 var rootfsPath string
 var imgPath string
+var dist string
+var release string
+var arch string
 
 func init() {
 	hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_DEBUG, "lxc-openvdc")
@@ -45,9 +49,9 @@ func main() {
 
 	flag.Parse()
 
-	dist := *_dist
-	release := *_release
-	arch := *_arch
+	dist = *_dist
+	release = *_release
+	arch = *_arch
 	rootfsPath = *_rootfs
 	containerPath = *_containerPath
 	containerName = *_containerName
@@ -56,7 +60,6 @@ func main() {
 
 	lxcPath = "/usr/share/lxc/"
 	cacheFolderPath = filepath.Join(cachePath, dist, release, arch)
-	imgPath = filepath.Join(imgPath, dist, release, arch)
 
 	err := PrepareCache()
 	if err != nil {
@@ -160,12 +163,17 @@ lxc.network.link = virbr0
 func GetFile(fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
-
-	res, err := http.Get(path.Join(imgPath,fileName))
+	
+	u, err := url.Parse(imgPath)
+	u.Path = path.Join(u.Path, dist, release, arch, fileName)	
+	
+	downloadUrl := u.String()
+	
+	res, err := http.Get(downloadUrl)
 	if err != nil {
 		return errors.Wrapf(err, "Failed Http.Get for file: %s", fileName)
 	}
-
+ 
 	defer res.Body.Close()
 
 	fileContent, err := ioutil.ReadAll(res.Body)
