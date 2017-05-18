@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"path"
 
 	log "github.com/Sirupsen/logrus"
 	logrus_syslog "github.com/Sirupsen/logrus/hooks/syslog"
@@ -39,7 +40,7 @@ func main() {
 	_rootfs := flag.String("rootfs", "", "Rootfs path")
 	_containerName := flag.String("name", "", "Container name")
 	_containerPath := flag.String("path", "", "Container path")
-	_imgPath := flag.String("img-path", "127.0.0.1/images", "Image path")
+	_imgPath := flag.String("img-path", "http://127.0.0.1/images", "Image path")
 	_cachePath := flag.String("cache-path", "/var/cache/lxc", "Cache path")
 
 	flag.Parse()
@@ -160,7 +161,7 @@ func GetFile(fileName string) error {
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
-	res, err := http.Get("http://" + imgPath + "/" + fileName)
+	res, err := http.Get(path.Join(imgPath,fileName))
 	if err != nil {
 		return errors.Wrapf(err, "Failed Http.Get for file: %s", fileName)
 	}

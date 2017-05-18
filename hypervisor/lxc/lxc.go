@@ -60,7 +60,7 @@ var settings struct {
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
 	viper.SetDefault("hypervisor.script-path", "/etc/openvdc/scripts")
-	viper.SetDefault("hypervisor.image-server-uri", "127.0.0.1/images")
+	viper.SetDefault("hypervisor.image-server-uri", "http://127.0.0.1/images")
 	viper.SetDefault("hypervisor.cache-path", "/var/cache/lxc")
 	// Default script file names in pkg/conf/scripts/*
 	viper.SetDefault("bridges.linux.up-script", "linux-bridge-up.sh.tmpl")
