@@ -8,6 +8,8 @@ TMP_ROOT="${NODE_DIR}/tmp_root"
 . "${NODE_DIR}/vmspec.conf"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 
+zk_host=true
+
 IND_STEPS=(
     "box"
     "ssh"
@@ -15,6 +17,7 @@ IND_STEPS=(
     "disable-firewalld"
     "mesosphere-repo"
     "mesos-master"
+    "zookeeper"
 )
 
 build "${IND_STEPS[@]}"

@@ -9,12 +9,15 @@ TMP_ROOT="${NODE_DIR}/tmp_root"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 
 scheduler=true
+zk_host=true
 
 IND_STEPS=(
     "box"
     "ssh"
     "hosts"
     "disable-firewalld"
+    "mesosphere-repo"
+    "zookeeper"
 )
 
 build "${IND_STEPS[@]}"
