@@ -89,6 +89,10 @@ OpenVDC executor common package.
 /opt/axsh/openvdc/share/mesos-slave/attributes.null
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
 %dir /etc/openvdc
+%dir /etc/openvdc/ssh
+
+%post executor
+test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa1 -f /etc/openvdc/ssh/host_rsa_key -C '' -N '' >&/dev/null;
 
 %package executor-null
 Summary: OpenVDC executor (null driver)
