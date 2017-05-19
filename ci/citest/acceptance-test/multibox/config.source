@@ -16,6 +16,11 @@ PREFIX="24"
 BOXES=(
     "minimal-7.2.1511-x86_64.kvm.box"
 )
+ZK_NODES=(
+  "10.0.100.10"
+  "10.0.100.11"
+  "10.0.100.12"
+)
 
 IMAGES=(
 	"centos;7;amd64"

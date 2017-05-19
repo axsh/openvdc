@@ -9,6 +9,7 @@ TMP_ROOT="${NODE_DIR}/tmp_root"
 . "${ENV_ROOTDIR}/ind-steps/common.source"
 
 scheduler=true
+zk_host=true
 
 IND_STEPS=(
     "box"
@@ -16,6 +17,9 @@ IND_STEPS=(
     "hosts"
     "disable-firewalld"
     "apache"
+    "mesosphere-repo"
+    "zookeeper"
+
 )
 
 build "${IND_STEPS[@]}"

@@ -209,6 +209,10 @@ func (z *Zk) Find(key string) ([]byte, error) {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
+	_, err := z.connection().Sync(absKey)
+	if err != nil {
+		log.WithError(err).Warnf("Failed zk.Sync: %s", absKey)
+	}
 	value, _, err := z.connection().Get(absKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed zk.Get %s", absKey)
