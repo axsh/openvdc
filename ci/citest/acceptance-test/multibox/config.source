@@ -2,12 +2,12 @@
 # The nodes to build. If any of these are replaced by a physical device,
 # comment it out here.
 NODES=(
-    "10.0.100.10-zookeeper"
-    "10.0.100.11-mesos-master"
-    "10.0.100.12-vdc-scheduler"
-    "10.0.100.13-vdc-executor-null"
-    "10.0.100.14-vdc-executor-lxc"
-    "10.0.100.15-vdc-executor-lxc-ovs"
+   "10.0.100.10-zookeeper"
+   "10.0.100.11-mesos-master"
+   "10.0.100.12-vdc-scheduler"
+   "10.0.100.13-vdc-executor-null"
+   "10.0.100.14-vdc-executor-lxc"
+   "10.0.100.15-vdc-executor-lxc-ovs"
 )
 
 NETWORK="10.0.100.0"
@@ -22,9 +22,14 @@ ZK_NODES=(
   "10.0.100.12"
 )
 
+IMAGES=(
+	"centos;7;amd64"
+)
+
 # When a branch is built for the first time it will copy the cache from this branch
 # unless the REBUILD flag is set
 BASE_BRANCH="${BASE_BRANCH:-master}"
 
 BOXES_DIR="/data/openvdc-ci/boxes"
 CACHE_DIR="/data/openvdc-ci/branches"
+IMG_DIR="/data/openvdc-ci/images"
