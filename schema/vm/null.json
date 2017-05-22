@@ -29,6 +29,18 @@
     "memory_gb": {
       "type": "integer",
       "default": 1
+    },
+    "crash_stage": {
+      "type": "string",
+      "enum": [
+        "none",
+        "start",
+        "stop",
+        "create",
+        "destroy",
+        "reboot"
+      ],
+      "default": "none"
     }
   }
 }

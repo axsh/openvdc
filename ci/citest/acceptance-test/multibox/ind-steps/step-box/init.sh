@@ -7,7 +7,7 @@ fi
     $starting_step "Deploy seed image for ${vm_name}"
     [ -f "$(vm_image)" ]
     $skip_step_if_already_done; set -xe
-    tar -Sxzf "${BOXES_DIR}/${box}-${distr_ver}-${arch}.kvm.box" -C "${NODE_DIR}"
+    tar -Sxzf "${BOXES_DIR}/${box}-${distr_ver}-${arch}.kvm.tar.gz" -C "${NODE_DIR}"
     rm ${NODE_DIR}/box-disk1.rpm-qa
 ) ; prev_cmd_failed
 
