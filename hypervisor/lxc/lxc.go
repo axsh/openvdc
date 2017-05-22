@@ -284,8 +284,8 @@ func (d *LXCHypervisorDriver) CreateInstance() error {
 		template.Release = lxcTmpl.Release
 		template.Arch = lxcTmpl.Arch
 
-		template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServerUri))
-		template.ExtraArgs = append(d.template.ExtraArgs, fmt.Sprintf("--cache-path=%s", settings.CachePath))
+		template.ExtraArgs = append(template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServerUri))
+		template.ExtraArgs = append(template.ExtraArgs, fmt.Sprintf("--cache-path=%s", settings.CachePath))
 	default:
 		template.Release = lxcTmpl.Release
 	}
