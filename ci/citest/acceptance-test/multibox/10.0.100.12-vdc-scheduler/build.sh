@@ -19,7 +19,6 @@ IND_STEPS=(
     "apache"
     "mesosphere-repo"
     "zookeeper"
-
 )
 
 build "${IND_STEPS[@]}"
@@ -79,7 +78,7 @@ function download_container_image () {
 
 		printf "\nCreating folder ${IP_ADDR}:/var/www/html/images/$imgSpec\n"
 		ssh -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "root@${IP_ADDR}" "mkdir -p /var/www/html/images/$imgSpec"
-	
+
 		if [ -f "$IMG_DIR/$imgSpec/$meta" ]; then
 			printf "\nCopying file: $IMG_DIR/$imgSpec/$meta\n"
 			scp -o StrictHostKeyChecking=no -i "${ENV_ROOTDIR}/10.0.100.12-vdc-scheduler/sshkey" "$IMG_DIR/$imgSpec/$meta" "root@${IP_ADDR}:/var/www/html/images/$imgSpec"
