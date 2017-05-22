@@ -17,7 +17,7 @@ func (p *testProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
-func (p *testProvider) CreateDriver(string) (HypervisorDriver, error) {
+func (p *testProvider) CreateDriver(*model.Instance, model.ResourceTemplate) (HypervisorDriver, error) {
 	return &testDriver{}, nil
 }
 
@@ -39,7 +39,7 @@ func (d *testDriver) InstanceConsole() Console {
 	return &testConsole{}
 }
 
-func (d *testDriver) CreateInstance(*model.Instance, model.ResourceTemplate) error {
+func (d *testDriver) CreateInstance() error {
 	return nil
 }
 

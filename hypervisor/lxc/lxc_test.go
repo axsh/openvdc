@@ -3,46 +3,35 @@
 package lxc
 
 import (
-	"testing"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"testing"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/stretchr/testify/assert"
-	"github.com/Sirupsen/logrus"
 	lxc "gopkg.in/lxc/go-lxc.v2"
 )
 
 func TestProviderRegistration(t *testing.T) {
+	assert := assert.New(t)
 	p, _ := hypervisor.FindProvider("lxc")
-	if p == nil {
-		t.Error("lxc provider is not registered.")
-	}
+	assert.NotNil(p, "Check lxc provider is registered.")
+	assert.Equal("lxc", p.Name())
+	assert.Implements((*hypervisor.HypervisorProvider)(nil), p)
 }
 
-func TestLXCHypervisorDriver(t *testing.T) {
-	t.Skipf("Currently skipping this test because it requires too many outside dependencies. Will rewrite as integration test later.")
-
+func TestLXCHypervisorProvider_CreateDriver(t *testing.T) {
+	assert := assert.New(t)
 	p, _ := hypervisor.FindProvider("lxc")
-	lxc, _ := p.CreateDriver("lxc-test")
-	err := lxc.CreateInstance(&model.Instance{}, &model.LxcTemplate{})
-	if err != nil {
-		t.Error(err)
-	}
-	err = lxc.StartInstance()
-	if err != nil {
-		t.Error(err)
-	}
-	err = lxc.StopInstance()
-	if err != nil {
-		t.Error(err)
-	}
-	err = lxc.DestroyInstance()
-	if err != nil {
-		t.Error(err)
-	}
+
+	d, err := p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, &model.LxcTemplate{})
+	assert.NoError(err)
+	assert.Implements((*hypervisor.HypervisorDriver)(nil), d)
+	_, err = p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, nil)
+	assert.Error(err, "LXCHypvisorProvider.CreateDriver should fail if not with *model.LxcTemplate")
 }
 
 const lxcConfTemplate = `
@@ -70,28 +59,40 @@ func TestLXCHypervisorDriver_modifyConf(t *testing.T) {
 	defer os.RemoveAll(lxcpath)
 	c, err := lxc.NewContainer("lxc-test", lxcpath)
 	assert.NoError(err)
-	lxcdrv := &LXCHypervisorDriver{
-		log: logrus.NewEntry(logrus.New()),
-		container: c,
-		template: lxc.BusyboxTemplateOptions,
-	}
-	os.MkdirAll(filepath.Join(lxcpath, "lxc-test"), 0755)
-	ioutil.WriteFile(filepath.Join(lxcpath, "lxc-test", "config"), []byte(lxcConfTemplate), 0644)
-	err = lxcdrv.modifyConf(&model.LxcTemplate{
-		Vcpu: 1,
+	instTemplate := &model.LxcTemplate{
+		Vcpu:     1,
 		MemoryGb: 256,
 		Interfaces: []*model.LxcTemplate_Interface{
 			&model.LxcTemplate_Interface{
-				Type: "veth",
+				Type:     "veth",
 				Ipv4Addr: "192.168.1.1",
 			},
 			&model.LxcTemplate_Interface{
-				Type: "veth",
-				Macaddr: "xx:xx:xx:44:55:66",
+				Type:     "veth",
+				Macaddr:  "xx:xx:xx:44:55:66",
 				Ipv4Addr: "192.168.1.2",
 			},
 		},
-	})
+	}
+	instModel := &model.Instance{
+		Id: "i-xxxxx",
+		Template: &model.Template{
+			Item: &model.Template_Lxc{
+				Lxc: instTemplate,
+			},
+		},
+	}
+	lxcdrv := &LXCHypervisorDriver{
+		Base: hypervisor.Base{
+			Log:      logrus.NewEntry(logrus.New()),
+			Instance: instModel,
+		},
+		container: c,
+		template:  instTemplate,
+	}
+	os.MkdirAll(filepath.Join(lxcpath, "lxc-test"), 0755)
+	ioutil.WriteFile(filepath.Join(lxcpath, "lxc-test", "config"), []byte(lxcConfTemplate), 0644)
+	err = lxcdrv.modifyConf()
 	assert.NoError(err)
 	net_type := c.ConfigItem("lxc.network.type")
 	assert.NotZero(len(net_type), "lxc.network.type does not apper")

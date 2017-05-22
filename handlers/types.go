@@ -41,6 +41,7 @@ type ResourceHandler interface {
 
 type CLIHandler interface {
 	MergeArgs(src model.ResourceTemplate, args []string) error
+	MergeJSON(dst model.ResourceTemplate, in json.RawMessage) error
 	Usage(out io.Writer) error
 }
 

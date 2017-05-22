@@ -15,6 +15,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -85,7 +86,7 @@ func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
 
 	tmpl, err := parseResourceTemplate(f)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Failed to parse template %s", templateName)
 	}
 	rt := &RegistryTemplate{
 		Name:     templateName,
