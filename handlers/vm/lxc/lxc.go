@@ -2,15 +2,15 @@ package lxc
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
-
-	"flag"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/handlers/vm"
 	"github.com/axsh/openvdc/model"
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -96,5 +96,21 @@ func (h *LxcHandler) MergeArgs(dst model.ResourceTemplate, args []string) error 
 }
 
 func (h *LxcHandler) Usage(out io.Writer) error {
+	return nil
+}
+
+func (h *LxcHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) error {
+	mdst, ok := dst.(*model.LxcTemplate)
+	if !ok {
+		return handlers.ErrMergeDstType(new(model.LxcTemplate), dst)
+	}
+	minput := &model.LxcTemplate{}
+	if err := json.Unmarshal(in, minput); err != nil {
+		return errors.WithStack(err)
+	}
+	// Prevent Image & Template attributes from overwriting.
+	minput.LxcImage = nil
+	minput.LxcTemplate = nil
+	proto.Merge(mdst, minput)
 	return nil
 }

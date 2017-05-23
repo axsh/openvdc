@@ -12,18 +12,21 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/net/context"
 )
 
 type SSHServer struct {
 	config   *ssh.ServerConfig
 	listener net.Listener
 	provider hypervisor.HypervisorProvider
+	ctx      context.Context
 }
 
-func NewSSHServer(provider hypervisor.HypervisorProvider) *SSHServer {
+func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
@@ -31,6 +34,7 @@ func NewSSHServer(provider hypervisor.HypervisorProvider) *SSHServer {
 	return &SSHServer{
 		config:   config,
 		provider: provider,
+		ctx:      ctx,
 	}
 }
 
@@ -50,6 +54,9 @@ var KeyGenList = []HostKeyGen{
 }
 
 func (sshd *SSHServer) Setup() error {
+	if model.GetBackendCtx(sshd.ctx) == nil {
+		return errors.New("Context does not have model connection")
+	}
 	for _, gen := range KeyGenList {
 		priv, err := gen(rand.Reader)
 		if err != nil {
@@ -79,15 +86,32 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 		log.Printf("New SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
 		go ssh.DiscardRequests(reqs)
 		go func() {
+			instanceID := sshConn.User()
+
+			// TODO: Retrieve the model at the authentication callback.
+			inst, err := model.Instances(sshd.ctx).FindByID(instanceID)
+			if err != nil {
+				log.WithError(err).Errorf("Unknown instance: %s", instanceID)
+				sshConn.Close()
+				return
+			}
+
+			hv, err := sshd.provider.CreateDriver(inst, inst.ResourceTemplate())
+			if err != nil {
+				log.WithError(err).Errorf("Failed HypervisorProvider.CreateDriver: %T", sshd.provider)
+				sshConn.Close()
+				return
+			}
 			for newChannel := range chans {
 				if t := newChannel.ChannelType(); t != "session" {
 					newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 					continue
 				}
 				session := sshSession{
-					instanceID: sshConn.User(),
+					instanceID: instanceID,
 					sshd:       sshd,
 					peer:       sshConn.RemoteAddr(),
+					driver:     hv,
 				}
 				go session.handleChannel(newChannel)
 			}
@@ -99,6 +123,7 @@ type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
 	peer       net.Addr
+	driver     hypervisor.HypervisorDriver
 	ptyreq     *hypervisor.SSHPtyReq
 	console    *hypervisor.ConsoleParam
 }
@@ -121,12 +146,7 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		log.Info("Session closed")
 	}()
 
-	driver, err := session.sshd.provider.CreateDriver(session.instanceID)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	console := driver.InstanceConsole()
+	console := session.driver.InstanceConsole()
 	quit := make(chan error, 1)
 	defer close(quit)
 

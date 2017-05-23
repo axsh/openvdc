@@ -3,7 +3,7 @@ driver = "lxc"
 script-path = "/etc/openvdc/scripts/"
 
 [zookeeper]
-endpoint = "zk://10.0.100.10/openvdc"
+endpoint = "zk://10.0.100.10:2181,10.0.100.11:2181,10.0.100.12:2181/openvdc"
 
 [bridges]
 	[bridges.linux]

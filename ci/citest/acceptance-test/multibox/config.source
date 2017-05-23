@@ -14,7 +14,12 @@ NETWORK="10.0.100.0"
 GATEWAY="10.0.100.1"
 PREFIX="24"
 BOXES=(
-    "minimal-7.2.1511-x86_64.kvm.box"
+    "minimal-7.3.1611-x86_64.kvm.tar.gz"
+)
+ZK_NODES=(
+  "10.0.100.10"
+  "10.0.100.11"
+  "10.0.100.12"
 )
 
 # When a branch is built for the first time it will copy the cache from this branch

@@ -14,6 +14,12 @@ func TestResourceName(t *testing.T) {
 	assert.Equal("vm/lxc", handlers.ResourceName(&LxcHandler{}))
 }
 
+func TestTypes(t *testing.T) {
+	assert := assert.New(t)
+	assert.Implements((*handlers.ResourceHandler)(nil), &LxcHandler{})
+	assert.Implements((*handlers.CLIHandler)(nil), &LxcHandler{})
+}
+
 const jsonLxcImage1 = `{
 	"type": "vm/lxc",
 	"lxc_image": {
