@@ -59,7 +59,6 @@ func main() {
 	imgPath = *_imgPath
 	cachePath := *_cachePath
 
-	lxcPath = "/usr/share/lxc/"
 	cacheFolderPath = filepath.Join(cachePath, dist, release, arch)
 
 	err := PrepareCache()
@@ -127,6 +126,10 @@ func PrepareCache() error {
 }
 
 func GenerateConfig() error {
+	if lxcPath == "" {
+                return errors.New("lxcPath not set.")
+        }
+
 	lxcCfgPath := filepath.Join(lxcPath, "config")
 	cfgPath := filepath.Join(containerPath, "config")
 	cacheCfgPath := filepath.Join(cacheFolderPath, "config")
