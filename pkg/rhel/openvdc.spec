@@ -60,6 +60,8 @@ cp -r pkg/conf/scripts/ "$RPM_BUILD_ROOT"/etc/openvdc
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave
+mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/lxc-templates
+cp lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
 install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc
 
 %package cli
@@ -88,6 +90,7 @@ OpenVDC executor common package.
 %dir /opt/axsh/openvdc/share/mesos-slave
 /opt/axsh/openvdc/share/mesos-slave/attributes.null
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
+/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
 %dir /etc/openvdc
 
 %package executor-null
@@ -122,6 +125,7 @@ LXC driver configuration package for OpenVDC executor.
 %files executor-lxc
 %config(noreplace) /etc/openvdc/executor.toml
 %dir /etc/openvdc/scripts
+%dir /opt/axsh/openvdc/share/lxc-templates
 %config(noreplace) /etc/openvdc/scripts/*
 
 %post executor-lxc
@@ -130,6 +134,8 @@ if [ -d /etc/mesos-slave ]; then
     cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.lxc /etc/mesos-slave/attributes
   fi
 fi
+
+cp /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc /usr/share/lxc/templates/lxc-openvdc
 
 
 %package scheduler
