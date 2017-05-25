@@ -1,0 +1,25 @@
+[hypervisor]
+driver = "lxc"
+script-path = "/etc/openvdc/scripts/"
+
+[zookeeper]
+endpoint = "zk://10.0.100.10:2181,10.0.100.11:2181,10.0.100.12:2181/openvdc"
+
+[bridges]
+	[bridges.linux]
+
+	[bridges.ovs]
+        name = "br0"
+	up-script = "ovs-up.sh.tmpl"
+	down-script = "ovs-down.sh.tmpl"
+
+
+[executor-api]
+# listen = "0.0.0.0:19372"
+advertise-ip = "10.0.100.15"
+
+[console]
+
+[console.ssh]
+# listen = ""
+advertise-ip = "10.0.100.15"

@@ -52,7 +52,8 @@ for box in ${BOXES} ; do
     download_seed_image "${box}"
 done
 
-create_bridge "vdc_env_br0" "${GATEWAY}/${PREFIX}"
+create_bridge "vdc_mngnt" "${GATEWAY}/${PREFIX}"
+create_bridge "vdc_insts"
 
 if [[ "$REBUILD" == "true" ]]; then
     (

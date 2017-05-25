@@ -1,3 +1,2 @@
 NETWORKING=yes
-HOSTNAME=scheduler
 GATEWAY=10.0.100.1

@@ -197,17 +197,8 @@ func (z *Zk) Update(key string, value []byte) error {
 	if !z.isConnected() {
 		return ErrConnectionNotReady
 	}
-	var err error
 	absKey, _ := z.canonKey(key)
-
-	ok, stat, err := z.connection().Exists(absKey)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return ErrUnknownKey(absKey)
-	}
-	if _, err := z.connection().Set(absKey, value, stat.Version); err != nil {
+	if _, err := z.connection().Set(absKey, value, versionAny); err != nil {
 		return errors.Wrapf(err, "Failed zk.Set %s", absKey)
 	}
 	return nil
@@ -218,6 +209,10 @@ func (z *Zk) Find(key string) ([]byte, error) {
 		return nil, ErrConnectionNotReady
 	}
 	absKey, _ := z.canonKey(key)
+	_, err := z.connection().Sync(absKey)
+	if err != nil {
+		log.WithError(err).Warnf("Failed zk.Sync: %s", absKey)
+	}
 	value, _, err := z.connection().Get(absKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed zk.Get %s", absKey)

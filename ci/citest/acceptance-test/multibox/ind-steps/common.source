@@ -7,9 +7,9 @@ function create_bridge() {
 
   (
     $starting_step "Create bridge ${name}"
-    brctl show | grep -q "${name}"
+    ip link show dev "${name}" > /dev/null
     $skip_step_if_already_done ; set -xe
-    sudo brctl addbr "${name}"
+    sudo ip link add name "${name}" type bridge
     sudo ip link set "${name}" up
 
     if [[ -n "${ip_addr}" ]]; then
@@ -100,7 +100,7 @@ function build () {
             fi
 
             [[ $? == 255 ]] && { . "${ENV_ROOTDIR}/ind-steps/step-box/common.source" ; umount-seed-image ; exit 255 ; }
-        done 
+        done
     done
 }
 
@@ -128,12 +128,12 @@ function destroy_bridge() {
 
   (
     $starting_step "Destroy bridge ${name}"
-    brctl show | grep -q "${name}"
+    ip link show dev "${name}" > /dev/null
     [ "$?" != "0" ]
     $skip_step_if_already_done ; set -x +e
     # Ignore errors for complete teardown.
-    sudo ip link set "${1}" down
-    sudo brctl delbr "${1}"
+    sudo ip link set "${name}" down
+    sudo ip link delete dev "${name}"
   ) # ; prev_cmd_failed ### TODO: bashstep missing feature (axsh/openvdc#77)
 }
 
@@ -195,6 +195,18 @@ function install_yum_package_over_ssh() {
     false
     $skip_step_if_already_done; set -xe
     run_ssh root@${IP_ADDR} "yum install -y ${package}"
+  ) ; prev_cmd_failed
+}
+
+function disable_service() {
+  local service="$1"
+
+  (
+      $starting_step "Disable $1"
+      sudo chroot "${TMP_ROOT}" /bin/bash -c "systemctl is-enabled $1"
+      [[ ! $? -eq 0 ]]
+      $skip_step_if_already_done; set -xe
+      sudo chroot "${TMP_ROOT}" /bin/bash -c "systemctl disable $1"
   ) ; prev_cmd_failed
 }
 

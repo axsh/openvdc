@@ -12,9 +12,11 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/net/context"
 )
 
 type HypervisorProviderFinder interface {
@@ -25,9 +27,10 @@ type SSHServer struct {
 	config   *ssh.ServerConfig
 	listener net.Listener
 	finder   HypervisorProviderFinder
+	ctx      context.Context
 }
 
-func NewSSHServer(finder HypervisorProviderFinder) *SSHServer {
+func NewSSHServer(finder HypervisorProviderFinder, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
@@ -35,6 +38,7 @@ func NewSSHServer(finder HypervisorProviderFinder) *SSHServer {
 	return &SSHServer{
 		config: config,
 		finder: finder,
+		ctx:    ctx,
 	}
 }
 
@@ -54,6 +58,9 @@ var KeyGenList = []HostKeyGen{
 }
 
 func (sshd *SSHServer) Setup() error {
+	if model.GetBackendCtx(sshd.ctx) == nil {
+		return errors.New("Context does not have model connection")
+	}
 	for _, gen := range KeyGenList {
 		priv, err := gen(rand.Reader)
 		if err != nil {
@@ -84,6 +91,16 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 		log.Printf("New SSH connection from %s (%s)", sshConn.RemoteAddr(), sshConn.ClientVersion())
 		go ssh.DiscardRequests(reqs)
 		go func() {
+			instanceID := sshConn.User()
+
+			// TODO: Retrieve the model at the authentication callback.
+			inst, err := model.Instances(sshd.ctx).FindByID(instanceID)
+			if err != nil {
+				log.WithError(err).Errorf("Unknown instance: %s", instanceID)
+				sshConn.Close()
+				return
+			}
+
 			for newChannel := range chans {
 				if t := newChannel.ChannelType(); t != "session" {
 					newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
@@ -95,11 +112,17 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 					newChannel.Reject(ssh.Prohibited, "HypervisorProvider is not ready")
 					continue
 				}
+				hv, err := provider.CreateDriver(inst, inst.ResourceTemplate())
+				if err != nil {
+					log.WithError(err).Errorf("Failed HypervisorProvider.CreateDriver: %T", provider)
+					sshConn.Close()
+					return
+				}
 				session := sshSession{
-					instanceID: sshConn.User(),
+					instanceID: instanceID,
 					sshd:       sshd,
 					peer:       sshConn.RemoteAddr(),
-					provider:   provider,
+					driver:     hv,
 				}
 				go session.handleChannel(newChannel)
 			}
@@ -110,8 +133,8 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 type sshSession struct {
 	instanceID string
 	sshd       *SSHServer
-	provider   hypervisor.HypervisorProvider
 	peer       net.Addr
+	driver     hypervisor.HypervisorDriver
 	ptyreq     *hypervisor.SSHPtyReq
 	console    *hypervisor.ConsoleParam
 }
@@ -134,12 +157,7 @@ func (session *sshSession) handleChannel(newChannel ssh.NewChannel) {
 		log.Info("Session closed")
 	}()
 
-	driver, err := session.provider.CreateDriver(session.instanceID)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	console := driver.InstanceConsole()
+	console := session.driver.InstanceConsole()
 	quit := make(chan error, 1)
 	defer close(quit)
 
