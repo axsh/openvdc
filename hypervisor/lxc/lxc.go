@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -41,10 +42,13 @@ func (t BridgeType) String() string {
 	default:
 		return "none"
 	}
+
 }
 
 var settings struct {
 	ScriptPath      string
+	ImageServerUri  string
+	CachePath       string
 	BridgeName      string
 	BridgeType      BridgeType
 	LinuxUpScript   string
@@ -56,6 +60,8 @@ var settings struct {
 func init() {
 	hypervisor.RegisterProvider("lxc", &LXCHypervisorProvider{})
 	viper.SetDefault("hypervisor.script-path", "/etc/openvdc/scripts")
+	viper.SetDefault("hypervisor.image-server-uri", "http://127.0.0.1/images")
+	viper.SetDefault("hypervisor.cache-path", "/var/cache/lxc")
 	// Default script file names in pkg/conf/scripts/*
 	viper.SetDefault("bridges.linux.up-script", "linux-bridge-up.sh.tmpl")
 	viper.SetDefault("bridges.linux.down-script", "linux-bridge-down.sh.tmpl")
@@ -95,10 +101,20 @@ func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 
 	// They have default value.
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
+	settings.CachePath = sub.GetString("hypervisor.cache-path")
 	settings.LinuxUpScript = sub.GetString("bridges.linux.up-script")
 	settings.LinuxDownScript = sub.GetString("bridges.linux.down-script")
 	settings.OvsUpScript = sub.GetString("bridges.ovs.up-script")
 	settings.OvsDownScript = sub.GetString("bridges.ovs.down-script")
+
+	u := sub.GetString("hypervisor.image-server-uri")
+	_, err := url.ParseRequestURI(u)
+	if err != nil {
+		return errors.Errorf("Error parsing hypervisor.image-server-uri: %s", u)
+	}
+
+	settings.ImageServerUri = u
+
 	return nil
 }
 
@@ -282,11 +298,20 @@ func (d *LXCHypervisorDriver) CreateInstance() error {
 		Arch:      lxcTmpl.Arch,
 		ExtraArgs: lxcTmpl.ExtraArgs,
 	}
+
 	switch lxcTmpl.Template {
 	case "download":
 		template.Distro = lxcTmpl.Distro
 		template.Release = lxcTmpl.Release
 		template.Variant = lxcTmpl.Variant
+
+	case "openvdc":
+		template.Distro = lxcTmpl.Distro
+		template.Release = lxcTmpl.Release
+		template.Arch = lxcTmpl.Arch
+
+		template.ExtraArgs = append(template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServerUri))
+		template.ExtraArgs = append(template.ExtraArgs, fmt.Sprintf("--cache-path=%s", settings.CachePath))
 	default:
 		template.Release = lxcTmpl.Release
 	}
