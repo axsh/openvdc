@@ -92,6 +92,17 @@ func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
+	var lastErr error
+	defer func() {
+		if lastErr == nil {
+			return
+		}
+		driver.SendStatusUpdate(&mesos.TaskStatus{
+			TaskId:  taskInfo.GetTaskId(),
+			State:   mesos.TaskState_TASK_FAILED.Enum(),
+			Message: proto.String(lastErr.Error()),
+		})
+	}()
 	_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
 		State:  mesos.TaskState_TASK_STARTING.Enum(),
@@ -103,32 +114,38 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 
 	instanceID := taskInfo.GetTaskId().GetValue()
 
-	ctx, err := model.Connect(context.Background(), &zkAddr)
-	if err != nil {
-		log.WithError(err).Error("Failed model.Connect")
+	var ctx context.Context
+	ctx, lastErr = model.Connect(context.Background(), &zkAddr)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed model.Connect")
+		return
 	}
-	instance, err := model.Instances(ctx).FindByID(instanceID)
-	if err != nil {
-		log.WithError(err).Error("Failed to fetch instance %s", instanceID)
+	var instance *model.Instance
+	instance, lastErr = model.Instances(ctx).FindByID(instanceID)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed to fetch instance %s", instanceID)
+		return
 	}
 	instanceState := instance.GetLastState()
 
 	if instanceState.State == model.InstanceState_QUEUED {
 		if err := exec.bootInstance(driver, taskInfo); err != nil {
+			// bootInstance() handles driver.SendStatusUpdate by itself.
 			return
 		}
 	} else {
-		if err := exec.recoverInstance(instance); err != nil {
-			log.WithError(err).Error("Failed recoverInstance")
+		if lastErr = exec.recoverInstance(instance); lastErr != nil {
+			log.WithError(lastErr).Error("Failed recoverInstance")
+			return
 		}
 	}
 
-	_, err = driver.SendStatusUpdate(&mesos.TaskStatus{
+	_, err1 := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
 		State:  mesos.TaskState_TASK_RUNNING.Enum(),
 	})
-	if err != nil {
-		log.WithError(err).Errorln("Couldn't send status update")
+	if err1 != nil {
+		log.WithError(err1).Errorln("Couldn't send status update")
 		return
 	}
 }
