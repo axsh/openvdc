@@ -35,19 +35,6 @@ func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *
 
 type HostKeyGen func(rand io.Reader) (crypto.Signer, error)
 
-//var KeyGenList = []HostKeyGen{
-//	func(rand io.Reader) (crypto.Signer, error) {
-//		_, priv, err := ed25519.GenerateKey(rand)
-//		return priv, err
-//	},
-//	func(rand io.Reader) (crypto.Signer, error) {
-//		return ecdsa.GenerateKey(elliptic.P521(), rand)
-//	},
-//	func(rand io.Reader) (crypto.Signer, error) {
-//		return rsa.GenerateKey(rand, 2048)
-//	},
-//}
-
 var KeyGenPathList = []string{
 	"/etc/openvdc/ssh/host_rsa_key",
 	"/etc/openvdc/ssh/host_ecdsa_key",
@@ -64,16 +51,11 @@ func (sshd *SSHServer) Setup() error {
 			return errors.Wrap(err, path + " doesn't exist")
 		}
 		// Check integrity of pem file
-		_, err2 := ssh.ParsePrivateKey(buf)
-		if err2 != nil {
-			return errors.Wrap(err2, path + " is not a valid pem file")
+		sshSigner, err := ssh.ParsePrivateKey(buf)
+		if err != nil {
+			return errors.Wrap(err, path + " is not a valid pem file")
 		}
-		// Execute same action on the public pem file
-		var path_pub = path + ".pub"
-		buf, err4 := ioutil.ReadFile(path_pub)
-		if err4 != nil {
-			return errors.Wrap(err4, path_pub + " doesn't exist")
-		}
+		sshd.config.AddHostKey(sshSigner)
 	}
 	return nil
 }
