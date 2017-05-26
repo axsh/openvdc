@@ -2,10 +2,6 @@ package main
 
 import (
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
 	"io"
 	"net"
@@ -13,7 +9,6 @@ import (
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"golang.org/x/net/context"
