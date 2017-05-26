@@ -3,7 +3,6 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -128,7 +127,7 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 	rh := rt.Template.ResourceHandler()
 	clihn, ok := rh.(handlers.CLIHandler)
 	if !ok {
-		log.Fatal("%s does not support CLI interface", rt.Name)
+		log.Fatalf("%T does not support CLI interface", rh)
 	}
 
 	pb := proto.Clone(rt.Template.Template.(proto.Message))
@@ -159,16 +158,17 @@ func MergeTemplateParams(rt *registry.RegistryTemplate, args []string) model.Res
 		}
 
 		if len(buf) > 0 {
-			err = json.Unmarshal(buf, merged)
-			if err != nil {
-				log.Fatal("Invalid variable input:", err)
+			if err := clihn.MergeJSON(merged, buf); err != nil {
+				log.Fatalf("Failed to merge input values: %s", err)
 			}
 			subargs = subargs[1:]
 		}
 	}
 
-	if err := clihn.MergeArgs(merged, subargs); err != nil {
-		log.Fatalf("Failed to overwrite parameters for %s\n%s", rt.LocationURI(), err)
+	if len(subargs) > 0 {
+		if err := clihn.MergeArgs(merged, subargs); err != nil {
+			log.Fatalf("Failed to overwrite parameters for %s\n%s", rt.LocationURI(), err)
+		}
 	}
 	return merged
 }

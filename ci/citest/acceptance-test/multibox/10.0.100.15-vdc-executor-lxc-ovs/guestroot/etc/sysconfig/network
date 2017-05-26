@@ -1,3 +1,2 @@
 NETWORKING=yes
-HOSTNAME=executor-lxc-ovs
 GATEWAY=10.0.100.1

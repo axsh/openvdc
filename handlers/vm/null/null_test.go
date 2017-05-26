@@ -11,3 +11,9 @@ func TestResourceName(t *testing.T) {
 	assert := assert.New(t)
 	assert.Equal("vm/null", handlers.ResourceName(&NullHandler{}))
 }
+
+func TestTypes(t *testing.T) {
+	assert := assert.New(t)
+	assert.Implements((*handlers.ResourceHandler)(nil), &NullHandler{})
+	assert.Implements((*handlers.CLIHandler)(nil), &NullHandler{})
+}
