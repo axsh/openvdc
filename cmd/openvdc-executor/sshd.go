@@ -15,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+	"os"
+	"io/ioutil"
 )
 
 type SSHServer struct {
@@ -36,30 +38,42 @@ func NewSSHServer(provider hypervisor.HypervisorProvider) *SSHServer {
 
 type HostKeyGen func(rand io.Reader) (crypto.Signer, error)
 
-var KeyGenList = []HostKeyGen{
-	func(rand io.Reader) (crypto.Signer, error) {
-		_, priv, err := ed25519.GenerateKey(rand)
-		return priv, err
-	},
-	func(rand io.Reader) (crypto.Signer, error) {
-		return ecdsa.GenerateKey(elliptic.P521(), rand)
-	},
-	func(rand io.Reader) (crypto.Signer, error) {
-		return rsa.GenerateKey(rand, 2048)
-	},
-}
+//var KeyGenList = []HostKeyGen{
+//	func(rand io.Reader) (crypto.Signer, error) {
+//		_, priv, err := ed25519.GenerateKey(rand)
+//		return priv, err
+//	},
+//	func(rand io.Reader) (crypto.Signer, error) {
+//		return ecdsa.GenerateKey(elliptic.P521(), rand)
+//	},
+//	func(rand io.Reader) (crypto.Signer, error) {
+//		return rsa.GenerateKey(rand, 2048)
+//	},
+//}
 
+var KeyGenPathList = []string{
+	"/etc/openvdc/ssh/host_rsa_key",
+	"/etc/openvdc/ssh/host_ecdsa_key",
+	"/etc/openvdc/ssh/host_ed25519_key",
+}
 func (sshd *SSHServer) Setup() error {
-	for _, gen := range KeyGenList {
-		priv, err := gen(rand.Reader)
+	for _, path := range KeyGenPathList {
+		// Reading key file
+		buf, err := ioutil.ReadFile(path)
 		if err != nil {
-			return errors.Wrap(err, "Failed to generate host key")
+			return errors.Wrap(err, path + " doesn't exist")
 		}
-		sshSigner, err := ssh.NewSignerFromSigner(priv)
-		if err != nil {
-			return errors.Wrap(err, "Failed to convert to ssh.Signer")
+		// Check integrity of pem file
+		_, err2 := ssh.ParsePrivateKey(buf)
+		if err2 != nil {
+			return errors.Wrap(err2, path + " is not a valid pem file")
 		}
-		sshd.config.AddHostKey(sshSigner)
+		// Execute same action on the public pem file
+		var path_pub = path + ".pub"
+		buf, err4 := ioutil.ReadFile(path_pub)
+		if err4 != nil {
+			return errors.Wrap(err4, path_pub + " doesn't exist")
+		}
 	}
 	return nil
 }
