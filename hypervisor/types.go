@@ -13,13 +13,13 @@ type ContainerState int
 
 type HypervisorProvider interface {
 	Name() string
-	CreateDriver(instanceID string) (HypervisorDriver, error)
+	CreateDriver(instance *model.Instance, template model.ResourceTemplate) (HypervisorDriver, error)
 	LoadConfig(viper *viper.Viper) error
 }
 
 type HypervisorDriver interface {
 	Recover(model.InstanceState) error
-	CreateInstance(*model.Instance, model.ResourceTemplate) error
+	CreateInstance() error
 	DestroyInstance() error
 	StartInstance() error
 	StopInstance() error

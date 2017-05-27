@@ -72,9 +72,26 @@ TITLE
   done
 }
 
+# Show Zookeeper cluster status
+show_zk_status(){
+  cat <<TITLE
+=======================
+### ZooKeeper cluster status
+=======================
+TITLE
+  local addr=""
+  . /multibox/config.source
+  for addr in ${ZK_NODES[@]}
+  do
+    echo "=======> ${addr}:2181"
+    echo "srvr" | nc $addr 2181
+  done
+}
+
 (
   trap dump_logs EXIT
   systemctl_status_all
+  show_zk_status
   # Run the actual tests as axsh user. Root should never be required to run the openvdc command
   su axsh -c "/opt/axsh/openvdc/bin/openvdc-acceptance-test -test.v"
 )

@@ -13,6 +13,7 @@ import (
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
+	"github.com/golang/protobuf/proto"
 	exec "github.com/mesos/mesos-go/executor"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	mesosutil "github.com/mesos/mesos-go/mesosutil"
@@ -58,11 +59,10 @@ func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
-	runStatus := &mesos.TaskStatus{
+	_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
-		State:  mesos.TaskState_TASK_RUNNING.Enum(),
-	}
-	_, err := driver.SendStatusUpdate(runStatus)
+		State:  mesos.TaskState_TASK_STARTING.Enum(),
+	})
 	if err != nil {
 		log.WithError(err).Error("Couldn't send status update")
 	}
@@ -82,32 +82,71 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	if instanceState.State == model.InstanceState_QUEUED {
 		err = exec.bootInstance(driver, taskInfo)
 		if err != nil {
-			_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
+			_, err1 := driver.SendStatusUpdate(&mesos.TaskStatus{
 				TaskId: taskInfo.GetTaskId(),
 				State:  mesos.TaskState_TASK_FAILED.Enum(),
 			})
-			if err != nil {
-				log.WithError(err).Error("Failed to SendStatusUpdate TASK_FAILED")
+			if err1 != nil {
+				log.WithError(err1).Error("Failed to SendStatusUpdate TASK_FAILED")
 			}
-			if err := exec.Failure(taskInfo.GetTaskId().GetValue(), model.FailureMessage_FAILED_BOOT); err != nil {
-				log.WithError(err).Errorf("Failed to record failure message: %s", model.FailureMessage_FAILED_BOOT.String())
+			if err1 := recordFailedState(ctx, driver, instance.GetId(), model.FailureMessage_FAILED_BOOT, err); err1 != nil {
+				log.WithError(err1).Errorf("Failed to record failure message: %s", model.FailureMessage_FAILED_BOOT.String())
 			}
 		}
 	} else {
-		if err := exec.recoverInstance(taskInfo.GetTaskId().GetValue(), *instanceState); err != nil {
+		if err := exec.recoverInstance(instance); err != nil {
 			log.WithError(err).Error("Failed recoverInstance")
 		}
 	}
+	if err := exec.bootInstance(driver, taskInfo); err != nil {
+		return
+	}
+
+	_, err = driver.SendStatusUpdate(&mesos.TaskStatus{
+		TaskId: taskInfo.GetTaskId(),
+		State:  mesos.TaskState_TASK_RUNNING.Enum(),
+	})
+	if err != nil {
+		log.WithError(err).Errorln("Couldn't send status update")
+		return
+	}
 }
 
-func (exec *VDCExecutor) recoverInstance(instanceID string, instanceState model.InstanceState) error {
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instanceID)
+func recordFailedState(ctx context.Context, driver exec.ExecutorDriver, instanceID string, failureType model.FailureMessage_ErrorType, lastErr error) error {
+	log := log.WithFields(log.Fields{
+		"instance_id": instanceID,
+		"error_type":  failureType.String(),
+		"last_error":  lastErr,
+	})
+	err1 := model.Instances(ctx).AddFailureMessage(instanceID, failureType)
+	if err1 != nil {
+		log.WithError(err1).Errorln("Failed Instances.AddFailureMessage")
 	}
-	err = hv.Recover(instanceState)
+	status := &mesos.TaskStatus{
+		TaskId: mesosutil.NewTaskID(instanceID),
+		State:  mesos.TaskState_TASK_FAILED.Enum(),
+	}
+	if lastErr != nil {
+		status.Message = proto.String(lastErr.Error())
+	}
+	_, err2 := driver.SendStatusUpdate(status)
+	if err2 != nil {
+		log.WithError(err2).Error("Failed to SendStatusUpdate TASK_FAILED")
+	}
+	if err1 == nil && err2 == nil {
+		log.Info("Proceeded recording task failure")
+	}
+	return nil
+}
+
+func (exec *VDCExecutor) recoverInstance(instance *model.Instance) error {
+	hv, err := exec.hypervisorProvider.CreateDriver(instance, instance.ResourceTemplate())
 	if err != nil {
-		return errors.Wrapf(err, "Hypervisor failed to recover instance. InstanceID: %s", instanceID)
+		return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instance.GetId())
+	}
+	err = hv.Recover(*instance.LastState)
+	if err != nil {
+		return errors.Wrapf(err, "Hypervisor failed to recover instance. InstanceID: %s", instance.GetId())
 	}
 	return nil
 }
@@ -125,45 +164,46 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return err
 	}
 
-	// Push back to the initial state in case of error.
-	finState := model.InstanceState_REGISTERED
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
+	var lastErr error
 	defer func() {
-		err = model.Instances(ctx).UpdateState(instanceID, finState)
-		if err != nil {
+		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_BOOT, lastErr)
+		}
+		log.WithField("fin_state", finState).Info("Proceeded defer func() at bootInstance()")
 		model.Close(ctx)
 	}()
 
 	log = log.WithField("state", model.InstanceState_STARTING.String())
-	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
-	if err != nil {
-		log.WithError(err).Error("Failed Instances.UpdateState")
-		return err
+	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING); lastErr != nil {
+		log.WithError(lastErr).Error("Failed Instances.UpdateState")
+		return lastErr
 	}
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return err
+	inst, lastErr := model.Instances(ctx).FindByID(instanceID)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed Instances.FindyByID")
+		return lastErr
 	}
 
-	inst, err := model.Instances(ctx).FindByID(instanceID)
-	if err != nil {
-		log.WithError(err).Error("Failed Instances.FindyByID")
-		return err
+	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if lastErr != nil {
+		return lastErr
 	}
 
 	log.Infof("Creating instance")
-	err = hv.CreateInstance(inst, inst.ResourceTemplate())
-	if err != nil {
-		log.WithError(err).Error("Failed CreateInstance")
-		return err
+	if lastErr = hv.CreateInstance(); lastErr != nil {
+		log.WithError(lastErr).Error("Failed CreateInstance")
+		return lastErr
 	}
 	log.Infof("Starting instance")
-	err = hv.StartInstance()
-	if err != nil {
-		log.WithError(err).Error("Failed StartInstance")
-		return err
+	if lastErr = hv.StartInstance(); lastErr != nil {
+		log.WithError(lastErr).Error("Failed StartInstance")
+		return lastErr
 	}
 	log.Infof("Instance launched successfully")
 	// Here can bring the instance state to RUNNING finally.
@@ -190,32 +230,39 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 		return err
 	}
 
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_STOPPED
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
+	var lastErr error
 	defer func() {
-		err = model.Instances(ctx).UpdateState(instanceID, finState)
-		if err != nil {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_START, lastErr)
+		}
+		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return err
+	inst, lastErr := model.Instances(ctx).FindByID(instanceID)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed Instances.FindyByID")
+		return lastErr
 	}
 
-	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING)
-	if err != nil {
-		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
-		return err
+	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if lastErr != nil {
+		return lastErr
+	}
+
+	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STARTING); lastErr != nil {
+		log.WithError(lastErr).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
+		return lastErr
 	}
 
 	log.Infof("Starting instance")
-	err = hv.StartInstance()
-	if err != nil {
-		log.WithError(err).Error("Failed StartInstance")
-		return err
+	if lastErr = hv.StartInstance(); lastErr != nil {
+		log.WithError(lastErr).Error("Failed StartInstance")
+		return lastErr
 	}
 	log.Infof("Instance started successfully")
 	// Here can bring the instance state to RUNNING finally.
@@ -242,32 +289,39 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 		return err
 	}
 
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_RUNNING
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
+	var lastErr error
 	defer func() {
-		err = model.Instances(ctx).UpdateState(instanceID, finState)
-		if err != nil {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_STOP, lastErr)
+		}
+		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return err
+	inst, lastErr := model.Instances(ctx).FindByID(instanceID)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed Instances.FindyByID")
+		return lastErr
 	}
 
-	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STOPPING)
-	if err != nil {
-		log.WithError(err).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
-		return err
+	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if lastErr != nil {
+		return lastErr
+	}
+
+	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_STOPPING); lastErr != nil {
+		log.WithError(lastErr).WithField("state", model.InstanceState_STOPPING).Error("Failed Instances.UpdateState")
+		return lastErr
 	}
 
 	log.Infof("Stopping instance")
-	err = hv.StopInstance()
-	if err != nil {
-		log.Error("Failed StopInstance")
-		return err
+	if lastErr = hv.StopInstance(); lastErr != nil {
+		log.WithError(lastErr).Error("Failed StopInstance")
+		return lastErr
 	}
 	log.Infof("Instance stopped successfully")
 	// Here can bring the instance state to STOPPED finally.
@@ -287,32 +341,39 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 		return err
 	}
 
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_RUNNING
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
+	var lastErr error
 	defer func() {
-		err = model.Instances(ctx).UpdateState(instanceID, finState)
-		if err != nil {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_REBOOT, lastErr)
+		}
+		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return err
+	inst, lastErr := model.Instances(ctx).FindByID(instanceID)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed Instances.FindyByID")
+		return lastErr
 	}
 
-	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_REBOOTING)
-	if err != nil {
-		log.WithError(err).WithField("state", model.InstanceState_REBOOTING).Error("Failed Instances.UpdateState")
-		return err
+	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if lastErr != nil {
+		return lastErr
+	}
+
+	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_REBOOTING); lastErr != nil {
+		log.WithError(lastErr).WithField("state", model.InstanceState_REBOOTING).Error("Failed Instances.UpdateState")
+		return lastErr
 	}
 
 	log.Infof("Rebooting instance")
-	err = hv.RebootInstance()
-	if err != nil {
+	if lastErr = hv.RebootInstance(); lastErr != nil {
 		log.Error("Failed RebootInstance")
-		return err
+		return lastErr
 	}
 
 	log.Infof("Instance rebooted successfully")
@@ -333,32 +394,34 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return err
 	}
 
-	inst, err := model.Instances(ctx).FindByID(instanceID)
-	if err != nil {
-		log.Errorln(err)
-	}
-
-	originalState := inst.GetLastState().GetState()
-
-	// Push back to the state below in case of error.
-	finState := model.InstanceState_RUNNING
+	// Apply FAILED terminal state in case of error.
+	finState := model.InstanceState_FAILED
+	var lastErr error
 	defer func() {
-		err = model.Instances(ctx).UpdateState(instanceID, finState)
-		if err != nil {
+		if finState == model.InstanceState_FAILED {
+			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_TERMINATE, lastErr)
+		}
+		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
 	}()
 
-	hv, err := exec.hypervisorProvider.CreateDriver(instanceID)
-	if err != nil {
-		return err
+	inst, lastErr := model.Instances(ctx).FindByID(instanceID)
+	if lastErr != nil {
+		return errors.Wrap(lastErr, "Failed instances.FindByID")
 	}
 
-	err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_SHUTTINGDOWN)
-	if err != nil {
-		log.WithError(err).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.UpdateState")
-		return err
+	originalState := inst.GetLastState().GetState()
+
+	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if lastErr != nil {
+		return errors.Wrap(lastErr, "Failed hypervisorProvider.CreateDriver")
+	}
+
+	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_SHUTTINGDOWN); lastErr != nil {
+		log.WithError(lastErr).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.UpdateState")
+		return lastErr
 	}
 
 	// Trying to stop an already stopped container results in an error
@@ -366,17 +429,15 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 
 	if originalState != model.InstanceState_STOPPED {
 		log.Infof("Shuttingdown instance")
-		err = hv.StopInstance()
-		if err != nil {
-			log.Error("Failed StopInstance")
-			return err
+		if lastErr = hv.StopInstance(); lastErr != nil {
+			log.WithError(lastErr).Error("Failed StopInstance")
+			return lastErr
 		}
 	}
 
-	err = hv.DestroyInstance()
-	if err != nil {
-		log.WithError(err).Error("Failed DestroyInstance")
-		return err
+	if lastErr = hv.DestroyInstance(); lastErr != nil {
+		log.WithError(lastErr).Error("Failed DestroyInstance")
+		return lastErr
 	}
 	log.Infof("Instance terminated successfully")
 	// Here can bring the instance state to TERMINATED finally.
@@ -398,74 +459,37 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 	log.Infoln("command: ", command)
 	log.Infoln("taskId: ", taskId)
 	log.Infoln("---------------------------------------------")
-	var err error
 
 	switch command {
 	case "start":
-		err = exec.startInstance(driver, taskId.GetValue())
-		if err != nil {
+		if err := exec.startInstance(driver, taskId.GetValue()); err != nil {
 			log.WithError(err).Error("Failed to start instance")
 		}
-		err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_START)
-		if err != nil {
-			log.Errorln(err)
-		}
 	case "stop":
-		err = exec.stopInstance(driver, taskId.GetValue())
-		if err != nil {
+		if err := exec.stopInstance(driver, taskId.GetValue()); err != nil {
 			log.WithError(err).Error("Failed to stop instance")
-			err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_STOP)
-			if err != nil {
-				log.Errorln(err)
-			}
 		}
 	case "reboot":
-		err = exec.rebootInstance(driver, taskId.GetValue())
-		if err != nil {
+		if err := exec.rebootInstance(driver, taskId.GetValue()); err != nil {
 			log.WithError(err).Error("Failed to reboot instance")
-			err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_REBOOT)
-			if err != nil {
-				log.Errorln(err)
-			}
 		}
 	case "destroy":
-		var tstatus *mesos.TaskStatus
-		err = exec.terminateInstance(driver, taskId.GetValue())
-		if err != nil {
+		if err := exec.terminateInstance(driver, taskId.GetValue()); err != nil {
 			log.WithError(err).Error("Failed to terminate instance")
-			tstatus = &mesos.TaskStatus{
-				TaskId: taskId,
-				State:  mesos.TaskState_TASK_FAILED.Enum(),
-			}
-			err = exec.Failure(taskId.GetValue(), model.FailureMessage_FAILED_TERMINATE)
-			if err != nil {
-				log.Errorln(err)
-			}
-		} else {
-			tstatus = &mesos.TaskStatus{
-				TaskId: taskId,
-				State:  mesos.TaskState_TASK_FINISHED.Enum(),
-			}
+			// driver.SendStatusUpdate() with TASK_FAILED message is sent in terminateInstance()
+			break
 		}
-		if _, err := driver.SendStatusUpdate(tstatus); err != nil {
-			log.WithError(err).Error("Couldn't send status update")
+		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
+			TaskId: taskId,
+			State:  mesos.TaskState_TASK_FINISHED.Enum(),
+			Source: mesos.TaskStatus_SOURCE_EXECUTOR.Enum(),
+		})
+		if err != nil {
+			log.WithError(errors.WithStack(err)).Error("Couldn't send status update")
 		}
 	default:
 		log.WithField("msg", msg).Errorln("FrameworkMessage unrecognized.")
 	}
-}
-
-func (exec *VDCExecutor) Failure(instanceID string, failureMessage model.FailureMessage_ErrorType) error {
-	ctx, err := model.Connect(context.Background(), &zkAddr)
-	if err != nil {
-		return err
-	}
-	err = model.Instances(ctx).AddFailureMessage(instanceID, failureMessage)
-	if err != nil {
-		return err
-	}
-	model.Close(ctx)
-	return nil
 }
 
 func (exec *VDCExecutor) Shutdown(driver exec.ExecutorDriver) {
@@ -562,6 +586,15 @@ func execute(cmd *cobra.Command, args []string) {
 			log.WithError(err).Error("Failed ClusterClose")
 		}
 	}()
+	ctx, err = model.Connect(ctx, &zkAddr)
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to connecto to model server: %s", zkAddr.String())
+	}
+	defer func() {
+		if err := model.Close(ctx); err != nil {
+			log.WithError(err).Error("Failed model.Close")
+		}
+	}()
 
 	executorAPIListener, err := net.Listen("tcp", viper.GetString("executor-api.listen"))
 	if err != nil {
@@ -586,7 +619,7 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	defer sshListener.Close()
 
-	sshd := NewSSHServer(provider)
+	sshd := NewSSHServer(provider, ctx)
 	if err := sshd.Setup(); err != nil {
 		log.WithError(err).Fatal("Failed to setup SSH Server")
 	}

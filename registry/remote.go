@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 // Handle resource template represented by URI and
@@ -32,7 +33,7 @@ func (r *RemoteRegistry) Find(templateName string) (*RegistryTemplate, error) {
 	defer reader.Close()
 	tmpl, err := parseResourceTemplate(reader)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Failed to parse template %s", templateName)
 	}
 	rt := &RegistryTemplate{
 		Name:     templateName,
