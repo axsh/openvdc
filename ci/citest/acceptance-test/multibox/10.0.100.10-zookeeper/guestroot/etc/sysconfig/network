@@ -1,3 +1,2 @@
 NETWORKING=yes
-HOSTNAME=zookeeper
 GATEWAY=10.0.100.1

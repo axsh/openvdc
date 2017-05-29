@@ -26,7 +26,8 @@ message InstanceState {
     STOPPED = 5;
     REBOOTING = 6;
     SHUTTINGDOWN = 7;
-    TERMINATED = 8;
+    TERMINATED = 8; // Terminal
+    FAILED = 9; // Terminal
   }
   State state = 1;
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
@@ -71,7 +72,7 @@ message LxcTemplate {
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
-    string bridge = 4;
+    //string bridge = 4; // Obsolete
   }
   repeated Interface interfaces = 6;
   message Template {
@@ -115,9 +116,20 @@ message LxcTemplate {
     repeated string extra_args = 13 [json_name="extra_args"] ;
   }
   Template lxc_template = 7 [json_name="lxc_template"];
+  repeated string node_groups = 8 [json_name="node_groups"];
 }
 
 message NullTemplate {
   int32 vcpu = 1;
   int32 memory_gb = 2 [json_name="memory_gb"];
+  enum CrashStage {
+    NONE  = 0;
+    START = 1;
+    STOP  = 2;
+    CREATE = 3;
+    DESTROY = 4;
+    REBOOT = 5;
+  }
+  CrashStage crash_stage = 3 [json_name="crash_stage"];
+  repeated string node_groups = 4 [json_name="node_groups"];
 }

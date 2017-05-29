@@ -29,6 +29,25 @@
     "memory_gb": {
       "type": "integer",
       "default": 1
+    },
+    "node_groups": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": [
+        {"type": "string"}
+      ]
+    },
+    "crash_stage": {
+      "type": "string",
+      "enum": [
+        "none",
+        "start",
+        "stop",
+        "create",
+        "destroy",
+        "reboot"
+      ],
+      "default": "none"
     }
   }
 }

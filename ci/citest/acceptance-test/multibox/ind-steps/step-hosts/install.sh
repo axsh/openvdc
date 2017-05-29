@@ -10,5 +10,6 @@
 10.0.100.12 scheduler
 10.0.100.13 executor-null
 10.0.100.14 executor-lxc
+10.0.100.15 executor-lxc-ovs
 EOF
 ) ; prev_cmd_failed
