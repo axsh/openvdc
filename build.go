@@ -166,6 +166,39 @@ func downloadFromUrl(url string) string {
 	return fileName
 }
 
+func installProtoc() {
+		if_not_exists("protoc", func() { // since we require a specific version anyway, wouldn't it be better to include this binary in the initial install filesystem?
+			const GOARCH string = runtime.GOARCH
+			const GOOS string = runtime.GOOS
+			if GOOS == "linux" && GOARCH == "amd64" { // check os and arch. If 64-bit linux, download binary. Other cases should be added as we start supporting other oses/architectures.
+				filename := downloadFromUrl("https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip")
+				dirname := removeExt(filename)
+				log.Printf("Unzipping %s to %s", filename, dirname)
+				if err := unzip(filename, dirname, "protoc"); err != nil {
+					log.Println("Error unzipping file.")
+				}
+				GOPATH, exists := os.LookupEnv("GOPATH")
+				if !exists {
+					log.Println("GOPATH is not set. If protoc installation fails, please set the GOPATH environment variable and try again.")
+				}
+				log.Printf("Moving %s/bin/protoc to %s/bin/protoc", dirname, GOPATH)
+				if err := os.Rename(filepath.Join(dirname,"bin/protoc"), filepath.Join(GOPATH, "bin/protoc")); err != nil{
+					log.Println(err)
+				}
+				log.Printf("Removing: %s", filename)
+				if err:= os.Remove(filename); err != nil{
+					log.Println(err)
+				}
+				log.Printf("Removing: %s", dirname)
+				if err:= os.RemoveAll(dirname); err != nil{
+					log.Println(err)
+				}
+			} else {
+			log.Fatalf("Unable to find protoc. Download a pre-compiled binary (version %s) for your system from https://github.com/google/protobuf/releases/tag/v3.2.0 to a suitable location found in your environment's PATH variable.", ProtocVersion)
+			}
+		})
+}
+
 func determineGHRef() string {
 	var branchName string
 	var exists bool
@@ -258,38 +291,8 @@ Environment Variables:
 		cmd("go", "get", "-u", "github.com/elazarl/go-bindata-assetfs/...")
 	})
 
-	if with_gogen {
-		if_not_exists("protoc", func() { // since we require a specific version anyway, wouldn't it be better to include this binary in the initial install filesystem?
-			const GOARCH string = runtime.GOARCH
-			const GOOS string = runtime.GOOS
-			if GOOS == "linux" && GOARCH == "amd64" { // check os and arch. If 64-bit linux, download binary. Other cases should be added as we start supporting other oses/architectures.
-				filename := downloadFromUrl("https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip")
-				dirname := removeExt(filename)
-				log.Printf("Unzipping %s to %s", filename, dirname)
-				if err := unzip(filename, dirname, "protoc"); err != nil {
-					log.Println("Error unzipping file.")
-				}
-				GOPATH, exists := os.LookupEnv("GOPATH")
-				if !exists {
-					log.Println("GOPATH is not set. If protoc installation fails, please set the GOPATH environment variable and try again.")
-				}
-				log.Printf("Moving %s/bin/protoc to %s/bin/protoc", dirname, GOPATH)
-				if err := os.Rename(filepath.Join(dirname,"bin/protoc"), filepath.Join(GOPATH, "bin/protoc")); err != nil{
-					log.Println(err)
-				}
-				log.Printf("Removing: %s", filename)
-				if err:= os.Remove(filename); err != nil{
-					log.Println(err)
-				}
-				log.Printf("Removing: %s", dirname)
-				if err:= os.RemoveAll(dirname); err != nil{
-					log.Println(err)
-				}
-			} else {
-			log.Fatalf("Unable to find protoc. Download a pre-compiled binary (version %s) for your system from https://github.com/google/protobuf/releases/tag/v3.2.0 to a suitable location found in your environment's PATH variable.", ProtocVersion)
-			}
-		})
-		// Check protoc version
+	if with_gogen {		// Check protoc version
+		installProtoc()
 		ver, err := exec.Command("protoc", "--version").Output()
 		if err != nil {
 			log.Fatalf("Failed to check protoc version: %v", err)
