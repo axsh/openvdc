@@ -75,7 +75,7 @@ func removeExt(s string) string {
 	return s[:len(s)-len(filepath.Ext(s))]
 }
 
-func unzip(src, dest string) error {
+func unzip(src, dest, fileToExtract string) error {
 	r, err := zip.OpenReader(src)
     if err != nil {
         return err
@@ -125,10 +125,13 @@ func unzip(src, dest string) error {
     }
 
     for _, f := range r.File {
+			if strings.Contains((*f).Name, fileToExtract) {
         err := extractAndWriteFile(f)
         if err != nil {
-            return err
+					return err
         }
+				return nil
+			}
     }
 
     return nil
@@ -162,7 +165,6 @@ func downloadFromUrl(url string) string {
 	fmt.Println(n, "bytes downloaded.")
 	return fileName
 }
-
 
 func determineGHRef() string {
 	var branchName string
@@ -263,8 +265,8 @@ Environment Variables:
 			if GOOS == "linux" && GOARCH == "amd64" { // check os and arch. If 64-bit linux, download binary. Other cases should be added as we start supporting other oses/architectures.
 				filename := downloadFromUrl("https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip")
 				dirname := removeExt(filename)
-				log.Printf("Unzipping %s to %s.", filename, dirname)
-				if err := unzip(filename, dirname); err != nil {
+				log.Printf("Unzipping %s to %s", filename, dirname)
+				if err := unzip(filename, dirname, "protoc"); err != nil {
 					log.Println("Error unzipping file.")
 				}
 				GOPATH, exists := os.LookupEnv("GOPATH")
