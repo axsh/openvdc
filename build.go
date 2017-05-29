@@ -21,7 +21,7 @@ import (
 	"runtime"
 )
 
-const ProtocVersion = "libprotoc 3.2.0"
+const ProtocVersion = "libprotoc 3.2.0" // strings.Split(ProtocVersion, " ")[1] is used below, so be careful changing this value...
 var verbose = true
 
 // Similar to "$()" or "``" in sh
@@ -166,12 +166,16 @@ func downloadFromUrl(url string) string {
 	return fileName
 }
 
+func join(separator string, args ...string) string {
+	return strings.Join(args, separator)
+}
+
 func installProtoc() {
 		if_not_exists("protoc", func() { // since we require a specific version anyway, wouldn't it be better to include this binary in the initial install filesystem?
 			const GOARCH string = runtime.GOARCH
 			const GOOS string = runtime.GOOS
 			if GOOS == "linux" && GOARCH == "amd64" { // check os and arch. If 64-bit linux, download binary. Other cases should be added as we start supporting other oses/architectures.
-				filename := downloadFromUrl("https://github.com/google/protobuf/releases/download/v3.2.0/protoc-3.2.0-linux-x86_64.zip")
+				filename := downloadFromUrl(join("", "https://github.com/google/protobuf/releases/download/v", strings.Split(ProtocVersion, " ")[1], "/protoc-3.2.0-linux-x86_64.zip"))
 				dirname := removeExt(filename)
 				log.Printf("Unzipping %s to %s", filename, dirname)
 				if err := unzip(filename, dirname, "protoc"); err != nil {
