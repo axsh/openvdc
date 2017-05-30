@@ -175,7 +175,8 @@ func installProtoc() {
 			const GOARCH string = runtime.GOARCH
 			const GOOS string = runtime.GOOS
 			if GOOS == "linux" && GOARCH == "amd64" { // check os and arch. If 64-bit linux, download binary. Other cases should be added as we start supporting other oses/architectures.
-				filename := downloadFromUrl(join("", "https://github.com/google/protobuf/releases/download/v", strings.Split(ProtocVersion, " ")[1], "/protoc-3.2.0-linux-x86_64.zip"))
+				protocVersionNumber := strings.Split(ProtocVersion, " ")[1]
+				filename := downloadFromUrl(join("", "https://github.com/google/protobuf/releases/download/v", protocVersionNumber, "/protoc-", protocVersionNumber, "-linux-x86_64.zip"))
 				dirname := removeExt(filename)
 				log.Printf("Unzipping %s to %s", filename, dirname)
 				if err := unzip(filename, dirname, "protoc"); err != nil {
