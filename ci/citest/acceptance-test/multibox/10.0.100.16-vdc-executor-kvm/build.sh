@@ -14,7 +14,7 @@ IND_STEPS=(
     "hosts"
     "disable-firewalld"
     "epel"
-    "qemu-kvm"
+    "kvm"
     "bridge-utils"
     "mesosphere-repo"
     "mesos-agent"

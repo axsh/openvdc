@@ -15,7 +15,7 @@ IND_STEPS=(
     "disable-firewalld"
     "epel"
     "openvswitch"
-    "cgroups"
+    "kvm"
     "mesosphere-repo"
     "mesos-agent"
 )
