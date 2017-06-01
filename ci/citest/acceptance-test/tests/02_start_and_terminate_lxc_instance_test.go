@@ -81,7 +81,7 @@ func TestLXCInstance_OvsNICx2(t *testing.T) {
 		t.Error(stdout)
 	} else {
 		if testing.Verbose() {
-			t.Log("ovs-vsctl port-to-br "+instance_id+"_00", stdout.String())
+			t.Log("ovs-vsctl port-to-br "+instance_id+"_01", stdout.String())
 		}
 	}
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
