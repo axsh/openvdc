@@ -69,7 +69,6 @@ func TestLXCInstance_OvsNICx2(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ovs_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 	stdout, _, err := RunSsh(executor_lxc_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00"))
 	if err != nil {
-		t.Log(stdout)
 		t.Error(err)
 	} else {
 		if testing.Verbose() {
@@ -78,7 +77,7 @@ func TestLXCInstance_OvsNICx2(t *testing.T) {
 	}
 	stdout, _, err = RunSsh(executor_lxc_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_01"))
 	if err != nil {
-		t.Error(stdout)
+		t.Error(err)
 	} else {
 		if testing.Verbose() {
 			t.Log("ovs-vsctl port-to-br "+instance_id+"_01", stdout.String())
