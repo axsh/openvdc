@@ -10,7 +10,7 @@ import (
 )
 
 func TestCmdReboot(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc")
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})

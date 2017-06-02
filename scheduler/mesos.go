@@ -7,6 +7,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 
+	"strings"
+
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -105,36 +107,61 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		return nil
 	}
 
-	getHypervisorName := func(offer *mesos.Offer) string {
-		for _, attr := range offer.Attributes {
-			if attr.GetName() == "hypervisor" &&
-				attr.GetType() == mesos.Value_TEXT {
-				return attr.GetText().GetValue()
-			}
-		}
-		return ""
-	}
-
 	findMatching := func(i *model.Instance) *mesos.Offer {
 		log := log.WithField("instance_id", i.GetId())
 		for _, offer := range offers {
-			hypervisorName := getHypervisorName(offer)
-			if hypervisorName == "" {
+			log := log.WithField("agent", offer.SlaveId.String())
+			var agentAttrs struct {
+				Hypervisor string   // Required
+				NodeGroups []string // Optional
+			}
+			// Read and validate attribute entries from agent offer.
+			for _, attr := range offer.Attributes {
+				switch attr.GetName() {
+				case "hypervisor":
+					if attr.GetType() != mesos.Value_TEXT {
+						log.Error("Invalid value type for 'hypervisor' attribute")
+						break
+					}
+					agentAttrs.Hypervisor = attr.GetText().GetValue()
+
+				case "node-groups":
+					if attr.GetType() == mesos.Value_TEXT {
+						if attr.GetText().GetValue() == "" {
+							log.Error("'node-groups' attribute must be non-empty string")
+							break
+						}
+						agentAttrs.NodeGroups = strings.Split(attr.GetText().GetValue(), ",")
+					} else {
+						log.Errorf("Invalid value type for 'bridge' attribute: %s", attr.GetText())
+						break
+					}
+				default:
+					log.Warnf("Found unsupported attribute: %s", attr.GetName())
+				}
+			}
+
+			if agentAttrs.Hypervisor == "" {
+				log.Error("Required attributes are not advertised from agent")
 				continue
 			}
 
 			// TODO: Avoid type switch to find template types.
 			switch t := i.GetTemplate().GetItem(); t.(type) {
 			case *model.Template_Lxc:
-				if hypervisorName == "lxc" {
+				if agentAttrs.Hypervisor == "lxc" {
+					lxc := i.GetTemplate().GetLxc()
+					if !model.IsMatchingNodeGroups(lxc, agentAttrs.NodeGroups) {
+						return nil
+					}
 					return offer
 				}
 			case *model.Template_Null:
-				if hypervisorName == "null" {
+				if agentAttrs.Hypervisor == "null" {
 					return offer
 				}
 			default:
-				log.Warnf("Unknown template type")
+				log.Warnf("Unknown template type: %T", t)
 			}
 		}
 		return nil
@@ -154,7 +181,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			continue
 		}
 
-		hypervisorName := getHypervisorName(found)
+		hypervisorName := strings.TrimPrefix(i.GetTemplate().ResourceTemplate().ResourceName(), "vm/")
 		log.WithFields(log.Fields{
 			"instance_id": i.GetId(),
 			"hypervisor":  hypervisorName,

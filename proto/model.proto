@@ -72,7 +72,7 @@ message LxcTemplate {
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
-    string bridge = 4;
+    //string bridge = 4; // Obsolete
   }
   repeated Interface interfaces = 6;
   message Template {
@@ -116,6 +116,7 @@ message LxcTemplate {
     repeated string extra_args = 13 [json_name="extra_args"] ;
   }
   Template lxc_template = 7 [json_name="lxc_template"];
+  repeated string node_groups = 8 [json_name="node_groups"];
 }
 
 message NullTemplate {
@@ -130,4 +131,5 @@ message NullTemplate {
     REBOOT = 5;
   }
   CrashStage crash_stage = 3 [json_name="crash_stage"];
+  repeated string node_groups = 4 [json_name="node_groups"];
 }

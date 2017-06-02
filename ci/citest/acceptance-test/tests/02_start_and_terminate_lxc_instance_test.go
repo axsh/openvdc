@@ -10,7 +10,7 @@ import (
 )
 
 func TestLXCInstance(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"interfaces":[{"type":"veth", "bridge":"linux"}]}`)
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"interfaces":[{"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
@@ -27,7 +27,7 @@ func TestLXCInstance(t *testing.T) {
 
 func TestLXCInstance_NICx2(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc",
-		`{"interfaces":[{"type":"veth", "bridge":"linux"}, {"type":"veth", "bridge":"linux"}]}`)
+		`{"interfaces":[{"type":"veth"}, {"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)

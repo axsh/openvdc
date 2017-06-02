@@ -21,6 +21,7 @@ Requires: bridge-utils
 %{systemd_requires}
 Requires: openvdc-cli
 Requires: openvdc-executor
+Requires: openvdc-executor-lxc
 Requires: openvdc-scheduler
 
 ## This will not work with rpm v. 4.11 (which is what the jenkins vm has!)
