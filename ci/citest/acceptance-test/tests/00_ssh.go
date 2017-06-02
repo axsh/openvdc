@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 )
-
 const zookeeper_ip = "10.0.100.10"
 const mesos_master_ip = "10.0.100.11"
 const scheduler_ip = "10.0.100.12"
 const executor_null_ip = "10.0.100.13"
 const executor_lxc_ip = "10.0.100.14"
+const executor_lxc_ovs_ip = "10.0.100.15"
 
 func RunSsh(ip string, cmd string) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
