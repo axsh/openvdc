@@ -2,9 +2,11 @@
   <library name="GOPATH &lt;openvdc&gt;">
     <CLASSES>
       <root url="file://$PROJECT_DIR$/../.." />
+      <root url="file://$PROJECT_DIR$/../../../golang.org" />
     </CLASSES>
     <SOURCES>
       <root url="file://$PROJECT_DIR$/../.." />
+      <root url="file://$PROJECT_DIR$/../../../golang.org" />
     </SOURCES>
     <excluded>
       <root url="file://$PROJECT_DIR$" />
