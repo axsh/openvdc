@@ -11,7 +11,7 @@ import (
 func TestLocalImage(t *testing.T) {
 
 	// Use custom lxc-template.
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"lxc_template":{"template":"openvdc"}}`)
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"lxc_template":{"template":"openvdc"}, "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
