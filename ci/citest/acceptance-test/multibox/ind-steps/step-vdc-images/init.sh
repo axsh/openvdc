@@ -11,7 +11,7 @@ for img in "${IMAGES[@]}" ; do
 done
 
 (
-    # resync again after images have been built
+    # resync again after images have been downloaded
     $starting_step "Synching guestroot for ${vm_name}"
     # This step is set to false by default and we rely on rsyncs -u flag
     # to take care of keeping the files updated

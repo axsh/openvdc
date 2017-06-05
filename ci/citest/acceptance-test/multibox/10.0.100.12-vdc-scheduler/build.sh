@@ -27,7 +27,6 @@ build "${IND_STEPS[@]}"
 # This is not part of the ind-steps because we don't want OpenVDC installed in
 # the cached images. We want a clean cache without OpenVDC so we can install a
 # different version to test every the CI runs.
-
 install_openvdc_yum_repo
 install_yum_package_over_ssh "openvdc-scheduler"
 enable_service_over_ssh "openvdc-scheduler"
