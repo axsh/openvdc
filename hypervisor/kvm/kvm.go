@@ -32,7 +32,7 @@ func (t BridgeType) String() string {
 	}
 }
 
-type KVMHypervisorProivder {
+type KVMHypervisorProivder struct {
 }
 
 type KVMHypervisorDriver struct {
@@ -62,7 +62,7 @@ func (p *KVMHypervisorProivder) CreateDrivder (instance *model.Instance, templat
 	m := qemu.NewMachine(kvmTmpl.vcpu, kvmTmpl.memory_gb) 
 	driver := &KVMHypervisorDriver{
 		Base: hypervisor.Base{
-			Log: log.Withfields(log.Fields("Hypervisor": "kvm", "instance_id": instance.GetId()}),
+			Log: log.Withfields(log.Fields{"Hypervisor": "kvm", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
 		template: kvmTmpl,
