@@ -36,5 +36,4 @@ func TestKvmHandler_ParseTemplate(t *testing.T) {
 	assert.IsType((*model.KvmTemplate)(nil), m)
 	modelkvm := m.(*model.KvmTemplate)
 	assert.NotNil(modelkvm.GetKvmImage())
-	assert.Nil(modelkvm.GetKvmTemplate())
 }
