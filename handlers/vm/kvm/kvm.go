@@ -20,8 +20,18 @@ type KvmHandler struct {
 	vm.Base
 }
 
-func (h *KvmHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error){
-	return nil, nil
+func (h *KvmHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
+	tmpl := &model.KvmTemplate{}
+	if err := json.Unmarshal(in, tmpl); err != nil {
+		return nil, err
+	}
+
+	// Validation
+	if tmpl.GetKvmImage() == nil {
+		return nil, handlers.ErrInvalidTemplate(h, "kvm_image must exist")
+	}
+
+	return tmpl, nil
 }
 
 func (h *KvmHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate) {
