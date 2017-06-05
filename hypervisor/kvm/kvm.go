@@ -1,9 +1,9 @@
 // +build linux
 
-package lxc
+package kvm
 
 import (
-	"fmt"
+	// "fmt"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -55,7 +55,20 @@ func (p *KVMHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 }
 
 func (p *KVMHypervisorProivder) CreateDrivder (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDeriver, error) {
-	return nil
+	kvmTmpl, ok := template.(*model.KvmTemplate)
+	if !ok {
+		return nil, errors.Errorf("template type is not *model.KvmTemplate: %T, template")
+	}
+	m := qemu.NewMachine(kvmTmpl.vcpu, kvmTmpl.memory_gb) 
+	driver := &KVMHypervisorDriver{
+		Base: hypervisor.Base{
+			Log: log.Withfields(log.Fields("Hypervisor": "kvm", "instance_id": instance.GetId()}),
+			Instance: instance,
+		},
+		template: kvmTmpl,
+		machine: m,
+	}
+	return driver, nil
 }
 
 func (d *KVMHypervisorDriver) log() *log.Entry {
