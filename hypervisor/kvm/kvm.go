@@ -55,7 +55,7 @@ func (p *KVMHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
-func (p *KVMHypervisorProvider) CreateDrivder (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
+func (p *KVMHypervisorProvider) CreateDriver (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
 	kvmTmpl, ok := template.(*model.KvmTemplate)
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.KvmTemplate: %T, template")
