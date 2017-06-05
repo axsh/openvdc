@@ -32,7 +32,7 @@ func (t BridgeType) String() string {
 	}
 }
 
-type KVMHypervisorProivder struct {
+type KVMHypervisorProvider struct {
 }
 
 type KVMHypervisorDriver struct {
@@ -54,7 +54,7 @@ func (p *KVMHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
-func (p *KVMHypervisorProivder) CreateDrivder (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDeriver, error) {
+func (p *KVMHypervisorProvider) CreateDrivder (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
 	kvmTmpl, ok := template.(*model.KvmTemplate)
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.KvmTemplate: %T, template")
@@ -62,7 +62,7 @@ func (p *KVMHypervisorProivder) CreateDrivder (instance *model.Instance, templat
 	m := qemu.NewMachine(kvmTmpl.vcpu, kvmTmpl.memory_gb) 
 	driver := &KVMHypervisorDriver{
 		Base: hypervisor.Base{
-			Log: log.Withfields(log.Fields{"Hypervisor": "kvm", "instance_id": instance.GetId()}),
+			Log: log.WithFields(log.Fields{"Hypervisor": "kvm", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
 		template: kvmTmpl,
@@ -95,6 +95,6 @@ func (d KVMHypervisorDriver) RebootInstance() error {
 	return nil
 }
 
-func (d KVMHypervisorDriver) InstanceConsole() Console {
+func (d KVMHypervisorDriver) InstanceConsole() hypervisor.Console {
 	return nil
 }
