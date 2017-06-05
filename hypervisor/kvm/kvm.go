@@ -59,7 +59,7 @@ func (p *KVMHypervisorProvider) CreateDrivder (instance *model.Instance, templat
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.KvmTemplate: %T, template")
 	}
-	m := qemu.NewMachine(int32(kvmTmpl.Vcpu), uint16(kvmTmpl.MemoryGb))
+	m := qemu.NewMachine(int(kvmTmpl.Vcpu), uint64(kvmTmpl.MemoryGb))
 	driver := &KVMHypervisorDriver{
 		Base: hypervisor.Base{
 			Log: log.WithFields(log.Fields{"Hypervisor": "kvm", "instance_id": instance.GetId()}),
