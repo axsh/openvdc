@@ -45,9 +45,11 @@ Now edit `ci/citest/acceptance-test/multibox/config.source` and tell it to use t
 ```
 #BOXES_DIR="/data/openvdc-ci/boxes"
 #CACHE_DIR="/data/openvdc-ci/branches"
+#IMG_DIR="/data/openvdc-ci/images"
 
 BOXES_DIR="$HOME/work/openvdc-multibox-data/openvdc-ci/boxes"
 CACHE_DIR="$HOME/work/openvdc-multibox-data/openvdc-ci/branches"
+IMG_DIR="$HOME/work/openvdc-multibox-data/openvdc-ci/images"
 ```
 
 Now build the environment.
