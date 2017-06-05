@@ -91,6 +91,7 @@ OpenVDC executor common package.
 %dir /opt/axsh/openvdc/share/mesos-slave
 /opt/axsh/openvdc/share/mesos-slave/attributes.null
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
+/opt/axsh/openvdc/share/mesos-slave/attributes.qemu
 /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
 %dir /etc/openvdc
 
@@ -138,6 +139,23 @@ fi
 
 cp /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc /usr/share/lxc/templates/lxc-openvdc
 
+%package executor-kvm
+Summary: OpenVDC executor (KVM driver)
+Requires: openvdc-executor
+Requires: qemu-kvm
+
+%description executor-kvm
+KVM driver configuration package for OpenVDC executor
+
+%files executor-kvm
+%config(noreplace) /etc/openvdc/executor.toml
+
+%post executor-kvm
+if [ -d /etc/mesos-slave ]; then
+  if [ ! -f /etc/mesos-slave/attributes ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.kvm /etc/mesos-slave/attributes
+  fi
+fi
 
 %package scheduler
 Summary: OpenVDC scheduler
