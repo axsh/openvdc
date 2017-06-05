@@ -48,6 +48,7 @@ func (p *KVMHypervisorProvider) Name () string {
 }
 
 func init() {
+	hypervisor.RegisterProvider("kvm", &KVMHypervisorProvider{})
 }
 
 func (p *KVMHypervisorProvider) LoadConfig(sub *viper.Viper) error {
