@@ -43,7 +43,7 @@ type KVMHypervisorDriver struct {
 	machine   *qemu.Machine
 }
 
-func (p *KVMHypervisorProivder) Name () string {
+func (p *KVMHypervisorProvider) Name () string {
 	return "kvm"
 }
 
@@ -59,7 +59,7 @@ func (p *KVMHypervisorProvider) CreateDrivder (instance *model.Instance, templat
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.KvmTemplate: %T, template")
 	}
-	m := qemu.NewMachine(kvmTmpl.vcpu, kvmTmpl.memory_gb) 
+	m := qemu.NewMachine(kvmTmpl.Vcpu, kvmTmpl.MemoryGb)
 	driver := &KVMHypervisorDriver{
 		Base: hypervisor.Base{
 			Log: log.WithFields(log.Fields{"Hypervisor": "kvm", "instance_id": instance.GetId()}),

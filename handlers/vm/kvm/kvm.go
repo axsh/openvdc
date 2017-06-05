@@ -20,7 +20,7 @@ type KvmHandler struct {
 	vm.Base
 }
 
-func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error){
+func (h *KvmHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error){
 	return nil, nil
 }
 
