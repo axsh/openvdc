@@ -3,12 +3,8 @@
 package kvm
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/stretchr/testify/assert"

@@ -3,7 +3,6 @@ package lxc
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 
 	"github.com/axsh/openvdc/handlers"
@@ -19,6 +18,10 @@ func init() {
 
 type KvmHandler struct {
 	vm.Base
+}
+
+func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error){
+	return nil, nil
 }
 
 func (h *KvmHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate) {
@@ -73,7 +76,6 @@ func (h *KvmHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) e
 	}
 	// Prevent Image & Template attributes from overwriting.
 	minput.KvmImage = nil
-	minput.KvmTemplate = nil
 	proto.Merge(mdst, minput)
 	return nil
 }
