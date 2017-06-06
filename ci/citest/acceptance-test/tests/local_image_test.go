@@ -3,6 +3,7 @@
 package tests
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,12 +21,18 @@ func TestLocalImage(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 
 	configFile := filepath.Join("/var/lib/lxc/", instance_id, "config")
-	stdout, _ = RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "echo $(head -n 1 configFile)", 10, 5)
+
+	fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00")
+
+	stdout, _, err = RunSsh(executor_lxc_ip, fmt.Sprintf("echo $(head -n 1 %s)", configFile))
+	if err != nil {
+		t.Error(err)
+	}
 	if stdout.Len() == 0 {
 		t.Errorf("Couldn't read %s", configFile)
 	}
 
-	s := strings.Split(stdout, "/")
+	s := strings.Split(stdout.String(), "/")
 	templateUsed := s[len(s)-1]
 	if templateUsed != "" || templateUsed != "lxc-openvdc" {
 		t.Errorf("Expected templateUsed to be 'lxc-openvdc', got:  %s", templateUsed)
