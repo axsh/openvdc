@@ -4,6 +4,10 @@ package qemu
 
 import (
 	// "fmt"
+	"os"
+	"path/filepath"
+	"net/http"
+	"net/url"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
