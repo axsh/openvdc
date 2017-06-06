@@ -139,21 +139,21 @@ fi
 
 cp /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc /usr/share/lxc/templates/lxc-openvdc
 
-%package executor-kvm
-Summary: OpenVDC executor (KVM driver)
+%package executor-qemu
+Summary: OpenVDC executor (Qemu driver)
 Requires: openvdc-executor
-Requires: qemu-kvm
+Requires: qemu-system-x86
 
-%description executor-kvm
-KVM driver configuration package for OpenVDC executor
+%description executor-qemu
+Qemu driver configuration package for OpenVDC executor
 
-%files executor-kvm
+%files executor-qemu
 %config(noreplace) /etc/openvdc/executor.toml
 
-%post executor-kvm
+%post executor-qemu
 if [ -d /etc/mesos-slave ]; then
   if [ ! -f /etc/mesos-slave/attributes ]; then
-    cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.kvm /etc/mesos-slave/attributes
+    cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.qemu /etc/mesos-slave/attributes
   fi
 fi
 
