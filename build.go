@@ -272,7 +272,7 @@ Environment Variables:
 	}
 	BUILDDATE := time.Now().UTC().Format(time.RFC3339)
 
-	GOVERSION := runtime.Version() //cmd("go", "version")
+	GOVERSION := runtime.Version()
 	log.Println(GOVERSION)
 	LDFLAGS := fmt.Sprintf(
 		"-X '%[1]s.Version=%[2]s' -X '%[1]s.Sha=%[3]s' -X '%[1]s.Builddate=%[4]s' -X '%[1]s.Goversion=%[5]s'",
