@@ -1,6 +1,6 @@
 // build +linux
 
-package kvm
+package qemu
 
 import (
 	"testing"
@@ -12,19 +12,19 @@ import (
 
 func TestProviderRegistration(t *testing.T) {
 	assert := assert.New(t)
-	p, _ := hypervisor.FindProvider("kvm")
-	assert.NotNil(p, "Check kvm provider is registered.")
-	assert.Equal("kvm", p.Name())
+	p, _ := hypervisor.FindProvider("qemu")
+	assert.NotNil(p, "Check qemu provider is registered.")
+	assert.Equal("qemu", p.Name())
 	assert.Implements((*hypervisor.HypervisorProvider)(nil), p)
 }
 
-func TestKVMHypervisorProvider_CreateDriver(t *testing.T) {
+func TestQEMUHypervisorProvider_CreateDriver(t *testing.T) {
 	assert := assert.New(t)
-	p, _ := hypervisor.FindProvider("kvm")
+	p, _ := hypervisor.FindProvider("qemu")
 
-	d, err := p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, &model.KvmTemplate{})
+	d, err := p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, &model.QemuTemplate{})
 	assert.NoError(err)
 	assert.Implements((*hypervisor.HypervisorDriver)(nil), d)
 	_, err = p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, nil)
-	assert.Error(err, "KVMHypvisorProvider.CreateDriver should fail if not with *model.KVMTemplate")
+	assert.Error(err, "QEMUHypvisorProvider.CreateDriver should fail if not with *model.QEMUTemplate")
 }
