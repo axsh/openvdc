@@ -122,7 +122,56 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 	return d.Base.Log
 }
 
+func (d *QEMUHypervisorDriver) getImage() {
+}
+
+func (d *QEMUHypervisorDriver) provideImage(baseFile string, imagePath string) (qemu.Image) {
+	var img qemu.Image
+	imgName := "dummy"
+	imgSize := // set size in bytes
+
+	switch d.template.Image.Format {
+	case qcow2
+		img := qemu.NewImage(imagePath, qemu.ImageFormatQCOW2, imgSize)
+	case raw:
+		img := qemu.NewImage(imagePath, qemu.ImageFormatRAW, imgSize)
+	default:
+		return errors.Errorf("Image format not supported: %s". d.template.Image.Format)
+	}
+
+	img.SetBackingFile(imgBase)
+	img.Create()
+
+	return img
+}
+
+
 func (d *QEMUHypervisorDriver) CreateInstance() error {
+	instanceId := d.template.Base.instance.GetId()
+	instanceDir := filepath.Join(settings.InstancePath, instanceId)
+	imagePath := filepath.Join(instanceDir, "diskImage."+d.template.Image.Format)
+
+	os.MkdirAll(instance_dir, os.ModePerm)
+	if err != nil {
+		return errors.Errorf("Failed creating folder for instance: %s", instanceId)
+	}
+
+	if _, err := os.Stat(imagePath) ; err != nil {
+		d.getImage()
+		d.provideImage(baseFile, imagePath)
+	}
+	img, err = qemu.OpenImage(imagePath)
+	d.machine.AddDriveImage(img)
+
+	for idx, i = range d.template.Interfaces {
+		d.machine.AddNetDev(&qemu.NetDev{
+			Type: "tap",
+			ID: i,
+			IfName: fmt.Sprintf("%s_%02d", instanceId, idx),
+		})
+	}
+
+	d.machine.AddMonitor(filepath.Join(instanceDir, instanceId))
 	return nil
 }
 
