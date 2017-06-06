@@ -51,7 +51,7 @@ message Template {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
-    KvmTemplate kvm = 503;
+    QemuTemplate qemu = 503;
   }
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
@@ -120,7 +120,7 @@ message LxcTemplate {
   repeated string node_groups = 8 [json_name="node_groups"];
 }
 
-message KvmTemplate {
+message QemuTemplate {
   int32 vcpu = 1;
   int32 memory_gb = 2 [json_name="memory_gb"];
   int32 min_vcpu = 3 [json_name="min_vcpu"];
@@ -131,7 +131,7 @@ message KvmTemplate {
     string chksum = 3;
     string format = 4;
   }
-  Image kvm_image = 5 [json_name="kvm_image"];
+  Image qemu_image = 5 [json_name="qemu_image"];
   message Interface {
     string type = 1;
     string macaddr = 2;
