@@ -53,8 +53,6 @@ var settings struct {
 	BridgeType      BridgeType
 	BridgeName      string
 	InstancePath    string
-	MonitorPort     int
-	SerialPort      int
 }
 
 func init() {
