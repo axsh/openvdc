@@ -47,11 +47,55 @@ func (p *QEMUHypervisorProvider) Name () string {
 	return "qemu"
 }
 
+var settings struct {
+	ImgageServerUri string
+	CachePath       string
+	BridgeType      BridgeType
+	BridgeName      string
+	InstancePath    string
+	MonitorPort     int
+	SerialPort      int
+}
+
 func init() {
 	hypervisor.RegisterProvider("qemu", &QEMUHypervisorProvider{})
+	viper.SetDefault("hypervisor.image-server-uri", "http://127.0.0.1/images")
+	viper.SetDefault("hypervisor.cache-path", "/var/cache/qemu")
+	viper.SetDefault("hypervisor.instance-path", "/var/openvdc/qemu-instances")
 }
 
 func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
+	if sub.IsSet("bridge.name") {
+		setting.BridgeName = sub.GetString("bridge.name")
+		if sub.IsSet("bridge.type") {
+			switch sub.GetString("bridge.type") {
+			case "linux":
+				settings.BridgeType = Linux
+			case "ovs"
+				settings.BridgeType = OVS
+			default:
+				return errors.Errorf("Unknown bridges.type value: %s". sub.GetString("bridges.type"))
+			}
+		}
+	} else if sub.IsSet("bridges.linux.name") {
+n		log.Warn("bridges.linux.name is obsolete option")
+		settings.BridgeName = sub.GetString("bridges.linux.name")
+		settings.BridgeType = Linux
+	} else if sub.IsSet("bridges.ovs.name") {
+		log.Warn("bridges.ovs.name is obsolete option")
+		settings.BridgeName = sub.GetString("bridges.ovs.name")
+		settings.BridgeType = OVS
+	}
+
+	u := sub.GetString("hypervisor.image-server-uri")
+	_, err := url.ParseRequestURI(u)
+	if err != nil {
+		return errors.Errorf("Error parsing hypervisor.image-server-uri: %s", u)
+	}
+
+	settings.ImageServerUri = u
+	settings.CachePath = sub.GetString("hypervisor.cache-path")
+	settings.InstancePath = sub.GetString("hypervisor.instance-path")
 	return nil
 }
 
