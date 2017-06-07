@@ -51,11 +51,13 @@ func (p *QEMUHypervisorProvider) Name () string {
 }
 
 var settings struct {
-	ImgageServerUri string
-	CachePath       string
-	BridgeType      BridgeType
-	BridgeName      string
-	InstancePath    string
+	ImgageServerUri  string
+	CachePath        string
+	BridgeType       BridgeType
+	BridgeName       string
+	InstancePath     string
+	QemuBridgeHelper string
+	QemuPath         string
 }
 
 func init() {
@@ -66,6 +68,14 @@ func init() {
 }
 
 func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
+	if os.Stat("/usr/libexec/qemu-kvm") {
+		settings.QemuPath = "/usr/libexec"
+	} else if os.Stat("/usr/bin/qemu-system-x86_64") {
+		settings.QemuPath = "/usr/bin"
+	} else {
+		return errors.Errorf("No qemu provider found.")
+	}
+
 	if sub.IsSet("bridge.name") {
 		setting.BridgeName = sub.GetString("bridge.name")
 		if sub.IsSet("bridge.type") {
@@ -82,10 +92,12 @@ func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 n		log.Warn("bridges.linux.name is obsolete option")
 		settings.BridgeName = sub.GetString("bridges.linux.name")
 		settings.BridgeType = Linux
+		settings.QemuBridgeHelper = filepath.Join(settings.QemuPath, "qemu-bridge-helper")
 	} else if sub.IsSet("bridges.ovs.name") {
 		log.Warn("bridges.ovs.name is obsolete option")
 		settings.BridgeName = sub.GetString("bridges.ovs.name")
 		settings.BridgeType = OVS
+		settings.QemuBridgeHelper = "/path/to/qemu-ovs-helper"
 	}
 
 	u := sub.GetString("hypervisor.image-server-uri")
@@ -137,6 +149,8 @@ func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
 		Id: "test1",
 		IfName: fmt.Sprintf("testif"),
 		MacAddr: "00:00:00:00:00:02",
+		Bridge: settings.BridgeName,
+		BridgeHelper: settings.QemuBridgeHelper,
 	})
 
 	d.machine.AddNICs(netDev)
