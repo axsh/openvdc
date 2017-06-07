@@ -58,6 +58,7 @@ var settings struct {
 	InstancePath     string
 	QemuBridgeHelper string
 	QemuPath         string
+	QemuProvider     string
 }
 
 func init() {
@@ -70,8 +71,10 @@ func init() {
 func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	if os.Stat("/usr/libexec/qemu-kvm") {
 		settings.QemuPath = "/usr/libexec"
+		settings.QemuProvider = "qemu-kvm"
 	} else if os.Stat("/usr/bin/qemu-system-x86_64") {
 		settings.QemuPath = "/usr/bin"
+		settings.QemuProvider = "qemu-system-x86_64"
 	} else {
 		return errors.Errorf("No qemu provider found.")
 	}
@@ -143,7 +146,6 @@ func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
 	})
 
 	var netDev []qemu.NetDev
-
 	for i, iface := range d.template.Interfaces {
 		netDev = append(&NetDev{
 			Id: i,
@@ -152,7 +154,6 @@ func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
 			Bridge: settings.BridgeName,
 			BridgeHelper: settings.QemuBridgeHelper,
 		}
-
 	d.machine.AddNICs(netDev)
 	return nil
 }
