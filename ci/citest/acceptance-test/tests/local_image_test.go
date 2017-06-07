@@ -22,8 +22,6 @@ func TestLocalImage(t *testing.T) {
 
 	configFile := filepath.Join("/var/lib/lxc/", instance_id, "config")
 
-	fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00")
-
 	stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("echo $(head -n 1 %s)", configFile))
 	if err != nil {
 		t.Error(err)
