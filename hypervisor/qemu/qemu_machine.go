@@ -19,6 +19,13 @@ type Machine struct {
 	Pid     int
 }
 
+type NetDev struct {
+	IfName       string
+	Index        string
+	MacAddr      string
+	Bridge       string
+	BridgeHelper string
+}
 
 func NewMachine(cores int, mem uint64) *Machine {
 	return &Machine{

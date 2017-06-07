@@ -144,14 +144,14 @@ func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
 
 	var netDev []qemu.NetDev
 
-	netDev = append(netDev, qemu.NetDev{
-		Type: "tap",
-		Id: "test1",
-		IfName: fmt.Sprintf("testif"),
-		MacAddr: "00:00:00:00:00:02",
-		Bridge: settings.BridgeName,
-		BridgeHelper: settings.QemuBridgeHelper,
-	})
+	for i, iface := range d.template.Interfaces {
+		netDev = append(&NetDev{
+			Id: i,
+			IfName: d.Base.Interface.GetId(),
+			MAC: iface.MacAddr,
+			Bridge: settings.BridgeName,
+			BridgeHelper: settings.QemuBridgeHelper,
+		}
 
 	d.machine.AddNICs(netDev)
 	return nil
