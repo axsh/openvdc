@@ -31,7 +31,7 @@ func NewImage(path string, format string, baseImage string) (*Image, error) {
 
 func (i *Image) CreateInstanceImage() error {
 	cmdLine := &cmdLine{args: make([]string, 0)}
-	cmd := exec.Command("qemu-img", cmdLine.qemuImgCmd(i)...)
+	cmd := exec.Command("qemu-img", cmdLine.QemuImgCmd(i)...)
 
 	if stdout, err := cmd.CombinedOutput() ; err != nil {
 		return errors.Errorf("%s failed with: %s", cmd.Args, stdout)

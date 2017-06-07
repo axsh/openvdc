@@ -10,7 +10,7 @@ func (c *cmdLine) appendArgs(args... string) {
 	}
 }
 
-func (cmd *cmdLine) qemuBootCmd(m *Machine, useKvm bool) []string {
+func (cmd *cmdLine) QemuBootCmd(m *Machine, useKvm bool) []string {
 	cmd.appendArgs("-smp", strconv.Itoa(m.Cores), "-m", strconv.FormatUint(m.Memory, 10))
 	if useKvm {
 		cmd.appendArgs("-enable-kvm")
@@ -31,19 +31,24 @@ func (cmd *cmdLine) qemuBootCmd(m *Machine, useKvm bool) []string {
 		cmd.appendArgs("-net", "none")
 	} else {
 		for _, nic := range m.Nics {
-			cmd.appendArgs("-netdev", fmt.Sprintf("%s,ifname=%s,script=%s,downscript=%s,id=%s",
-				nic.Type, nic.IfName, nic.Upscript, nic.Downscript, nic.Id))
-			device := fmt.Sprintf("virtio-net-pci,netdev=%s", nic.Id)
-			if len(nic.MacAddr) > 0 {
-				device = fmt.Sprintf("%s,mac=%s", device, nic.MacAddr)
+			brdev := fmt.Sprintf("bridge,br=%s", nic.Bridge)
+			if len(nic.BridgeHelper) > 0 {
+				brdev = fmt.Sprintf("%s,helper=%s", brdev, nic.BridgeHelper)
 			}
-			cmd.appendArgs("-device", device)
+			netdev := fmt.Sprintf("nic,model=virtio")
+			if len(nic.MacAddr) > 0 {
+				netdev = fmt.Sprintf("%s,macaddr=%s", netdev, nic.MacAddr)
+			}
+
+			cmd.appendArgs("-net", brdev)
+			cmd.appendArgs("-net", netdev)
 		}
 	}
+	cmd.appendArgs("-display", m.Display)
 	return cmd.args
 }
 
-func (cmd *cmdLine) qemuImgCmd(i *Image) []string {
+func (cmd *cmdLine) QemuImgCmd(i *Image) []string {
 	cmd.appendArgs("create", "-f", i.Format, "-b", i.baseImg, i.Path)
 	return cmd.args
 }
