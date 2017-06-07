@@ -2,11 +2,38 @@ package qemu
 
 import (
 	"fmt"
-	"strconv"
+	"os"
 	"os/exec"
+
+	"github.com/pkg/errors"
 )
 
+type State int
+
+const (
+	STOPPED State = iota
+	STARTING
+	RUNNING
+	STOPPING
+	REBOOTING
+	SHUTTINGDOWN
+	TERMINATING
+	FAILED
+)
+
+var MachineState = map[string]State{
+	"STOPPED" : STOPPED,
+	"STARTING" : STARTING,
+	"RUNNING" : RUNNING,
+	"STOPPING" : STOPPING,
+	"REBOOTING" : REBOOTING,
+	"SHUTTINGDOWN" : SHUTTINGDOWN,
+	"TERMINATING" : TERMINATING,
+	"FAILED" : FAILED,
+}
+
 type Machine struct {
+	State   State
 	Cores   int
 	Memory  uint64
 	Name    string
@@ -16,7 +43,7 @@ type Machine struct {
 	Serial  string
 	Nics    []NetDev
 	Drives  []Drive
-	Pid     int
+	Process *os.Process
 }
 
 type NetDev struct {
@@ -49,14 +76,34 @@ func (m *Machine) Start(startCmd string) error {
 	qemuCmd := fmt.Sprintf("%s", startCmd)
 	cmdLine := &cmdLine{args: make([]string, 0)}
 
-	cmd := exec.Command(qemuCmd, cmdLine.buildQemuCmd(m, true)...)
+	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m, true)...)
 	fmt.Printf("%s", cmd.Args)
 	if err := cmd.Start() ; err != nil {
 		return errors.Errorf("Failed to execute cmd: %s", cmd.Args)
 	}
 
-	m.Pid = cmd.Process.Pid
-
+	m.Process = cmd.Process
+	m.connectToConsole()
+	m.Stop()
 	// TODO: add some error handling
+	return nil
+}
+
+func (m *Machine) connectToConsole() {
+	exec.Command("sh", m.Monitor)
+
+}
+
+func (m *Machine) Stop() error {
+	fmt.Println("stopping instnace")
+	m.Process.Kill()
+	return nil
+}
+
+func (m *Machine) Destroy() error {
+	return nil
+}
+
+func (m *Machine) Reboot() error {
 	return nil
 }

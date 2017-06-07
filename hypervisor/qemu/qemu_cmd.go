@@ -1,5 +1,9 @@
 package qemu
 
+import (
+	"fmt"
+	"strconv"
+)
 type cmdLine struct {
 	args []string
 }
