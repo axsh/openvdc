@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/model"
 	"github.com/spf13/viper"
-	qemu "github.com/quadrifoglio/go-qemu"
 )
 
 type BridgeType int
@@ -44,7 +43,7 @@ type QEMUHypervisorDriver struct {
 	template  *model.QemuTemplate
 	imageName string
 	hostName  string
-	machine   qemu.Machine
+	machine   *qemu.Machine
 }
 
 func (p *QEMUHypervisorProvider) Name () string {
@@ -125,53 +124,40 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 func (d *QEMUHypervisorDriver) getImage() {
 }
 
-func (d *QEMUHypervisorDriver) provideImage(baseFile string, imagePath string) (qemu.Image) {
-	var img qemu.Image
-	imgName := "dummy"
-	imgSize := // set size in bytes
+func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
+	d.machine.AddDrive(qemu.Drive{
+		Path: imagePath,
+		Format: d.format,
+	})
 
-	switch d.template.Image.Format {
-	case qcow2
-		img := qemu.NewImage(imagePath, qemu.ImageFormatQCOW2, imgSize)
-	case raw:
-		img := qemu.NewImage(imagePath, qemu.ImageFormatRAW, imgSize)
-	default:
-		return errors.Errorf("Image format not supported: %s". d.template.Image.Format)
-	}
+	var netDev []qemu.NetDev
 
-	img.SetBackingFile(imgBase)
-	img.Create()
+	netDev = append(netDev, qemu.NetDev{
+		Type: "tap",
+		Id: "test1",
+		IfName: fmt.Sprintf("testif"),
+		MacAddr: "00:00:00:00:00:02",
+	})
 
-	return img
+	d.machine.AddNICs(netDev)
+	return nil
 }
-
 
 func (d *QEMUHypervisorDriver) CreateInstance() error {
 	instanceId := d.template.Base.instance.GetId()
 	instanceDir := filepath.Join(settings.InstancePath, instanceId)
 	imagePath := filepath.Join(instanceDir, "diskImage."+d.template.Image.Format)
 
-	os.MkdirAll(instance_dir, os.ModePerm)
-	if err != nil {
-		return errors.Errorf("Failed creating folder for instance: %s", instanceId)
-	}
-
-	if _, err := os.Stat(imagePath) ; err != nil {
+	os.MkdirAll(instanceDir, os.ModePerm)
+	if _, err := os.Stat(baseImage) ; err != nil {
 		d.getImage()
-		d.provideImage(baseFile, imagePath)
 	}
-	img, err = qemu.OpenImage(imagePath)
-	d.machine.AddDriveImage(img)
-
-	for idx, i = range d.template.Interfaces {
-		d.machine.AddNetDev(&qemu.NetDev{
-			Type: "tap",
-			ID: i,
-			IfName: fmt.Sprintf("%s_%02d", instanceId, idx),
-		})
+	if _, err := os.Stat(imagePath) ; err != nil {
+		img, _ := qemu.NewImage(imagePath, d.format, baseImage)
+		img.CreateInstanceImage()
 	}
 
-	d.machine.AddMonitor(filepath.Join(instanceDir, instanceId))
+	d.buildMachine(imagePath)
 	return nil
 }
 
