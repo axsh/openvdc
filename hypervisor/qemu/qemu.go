@@ -3,7 +3,7 @@
 package qemu
 
 import (
-	// "fmt"
+	"fmt"
 	"os"
 	"path/filepath"
 //	"net/http"
@@ -141,21 +141,22 @@ func (d *QEMUHypervisorDriver) getImage() {
 }
 
 func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
-	d.machine.AddDrive(Drive{
-		Path: imagePath,
-		Format: d.template.QemuImage.Format,
-	})
+	d.machine.Name = d.Base.Instance.GetId()
 
 	var netDev []NetDev
-	for _, iface := range d.template.Interfaces {
+	for idx, iface := range d.template.Interfaces {
 		netDev = append(netDev, NetDev{
-			IfName: d.Base.Instance.GetId(),
+			IfName: fmt.Sprintf("%s%02d", d.machine.Name, idx),
 			MacAddr: iface.Macaddr,
 			Bridge: settings.BridgeName,
 			BridgeHelper: settings.QemuBridgeHelper,
 		})
 	}
+
+	d.machine.AddDrive(Drive{Path: imagePath, Format: d.template.QemuImage.Format})
 	d.machine.AddNICs(netDev)
+	d.machine.Monitor = fmt.Sprintf("unix:%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
+	d.machine.Serial = fmt.Sprintf("unix:%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
 	return nil
 }
 

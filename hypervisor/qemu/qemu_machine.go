@@ -59,6 +59,7 @@ func NewMachine(cores int, mem uint64) *Machine {
 		Cores: cores,
 		Memory: mem,
 		Drives: make([]Drive, 0),
+		Display: "none",
 	}
 }
 
