@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-
+	"net"
 	"github.com/pkg/errors"
 )
 
@@ -84,20 +84,24 @@ func (m *Machine) Start(startCmd string) error {
 	}
 
 	m.Process = cmd.Process
-	m.connectToConsole()
-	m.Stop()
 	// TODO: add some error handling
 	return nil
 }
 
-func (m *Machine) connectToConsole() {
-	exec.Command("sh", m.Monitor)
+func (m *Machine) MonitorCommand(cmd string) error {
+	c, err := net.Dial("unix", fmt.Sprintf("%s", m.Monitor))
+	fmt.Println(m.Monitor)
+	if err != nil {
+		return errors.Errorf("Failed to connect to monitor socket %s:", m.Monitor)
+	}
+	defer c.Close()
 
+	fmt.Fprintf(c, "%s\n", cmd)
+	return nil
 }
 
 func (m *Machine) Stop() error {
-	fmt.Println("stopping instnace")
-	m.Process.Kill()
+	m.MonitorCommand("system_powerdown")
 	return nil
 }
 
@@ -106,5 +110,6 @@ func (m *Machine) Destroy() error {
 }
 
 func (m *Machine) Reboot() error {
+	m.MonitorCommand("system_reset")
 	return nil
 }

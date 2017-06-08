@@ -155,8 +155,8 @@ func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
 
 	d.machine.AddDrive(Drive{Path: imagePath, Format: d.template.QemuImage.Format})
 	d.machine.AddNICs(netDev)
-	d.machine.Monitor = fmt.Sprintf("unix:%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
-	d.machine.Serial = fmt.Sprintf("unix:%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
+	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
+	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
 	return nil
 }
 

@@ -20,10 +20,10 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine, useKvm bool) []string {
 		cmd.appendArgs("-enable-kvm")
 	}
 	if len(m.Serial) > 0 {
-		cmd.appendArgs("-serial", fmt.Sprintf("%s,server,nowait",m.Serial))
+		cmd.appendArgs("-serial", fmt.Sprintf("unix:%s,server,nowait",m.Serial))
 	}
 	if len(m.Monitor) > 0 {
-		cmd.appendArgs("-monitor", fmt.Sprintf("%s,server,nowait", m.Monitor))
+		cmd.appendArgs("-monitor", fmt.Sprintf("unix:%s,server,nowait", m.Monitor))
 	}
 	if len(m.Vnc) > 0 {
 		cmd.appendArgs("-vnc", m.Vnc)
