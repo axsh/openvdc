@@ -65,6 +65,7 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	})
 	if err != nil {
 		log.WithError(err).Error("Couldn't send status update")
+		return
 	}
 
 	instanceID := taskInfo.GetTaskId().GetValue()
@@ -72,26 +73,19 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 	ctx, err := model.Connect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
+		return
 	}
 	instance, err := model.Instances(ctx).FindByID(instanceID)
 	if err != nil {
-		log.WithError(err).Error("Failed to fetch instance %s", instanceID)
+		log.WithError(err).Errorf("Failed to fetch instance %s", instanceID)
+		return
 	}
 	instanceState := instance.GetLastState()
 
 	if instanceState.State == model.InstanceState_QUEUED {
-		err = exec.bootInstance(driver, taskInfo)
-		if err != nil {
-			_, err1 := driver.SendStatusUpdate(&mesos.TaskStatus{
-				TaskId: taskInfo.GetTaskId(),
-				State:  mesos.TaskState_TASK_FAILED.Enum(),
-			})
-			if err1 != nil {
-				log.WithError(err1).Error("Failed to SendStatusUpdate TASK_FAILED")
-			}
-			if err1 := recordFailedState(ctx, driver, instance.GetId(), model.FailureMessage_FAILED_BOOT, err); err1 != nil {
-				log.WithError(err1).Errorf("Failed to record failure message: %s", model.FailureMessage_FAILED_BOOT.String())
-			}
+		if err := exec.bootInstance(driver, taskInfo); err != nil {
+			// bootInstance() handles driver.SendStatusUpdate by itself.
+			return
 		}
 	} else {
 		if err := exec.recoverInstance(instance); err != nil {
