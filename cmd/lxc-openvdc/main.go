@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log/syslog"
 	"net/http"
 	"net/url"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	logrus_syslog "github.com/Sirupsen/logrus/hooks/syslog"
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
 )
@@ -28,14 +26,6 @@ var imgPath string
 var dist string
 var release string
 var arch string
-
-func init() {
-	hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_DEBUG, "lxc-openvdc")
-	if err != nil {
-		log.Fatal("Failed to initialize syslog hook: ", err)
-	}
-	log.AddHook(hook)
-}
 
 func main() {
 
