@@ -98,9 +98,6 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			log.WithError(err).Error("Failed recoverInstance")
 		}
 	}
-	if err := exec.bootInstance(driver, taskInfo); err != nil {
-		return
-	}
 
 	_, err = driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
