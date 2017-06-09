@@ -21,6 +21,7 @@ Requires: bridge-utils
 %{systemd_requires}
 Requires: openvdc-cli
 Requires: openvdc-executor
+Requires: openvdc-executor-lxc
 Requires: openvdc-scheduler
 
 ## This will not work with rpm v. 4.11 (which is what the jenkins vm has!)
@@ -49,6 +50,7 @@ mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 mkdir -p "$RPM_BUILD_ROOT"%{_unitdir}
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
+mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/ssh
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
@@ -92,6 +94,12 @@ OpenVDC executor common package.
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
 /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
 %dir /etc/openvdc
+%dir /etc/openvdc/ssh
+
+%post executor
+test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa -f /etc/openvdc/ssh/host_rsa_key -b 4096 -C '' -N '' >&/dev/null;
+test ! -f /etc/openvdc/ssh/host_ecdsa_key && /usr/bin/ssh-keygen -q -t ecdsa -f /etc/openvdc/ssh/host_ecdsa_key -C '' -N '' >&/dev/null;
+test ! -f /etc/openvdc/ssh/host_ed25519_key && /usr/bin/ssh-keygen -q -t ed25519 -f /etc/openvdc/ssh/host_ed25519_key -C '' -N '' >&/dev/null;
 
 %package executor-null
 Summary: OpenVDC executor (null driver)

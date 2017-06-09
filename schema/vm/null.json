@@ -30,6 +30,13 @@
       "type": "integer",
       "default": 1
     },
+    "node_groups": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": [
+        {"type": "string"}
+      ]
+    },
     "crash_stage": {
       "type": "string",
       "enum": [

@@ -1,1 +1,1 @@
-hypervisor:lxc;openvdc-node-id:lxc1
+hypervisor:lxc;openvdc-node-id:lxc1;node-groups:linuxbr

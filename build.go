@@ -186,7 +186,11 @@ Environment Variables:
 	// Build main binaries
 	cmd("go", "build", "-i", "./vendor/...")
 	cmd("go", "build", "-ldflags", LDFLAGS, "-v", "./cmd/openvdc")
-	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "./cmd/openvdc-executor")
+	cmd("go", "build", "-ldflags", LDFLAGS+
+		" -X 'main.HostRsaKeyPath=/etc/openvdc/ssh/host_rsa_key'" +
+		" -X 'main.HostEcdsaKeyPath=/etc/openvdc/ssh/host_ecdsa_key'" +
+		" -X 'main.HostEd25519KeyPath=/etc/openvdc/ssh/host_ed25519_key'" +
+		" -X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "./cmd/openvdc-executor")
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'", "-v", "./cmd/openvdc-scheduler")
 
 	//Build lxc-template

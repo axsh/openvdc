@@ -1,0 +1,74 @@
+#!/bin/bash
+
+meta="meta.tar.xz"
+rootfs="rootfs.tar.xz"
+
+imgHost="https://uk.images.linuxcontainers.org"
+imgHostIndex="https://uk.images.linuxcontainers.org/meta/1.0/index-system"
+imgIndex=$(curl -s "$imgHostIndex")
+
+function prepare_container_image () {
+    local img="${1}"
+    local imgSpec="${2}"
+    local remoteDir="${3}"
+
+    (
+        $starting_group "Preparing to download image: $img"
+        [ -f "$IMG_DIR/$imgSpec/$rootfs" ]
+        $skip_group_if_unnecessary; set -x
+        (
+            $starting_step "Create image dir"
+            [ -d "$IMG_DIR/$imgSpec" ];
+            $skip_step_if_already_done ; set -ex
+            mkdir -p "$IMG_DIR/$imgSpec"
+        ) ; prev_cmd_failed
+        
+        (
+            $starting_step "Downloading file: $imgHost$meta"
+            [ -f "$IMG_DIR/$imgSpec/$meta" ]
+            $skip_step_if_already_done;
+            curl -o "$IMG_DIR/$imgSpec/$meta" "$imgHost$remoteDir/$meta"
+        ) ; prev_cmd_failed
+        
+        
+        (
+            $starting_step "Downloading file: $imgHost$rootfs"
+            [ -f "$IMG_DIR/$imgSpec/$rootfs" ]
+            $skip_step_if_already_done ; set -ex
+            curl -o "$IMG_DIR/$imgSpec/$rootfs" "$imgHost$remoteDir/$rootfs"
+        ) ; prev_cmd_failed
+    ) ; prev_cmd_failed
+}
+
+function add_container_image () {
+    local img="${1}"
+    local imgSpec="${2}"
+    (
+        $starting_group "Preparing to download image: $img"
+        [[ -f "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec/$rootfs" && "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec/$meta" ]]
+        $skip_group_if_unnecessary; set -x
+
+        (
+            $starting_step "Creating folder ${NODE_DIR}/var/www/html/images/$imgSpec"
+            [ -d "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec" ]
+            $skip_step_if_already_done ; set -ex
+            mkdir -p "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec"
+        ) ; prev_cmd_failed
+        
+        (
+            $starting_step "Copying file: $IMG_DIR/$imgSpec/$meta"
+            [ -f "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec/$meta" ]
+            $skip_step_if_already_done ; set -ex
+            [ -f "$IMG_DIR/$imgSpec/$meta" ] || reportfailed "File not found: $IMG_DIR/$imgSpec/$meta"
+            cp "$IMG_DIR/$imgSpec/$meta" "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec"
+        ) ; prev_cmd_failed
+        
+        (
+            $starting_step "Copying file: $IMG_DIR/$imgSpec/$rootfs"
+            [ -f "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec/$rootfs" ]
+            $skip_step_if_already_done ; set -ex
+            [ -f "$IMG_DIR/$imgSpec/$rootfs" ] || reportfailed "File not found: $IMG_DIR/$imgSpec/$rootfs"
+            cp "$IMG_DIR/$imgSpec/$rootfs" "${NODE_DIR}/guestroot/var/www/html/images/$imgSpec"
+        ) ; prev_cmd_failed
+    ); prev_cmd_failed
+}
