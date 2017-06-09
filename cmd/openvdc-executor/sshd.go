@@ -2,20 +2,15 @@ package main
 
 import (
 	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
 	"io"
 	"net"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ssh"
+	"io/ioutil"
 	"golang.org/x/net/context"
 )
 
@@ -44,31 +39,29 @@ func NewSSHServer(finder HypervisorProviderFinder, ctx context.Context) *SSHServ
 
 type HostKeyGen func(rand io.Reader) (crypto.Signer, error)
 
-var KeyGenList = []HostKeyGen{
-	func(rand io.Reader) (crypto.Signer, error) {
-		_, priv, err := ed25519.GenerateKey(rand)
-		return priv, err
-	},
-	func(rand io.Reader) (crypto.Signer, error) {
-		return ecdsa.GenerateKey(elliptic.P521(), rand)
-	},
-	func(rand io.Reader) (crypto.Signer, error) {
-		return rsa.GenerateKey(rand, 2048)
-	},
-}
+var HostRsaKeyPath string
+var HostEcdsaKeyPath string
+var HostEd25519KeyPath string
 
+var KeyGenPathList = []string{
+	HostRsaKeyPath,
+	HostEcdsaKeyPath,
+	HostEd25519KeyPath,
+}
 func (sshd *SSHServer) Setup() error {
 	if model.GetBackendCtx(sshd.ctx) == nil {
 		return errors.New("Context does not have model connection")
 	}
-	for _, gen := range KeyGenList {
-		priv, err := gen(rand.Reader)
+	for _, path := range KeyGenPathList {
+		// Reading key file
+		buf, err := ioutil.ReadFile(path)
 		if err != nil {
-			return errors.Wrap(err, "Failed to generate host key")
+			return errors.Wrap(err, path + " doesn't exist")
 		}
-		sshSigner, err := ssh.NewSignerFromSigner(priv)
+		// Check integrity of pem file
+		sshSigner, err := ssh.ParsePrivateKey(buf)
 		if err != nil {
-			return errors.Wrap(err, "Failed to convert to ssh.Signer")
+			return errors.Wrap(err, path + " is not a valid pem file")
 		}
 		sshd.config.AddHostKey(sshSigner)
 	}

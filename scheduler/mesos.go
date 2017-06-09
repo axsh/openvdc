@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
@@ -55,7 +56,6 @@ func (sched *VDCScheduler) Registered(driver sched.SchedulerDriver, frameworkId 
 		log.Error(err)
 		return
 	}
-
 	log.Infoln("Registered on OpenVDC cluster service: ", node)
 }
 
@@ -130,7 +130,8 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 		for _, instance := range instances {
 			if instance.GetLastState().State != model.InstanceState_REGISTERED &&
 				instance.GetLastState().State != model.InstanceState_QUEUED &&
-				instance.GetLastState().State != model.InstanceState_TERMINATED {
+				instance.GetLastState().State != model.InstanceState_TERMINATED &&
+				instance.GetAutoRecovery() == true {
 
 				disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentMesosID(*offer.SlaveId.Value)
 
@@ -274,8 +275,10 @@ func (sched *VDCScheduler) InstancesRelaunching(driver sched.SchedulerDriver, of
 }
 
 func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
-
-	queued, _ := model.Instances(ctx).FilterByState(model.InstanceState_QUEUED)
+	queued, err := model.Instances(ctx).FilterByState(model.InstanceState_QUEUED)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
 	if len(queued) == 0 {
 		log.Infoln("Skip offers since no allocation requests.")
@@ -304,7 +307,6 @@ func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers 
 		}
 
 		hypervisorName := getHypervisorName(found)
-
 		log.WithFields(log.Fields{
 			"instance_id": i.GetId(),
 			"hypervisor":  hypervisorName,
@@ -364,23 +366,57 @@ func (sched *VDCScheduler) LaunchTasks(driver sched.SchedulerDriver, tasks []*me
 
 func findMatching(i *model.Instance, offers []*mesos.Offer, ctx context.Context) *mesos.Offer {
 	for _, offer := range offers {
-		hypervisorName := getHypervisorName(offer)
-		if hypervisorName == "" {
+		log := log.WithField("agent", offer.SlaveId.String())
+		var agentAttrs struct {
+			Hypervisor string   // Required
+			NodeGroups []string // Optional
+		} // Read and validate attribute entries from agent offer.
+		for _, attr := range offer.Attributes {
+			switch attr.GetName() {
+			case "hypervisor":
+				if attr.GetType() != mesos.Value_TEXT {
+					log.Error("Invalid value type for 'hypervisor' attribute")
+					break
+				}
+				agentAttrs.Hypervisor = attr.GetText().GetValue()
+
+			case "node-groups":
+				if attr.GetType() == mesos.Value_TEXT {
+					if attr.GetText().GetValue() == "" {
+						log.Error("'node-groups' attribute must be non-empty string")
+						break
+					}
+					agentAttrs.NodeGroups = strings.Split(attr.GetText().GetValue(), ",")
+				} else {
+					log.Errorf("Invalid value type for 'bridge' attribute: %s", attr.GetText())
+					break
+				}
+			default:
+				log.Warnf("Found unsupported attribute: %s", attr.GetName())
+			}
+		}
+
+		if agentAttrs.Hypervisor == "" {
+			log.Error("Required attributes are not advertised from agent")
 			continue
 		}
 
 		// TODO: Avoid type switch to find template types.
 		switch t := i.GetTemplate().GetItem(); t.(type) {
 		case *model.Template_Lxc:
-			if hypervisorName == "lxc" {
+			if agentAttrs.Hypervisor == "lxc" {
+				lxc := i.GetTemplate().GetLxc()
+				if !model.IsMatchingNodeGroups(lxc, agentAttrs.NodeGroups) {
+					return nil
+				}
 				return offer
 			}
 		case *model.Template_Null:
-			if hypervisorName == "null" {
+			if agentAttrs.Hypervisor == "null" {
 				return offer
 			}
 		default:
-			log.Warnf("Unknown template type")
+			log.Warnf("Unknown template type: %T", t)
 		}
 	}
 	return nil
@@ -497,20 +533,22 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 		log.WithError(err).Error("Failed to fetch agent nodes")
 	}
 
-	agentID := res.Agentid
+	if res != nil {
 
-	err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
-		Agentid:      agentID,
-		Agentmesosid: agentMesosID,
-		Reconnected:  false,
-	})
+		agentID := res.Agentid
 
-	if err != nil {
-		log.WithError(err).Error("Failed to add '%s' to list of crashed agents", agentID)
+		err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
+			Agentid:      agentID,
+			Agentmesosid: agentMesosID,
+			Reconnected:  false,
+		})
+
+		if err != nil {
+			log.WithError(err).Error("Failed to add '%s' to list of crashed agents", agentID)
+		}
+
+		log.Infoln("Added '%s' to list of crashed agents", agentID)
 	}
-
-	log.Infoln("Added '%s' to list of crashed agents", agentID)
-
 }
 
 func (sched *VDCScheduler) ExecutorLost(_ sched.SchedulerDriver, eid *mesos.ExecutorID, sid *mesos.SlaveID, code int) {

@@ -134,9 +134,8 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 			return
 		}
 	} else {
-		if lastErr = exec.recoverInstance(instance); lastErr != nil {
-			log.WithError(lastErr).Error("Failed recoverInstance")
-			return
+		if err := exec.recoverInstance(instance); err != nil {
+			log.WithError(err).Error("Failed recoverInstance")
 		}
 	}
 
