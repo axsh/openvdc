@@ -35,10 +35,14 @@ func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *
 
 type HostKeyGen func(rand io.Reader) (crypto.Signer, error)
 
+var HostRsaKeyPath string
+var HostEcdsaKeyPath string
+var HostEd25519KeyPath string
+
 var KeyGenPathList = []string{
-	"/etc/openvdc/ssh/host_rsa_key",
-	"/etc/openvdc/ssh/host_ecdsa_key",
-	"/etc/openvdc/ssh/host_ed25519_key",
+	HostRsaKeyPath,
+	HostEcdsaKeyPath,
+	HostEd25519KeyPath,
 }
 func (sshd *SSHServer) Setup() error {
 	if model.GetBackendCtx(sshd.ctx) == nil {
