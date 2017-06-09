@@ -11,14 +11,23 @@ import (
 )
 
 func TestLocalImage(t *testing.T) {
+
+	stdout, _, err := RunSsh(scheduler_ip, fmt.Sprintf("[ -f /var/www/html/images/centos/7/amd64/meta.tar.xz ] && echo meta.tar.xz found || echo meta.tar.xz not found"))
+
+        if err != nil {
+                t.Error(err)
+        }
+
+        t.Log(stdout.String())
+
 	// Use custom lxc-template.
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "https://raw.githubusercontent.com/axsh/openvdc/template-misc/templates/centos/7/lxc2.json", `{"node_groups":["linuxbr"]}`)
+	stdout, _ = RunCmdAndReportFail(t, "openvdc", "run", "https://raw.githubusercontent.com/axsh/openvdc/template-misc/templates/centos/7/lxc2.json", `{"node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
 	configFile := filepath.Join("/var/lib/lxc/", instance_id, "config")
-	stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("echo | sudo head -n 1 %s", configFile))
+	stdout, _, err = RunSsh(executor_lxc_ip, fmt.Sprintf("echo | sudo head -n 1 %s", configFile))
 
 	if err != nil {
 		t.Error(err)
