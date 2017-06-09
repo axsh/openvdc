@@ -15,9 +15,7 @@ func TestLocalImage(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "https://raw.githubusercontent.com/axsh/openvdc/template-misc/templates/centos/7/lxc2.json", `{"node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
-	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 
 	configFile := filepath.Join("/var/lib/lxc/", instance_id, "config")
 	stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("echo | sudo head -n 1 %s", configFile))
