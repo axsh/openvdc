@@ -29,7 +29,7 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine, useKvm bool) []string {
 		cmd.appendArgs("-vnc", m.Vnc)
 	}
 	for _, d := range m.Drives {
-		cmd.appendArgs("-drive", fmt.Sprintf("file=%s,format=%s", d.Path, d.Format))
+		cmd.appendArgs("-drive", fmt.Sprintf("file=%s,format=%s", d.Image.Path, d.Image.Format))
 	}
 	if len(m.Nics) == 0 {
 		cmd.appendArgs("-net", "none")
@@ -53,6 +53,11 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine, useKvm bool) []string {
 }
 
 func (cmd *cmdLine) QemuImgCmd(i *Image) []string {
-	cmd.appendArgs("create", "-f", i.Format, "-b", i.baseImg, i.Path)
+	cmd.appendArgs("create", "-f", i.Format)
+	if len(i.baseImg) > 0 {
+		cmd.appendArgs("-b", i.baseImg)
+	}
+	cmd.appendArgs(i.Path)
+
 	return cmd.args
 }

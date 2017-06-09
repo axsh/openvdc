@@ -7,34 +7,37 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Drive struct {
-	Path   string
-	Format string
-}
-
 type Image struct {
 	Path    string
 	Format  string
 	baseImg string
 }
 
-func NewImage(path string, format string, baseImage string) (*Image, error) {
+type Drive struct {
+	Image   *Image
+}
+
+func NewImage(format string, baseImage string) (*Image, error) {
 	if _, err := os.Stat(baseImage); err != nil {
 		return nil, errors.Errorf("File missing: %s", baseImage)
 	}
 	return &Image{
-		Path: path,
 		Format: format,
 		baseImg: baseImage,
 	}, nil
 }
 
-func (i *Image) CreateInstanceImage() error {
+func (i *Image) CreateInstanceImage(path string) error {
 	cmdLine := &cmdLine{args: make([]string, 0)}
+	i.Path = path
 	cmd := exec.Command("qemu-img", cmdLine.QemuImgCmd(i)...)
 
 	if stdout, err := cmd.CombinedOutput() ; err != nil {
 		return errors.Errorf("%s failed with: %s", cmd.Args, stdout)
 	}
+	return nil
+}
+
+func (i *Image) RemoveInstanceImage() error {
 	return nil
 }

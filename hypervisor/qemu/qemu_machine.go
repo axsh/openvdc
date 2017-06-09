@@ -63,10 +63,6 @@ func NewMachine(cores int, mem uint64) *Machine {
 	}
 }
 
-func (m *Machine) AddDrive(d Drive) {
-	m.Drives = append(m.Drives, d)
-}
-
 func (m *Machine) AddNICs(nics []NetDev) {
 	for _, nic := range nics {
 		m.Nics = append(m.Nics, nic)

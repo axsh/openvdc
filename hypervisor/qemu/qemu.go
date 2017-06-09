@@ -140,8 +140,9 @@ func (d *QEMUHypervisorDriver) getImage() {
 
 }
 
-func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
+func (d *QEMUHypervisorDriver) buildMachine(image *Image) error {
 	d.machine.Name = d.Base.Instance.GetId()
+	d.machine.Drives = append(d.machine.Drives, Drive{Image: image})
 
 	var netDev []NetDev
 	for idx, iface := range d.template.Interfaces {
@@ -153,7 +154,6 @@ func (d *QEMUHypervisorDriver) buildMachine(imagePath string) error {
 		})
 	}
 
-	d.machine.AddDrive(Drive{Path: imagePath, Format: d.template.QemuImage.Format})
 	d.machine.AddNICs(netDev)
 	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
 	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
@@ -169,12 +169,14 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 	if _, err := os.Stat(baseImage) ; err != nil {
 		d.getImage()
 	}
-	if _, err := os.Stat(imagePath) ; err != nil {
-		img, _ := NewImage(imagePath, d.template.QemuImage.Format, baseImage)
-		img.CreateInstanceImage()
-	}
 
-	d.buildMachine(imagePath)
+	img, _ := NewImage(d.template.QemuImage.Format, baseImage)
+	if _, err := os.Stat(imagePath) ; err != nil {
+		img.CreateInstanceImage(imagePath)
+	}
+	img.Path = imagePath
+
+	d.buildMachine(img)
 	return nil
 }
 
