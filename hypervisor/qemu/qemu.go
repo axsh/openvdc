@@ -5,6 +5,7 @@ package qemu
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 //	"net/http"
 	"net/url"
@@ -136,14 +137,21 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 	return d.Base.Log
 }
 
-func (d *QEMUHypervisorDriver) getImage() {
-
+func (d *QEMUHypervisorDriver) getImage() (string, error) {
+	d.log().Infoln("Downloading machine image...")
+	// if _, err := os.Stat(baseImage) ; err != nil {
+	// }
+	return "/home/toros11/go-workspace/src/github.com/toros11/zookeeper.qcow2", nil
 }
 
-func (d *QEMUHypervisorDriver) buildMachine(image *Image) error {
-	d.machine.Name = d.Base.Instance.GetId()
-	d.machine.Drives = append(d.machine.Drives, Drive{Image: image})
+func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage *Image) error {
+	d.log().Infoln("Preparing machine image...")
 
+	d.machine.Name = d.Base.Instance.GetId()
+	d.machine.Drives = append(d.machine.Drives, Drive{Image: instanceImage})
+	d.machine.Drives = append(d.machine.Drives, Drive{Image: metadriveImage, If: "floppy"})
+	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
+	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
 	var netDev []NetDev
 	for idx, iface := range d.template.Interfaces {
 		netDev = append(netDev, NetDev{
@@ -153,30 +161,53 @@ func (d *QEMUHypervisorDriver) buildMachine(image *Image) error {
 			BridgeHelper: settings.QemuBridgeHelper,
 		})
 	}
-
 	d.machine.AddNICs(netDev)
-	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
-	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
 	return nil
 }
+
+func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
+	d.log().Infoln("Preparing metadrive image...")
+
+	runCmd := func(cmd string, args []string) error {
+		c := exec.Command(cmd, args...)
+		if err := c.Run() ; err != nil {
+			return errors.Errorf("failed to execute command :%s %s", cmd, args)
+		}
+		return nil
+	}
+	if err := runCmd("mkfs.msdos", []string{"-s", "1", metadrive.Path}); err != nil {
+		return errors.Errorf("Error: %s", err)
+	}
+		
+	return nil
+}
+
+
 
 func (d *QEMUHypervisorDriver) CreateInstance() error {
 	instanceId := d.Base.Instance.GetId()
 	instanceDir := filepath.Join(settings.InstancePath, instanceId)
-	imagePath := filepath.Join(instanceDir, "diskImage."+d.template.QemuImage.Format)
-	baseImage := "/home/toros11/work/openvdc-ci/branches/master/zookeeper.qcow2"
+	instanceImagePath := filepath.Join(instanceDir, "diskImage."+d.template.QemuImage.Format)
+	metadrivePath := filepath.Join(instanceDir, "metadrive.img")
+	baseImage, _ := d.getImage()
+	
 	os.MkdirAll(instanceDir, os.ModePerm)
-	if _, err := os.Stat(baseImage) ; err != nil {
-		d.getImage()
+	instanceImage, _ := NewImage(instanceImagePath, d.template.QemuImage.Format)
+	if _, err := os.Stat(instanceImagePath) ; err != nil {
+		instanceImage.SetBaseImage(baseImage)
+		instanceImage.CreateImage()
 	}
 
-	img, _ := NewImage(d.template.QemuImage.Format, baseImage)
-	if _, err := os.Stat(imagePath) ; err != nil {
-		img.CreateInstanceImage(imagePath)
+	os.MkdirAll(filepath.Join(instanceDir, "meta-data", os.ModePerm)
+	metadriveImage, _ := NewImage(metadrivePath, "raw")
+	if _, err := os.Stat(metadrivePath) ; err != nil {
+		metadriveImage.SetSize(1440)
+		metadriveImage.CreateImage()
+		if err := d.buildMetadrive(metadriveImage) ; err != nil {
+			// todo remove metadrive image since it failed
+		}
 	}
-	img.Path = imagePath
-
-	d.buildMachine(img)
+	d.buildMachine(instanceImage, metadriveImage)
 	return nil
 }
 

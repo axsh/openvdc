@@ -1,3 +1,4 @@
+
 package qemu
 
 import (
@@ -10,28 +11,40 @@ import (
 type Image struct {
 	Path    string
 	Format  string
+	Size    int
 	baseImg string
 }
 
 type Drive struct {
 	Image   *Image
+	If      string
 }
 
-func NewImage(format string, baseImage string) (*Image, error) {
-	if _, err := os.Stat(baseImage); err != nil {
-		return nil, errors.Errorf("File missing: %s", baseImage)
-	}
+func NewImage(path string,format string) (*Image, error) {
 	return &Image{
 		Format: format,
-		baseImg: baseImage,
+		Path: path,
 	}, nil
 }
 
-func (i *Image) CreateInstanceImage(path string) error {
-	cmdLine := &cmdLine{args: make([]string, 0)}
-	i.Path = path
-	cmd := exec.Command("qemu-img", cmdLine.QemuImgCmd(i)...)
+func (i *Image) SetBaseImage(baseImage string) error {
+	// todo check for size ?
+	if _, err := os.Stat(baseImage); err != nil {
+		return errors.Errorf("File missing: %s", baseImage)
+	}
+	i.baseImg = baseImage
+	return nil
+}
 
+func (i *Image) SetSize(size int)  error {
+	// todo check for base image ?
+	i.Size = size
+	return nil
+}
+
+func (i *Image) CreateImage() error {
+	cmdLine := &cmdLine{args: make([]string, 0)}
+	cmd := exec.Command("qemu-img", cmdLine.QemuImgCmd(i)...)
 	if stdout, err := cmd.CombinedOutput() ; err != nil {
 		return errors.Errorf("%s failed with: %s", cmd.Args, stdout)
 	}

@@ -74,7 +74,6 @@ func (m *Machine) Start(startCmd string) error {
 	cmdLine := &cmdLine{args: make([]string, 0)}
 
 	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m, true)...)
-	fmt.Printf("%s", cmd.Args)
 	if err := cmd.Start() ; err != nil {
 		return errors.Errorf("Failed to execute cmd: %s", cmd.Args)
 	}
