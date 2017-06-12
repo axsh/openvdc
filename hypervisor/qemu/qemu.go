@@ -182,8 +182,6 @@ func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
 	return nil
 }
 
-
-
 func (d *QEMUHypervisorDriver) CreateInstance() error {
 	instanceId := d.Base.Instance.GetId()
 	instanceDir := filepath.Join(settings.InstancePath, instanceId)
@@ -198,7 +196,7 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 		instanceImage.CreateImage()
 	}
 
-	os.MkdirAll(filepath.Join(instanceDir, "meta-data", os.ModePerm)
+	os.MkdirAll(filepath.Join(instanceDir, "meta-data"), os.ModePerm)
 	metadriveImage, _ := NewImage(metadrivePath, "raw")
 	if _, err := os.Stat(metadrivePath) ; err != nil {
 		metadriveImage.SetSize(1440)
