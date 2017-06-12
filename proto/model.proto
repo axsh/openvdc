@@ -129,7 +129,12 @@ message QemuTemplate {
     string download_url = 1 [json_name="download_url"];
     string chksum_type = 2 [json_name="chksum_type"];
     string chksum = 3;
-    string format = 4;
+    enum Format {
+      RAW = 0;
+      QCOW = 1;
+      TAR_GZ = 2;
+    }
+    Format format = 4 [json_name="format"];
   }
   Image qemu_image = 5 [json_name="qemu_image"];
   message Interface {
@@ -138,8 +143,9 @@ message QemuTemplate {
     string ipv4addr = 3;
     //string bridge = 4; // Obsolete
   }
-  repeated Interface interfaces = 6;
-  repeated string node_groups = 7 [json_name="node_groups"];
+  bool use_kvm = 6 [json_name="use_kvm"];
+  repeated Interface interfaces = 7;
+  repeated string node_groups = 8 [json_name="node_groups"];
 }
 
 message NullTemplate {
