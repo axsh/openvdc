@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "OpenVDC Resource Template: vm/qemu",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "vm/qemu"
+      ]
+    },
+    "min_vcpu": {
+      "type": "integer",
+      "default": 1
+    },
+    "min_memory_gb": {
+      "type": "integer",
+      "default": 1
+    },
+    "vcpu": {
+      "type": "integer",
+      "default": 1
+    },
+    "memory_gb": {
+      "type": "integer",
+      "default": 1
+    },
+    "node_groups": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": [
+        {"type": "string"}
+      ]
+    },
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "macaddr": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{2}[0-9a-fA-F:]+$"
+          }
+        }
+      }
+    },
+    "qemu_image": {
+      "type": "object",
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "download_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "checksum_type": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "raw",
+            "qcow2",
+            "tar_gz",
+          ]
+        }
+      },
+      "required": [
+        "download_url",
+        "format"
+      ]
+    }
+  }
+}
