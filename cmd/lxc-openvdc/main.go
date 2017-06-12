@@ -127,8 +127,8 @@ func PrepareCache() error {
 
 func GenerateConfig() error {
 	if lxcPath == "" {
-                return errors.New("lxcPath not set.")
-        }
+		return errors.New("lxcPath not set.")
+	}
 
 	lxcCfgPath := filepath.Join(lxcPath, "config")
 	cfgPath := filepath.Join(containerPath, "config")
@@ -179,7 +179,7 @@ func GetFile(fileName string) error {
 	}
 
 	if res.StatusCode != 200 {
-		return errors.Errorf(fmt.Sprintf("Url: %s Http status code: %s", downloadUrl, res.StatusCode))
+		return errors.Errorf("Url: %s Http status code: %s", downloadUrl, res.StatusCode)
 	}
 
 	defer res.Body.Close()
