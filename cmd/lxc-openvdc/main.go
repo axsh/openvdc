@@ -179,7 +179,7 @@ func GetFile(fileName string) error {
 	}
 
 	if res.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("Url: %s Http status code: %s", downloadUrl, res.StatusCode))
+		return errors.Errorf(fmt.Sprintf("Url: %s Http status code: %s", downloadUrl, res.StatusCode))
 	}
 
 	defer res.Body.Close()
