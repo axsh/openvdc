@@ -4,11 +4,13 @@ package qemu
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-//	"net/http"
+	"net/http"
 	"net/url"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -139,9 +141,28 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 
 func (d *QEMUHypervisorDriver) getImage() (string, error) {
 	d.log().Infoln("Downloading machine image...")
-	// if _, err := os.Stat(baseImage) ; err != nil {
-	// }
-	return "/home/toros11/go-workspace/src/github.com/toros11/zookeeper.qcow2", nil
+
+	url := strings.Split(d.template.QemuImage.DownloadUrl, "/")
+	imageFile := url[len(url)-1]
+
+	imageCachePath := filepath.Join(settings.CachePath, imageFile)
+	if _, err := os.Stat(imageCachePath) ; err != nil {
+		file, err := os.Create(imageCachePath)
+		if err != nil {
+			return "", errors.Errorf("Failed to create file: %s", imageCachePath)
+		}
+		resp, err := http.Get(d.template.QemuImage.DownloadUrl)
+		if err != nil {
+			return "", errors.Errorf("Failed to download file: %s", d.template.QemuImage.DownloadUrl)
+		}
+		defer resp.Body.Close()
+		_, err = io.Copy(file, resp.Body)
+		if err != nil {
+			return "", errors.Errorf("Failed to download file: %s", d.template.QemuImage.DownloadUrl)
+		}
+	}
+	// todo check type if compressed type unpack and return unpacked filename
+	return imageCachePath, nil
 }
 
 func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage *Image) error {
