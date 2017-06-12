@@ -42,7 +42,7 @@ func TestLocalImage(t *testing.T) {
 
 	s := strings.Split(strings.TrimSpace(stdout.String()), "/")
 	templateUsed := s[len(s)-1]
-	if templateUsed == "" || templateUsed != "lxc-openvdc" {
+	if templateUsed != "lxc-openvdc" {
 		t.Errorf("Expected templateUsed to be 'lxc-openvdc', got:  %s", templateUsed)
 	}
 
