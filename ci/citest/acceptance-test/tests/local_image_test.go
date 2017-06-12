@@ -36,7 +36,9 @@ func TestLocalImage(t *testing.T) {
 		t.Errorf("Couldn't read %s", configFile)
 	}
 
-	t.Log(stdout.String())
+	if testing.Verbose() {
+		t.Log(stdout.String())
+	}
 
 	s := strings.Split(strings.TrimSpace(stdout.String()), "/")
 	templateUsed := s[len(s)-1]
