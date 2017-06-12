@@ -63,7 +63,7 @@ cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/lxc-templates
 cp lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
-install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc
+install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu
 
 %package cli
 Summary: OpenVDC cli
