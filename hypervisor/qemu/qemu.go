@@ -206,12 +206,13 @@ func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
 func (d *QEMUHypervisorDriver) CreateInstance() error {
 	instanceId := d.Base.Instance.GetId()
 	instanceDir := filepath.Join(settings.InstancePath, instanceId)
-	instanceImagePath := filepath.Join(instanceDir, "diskImage."+d.template.QemuImage.Format)
+	imageFormat := strings.ToLower(d.template.QemuImage.Format.String())
+	instanceImagePath := filepath.Join(instanceDir, "diskImage."+ imageFormat)
 	metadrivePath := filepath.Join(instanceDir, "metadrive.img")
 	baseImage, _ := d.getImage()
 	
 	os.MkdirAll(instanceDir, os.ModePerm)
-	instanceImage, _ := NewImage(instanceImagePath, d.template.QemuImage.Format)
+	instanceImage, _ := NewImage(instanceImagePath, imageFormat)
 	if _, err := os.Stat(instanceImagePath) ; err != nil {
 		instanceImage.SetBaseImage(baseImage)
 		instanceImage.CreateImage()
