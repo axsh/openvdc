@@ -59,7 +59,7 @@ func (h *QemuHandler) MergeArgs(dst model.ResourceTemplate, args []string) error
 		return handlers.ErrMergeDstType(new(model.QemuTemplate), dst)
 	}
 
-	flags := flag.NewFlagSet("lxc template", flag.ContinueOnError)
+	flags := flag.NewFlagSet("qemu template", flag.ContinueOnError)
 	var vcpu, mem int
 	flags.IntVar(&vcpu, "vcpu", int(mdst.MinVcpu), "")
 	flags.IntVar(&mem, "memory_gb", int(mdst.MinMemoryGb), "")
