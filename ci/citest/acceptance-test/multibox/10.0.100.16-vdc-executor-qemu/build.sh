@@ -26,4 +26,4 @@ build "${IND_STEPS[@]}"
 # the cached images. We want a clean cache without OpenVDC so we can install a
 # different version to test every the CI runs.
 install_openvdc_yum_repo
-install_yum_package_over_ssh "openvdc-executor-kvm"
+install_yum_package_over_ssh "openvdc-executor-qemu"
