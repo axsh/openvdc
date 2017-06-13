@@ -14,9 +14,9 @@ func (c *cmdLine) appendArgs(args... string) {
 	}
 }
 
-func (cmd *cmdLine) QemuBootCmd(m *Machine, useKvm bool) []string {
+func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 	cmd.appendArgs("-smp", strconv.Itoa(m.Cores), "-m", strconv.FormatUint(m.Memory, 10))
-	if useKvm {
+	if m.Kvm {
 		cmd.appendArgs("-enable-kvm")
 	}
 	if len(m.Serial) > 0 {

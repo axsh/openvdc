@@ -173,6 +173,7 @@ func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage
 	d.machine.Drives = append(d.machine.Drives, Drive{Image: metadriveImage, If: "floppy"})
 	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
 	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
+	d.machine.Kvm = d.template.UseKvm
 	var netDev []NetDev
 	for idx, iface := range d.template.Interfaces {
 		netDev = append(netDev, NetDev{

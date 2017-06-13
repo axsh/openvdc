@@ -44,6 +44,7 @@ type Machine struct {
 	Nics    []NetDev
 	Drives  []Drive
 	Process *os.Process
+	Kvm     bool
 }
 
 type NetDev struct {
@@ -73,7 +74,7 @@ func (m *Machine) Start(startCmd string) error {
 	qemuCmd := fmt.Sprintf("%s", startCmd)
 	cmdLine := &cmdLine{args: make([]string, 0)}
 
-	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m, true)...)
+	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m)...)
 	if err := cmd.Start() ; err != nil {
 		return errors.Errorf("Failed to execute cmd: %s", cmd.Args)
 	}
