@@ -96,6 +96,8 @@ OpenVDC executor common package.
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
 /opt/axsh/openvdc/share/mesos-slave/attributes.qemu
 /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
+/opt/axsh/openvdc/share/qemu-ifup
+/opt/axsh/openvdc/share/qemu-ifdown
 %dir /etc/openvdc
 %dir /etc/openvdc/ssh
 
