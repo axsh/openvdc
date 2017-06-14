@@ -39,17 +39,25 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 		cmd.appendArgs("-net", "none")
 	} else {
 		for _, nic := range m.Nics {
-			brdev := fmt.Sprintf("bridge,br=%s", nic.Bridge)
-			if len(nic.BridgeHelper) > 0 {
-				brdev = fmt.Sprintf("%s,helper=%s", brdev, nic.BridgeHelper)
-			}
-			netdev := fmt.Sprintf("nic,model=virtio")
+			// brdev := fmt.Sprintf("bridge,br=%s", nic.Bridge)
+			// if len(nic.BridgeHelper) > 0 {
+			// 	brdev = fmt.Sprintf("%s,helper=%s", brdev, nic.BridgeHelper)
+			// }
+			// netdev := fmt.Sprintf("nic,model=virtio")
+			// if len(nic.MacAddr) > 0 {
+			// 	netdev = fmt.Sprintf("%s,macaddr=%s", netdev, nic.MacAddr)
+			// }
+			// cmd.appendArgs("-net", brdev)
+			// cmd.appendArgs("-net", netdev)
+
+			netdevOpts := fmt.Sprintf("tap,ifname=%s,id=%s", nic.IfName, nic.IfName)
+			deviceOpts := fmt.Sprintf("virtio-net-pci,netdev=%s", nic.IfName)
 			if len(nic.MacAddr) > 0 {
-				netdev = fmt.Sprintf("%s,macaddr=%s", netdev, nic.MacAddr)
+				deviceOpts = fmt.Sprintf("%s,mac=%s", deviceOpts, nic.MacAddr)
 			}
 
-			cmd.appendArgs("-net", brdev)
-			cmd.appendArgs("-net", netdev)
+			cmd.appendArgs("-netdev", netdevOpts)
+			cmd.appendArgs("-device", deviceOpts)
 		}
 	}
 	cmd.appendArgs("-display", m.Display)
