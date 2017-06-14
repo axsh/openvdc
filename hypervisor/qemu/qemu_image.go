@@ -20,7 +20,7 @@ type Drive struct {
 	If      string
 }
 
-func NewImage(path string,format string) (*Image) {
+func NewImage(path string,format string) *Image {
 	return &Image{
 		Format: format,
 		Path: path,
