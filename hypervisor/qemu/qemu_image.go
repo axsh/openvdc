@@ -20,11 +20,11 @@ type Drive struct {
 	If      string
 }
 
-func NewImage(path string,format string) (*Image, error) {
+func NewImage(path string,format string) (*Image) {
 	return &Image{
 		Format: format,
 		Path: path,
-	}, nil
+	}
 }
 
 func (i *Image) SetBaseImage(baseImage string) error {

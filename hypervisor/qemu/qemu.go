@@ -213,14 +213,14 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 	baseImage, _ := d.getImage()
 	
 	os.MkdirAll(instanceDir, os.ModePerm)
-	instanceImage, _ := NewImage(instanceImagePath, imageFormat)
+	instanceImage := NewImage(instanceImagePath, imageFormat)
 	if _, err := os.Stat(instanceImagePath) ; err != nil {
 		instanceImage.SetBaseImage(baseImage)
 		instanceImage.CreateImage()
 	}
 
 	os.MkdirAll(filepath.Join(instanceDir, "meta-data"), os.ModePerm)
-	metadriveImage, _ := NewImage(metadrivePath, "raw")
+	metadriveImage := NewImage(metadrivePath, "raw")
 	if _, err := os.Stat(metadrivePath) ; err != nil {
 		metadriveImage.SetSize(1440)
 		metadriveImage.CreateImage()
