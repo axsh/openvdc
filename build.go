@@ -196,6 +196,10 @@ Environment Variables:
 	//Build lxc-template
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.lxcPath=/usr/share/lxc/'", "-v", "-o", "./lxc-openvdc", "./cmd/lxc-openvdc/")
 
+	//Build qemu-ifup/qemi-ifdown
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "-o", "./qemu-ifup", "./cmd/qemu-ifup")
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "-o", "./qemu-ifdown", "./cmd/qemu-ifdown")
+
 	// Build Acceptance Test binary
 	os.Chdir("./ci/citest/acceptance-test/tests")
 	cmd("govendor", "sync")
