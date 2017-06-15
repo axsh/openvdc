@@ -131,8 +131,7 @@ message QemuTemplate {
     string chksum = 3;
     enum Format {
       RAW = 0;
-      QCOW = 1;
-      TAR_GZ = 2;
+      QCOW2 = 1;
     }
     Format format = 4 [json_name="format"];
   }

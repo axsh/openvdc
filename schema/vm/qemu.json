@@ -72,8 +72,7 @@
           "type": "string",
           "enum": [
             "raw",
-            "qcow",
-            "tar_gz"
+            "qcow2"
           ]
         }
       },
