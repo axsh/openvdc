@@ -140,13 +140,12 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 }
 
 func (d *QEMUHypervisorDriver) getImage() (string, error) {
-	d.log().Infoln("Downloading machine image...")
-
 	url := strings.Split(d.template.QemuImage.DownloadUrl, "/")
 	imageFile := url[len(url)-1]
 
 	imageCachePath := filepath.Join(settings.CachePath, imageFile)
 	if _, err := os.Stat(imageCachePath) ; err != nil {
+		d.log().Infoln("Downloading machine image...")
 		file, err := os.Create(imageCachePath)
 		if err != nil {
 			return "", errors.Errorf("Failed to create file: %s", imageCachePath)
@@ -165,7 +164,7 @@ func (d *QEMUHypervisorDriver) getImage() (string, error) {
 	return imageCachePath, nil
 }
 
-func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage *Image) error {
+func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage *Image) {
 	d.log().Infoln("Preparing machine image...")
 
 	d.machine.Name = d.Base.Instance.GetId()
@@ -184,7 +183,6 @@ func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage
 		})
 	}
 	d.machine.AddNICs(netDev)
-	return nil
 }
 
 func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
@@ -215,15 +213,23 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 	os.MkdirAll(instanceDir, os.ModePerm)
 	instanceImage := NewImage(instanceImagePath, imageFormat)
 	if _, err := os.Stat(instanceImagePath) ; err != nil {
-		instanceImage.SetBaseImage(baseImage)
-		instanceImage.CreateImage()
+		d.log().Infoln("Create instance image...")
+		if err := instanceImage.SetBaseImage(baseImage) ; err != nil {
+			return err
+		}
+		if err := instanceImage.CreateImage() ; err != nil {
+			return err
+		}
 	}
 
 	os.MkdirAll(filepath.Join(instanceDir, "meta-data"), os.ModePerm)
 	metadriveImage := NewImage(metadrivePath, "raw")
 	if _, err := os.Stat(metadrivePath) ; err != nil {
+		d.log().Infoln("Create metadrive image...")
 		metadriveImage.SetSize(1440)
-		metadriveImage.CreateImage()
+		if err := metadriveImage.CreateImage() ; err != nil {
+			return err
+		}
 		if err := d.buildMetadrive(metadriveImage) ; err != nil {
 			// todo remove metadrive image since it failed
 		}
