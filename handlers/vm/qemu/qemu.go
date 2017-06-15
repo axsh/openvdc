@@ -22,35 +22,27 @@ type QemuHandler struct {
 }
 
 func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
-	tmpl := &model.QemuTemplate{}
-	if err := json.Unmarshal(in, tmpl); err != nil {
-		return nil, err
+	tmpl := &model.QemuTemplate{QemuImage: &model.QemuTemplate_Image{}}
+
+	type QemuImage struct {
+		DownloadUrl string `json:"download_url,omitempty"`
+		Format      string `json:"format,omitempty"`
 	}
 
 	var json_template struct {
-		Format string `json:"format,omitempty"`
+		QemuImage QemuImage `json:"qemu_image,omitempty"`
 	}
+
 	if err := json.Unmarshal(in, &json_template); err != nil {
 		return nil, errors.Wrap(err, "Failed json.Unmarshal for anonymous struct")
 	}
-	if json_template.Format != "" {
-		format, ok := model.QemuTemplate_Image_Format_value[strings.ToUpper(json_template.Format)]
+
+	if json_template.QemuImage.Format != "" {
+		format, ok := model.QemuTemplate_Image_Format_value[strings.ToUpper(json_template.QemuImage.Format)]
 		if !ok {
-			return nil, errors.Errorf("Unknown value at format: %s", json_template.Format)
+			return nil, errors.Errorf("Unknown value at format: %s", json_template.QemuImage.Format)
 		}
 		tmpl.QemuImage.Format = model.QemuTemplate_Image_Format(format)
-
-		tmp := make(map[string]interface{})
-		if err := json.Unmarshal(in, &tmp); err != nil {
-			return nil, errors.Wrap(err, "Failed json.Unmarshal")
-		}
-
-		delete(tmp, "format")
-		var err error
-		in, err = json.Marshal(tmp)
-		if err != nil {
-			return nil, errors.Wrap(err, "Failed json.Marshal")
-		}
 	}
 
 	// Validation

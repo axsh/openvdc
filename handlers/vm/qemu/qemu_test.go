@@ -20,7 +20,7 @@ func TestTypes(t *testing.T) {
 	assert.Implements((*handlers.CLIHandler)(nil), &QemuHandler{})
 }
 
-const jsonQemuImage1 = `{
+const jsonQemuImage = `{
 	"type": "vm/qemu",
 	"qemu_image": {
 		"download_url": "http://example.com/",
@@ -28,11 +28,10 @@ const jsonQemuImage1 = `{
 	}
 }`
 
-
 func TestQemuHandler_ParseTemplate(t *testing.T) {
 	assert := assert.New(t)
 	h := &QemuHandler{}
-	m, err := h.ParseTemplate(bytes.NewBufferString(jsonQemuImage1).Bytes())
+	m, err := h.ParseTemplate(bytes.NewBufferString(jsonQemuImage).Bytes())
 	assert.NoError(err)
 	assert.IsType((*model.QemuTemplate)(nil), m)
 	modelqemu := m.(*model.QemuTemplate)
