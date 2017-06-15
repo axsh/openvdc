@@ -23,7 +23,8 @@ func TestTypes(t *testing.T) {
 const jsonQemuImage1 = `{
 	"type": "vm/qemu",
 	"qemu_image": {
-		"download_url": "http://example.com/"
+		"download_url": "http://example.com/",
+		"format": "raw"
 	}
 }`
 

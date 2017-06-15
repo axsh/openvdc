@@ -26,6 +26,32 @@ func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		return nil, err
 	}
 
+	var json_template struct {
+		Format string `json:"format,omitempty"`
+	}
+	if err := json.Unmarshal(in, &json_template); err != nil {
+		return nil, errors.Wrap(err, "Failed json.Unmarshal for anonymous struct")
+	}
+	if json_template.Format != "" {
+		format, ok := model.QemuTemplate_Format_value[strings.ToUpper(json_template.Format)]
+		if !ok {
+			return nil, errors.Errorf("Unknown value at format: %s", json_template.Format)
+		}
+		tmpl.Format = model.QemuTemplate_Format(format)
+
+		tmp := make(map[string]interface{})
+		if err := json.Unmarshal(in, &tmp); err != nil {
+			return nil, errors.Wrap(err, "Failed json.Unmarshal")
+		}
+
+		delete(tmp, "format")
+		var err error
+		in, err = json.Marshal(tmp)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed json.Marshal")
+		}
+	}
+
 	// Validation
 	if tmpl.GetQemuImage() == nil {
 		return nil, handlers.ErrInvalidTemplate(h, "qemu_image must exist")
