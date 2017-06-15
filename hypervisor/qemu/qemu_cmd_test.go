@@ -37,7 +37,7 @@ func TestQemuBootCmd(t *testing.T) {
 		Display: "none",
 	})
 
-	assert.Equal(strings.Join(cmd, " "), "-smp 1 -m 512-enable-kvm -serial unix:serial,server,nowait -monitor unix:monitor,server,nowait -drive file=drive,format=raw,if=disk -netdev tap,ifname=if,id=if -device virtio-net-pci,netdev=if,mac=mac -display none")
+	assert.Equal(strings.Join(cmd, " "), "-smp 1 -m 512 -enable-kvm -serial unix:serial,server,nowait -monitor unix:monitor,server,nowait -drive file=drive,format=raw,if=disk -netdev tap,ifname=if,id=if -device virtio-net-pci,netdev=if,mac=mac -display none")
 
 }
 
