@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
+	"strings"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/handlers/vm"
@@ -33,11 +34,11 @@ func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		return nil, errors.Wrap(err, "Failed json.Unmarshal for anonymous struct")
 	}
 	if json_template.Format != "" {
-		format, ok := model.QemuTemplate_Format_value[strings.ToUpper(json_template.Format)]
+		format, ok := model.QemuTemplate_Image_Format_value[strings.ToUpper(json_template.Format)]
 		if !ok {
 			return nil, errors.Errorf("Unknown value at format: %s", json_template.Format)
 		}
-		tmpl.Format = model.QemuTemplate_Format(format)
+		tmpl.QemuImage.Format = model.QemuTemplate_Image_Format(format)
 
 		tmp := make(map[string]interface{})
 		if err := json.Unmarshal(in, &tmp); err != nil {
