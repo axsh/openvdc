@@ -80,6 +80,10 @@
         "download_url",
         "format"
       ]
+    },
+    "use_kvm" {
+      "type": "boolean",
+      "default": true
     }
   }
 }
