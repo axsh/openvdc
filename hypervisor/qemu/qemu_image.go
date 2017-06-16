@@ -12,7 +12,7 @@ type Image struct {
 	Path    string
 	Format  string
 	Size    int
-	baseImg string
+	baseImage string
 }
 
 type Drive struct {
@@ -32,7 +32,7 @@ func (i *Image) SetBaseImage(baseImage string) error {
 	if _, err := os.Stat(baseImage); err != nil {
 		return errors.Errorf("File missing: %s", baseImage)
 	}
-	i.baseImg = baseImage
+	i.baseImage = baseImage
 	return nil
 }
 

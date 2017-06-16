@@ -68,8 +68,8 @@ func (cmd *cmdLine) QemuImgCmd(i *Image) []string {
 	cmd.appendArgs("create", "-f", i.Format)
 	cmd.appendArgs(i.Path)
 
-	if len(i.baseImg) > 0 {
-		cmd.appendArgs("-b", i.baseImg)
+	if len(i.baseImage) > 0 {
+		cmd.appendArgs("-b", i.baseImage)
 	} else {
 		cmd.appendArgs(fmt.Sprintf("%sK", strconv.Itoa(i.Size)))
 	}

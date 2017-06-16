@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/model"
 	"github.com/spf13/viper"
+	"github.com/asaskevich/govalidator"
 )
 
 type BridgeType int
@@ -142,22 +143,32 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 func (d *QEMUHypervisorDriver) getImage() (string, error) {
 	url := strings.Split(d.template.QemuImage.DownloadUrl, "/")
 	imageFile := url[len(url)-1]
-
 	imageCachePath := filepath.Join(settings.CachePath, imageFile)
+
 	if _, err := os.Stat(imageCachePath) ; err != nil {
 		d.log().Infoln("Downloading machine image...")
+		var remotePath string
+
+		if govalidator.IsURL(d.template.QemuImage.DownloadUrl) {
+			remotePath = d.template.QemuImage.DownloadUrl
+		} else if settings.ImageServerUri != "" {
+			remotePath = settings.ImageServerUri +"/"+ imageFile
+		} else  {
+			return "", errors.Errorf("Unable to resolve download_url: %s", d.template.QemuImage.DownloadUrl)
+		}
+
 		file, err := os.Create(imageCachePath)
 		if err != nil {
 			return "", errors.Errorf("Failed to create file: %s", imageCachePath)
 		}
-		resp, err := http.Get(d.template.QemuImage.DownloadUrl)
+		resp, err := http.Get(remotePath)
 		if err != nil {
-			return "", errors.Errorf("Failed to download file: %s", d.template.QemuImage.DownloadUrl)
+			return "", errors.Errorf("Failed to download file: %s", remotePath)
 		}
 		defer resp.Body.Close()
 		_, err = io.Copy(file, resp.Body)
 		if err != nil {
-			return "", errors.Errorf("Failed to download file: %s", d.template.QemuImage.DownloadUrl)
+			return "", errors.Errorf("Failed to download file: %s", remotePath)
 		}
 	}
 	// todo check type if compressed type unpack and return unpacked filename
