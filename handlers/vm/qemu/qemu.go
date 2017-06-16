@@ -43,6 +43,22 @@ func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 			return nil, errors.Errorf("Unknown value at format: %s", json_template.QemuImage.Format)
 		}
 		tmpl.QemuImage.Format = model.QemuTemplate_Image_Format(format)
+
+		// Remove format field
+		tmp := make(map[string]interface{})
+		if err := json.Unmarshal(in, &tmp); err != nil {
+			return nil, errors.Wrap(err, "Failed json.Unmarshal")
+		}
+		delete(tmp["qemu_image"].(map[string]interface{}), "format")
+		var err error
+		in, err = json.Marshal(tmp)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed json.Marshal")
+		}
+	}
+	
+	if err := json.Unmarshal(in, tmpl); err != nil {
+		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.QemuTemplate")
 	}
 
 	// Validation

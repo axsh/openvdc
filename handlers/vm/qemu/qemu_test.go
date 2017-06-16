@@ -36,4 +36,6 @@ func TestQemuHandler_ParseTemplate(t *testing.T) {
 	assert.IsType((*model.QemuTemplate)(nil), m)
 	modelqemu := m.(*model.QemuTemplate)
 	assert.NotNil(modelqemu.GetQemuImage())
+	assert.Equal(modelqemu.GetQemuImage().GetDownloadUrl(), "http://example.com/")
+	assert.Equal(modelqemu.GetQemuImage().GetFormat().String(), "RAW")
 }
