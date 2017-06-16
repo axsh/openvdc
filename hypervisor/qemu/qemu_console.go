@@ -42,9 +42,9 @@ func join(separator string, args ...string) string {
 func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) error {
 	socket := console.machine().Serial // if this socket is closed, we have no way to reopen it...yet
 
-	stdIn := bufio.NewReader(stdin)
-	stdOut := bufio.NewWriter(stdout)
-	stdErr := bufio.NewReader(stderr)
+	in := bufio.NewReader(stdin)
+	out := bufio.NewWriter(stdout)
+	//stdErr := bufio.NewReader(stderr)
 
 	l, err := net.Listen("unix", socket)
 	if err != nil {
@@ -63,10 +63,21 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 			if err != nil {
 				return Wrap(err, join("", "Failed to read the qemu socket buffer from socket ", socket))
 			}
-			_, err := stdOut.Write(string(b[0:n])) // err is for short writes shorter than n -- should probably retry in that case...
-			_, err := stdErr.Write(string(b[0:n]))
+			_, err := out.Write(string(b[0:n])) // err is for short writes -- should probably retry in that case...
+			//_, err := stdErr.Write(string(b[0:n]))
 		}
 	}(l)
+
+	go func(w io.Writer) {
+		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
+		for {
+			n, err := w.Writer(b[:])
+			if err != nil {
+				return Wrap(err, join("", "Failed to write to the qemu socket ", socket, " from the buffer"))
+			}
+			_, err := in.Read(string(b[0:n])) // err is for short writes -- should probably retry in that case...
+		}
+	}(s)
 
 	return nil
 }
