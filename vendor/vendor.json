@@ -395,12 +395,6 @@
 			"revisionTime": "2016-09-25T22:06:09Z"
 		},
 		{
-			"checksumSHA1": "rf91ADtgcvg5qa9mZvkpA/x8Tf8=",
-			"path": "github.com/quadrifoglio/go-qemu",
-			"revision": "c95730abf4267994b639968b12e5ca948329c26b",
-			"revisionTime": "2017-02-12T18:33:43Z"
-		},
-		{
 			"checksumSHA1": "5SYLEhADhdBVZAGPVHWggQl7H8k=",
 			"path": "github.com/samuel/go-zookeeper/zk",
 			"revision": "1d7be4effb13d2d908342d349d71a284a7542693",
