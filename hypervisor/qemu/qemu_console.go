@@ -3,6 +3,7 @@
 package qemu
 
 import (
+	"bufio"
 	"io"
 	"net"
 	"os"
@@ -41,6 +42,10 @@ func join(separator string, args ...string) string {
 func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) error {
 	socket := console.machine().Serial // if this socket is closed, we have no way to reopen it...yet
 
+	stdIn := bufio.NewReader(stdin)
+	stdOut := bufio.NewWriter(stdout)
+	stdErr := bufio.NewReader(stderr)
+
 	l, err := net.Listen("unix", socket)
 	if err != nil {
 		return errors.Wrap(err, join("", "Failed to listen to socket ", socket))
@@ -58,9 +63,10 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 			if err != nil {
 				return Wrap(err, join("", "Failed to read the qemu socket buffer from socket ", socket))
 			}
-			_, err := s.Write(string(b[0:n]))
+			_, err := stdOut.Write(string(b[0:n])) // err is for short writes shorter than n -- should probably retry in that case...
+			_, err := stdErr.Write(string(b[0:n]))
 		}
-	}()
+	}(l)
 
 	return nil
 }
