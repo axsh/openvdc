@@ -37,6 +37,40 @@ const jsonLxcTemplate1 = `{
 	}
 }`
 
+const jsonLxcTemplate2 = `{
+	"type": "vm/lxc",
+	"lxc_template": {
+		"download": {
+			"distro": "ubuntu",
+			"release": "xenial"
+		}
+	},
+	"authentication_type":0
+}`
+
+const jsonLxcTemplate3 = `{
+	"type": "vm/lxc",
+	"lxc_template": {
+		"download": {
+			"distro": "ubuntu",
+			"release": "xenial"
+		}
+	},
+	"authentication_type":1,
+	"ssh_public_key":""
+}`
+
+const jsonLxcTemplate4 = `{
+	"type": "vm/lxc",
+	"lxc_template": {
+		"download": {
+			"distro": "ubuntu",
+			"release": "xenial"
+		}
+	},
+	"authentication_type":1
+}`
+
 func TestLxcHandler_ParseTemplate(t *testing.T) {
 	assert := assert.New(t)
 	h := &LxcHandler{}
@@ -53,4 +87,27 @@ func TestLxcHandler_ParseTemplate(t *testing.T) {
 	modellxc = m.(*model.LxcTemplate)
 	assert.Nil(modellxc.GetLxcImage())
 	assert.NotNil(modellxc.GetLxcTemplate())
+	assert.Equal(model.LxcTemplate_NONE, modellxc.AuthenticationType, "none")
+
+	m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate2).Bytes())
+	assert.NoError(err)
+	assert.IsType((*model.LxcTemplate)(nil), m)
+	modellxc = m.(*model.LxcTemplate)
+	assert.Nil(modellxc.GetLxcImage())
+	assert.NotNil(modellxc.GetLxcTemplate())
+	assert.Equal(model.LxcTemplate_NONE, modellxc.AuthenticationType, "none")
+
+	//m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate3).Bytes())
+	//assert.NoError(err)
+	//assert.IsType((*model.LxcTemplate)(nil), m)
+	//modellxc = m.(*model.LxcTemplate)
+	//assert.Nil(modellxc.GetLxcImage())
+	//assert.NotNil(modellxc.GetLxcTemplate())
+	//assert.Equal(model.LxcTemplate_PUB_KEY, modellxc.AuthenticationType, "pub_key")
+	//assert.NotEmpty(modellxc.SshPublicKey)
+
+	m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate4).Bytes())
+	// assert.EqualError(err,"ssh_public_key is not set")
 }
+
+

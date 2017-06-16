@@ -214,7 +214,7 @@
 			"revisionTime": "2013-11-06T22:25:44Z"
 		},
 		{
-			"checksumSHA1": "eIjJhEqZZmQwt++0jlQhbIhAcH4=",
+			"checksumSHA1": "Cdsm9pkjn7WC0TP2KKPDSApiQKQ=",
 			"path": "github.com/kr/pty",
 			"revision": "ce7fa45920dc37a92de8377972e52bc55ffa8d57",
 			"revisionTime": "2016-07-16T20:46:20Z"
@@ -461,7 +461,7 @@
 			"revisionTime": "2016-09-25T22:06:09Z"
 		},
 		{
-			"checksumSHA1": "MR10lNwh25urwTtpm+YxwQOASVM=",
+			"checksumSHA1": "O14StIX7nfDHAE3E9JKalGcag9I=",
 			"path": "github.com/ulikunitz/xz",
 			"revision": "3807218c9f4ed05861fa9eb75b8fb8afd3325a34",
 			"revisionTime": "2017-02-15T20:57:12Z"
@@ -575,7 +575,7 @@
 			"revisionTime": "2016-10-26T17:59:44Z"
 		},
 		{
-			"checksumSHA1": "uTQtOqR0ePMMcvuvAIksiIZxhqU=",
+			"checksumSHA1": "Xhsm+TevJogC8U4sG6FO+czBMps=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "d75a52659825e75fff6158388dddc6a5b04f9ba5",
 			"revisionTime": "2016-12-14T18:38:57Z"
@@ -587,7 +587,7 @@
 			"revisionTime": "2016-12-29T11:00:09Z"
 		},
 		{
-			"checksumSHA1": "Vircurgvsnt4k26havmxPM67PUA=",
+			"checksumSHA1": "ZKCa+wAQGqlSqljoSFqx9pOOaW8=",
 			"path": "golang.org/x/text/unicode/norm",
 			"revision": "44f4f658a783b0cee41fe0a23b8fc91d9c120558",
 			"revisionTime": "2016-12-29T11:00:09Z"
@@ -671,5 +671,5 @@
 			"revisionTime": "2016-09-28T15:37:09Z"
 		}
 	],
-	"rootPath": "/github.com/axsh/openvdc"
+	"rootPath": "github.com/axsh/openvdc"
 }
