@@ -58,7 +58,7 @@ func TestQemuImgCmd(t *testing.T) {
 	cmdLine1 := &cmdLine{args: make([]string, 0)}
 	cmd1 := cmdLine1.QemuImgCmd(&Image{
 		Format: "raw",
-		baseImg: "baseImage",
+		baseImage: "baseImage",
 		Path: "path",
 	})
 
