@@ -5,19 +5,19 @@ package qemu
 import (
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"net/http"
-	"net/url"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc/hypervisor"
-	"github.com/pkg/errors"
-	"github.com/axsh/openvdc/model"
-	"github.com/spf13/viper"
 	"github.com/asaskevich/govalidator"
+	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/model"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 type BridgeType int
@@ -50,12 +50,12 @@ type QEMUHypervisorDriver struct {
 	machine   *Machine
 }
 
-func (p *QEMUHypervisorProvider) Name () string {
+func (p *QEMUHypervisorProvider) Name() string {
 	return "qemu"
 }
 
 var settings struct {
-	ImageServerUri  string
+	ImageServerUri   string
 	CachePath        string
 	BridgeType       BridgeType
 	BridgeName       string
@@ -73,10 +73,10 @@ func init() {
 }
 
 func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
-	if _, err:= os.Stat("/usr/libexec/qemu-kvm"); err == nil {
+	if _, err := os.Stat("/usr/libexec/qemu-kvm"); err == nil {
 		settings.QemuPath = "/usr/libexec"
 		settings.QemuProvider = "qemu-kvm"
-	} else if  _, err := os.Stat("/usr/bin/qemu-system-x86_64"); err == nil {
+	} else if _, err := os.Stat("/usr/bin/qemu-system-x86_64"); err == nil {
 		settings.QemuPath = "/usr/bin"
 		settings.QemuProvider = "qemu-system-x86_64"
 	} else {
@@ -119,7 +119,7 @@ func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
-func (p *QEMUHypervisorProvider) CreateDriver (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
+func (p *QEMUHypervisorProvider) CreateDriver(instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
 	qemuTmpl, ok := template.(*model.QemuTemplate)
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.QemuTemplate: %T, template")
@@ -127,11 +127,11 @@ func (p *QEMUHypervisorProvider) CreateDriver (instance *model.Instance, templat
 	m := NewMachine(int(qemuTmpl.Vcpu), uint64(qemuTmpl.MemoryGb))
 	driver := &QEMUHypervisorDriver{
 		Base: hypervisor.Base{
-			Log: log.WithFields(log.Fields{"Hypervisor": "qemu", "instance_id": instance.GetId()}),
+			Log:      log.WithFields(log.Fields{"Hypervisor": "qemu", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
 		template: qemuTmpl,
-		machine: m,
+		machine:  m,
 	}
 	return driver, nil
 }
@@ -145,15 +145,15 @@ func (d *QEMUHypervisorDriver) getImage() (string, error) {
 	imageFile := url[len(url)-1]
 	imageCachePath := filepath.Join(settings.CachePath, imageFile)
 
-	if _, err := os.Stat(imageCachePath) ; err != nil {
+	if _, err := os.Stat(imageCachePath); err != nil {
 		d.log().Infoln("Downloading machine image...")
 		var remotePath string
 
 		if govalidator.IsURL(d.template.QemuImage.DownloadUrl) {
 			remotePath = d.template.QemuImage.DownloadUrl
 		} else if settings.ImageServerUri != "" {
-			remotePath = settings.ImageServerUri +"/"+ imageFile
-		} else  {
+			remotePath = settings.ImageServerUri + "/" + imageFile
+		} else {
 			return "", errors.Errorf("Unable to resolve download_url: %s", d.template.QemuImage.DownloadUrl)
 		}
 
@@ -181,15 +181,15 @@ func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage
 	d.machine.Name = d.Base.Instance.GetId()
 	d.machine.Drives = append(d.machine.Drives, Drive{Image: instanceImage})
 	d.machine.Drives = append(d.machine.Drives, Drive{Image: metadriveImage, If: "floppy"})
-	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
-	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
+	d.machine.Monitor = fmt.Sprintf("%s", filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
+	d.machine.Serial = fmt.Sprintf("%s", filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
 	d.machine.Kvm = d.template.UseKvm
 	var netDev []NetDev
 	for idx, iface := range d.template.Interfaces {
 		netDev = append(netDev, NetDev{
-			IfName: fmt.Sprintf("%s%02d", d.machine.Name, idx),
-			MacAddr: iface.Macaddr,
-			Bridge: settings.BridgeName,
+			IfName:       fmt.Sprintf("%s%02d", d.machine.Name, idx),
+			MacAddr:      iface.Macaddr,
+			Bridge:       settings.BridgeName,
 			BridgeHelper: settings.QemuBridgeHelper,
 		})
 	}
@@ -201,7 +201,7 @@ func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
 
 	runCmd := func(cmd string, args []string) error {
 		c := exec.Command(cmd, args...)
-		if err := c.Run() ; err != nil {
+		if err := c.Run(); err != nil {
 			return errors.Errorf("failed to execute command :%s %s", cmd, args)
 		}
 		return nil
@@ -209,7 +209,7 @@ func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
 	if err := runCmd("mkfs.msdos", []string{"-s", "1", metadrive.Path}); err != nil {
 		return errors.Errorf("Error: %s", err)
 	}
-		
+
 	return nil
 }
 
@@ -217,31 +217,31 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 	instanceId := d.Base.Instance.GetId()
 	instanceDir := filepath.Join(settings.InstancePath, instanceId)
 	imageFormat := strings.ToLower(d.template.QemuImage.Format.String())
-	instanceImagePath := filepath.Join(instanceDir, "diskImage."+ imageFormat)
+	instanceImagePath := filepath.Join(instanceDir, "diskImage."+imageFormat)
 	metadrivePath := filepath.Join(instanceDir, "metadrive.img")
 	baseImage, _ := d.getImage()
-	
+
 	os.MkdirAll(instanceDir, os.ModePerm)
 	instanceImage := NewImage(instanceImagePath, imageFormat)
-	if _, err := os.Stat(instanceImagePath) ; err != nil {
+	if _, err := os.Stat(instanceImagePath); err != nil {
 		d.log().Infoln("Create instance image...")
-		if err := instanceImage.SetBaseImage(baseImage) ; err != nil {
+		if err := instanceImage.SetBaseImage(baseImage); err != nil {
 			return err
 		}
-		if err := instanceImage.CreateImage() ; err != nil {
+		if err := instanceImage.CreateImage(); err != nil {
 			return err
 		}
 	}
 
 	os.MkdirAll(filepath.Join(instanceDir, "meta-data"), os.ModePerm)
 	metadriveImage := NewImage(metadrivePath, "raw")
-	if _, err := os.Stat(metadrivePath) ; err != nil {
+	if _, err := os.Stat(metadrivePath); err != nil {
 		d.log().Infoln("Create metadrive image...")
 		metadriveImage.SetSize(1440)
-		if err := metadriveImage.CreateImage() ; err != nil {
+		if err := metadriveImage.CreateImage(); err != nil {
 			return err
 		}
-		if err := d.buildMetadrive(metadriveImage) ; err != nil {
+		if err := d.buildMetadrive(metadriveImage); err != nil {
 			// todo remove metadrive image since it failed
 		}
 	}
@@ -250,7 +250,7 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 }
 
 func (d *QEMUHypervisorDriver) DestroyInstance() error {
-	if (d.machine.State == RUNNING) {
+	if d.machine.State == RUNNING {
 		d.log().Infoln("Stopping qemu instance...")
 		if err := d.machine.Destroy(); err != nil {
 			return errors.Wrap(err, "Failed machine.Stop()")
@@ -262,7 +262,7 @@ func (d *QEMUHypervisorDriver) DestroyInstance() error {
 func (d *QEMUHypervisorDriver) StartInstance() error {
 	d.log().Infoln("Starting qemu instance...")
 	if err := d.machine.Start(filepath.Join(settings.QemuPath, settings.QemuProvider)); err != nil {
-			return errors.Wrap(err, "Failed machine.Start()")
+		return errors.Wrap(err, "Failed machine.Start()")
 	}
 	return nil
 }
@@ -283,6 +283,6 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 	return nil
 }
 
-func (d QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
-	return nil
-}
+// func (d QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
+// 	return nil
+// }
