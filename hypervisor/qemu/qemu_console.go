@@ -55,27 +55,32 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 	if err != nil {
 		return errors.Wrap(err, join("", "Failed to send to socket ", socket))
 	}
-
-	go func(r io.Reader) {
+	go func(l net.Listener) error {
 		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 		for {
-			n, err := r.Read(b[:])
+			r, err := l.Accept()
 			if err != nil {
-				return Wrap(err, join("", "Failed to read the qemu socket buffer from socket ", socket))
+				return errors.Wrap(err, join("Failed to accept the listening connection on socket ", socket))
 			}
-			_, err := out.Write(string(b[0:n])) // err is for short writes -- should probably retry in that case...
+			n, err := r.Read(b)
+			if err != nil {
+				// these errors should be passed somewhere in channels...right now they are not handled anywhere.
+				return errors.Wrap(err, join("", "Failed to read the qemu socket buffer from socket ", socket))
+			}
+			_, err = out.Write(b[0:n]) // err is for short writes -- should probably retry in that case...
 			//_, err := stdErr.Write(string(b[0:n]))
 		}
 	}(l)
 
-	go func(w io.Writer) {
-		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
+	go func(w io.Writer) error {
+		b := make([]byte, 8192)
 		for {
-			n, err := w.Writer(b[:])
+			n, err := w.Write(b)
 			if err != nil {
-				return Wrap(err, join("", "Failed to write to the qemu socket ", socket, " from the buffer"))
+				// these errors should be passed somewhere in channels...right now they are not handled anywhere.
+				return errors.Wrap(err, join("", "Failed to write to the qemu socket ", socket, " from the buffer"))
 			}
-			_, err := in.Read(string(b[0:n])) // err is for short writes -- should probably retry in that case...
+			_, err = in.Read(b[0:n]) // err is for short writes -- should probably retry in that case...
 		}
 	}(s)
 
