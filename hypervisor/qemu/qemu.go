@@ -119,21 +119,41 @@ func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
+
 func (p *QEMUHypervisorProvider) CreateDriver (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
 	qemuTmpl, ok := template.(*model.QemuTemplate)
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.QemuTemplate: %T, template")
 	}
-	m := NewMachine(int(qemuTmpl.Vcpu), uint64(qemuTmpl.MemoryGb))
 	driver := &QEMUHypervisorDriver{
 		Base: hypervisor.Base{
 			Log: log.WithFields(log.Fields{"Hypervisor": "qemu", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
 		template: qemuTmpl,
-		machine: m,
 	}
+	driver.createMachineTemplate()
 	return driver, nil
+}
+
+func (d *QEMUHypervisorDriver) createMachineTemplate ()  {
+	d.machine = NewMachine(int(d.template.Vcpu), uint64(d.template.MemoryGb*1024))
+
+	d.machine.Name = d.Base.Instance.GetId()
+	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
+	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
+	d.machine.Kvm = d.template.UseKvm
+
+	var netDev []NetDev
+	for idx, iface := range d.template.Interfaces {
+		netDev = append(netDev, NetDev{
+			IfName: fmt.Sprintf("%s%02d", d.machine.Name, idx),
+			MacAddr: iface.Macaddr,
+			Bridge: settings.BridgeName,
+			BridgeHelper: settings.QemuBridgeHelper,
+		})
+	}
+	d.machine.AddNICs(netDev)
 }
 
 func (d *QEMUHypervisorDriver) log() *log.Entry {
@@ -175,27 +195,6 @@ func (d *QEMUHypervisorDriver) getImage() (string, error) {
 	return imageCachePath, nil
 }
 
-func (d *QEMUHypervisorDriver) buildMachine(instanceImage *Image, metadriveImage *Image) {
-	d.log().Infoln("Preparing machine image...")
-
-	d.machine.Name = d.Base.Instance.GetId()
-	d.machine.Drives = append(d.machine.Drives, Drive{Image: instanceImage})
-	d.machine.Drives = append(d.machine.Drives, Drive{Image: metadriveImage, If: "floppy"})
-	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "monitor.socket"))
-	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(settings.InstancePath, d.machine.Name, "serial.socket"))
-	d.machine.Kvm = d.template.UseKvm
-	var netDev []NetDev
-	for idx, iface := range d.template.Interfaces {
-		netDev = append(netDev, NetDev{
-			IfName: fmt.Sprintf("%s%02d", d.machine.Name, idx),
-			MacAddr: iface.Macaddr,
-			Bridge: settings.BridgeName,
-			BridgeHelper: settings.QemuBridgeHelper,
-		})
-	}
-	d.machine.AddNICs(netDev)
-}
-
 func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
 	d.log().Infoln("Preparing metadrive image...")
 
@@ -219,11 +218,14 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 	imageFormat := strings.ToLower(d.template.QemuImage.Format.String())
 	instanceImagePath := filepath.Join(instanceDir, "diskImage."+ imageFormat)
 	metadrivePath := filepath.Join(instanceDir, "metadrive.img")
-	baseImage, _ := d.getImage()
 	
 	os.MkdirAll(instanceDir, os.ModePerm)
 	instanceImage := NewImage(instanceImagePath, imageFormat)
 	if _, err := os.Stat(instanceImagePath) ; err != nil {
+		baseImage, err := d.getImage()
+		if  err != nil {
+			return err
+		}
 		d.log().Infoln("Create instance image...")
 		if err := instanceImage.SetBaseImage(baseImage) ; err != nil {
 			return err
@@ -245,17 +247,21 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 			// todo remove metadrive image since it failed
 		}
 	}
-	d.buildMachine(instanceImage, metadriveImage)
+
+	d.machine.Drives = append(d.machine.Drives, Drive{Image: instanceImage})
+	d.machine.Drives = append(d.machine.Drives, Drive{Image: metadriveImage, If: "floppy"})
 	return nil
 }
 
 func (d *QEMUHypervisorDriver) DestroyInstance() error {
 	if (d.machine.State == RUNNING) {
-		d.log().Infoln("Stopping qemu instance...")
-		if err := d.machine.Destroy(); err != nil {
-			return errors.Wrap(err, "Failed machine.Stop()")
-		}
+		d.StopInstance()
 	}
+	d.log().Infoln("Removing instance data...")
+	if err := os.RemoveAll(filepath.Join(settings.InstancePath, d.Base.Instance.GetId())) ; err != nil {
+		return errors.Errorf("Failed to remove instance data")
+	}
+
 	return nil
 }
 
