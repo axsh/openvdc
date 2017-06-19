@@ -80,7 +80,7 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 				// these errors should be passed somewhere in channels...right now they are not handled anywhere.
 				return errors.Wrap(err, join("", "Failed to write to the qemu socket ", socket, " from the buffer"))
 			}
-			_, err = in.Read(b[0:n]) // err is for short writes -- should probably retry in that case...
+			_, err = in.Read(b[0:n]) // err is for short reads -- should probably retry in that case...
 		}
 	}(s)
 
