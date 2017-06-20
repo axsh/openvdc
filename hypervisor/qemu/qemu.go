@@ -141,16 +141,16 @@ func (p *QEMUHypervisorProvider) CreateDriver (instance *model.Instance, templat
 func (d *QEMUHypervisorDriver) createMachineTemplate ()  {
 	instanceId := d.Base.Instance.GetId()
 	instanceDir := filepath.Join(settings.InstancePath, instanceId)
-	imageFormat := strings.ToLower(d.template.QemuImage.Format.String())
+	imageFormat := strings.ToLower(d.template.QemuImage.GetFormat().String())
 
-	d.machine = NewMachine(int(d.template.Vcpu), uint64(d.template.MemoryGb*1024))
+	d.machine = NewMachine(int(d.template.GetVcpu()), uint64(d.template.GetMemoryGb()*1024))
 	d.machine.Name = instanceId
 	d.machine.Monitor = fmt.Sprintf("%s",filepath.Join(instanceDir, "monitor.socket"))
 	d.machine.Serial = fmt.Sprintf("%s",filepath.Join(instanceDir, "serial.socket"))
-	d.machine.Kvm = d.template.UseKvm
+	d.machine.Kvm = d.template.GetUseKvm()
 
 	var netDev []NetDev
-	for idx, iface := range d.template.Interfaces {
+	for idx, iface := range d.template.GetInterfaces() {
 		netDev = append(netDev, NetDev{
 			IfName: fmt.Sprintf("%s_%02d", d.machine.Name, idx),
 			Type: iface.Type,
@@ -171,7 +171,7 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 }
 
 func (d *QEMUHypervisorDriver) getImage() (string, error) {
-	url := strings.Split(d.template.QemuImage.DownloadUrl, "/")
+	url := strings.Split(d.template.QemuImage.GetDownloadUrl(), "/")
 	imageFile := url[len(url)-1]
 	imageCachePath := filepath.Join(settings.CachePath, imageFile)
 
@@ -179,12 +179,12 @@ func (d *QEMUHypervisorDriver) getImage() (string, error) {
 		d.log().Infoln("Downloading machine image...")
 		var remotePath string
 
-		if govalidator.IsURL(d.template.QemuImage.DownloadUrl) {
-			remotePath = d.template.QemuImage.DownloadUrl
+		if govalidator.IsURL(d.template.QemuImage.GetDownloadUrl()) {
+			remotePath = d.template.QemuImage.GetDownloadUrl()
 		} else if settings.ImageServerUri != "" {
 			remotePath = settings.ImageServerUri +"/"+ imageFile
 		} else  {
-			return "", errors.Errorf("Unable to resolve download_url: %s", d.template.QemuImage.DownloadUrl)
+			return "", errors.Errorf("Unable to resolve download_url: %s", d.template.QemuImage.GetDownloadUrl())
 		}
 
 		file, err := os.Create(imageCachePath)
