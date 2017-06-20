@@ -61,6 +61,7 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 		}
 	}
 	cmd.appendArgs("-display", m.Display)
+	cmd.appendArgs("-daemonize")
 	return cmd.args
 }
 

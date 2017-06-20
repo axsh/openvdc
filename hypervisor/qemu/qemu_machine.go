@@ -82,7 +82,8 @@ func (m *Machine) Start(startCmd string) error {
 	cmdLine := &cmdLine{args: make([]string, 0)}
 
 	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m)...)
-	if err := cmd.Start() ; err != nil {
+	fmt.Println(cmd.Args)
+	if  err := cmd.Run(); err != nil {
 		return errors.Errorf("Failed to execute cmd: %s", cmd.Args)
 	}
 
@@ -104,11 +105,13 @@ func (m *Machine) MonitorCommand(cmd string) error {
 }
 
 func (m *Machine) Stop() error {
-	m.MonitorCommand("system_powerdown")
-	return nil
-}
+	if err := m.MonitorCommand("quit"); err != nil {
+		return err
+	}
 
-func (m *Machine) Destroy() error {
+	os.Remove(m.Monitor)
+	os.Remove(m.Serial)
+
 	return nil
 }
 
