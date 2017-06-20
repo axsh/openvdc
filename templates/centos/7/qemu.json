@@ -3,7 +3,7 @@
   "template": {
     "type": "vm/qemu",
     "vcpu": 1,
-    "memory_gb": 512,
+    "memory_gb": 1,
     "qemu_image": {
       "download_url": "box-disk1.qcow2",
       "format": "qcow2"
