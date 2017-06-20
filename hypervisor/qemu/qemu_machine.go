@@ -42,7 +42,7 @@ type Machine struct {
 	Monitor string
 	Serial  string
 	Nics    []NetDev
-	Drives  []Drive
+	Drives  map[string]Drive
 	Process *os.Process
 	Kvm     bool
 }
@@ -55,11 +55,18 @@ type NetDev struct {
 	BridgeHelper string
 }
 
+func (m *Machine) scheduleState(nextState State, timeout int) error {
+	m.State = nextState
+
+
+	return nil
+}
+
 func NewMachine(cores int, mem uint64) *Machine {
 	return &Machine{
 		Cores: cores,
 		Memory: mem,
-		Drives: make([]Drive, 0),
+		Drives: make(map[string]Drive),
 		Display: "none",
 	}
 }
