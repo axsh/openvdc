@@ -5,6 +5,7 @@ package qemu
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -83,6 +84,7 @@ func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		return errors.Errorf("No qemu provider found.")
 	}
 
+
 	if sub.IsSet("bridge.name") {
 		settings.BridgeName = sub.GetString("bridge.name")
 		if sub.IsSet("bridge.type") {
@@ -150,7 +152,9 @@ func (d *QEMUHypervisorDriver) createMachineTemplate ()  {
 	var netDev []NetDev
 	for idx, iface := range d.template.Interfaces {
 		netDev = append(netDev, NetDev{
-			IfName: fmt.Sprintf("%s%02d", d.machine.Name, idx),
+			IfName: fmt.Sprintf("%s_%02d", d.machine.Name, idx),
+			Type: iface.Type,
+			Ipv4Addr: iface.Ipv4Addr,
 			MacAddr: iface.Macaddr,
 			Bridge: settings.BridgeName,
 			BridgeHelper: settings.QemuBridgeHelper,
@@ -201,21 +205,52 @@ func (d *QEMUHypervisorDriver) getImage() (string, error) {
 	return imageCachePath, nil
 }
 
-func (d *QEMUHypervisorDriver) buildMetadrive(metadrive *Image) error {
+func runCmd(cmd string, args []string) error {
+	c := exec.Command(cmd, args...)
+	if err := c.Run(); err != nil {
+		return errors.Errorf("failed to execute command :%s %s", cmd, args)
+	}
+	return nil
+}
+
+type GetMetadataMap func(machine *Machine) map[string]string
+
+func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap GetMetadataMap) error {
+	mountPath := filepath.Join(filepath.Dir(metadataDrive.Path), "meta-data")
+
+	os.MkdirAll(mountPath, os.ModePerm)
+	if err := runCmd("mount", []string{metadataDrive.Path, mountPath}); err != nil {
+		return errors.Errorf("Error: %s", err)
+	}
+	for key, value := range datamap(d.machine) {
+		ioutil.WriteFile(filepath.Join(mountPath, key), []byte(value), 0644)
+	}
+
+	if err := runCmd("umount", []string{mountPath}); err != nil {
+		return errors.Errorf("Error: %s", err)
+	}
+	os.RemoveAll(mountPath)
+	return nil
+}
+
+func (d *QEMUHypervisorDriver) buildMetadriveBase(metadrive *Image) error {
 	d.log().Infoln("Preparing metadrive image...")
 
-	runCmd := func(cmd string, args []string) error {
-		c := exec.Command(cmd, args...)
-		if err := c.Run() ; err != nil {
-			return errors.Errorf("failed to execute command :%s %s", cmd, args)
-		}
-		return nil
-	}
 	if err := runCmd("mkfs.msdos", []string{"-s", "1", metadrive.Path}); err != nil {
 		return errors.Errorf("Error: %s", err)
 	}
-		
-	return nil
+
+	return d.addMetadata(metadrive, func(machine *Machine) map[string]string {
+		metadataMap := make(map[string]string)
+		metadataMap["hostname"] = machine.Name
+		for _, nic := range machine.Nics {
+			if nic.Type == "veth" {
+				metadataMap[fmt.Sprintf("ipv4-%s", nic.IfName)] = nic.Ipv4Addr
+				metadataMap[fmt.Sprintf("mac-%s", nic.IfName)] = nic.MacAddr
+			}
+		}
+		return metadataMap
+	})
 }
 
 func (d *QEMUHypervisorDriver) CreateInstance() error {
@@ -237,7 +272,6 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 		}
 	}
 
-	os.MkdirAll(filepath.Join(instanceDir, "meta-data"), os.ModePerm)
 	metadriveImage := d.machine.Drives["meta"].Image
 	if _, err := os.Stat(metadriveImage.Path) ; err != nil {
 		d.log().Infoln("Create metadrive image...")
@@ -245,7 +279,8 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 		if err := metadriveImage.CreateImage() ; err != nil {
 			return err
 		}
-		if err := d.buildMetadrive(metadriveImage) ; err != nil {
+		if err := d.buildMetadriveBase(metadriveImage) ; err != nil {
+			return err
 			// todo remove metadrive image since it failed
 		}
 	}

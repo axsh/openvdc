@@ -50,9 +50,11 @@ type Machine struct {
 type NetDev struct {
 	IfName       string
 	Index        string
+	Ipv4Addr     string
 	MacAddr      string
 	Bridge       string
 	BridgeHelper string
+	Type         string
 }
 
 func (m *Machine) scheduleState(nextState State, timeout int) error {
