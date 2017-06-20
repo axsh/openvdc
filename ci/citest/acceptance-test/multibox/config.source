@@ -5,11 +5,11 @@ NODES=(
    "10.0.100.10-zookeeper"
    "10.0.100.11-mesos-master"
    "10.0.100.12-vdc-scheduler"
-   "10.0.100.13-vdc-executor-null"
-   "10.0.100.14-vdc-executor-lxc"
-   "10.0.100.15-vdc-executor-lxc-ovs"
-   "10.0.100.16-vdc-executor-kvm"
-   "10.0.100.17-vdc-executor-kvm-ovs"
+#   "10.0.100.13-vdc-executor-null"
+#   "10.0.100.14-vdc-executor-lxc"
+#   "10.0.100.15-vdc-executor-lxc-ovs"
+   "10.0.100.16-vdc-executor-qemu"
+#   "10.0.100.17-vdc-executor-qemu-ovs"
 )
 
 NETWORK="10.0.100.0"
@@ -35,3 +35,7 @@ BASE_BRANCH="${BASE_BRANCH:-master}"
 BOXES_DIR="/data/openvdc-ci/boxes"
 CACHE_DIR="/data/openvdc-ci/branches"
 IMG_DIR="/data/openvdc-ci/images"
+
+REBUILD=false
+BRANCH=feature-qemu-console
+RELEASE_SUFFIX=current

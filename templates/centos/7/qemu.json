@@ -2,10 +2,13 @@
   "title": "CentOS7",
   "template": {
     "type": "vm/qemu",
+    "vcpu": 1,
+    "memory_gb": 512,
     "qemu_image": {
-      "download_url": "local/centos7.qcow2",
+      "download_url": "box-disk1.qcow2",
       "format": "qcow2"
-    }
+    },
+    "use_kvm": true
   }
 }
 
