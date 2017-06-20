@@ -19,8 +19,8 @@ func runCmd(cmd string, args []string) {
 }
 
 func init () {
-	viper.SetDefault("bridge.type", "linux")
-	viper.SetDefault("bridge.name", "br0")
+	viper.SetDefault("bridges.type", "linux")
+	viper.SetDefault("bridges.name", "br0")
 	viper.SetConfigFile(DefaultConfPath)
 	viper.SetConfigType("toml")
 	viper.AutomaticEnv()
@@ -37,11 +37,11 @@ func init () {
 func main () {
 	config := viper.GetViper()
 	ifname := os.Args[1]
-	switch config.GetString("bridge.type") {
+	switch config.GetString("bridges.type") {
 	case "linux":
-		runCmd("brctl", []string{"delif", config.GetString("bridge.name"), ifname})
+		runCmd("brctl", []string{"delif", config.GetString("bridges.name"), ifname})
 	case "ovs":
-		runCmd("ovs-vsctl", []string{"del-port", config.GetString("bridge.name"), ifname})
+		runCmd("ovs-vsctl", []string{"del-port", config.GetString("bridges.name"), ifname})
 	default:
 		// thrown error
 	}
