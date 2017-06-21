@@ -52,6 +52,7 @@ type Machine struct {
 	Vnc     string
 	Monitor string
 	Serial  string
+	Pidfile string
 	Nics    []NetDev
 	Drives  map[string]Drive
 	Process *os.Process
