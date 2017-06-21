@@ -301,7 +301,9 @@ func (d *QEMUHypervisorDriver) StartInstance() error {
 	if err := d.machine.Start(filepath.Join(settings.QemuPath, settings.QemuProvider)); err != nil {
 			return errors.Wrap(err, "Failed machine.Start()")
 	}
-	return nil
+	return d.machine.ScheduleState(RUNNING, 30*time.Seconds, func() bool {
+		return true
+	})
 }
 
 func (d *QEMUHypervisorDriver) StopInstance() error {
@@ -309,7 +311,8 @@ func (d *QEMUHypervisorDriver) StopInstance() error {
 	if err := d.machine.Stop(); err != nil {
 		return errors.Wrap(err, "Failed machine.Stop()")
 	}
-	return nil
+
+	return d.machine.ScheduleState(STOPPED, 30*time.Seconds, stateEvaluation)
 }
 
 func (d QEMUHypervisorDriver) RebootInstance() error {
@@ -317,7 +320,7 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 	if err := d.machine.Reboot(); err != nil {
 		return errors.Wrap(err, "Failed machine.Reboot()")
 	}
-	return nil
+	return d.machine.ScheduleState(REBOOTING, 30*time.Seconds, stateEvaluation()) 
 }
 
 func (d QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {

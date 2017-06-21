@@ -6,12 +6,13 @@ import (
 	"os/exec"
 	"net"
 	"github.com/pkg/errors"
+	"time"
 )
 
 type State int
 
 const (
-	STOPPED State = iota
+	STOPPED State = iota // 0
 	STARTING
 	RUNNING
 	STOPPING
@@ -20,6 +21,16 @@ const (
 	TERMINATING
 	FAILED
 )
+
+var stateValues = map[State]string{
+	STOPPED : "STOPPED",
+	STARTING : "STARTING",
+	RUNNING : "RUNNING",
+	STOPPING : "STOPPING",
+	REBOOTING : "REBOOTING",
+	SHUTTINGDOWN : "SHUTTINGDOWN",
+	FAILED : "FAILED",
+}
 
 var MachineState = map[string]State{
 	"STOPPED" : STOPPED,
@@ -57,10 +68,47 @@ type NetDev struct {
 	Type         string
 }
 
-func (m *Machine) scheduleState(nextState State, timeout int) error {
+func startStateEvaluation(timeout time.Duration, evaluationFunction func() bool) <-chan bool {
+	passed := make(chan bool, 1)
+	timeoutc := make(chan bool, 1)
+
+	go func() {
+		time.Sleep(timeout)
+		timeoutc <-true
+	}()
+
+	go func() {
+		for {
+			defer func () {
+				close(passed)
+				close(timeoutc)
+			}()
+			select {
+			case <-timeoutc:
+				passed <-false
+				return
+			default:
+				if evaluationFunction() {
+					passed <-true
+					return
+				}
+			}
+		}
+	}()
+	return passed
+}
+
+func (m *Machine) ScheduleState(nextState State, timeout time.Duration, callback func() bool) error {
+	if m.State == nextState {
+		return errors.Errorf("Already in state %s", stateValues[nextState])
+	}
+
+	passed := <-startStateEvaluation(timeout, callback)
+	if !passed {
+		return errors.Errorf("Timed out scheduling state %s", stateValues[nextState])
+	}
+
 	m.State = nextState
-
-
 	return nil
 }
 
@@ -91,7 +139,10 @@ func (m *Machine) Start(startCmd string) error {
 
 	m.Process = cmd.Process
 	// TODO: add some error handling
-	return nil
+
+	return m.ScheduleState(STARTING, (30*time.Second), func() bool {
+		return true
+	})
 }
 
 func (m *Machine) MonitorCommand(cmd string) error {
@@ -119,5 +170,7 @@ func (m *Machine) Stop() error {
 
 func (m *Machine) Reboot() error {
 	m.MonitorCommand("system_reset")
-	return nil
+	return m.ScheduleState(RUNNING, (30*time.Second), func() bool {
+		return true
+	})
 }
