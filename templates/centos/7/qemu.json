@@ -8,6 +8,7 @@
       "download_url": "box-disk1.qcow2",
       "format": "qcow2"
     },
+    "node_groups": ["linuxbr"],
     "use_kvm": true
   }
 }
