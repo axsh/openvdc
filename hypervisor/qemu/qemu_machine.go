@@ -42,7 +42,7 @@ type Machine struct {
 	Monitor string
 	Serial  string
 	Nics    []NetDev
-	Drives  []Drive
+	Drives  map[string]Drive
 	Process *os.Process
 	Kvm     bool
 }
@@ -50,16 +50,25 @@ type Machine struct {
 type NetDev struct {
 	IfName       string
 	Index        string
+	Ipv4Addr     string
 	MacAddr      string
 	Bridge       string
 	BridgeHelper string
+	Type         string
+}
+
+func (m *Machine) scheduleState(nextState State, timeout int) error {
+	m.State = nextState
+
+
+	return nil
 }
 
 func NewMachine(cores int, mem uint64) *Machine {
 	return &Machine{
 		Cores: cores,
 		Memory: mem,
-		Drives: make([]Drive, 0),
+		Drives: make(map[string]Drive),
 		Display: "none",
 	}
 }
@@ -75,7 +84,8 @@ func (m *Machine) Start(startCmd string) error {
 	cmdLine := &cmdLine{args: make([]string, 0)}
 
 	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m)...)
-	if err := cmd.Start() ; err != nil {
+	fmt.Println(cmd.Args)
+	if  err := cmd.Run(); err != nil {
 		return errors.Errorf("Failed to execute cmd: %s", cmd.Args)
 	}
 
@@ -97,11 +107,13 @@ func (m *Machine) MonitorCommand(cmd string) error {
 }
 
 func (m *Machine) Stop() error {
-	m.MonitorCommand("system_powerdown")
-	return nil
-}
+	if err := m.MonitorCommand("quit"); err != nil {
+		return err
+	}
 
-func (m *Machine) Destroy() error {
+	os.Remove(m.Monitor)
+	os.Remove(m.Serial)
+
 	return nil
 }
 
