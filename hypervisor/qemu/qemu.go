@@ -1,4 +1,3 @@
-// +build linux
 
 package qemu
 
@@ -12,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -301,7 +301,7 @@ func (d *QEMUHypervisorDriver) StartInstance() error {
 	if err := d.machine.Start(filepath.Join(settings.QemuPath, settings.QemuProvider)); err != nil {
 			return errors.Wrap(err, "Failed machine.Start()")
 	}
-	return d.machine.ScheduleState(RUNNING, 30*time.Seconds, func() bool {
+	return d.machine.ScheduleState(RUNNING, 30*time.Second, func() bool {
 		return true
 	})
 }
@@ -312,7 +312,9 @@ func (d *QEMUHypervisorDriver) StopInstance() error {
 		return errors.Wrap(err, "Failed machine.Stop()")
 	}
 
-	return d.machine.ScheduleState(STOPPED, 30*time.Seconds, stateEvaluation)
+	return d.machine.ScheduleState(STOPPED, 30*time.Second, func() bool {
+		return true
+	})
 }
 
 func (d QEMUHypervisorDriver) RebootInstance() error {
@@ -320,7 +322,9 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 	if err := d.machine.Reboot(); err != nil {
 		return errors.Wrap(err, "Failed machine.Reboot()")
 	}
-	return d.machine.ScheduleState(REBOOTING, 30*time.Seconds, stateEvaluation()) 
+	return d.machine.ScheduleState(REBOOTING, 30*time.Second, func() bool {
+		return true
+	})
 }
 
 func (d QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
