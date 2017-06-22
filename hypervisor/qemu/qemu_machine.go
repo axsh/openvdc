@@ -80,10 +80,6 @@ func startStateEvaluation(timeout time.Duration, evaluationFunction func() bool)
 
 	go func() {
 		for {
-			defer func () {
-				close(passed)
-				close(timeoutc)
-			}()
 			select {
 			case <-timeoutc:
 				passed <-false

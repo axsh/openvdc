@@ -146,7 +146,7 @@ func (d *QEMUHypervisorDriver) createMachineTemplate ()  {
 	var netDev []NetDev
 	for idx, iface := range d.template.GetInterfaces() {
 		netDev = append(netDev, NetDev{
-			IfName: fmt.Sprintf("%s_%02d", d.machine.Name, idx),
+			IfName: fmt.Sprintf("%s_%02d", instanceId, idx),
 			Type: iface.Type,
 			Ipv4Addr: iface.Ipv4Addr,
 			MacAddr: iface.Macaddr,
