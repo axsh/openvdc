@@ -154,7 +154,8 @@ cp /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc /usr/share/lxc/templates/lx
 Summary: OpenVDC executor (Qemu driver)
 Requires: openvdc-executor
 Requires: qemu-system-x86
-
+Requires: dosfstools
+ 
 %description executor-qemu
 Qemu driver configuration package for OpenVDC executor
 
