@@ -96,9 +96,9 @@ func startStateEvaluation(timeout time.Duration, evaluationFunction func() bool)
 }
 
 func (m *Machine) ScheduleState(nextState State, timeout time.Duration, callback func() bool) error {
-	if m.State == nextState {
-		return errors.Errorf("Already in state %s", stateValues[nextState])
-	}
+	// if m.State == nextState {
+	// 	return errors.Errorf("Already in state %s", stateValues[nextState])
+	// }
 
 	passed := <-startStateEvaluation(timeout, callback)
 	if !passed {
