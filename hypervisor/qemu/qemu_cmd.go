@@ -28,6 +28,9 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 	if len(m.Vnc) > 0 {
 		cmd.appendArgs("-vnc", m.Vnc)
 	}
+	if len(m.Pidfile) > 0 {
+		cmd.appendArgs("-pidfile", m.Pidfile)
+	}
 	for _, d := range m.Drives {
 		drive := fmt.Sprintf("file=%s,format=%s", d.Image.Path, d.Image.Format)
 		if len(d.If) > 0 {
