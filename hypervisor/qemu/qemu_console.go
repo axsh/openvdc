@@ -44,7 +44,7 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 
 	in := bufio.NewReader(stdin)
 	out := bufio.NewWriter(stdout)
-	//stdErr := bufio.NewReader(stderr)
+	stdErr := bufio.NewWriter(stderr)
 
 	l, err := net.Listen("unix", socket)
 	if err != nil {
@@ -55,6 +55,7 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 	if err != nil {
 		return errors.Wrap(err, join("", "Failed to send to socket ", socket))
 	}
+
 	go func(l net.Listener) error {
 		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 		for {
@@ -67,8 +68,8 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 				// these errors should be passed somewhere in channels...right now they are not handled anywhere.
 				return errors.Wrap(err, join("", "Failed to read the qemu socket buffer from socket ", socket))
 			}
-			_, err = out.Write(b[0:n]) // err is for short writes -- should probably retry in that case...
-			//_, err := stdErr.Write(string(b[0:n]))
+			_, err = out.Write(b[0:n])    // err is for short writes -- should probably retry in that case...
+			_, err = stdErr.Write(b[0:n]) //this needs it's own listener.
 		}
 	}(l)
 
@@ -88,9 +89,9 @@ func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) er
 }
 
 func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
-	if con.machine().State != RUNNING {
-		return nil, errors.New("kvm instance is not running")
-	}
+	// if con.machine().State != RUNNING {
+	// 	return nil, errors.New("kvm instance is not in a running state")
+	// }
 
 	fds := make([]*os.File, 6)
 	closeAll := func() {
