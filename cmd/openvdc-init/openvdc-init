@@ -1,0 +1,109 @@
+#!/bin/bash
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+
+METADRIVE_LOCATION="/metadata"
+METADRIVE_PATH="/dev/fd0 "
+LOGFILE="${LOGFILE:-/var/log/openvdc/openvdc.log}"
+
+VDC_USER="${VDC_USER:-openvdc}"
+AUTOLOGIN="${AUTOLOGIN:-true}"
+ROOT_ACCESS="${ROOT_USER:-true}"
+
+metadata_ops() {
+    local operation=${1}
+    local params
+
+    case "${operation}" in
+        mount)
+            [[ -d "$METADRIVE_LOCATION" ]] || mkdir -p "$METADRIVE_LOCATION"
+            if mount | grep -q "$METADRIVE_LOCATION"  ; then
+                echo "Metadrive already mounted"
+                return
+            else
+                params="$METADRIVE_PATH $METADRIVE_LOCATION"
+            fi ;;
+        umount)
+            params="$METADRIVE_LOCATION";;
+    esac
+
+    ${operation} "${params}" || {
+	      echo "Failed to mount ${METADRIVE_PATH}"
+	      exit 1
+    }
+    echo "${operation} metadata drive."
+}
+
+get_metadata() {
+    local key="${METADRIVE_LOCATION}/$1"
+
+    if [[ ! -f "$key" ]] ; then
+        echo "datafile $key not foundr"
+        exit 1
+    fi
+
+    echo $(cat "$key")
+}
+
+set_vdc_user() {
+    # add openvdc user
+    getent passwd "${VDC_USER}" 2> /dev/null || {
+        adduser "${VDC_USER}"
+        passwd -d "${VDC_USER}"
+        echo "Creating user: ${VDC_USER}"
+    }
+    # give root access
+    if [[ "${ROOT_ACCESS}" == "true " ]] ; then
+        grep -q "${VDC_USER}" /etc/sudoers || {
+            echo >> "${VDC_USER} ALL=(ALL) NOPASSWD: ALL" /etc/sudoers
+            echo "Adding ${VDC_USER} to sudoers"
+        }
+    fi
+    # set automatic login
+    if [[ "${AUTOLOGIN}" == "true" ]] ; then
+        grep -q "${VDC_USER}" /etc/systemd/system/getty.target.wants/getty@ttyS0.service || {
+            sed -i 's,\/agetty,\/agetty --autologin '${VDC_USER}',g' /etc/systemd/system/getty.target.wants/getty\@ttyS0.service
+            echo "Autologin as ${VDC_USER}"
+        }
+    fi
+}
+
+set_hostname() {
+    hostname="$(get_metadata hostname)"
+
+    [[ -n "${hostname}" ]] || exit 0
+    [[ "$(cat /etc/hostname)" == "$hostname" ]] || return 0
+
+    hostname $hostname
+    echo "$hostname" >> /etc/hostname
+    echo "Setting hostname as ${hostname}"
+}
+
+# for now we only support setting the ip address through the template
+set_network_interfaces() {
+    local nics="$(ls $METADATA_LOCATION/nic*)"
+    (
+        for(( i=0; i < ${#nics[@]}; i++)) ; do
+            cat <<EOF > "/etc/sysconfig/network-interfaces/ifcfg-eth${i}"
+DEVICE=eth${i}
+BOOTPROT=static
+IPV6INIT=yes
+ONBOOT=yes
+TYPE=Ethernet
+IPADDR=$(get_metadata ${nic[i]}/ipv4)
+NETMASk=255.255.255.0
+EOF
+            echo "Creating ifcfg-eth${i}"
+        done
+    )
+}
+
+[[ -f ${LOGFILE} ]] || mkdir -p ${LOGFILE%/*}
+
+{
+    metadata_ops mount
+    set_hostname
+    set_vdc_user
+    set_network_interfaces
+    metadata_ops umount
+} > "${LOGFILE}" 2>&1
