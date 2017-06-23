@@ -144,11 +144,19 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 	var netDev []NetDev
 	for idx, iface := range d.template.GetInterfaces() {
 		netDev = append(netDev, NetDev{
+<<<<<<< HEAD
 			IfName:       fmt.Sprintf("%s_%02d", d.machine.Name, idx),
 			Type:         iface.Type,
 			Ipv4Addr:     iface.Ipv4Addr,
 			MacAddr:      iface.Macaddr,
 			Bridge:       settings.BridgeName,
+=======
+			IfName: fmt.Sprintf("%s_%02d", instanceId, idx),
+			Type: iface.Type,
+			Ipv4Addr: iface.Ipv4Addr,
+			MacAddr: iface.Macaddr,
+			Bridge: settings.BridgeName,
+>>>>>>> feature-qemu-driver
 			BridgeHelper: settings.QemuBridgeHelper,
 		})
 	}
@@ -210,15 +218,31 @@ func runCmd(cmd string, args []string) error {
 	return nil
 }
 
-func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap func(machine *Machine) map[string]string) error {
+func renderData(keyPath string, key string, value interface{}) {
+	switch value.(type) {
+	case string:
+		ioutil.WriteFile(filepath.Join(keyPath, key), []byte(value.(string)), 0644)
+		return
+	default:
+		kp := filepath.Join(keyPath, key)
+		os.MkdirAll(kp, os.ModePerm)
+		for key, value := range value.(map[string]interface{}) {
+			renderData(kp, key, value)
+		}
+	}
+}
+
+func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap func(machine *Machine) map[string]interface{}) error {
 	mountPath := filepath.Join(filepath.Dir(metadataDrive.Path), "meta-data")
 
 	os.MkdirAll(mountPath, os.ModePerm)
 	if err := runCmd("mount", []string{metadataDrive.Path, mountPath}); err != nil {
 		return errors.Errorf("Error: %s", err)
 	}
+
 	for key, value := range datamap(d.machine) {
-		ioutil.WriteFile(filepath.Join(mountPath, key), []byte(value), 0644)
+		// ioutil.WriteFile(filepath.Join(mountPath, key), []byte(value), 0644)
+		renderData(mountPath, key, value)
 	}
 
 	if err := runCmd("umount", []string{mountPath}); err != nil {
@@ -235,13 +259,16 @@ func (d *QEMUHypervisorDriver) buildMetadriveBase(metadrive *Image) error {
 		return errors.Errorf("Error: %s", err)
 	}
 
-	return d.addMetadata(metadrive, func(machine *Machine) map[string]string {
-		metadataMap := make(map[string]string)
+	return d.addMetadata(metadrive, func(machine *Machine) map[string]interface{} {
+		metadataMap := make(map[string]interface{})
 		metadataMap["hostname"] = machine.Name
-		for _, nic := range machine.Nics {
+		for idx, nic := range machine.Nics {
 			if nic.Type == "veth" {
-				metadataMap[fmt.Sprintf("%s_ipv4", nic.IfName)] = nic.Ipv4Addr
-				metadataMap[fmt.Sprintf("%s_mac", nic.IfName)] = nic.MacAddr
+				iface := make(map[string]interface{})
+				iface["ifname"] = nic.IfName
+				iface["ipv4"] = nic.Ipv4Addr
+				iface["mac"] = nic.MacAddr
+				metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 			}
 		}
 		return metadataMap
