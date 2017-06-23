@@ -144,19 +144,11 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 	var netDev []NetDev
 	for idx, iface := range d.template.GetInterfaces() {
 		netDev = append(netDev, NetDev{
-<<<<<<< HEAD
 			IfName:       fmt.Sprintf("%s_%02d", d.machine.Name, idx),
 			Type:         iface.Type,
 			Ipv4Addr:     iface.Ipv4Addr,
 			MacAddr:      iface.Macaddr,
 			Bridge:       settings.BridgeName,
-=======
-			IfName: fmt.Sprintf("%s_%02d", instanceId, idx),
-			Type: iface.Type,
-			Ipv4Addr: iface.Ipv4Addr,
-			MacAddr: iface.Macaddr,
-			Bridge: settings.BridgeName,
->>>>>>> feature-qemu-driver
 			BridgeHelper: settings.QemuBridgeHelper,
 		})
 	}
