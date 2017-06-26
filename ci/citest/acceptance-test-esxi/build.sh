@@ -18,7 +18,8 @@ function run_ssh() {
 
 function build_vm () {
   govc vm.create -ds="$VM_DATASTORE" -iso="$ISO" -iso-datastore="$ISO_DATASTORE" -net="$NETWORK" -g="$OS" -disk="$DISKSPACE" -m="$MEMORY" -on=true -dump=true $VMNAME
-  echo "Waiting for VM to boot up..."
+  echo "Sent command: vm.create -ds=$VM_DATASTORE -iso=$ISO -iso-datastore=$ISO_DATASTORE -net=$NETWORK -g=$OS -disk=$DISKSPACE -m=$MEMORY -on=true -dump=true $VMNAME"
+  echo "Waiting for VM to get created and boot up..."
   max_attempts=100
   while ! govc guest.start -l=${VMUSER}:${VMPASS} -vm=$VMNAME /bin/echo "Test"  2> /dev/null ; do
           sleep 5
@@ -119,6 +120,7 @@ if [[ "$REBUILD" == "true" ]]; then
   #TODO: Shut off VM and copy VMDK & OVF to some kind of backup folder so that they can be imported later.
 
 else
+  echo "Already built"
   #TODO: 
   #Check if vm exists, if not; create by importing vmdk
   #Install and setup openvdc
