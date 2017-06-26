@@ -27,8 +27,8 @@ func TestLXCCmdConsole_ShowOption(t *testing.T) {
 	runConsoleCmd(instance_id, t)
 }
 
-func TestKVMCmdConsole_ShowOption(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/kvm")
+func TestQEMUCmdConsole_ShowOption(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu")
 	instance_id := strings.TrimSpace(stdout.String())
 	runConsoleCmd(instance_id, t)
 }

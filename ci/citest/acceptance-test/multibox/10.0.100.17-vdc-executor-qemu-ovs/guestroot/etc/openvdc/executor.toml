@@ -1,30 +1,25 @@
 [hypervisor]
-driver = "lxc"
+driver = "qemu"
 script-path = "/etc/openvdc/scripts/"
-image-server-uri = "http://10.0.100.12/images"
-cache-path = "/var/cache/lxc/"
 
 [zookeeper]
 endpoint = "zk://10.0.100.10:2181,10.0.100.11:2181,10.0.100.12:2181/openvdc"
 
 [bridges]
-name = "br0"
-type = "linux"
 	[bridges.linux]
-  up-script = "linux-bridge-up.sh.tmpl"
-	down-script = "linux-bridge-down.sh.tmpl"
 
 	[bridges.ovs]
+        name = "br0"
 	up-script = "ovs-up.sh.tmpl"
 	down-script = "ovs-down.sh.tmpl"
 
 
 [executor-api]
 # listen = "0.0.0.0:19372"
-advertise-ip = "10.0.100.16"
+advertise-ip = "10.0.100.17"
 
 [console]
 
-  [console.ssh]
-  # listen = ""
-  advertise-ip = "10.0.100.16"
+[console.ssh]
+# listen = ""
+advertise-ip = "10.0.100.17"

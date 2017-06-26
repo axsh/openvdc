@@ -8,27 +8,27 @@ import (
 	"time"
 )
 
-func TestKVMInstance(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/kvm", `{"interfaces":[{"type":"veth"}], "node_groups":["linuxbr"]}`)
+func TestQEMUInstance(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu", `{"interfaces":[{"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	// maybe we should open the server on a port rather than as file?
-	stdout, err := RunSshWithTimeoutAndReportFail(t, executor_kvm_ip, "echo info name | nc localhost /var/lib/openvdc/instances/"+instance_id+".monitor", 10, 5)
+	stdout, err := RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
 	_, _ = RunSshWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
 
-func TestKVMInstance_LinuxBrNICx2(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/kvm",
+func TestQEMUInstance_LinuxBrNICx2(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu",
 		`{"interfaces":[{"type":"veth"}, {"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunSshWithTimeoutAndReportFail(t, executor_kvm_ip, "echo info name | nc localhost /var/lib/openvdc/instances/"+instance_id+".monitor", 10, 5)
-	stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_00"))
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
+	stdout, _, err := RunSsh(executor_qemu_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_00"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -39,7 +39,7 @@ func TestKVMInstance_LinuxBrNICx2(t *testing.T) {
 			t.Log("bridge link show dev "+instance_id+"_00: ", stdout.String())
 		}
 	}
-	stdout, _, err = RunSsh(executor_lxc_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_01"))
+	stdout, _, err = RunSsh(executor_qemu_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_01"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -54,15 +54,16 @@ func TestKVMInstance_LinuxBrNICx2(t *testing.T) {
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
 
-func TestKVMInstance_OvsNICx2(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/kvm",
+func TestQEMUInstance_OVSBrNICx2(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu",
 		`{"interfaces":[{"type":"vif"}, {"type":"vif"}], "node_groups":["ovs"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunSshWithTimeoutAndReportFail(t, executor_kvm_ovs_ip, "echo info name | nc localhost /var/lib/openvdc/instances/"+instance_id+".monitor", 10, 5)
-	stdout, _, err := RunSsh(executor_lxc_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00"))
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ovs_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
+	stdout, _, err := RunSsh(executor_qemu_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00"))
+
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -70,7 +71,7 @@ func TestKVMInstance_OvsNICx2(t *testing.T) {
 			t.Log("ovs-vsctl port-to-br "+instance_id+"_00", stdout.String())
 		}
 	}
-	stdout, _, err = RunSsh(executor_lxc_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_01"))
+	stdout, _, err = RunSsh(executor_qemu_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_01"))
 	if err != nil {
 		t.Error(err)
 	} else {
