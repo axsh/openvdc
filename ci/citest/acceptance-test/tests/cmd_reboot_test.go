@@ -51,7 +51,7 @@ func testCmdReboot_Centos7(t *testing.T, instance_id string) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- test -f /var/lock/subsys/local", instance_id), 10, 5)
 }
 
-func restCmdReboot_QEMU(t *testing.T) {
+func TestCmdReboot_QEMU(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu", `{"node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 

@@ -4,6 +4,7 @@ package tests
 
 import (
 	"strings"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -15,8 +16,8 @@ func TestQEMUInstance(t *testing.T) {
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	// maybe we should open the server on a port rather than as file?
-	stdout, err := RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
-	_, _ = RunSshWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
+	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
 
