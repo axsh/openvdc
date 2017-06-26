@@ -122,7 +122,7 @@ if [[ "$REBUILD" == "true" ]]; then
   TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
   FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
 
-  ovftool -ds=$VM_DATASTORE -n="backup" $FIXED_URL$VMNAME $FIXED_URL
+  ovftool -ds=$VM_DATASTORE -n="backup" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
 
 else
   echo "Already built"
