@@ -117,8 +117,8 @@ if [[ "$REBUILD" == "true" ]]; then
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesos"
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesosphere-zookeeper"
   
-  #TODO: Shut off VM and copy VMDK & OVF to some kind of backup folder so that they can be imported later.
-
+  sudo shutdown -h 0
+  #TODO: Copy VMDK & OVF to some kind of backup folder so that they can be imported later.
 else
   echo "Already built"
   #TODO: 
