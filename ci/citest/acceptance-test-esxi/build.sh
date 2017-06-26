@@ -106,6 +106,7 @@ function check_env_variables () {
 
 check_dep "ssh"
 check_dep "govc"
+check_dep "ovftool"
 check_env_variables
 
 YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
