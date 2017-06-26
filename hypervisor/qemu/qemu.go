@@ -180,9 +180,10 @@ func (d *QEMUHypervisorDriver) getImage() (string, error) {
 
 		if govalidator.IsURL(d.template.QemuImage.GetDownloadUrl()) {
 			remotePath = d.template.QemuImage.GetDownloadUrl()
-		} else if settings.ImageServerUri != "" {
-			remotePath = settings.ImageServerUri +"/"+ imageFile
-		} else  {
+		} else {
+			if settings.ImageServerUri != "" {
+				remotePath = settings.ImageServerUri +"/"+ imageFile
+			}
 			return "", errors.Errorf("Unable to resolve download_url: %s", d.template.QemuImage.GetDownloadUrl())
 		}
 
