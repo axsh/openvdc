@@ -120,10 +120,10 @@ if [[ "$REBUILD" == "true" ]]; then
   sleep 5
 
   TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
+  FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
 
-  ovftool -ds=$VM_DATASTORE -n='backup' "$TRIMMEDURL$VMNAME" "$TRIMMEDURL"
+  ovftool -ds=$VM_DATASTORE -n="backup" $FIXED_URL$VMNAME $FIXED_URL
 
-  #TODO: Copy VMDK & OVF to some kind of backup folder so that they can be imported later.
 else
   echo "Already built"
   #TODO: 
