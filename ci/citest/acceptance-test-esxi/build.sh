@@ -116,8 +116,13 @@ if [[ "$REBUILD" == "true" ]]; then
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesos"
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesosphere-zookeeper"
-  
-  sudo shutdown -h 0
+  run_ssh ${VMUSER}@$IP_ADDR "shutdown -h 0"
+  sleep 5
+
+  TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
+
+  ovftool -ds=$VM_DATASTORE -n='backup' "$TRIMMEDURL$VMNAME" "$TRIMMEDURL"
+
   #TODO: Copy VMDK & OVF to some kind of backup folder so that they can be imported later.
 else
   echo "Already built"
