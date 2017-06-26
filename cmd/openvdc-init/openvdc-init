@@ -3,7 +3,7 @@
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
 
 METADRIVE_LOCATION="/metadata"
-METADRIVE_PATH="/dev/fd0 "
+METADRIVE_PATH="/dev/fd0"
 LOGFILE="${LOGFILE:-/var/log/openvdc/openvdc.log}"
 
 VDC_USER="${VDC_USER:-openvdc}"
@@ -61,7 +61,7 @@ set_vdc_user() {
     fi
     # set automatic login
     if [[ "${AUTOLOGIN}" == "true" ]] ; then
-        grep -q "${VDC_USER}" /etc/systemd/system/getty.target.wants/getty@ttyS0.service || {
+        grep -q "${VDC_USER}" /etc/systemd/system/getty.target.wants/getty\@ttyS0.service || {
             sed -i 's,\/agetty,\/agetty --autologin '${VDC_USER}',g' /etc/systemd/system/getty.target.wants/getty\@ttyS0.service
             echo "Autologin as ${VDC_USER}"
         }
