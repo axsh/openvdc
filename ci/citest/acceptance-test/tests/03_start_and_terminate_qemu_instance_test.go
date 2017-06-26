@@ -27,8 +27,8 @@ func TestQEMUInstance_LinuxBrNICx2(t *testing.T) {
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
-	stdout, _, err := RunSsh(executor_lxc_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_00"))
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
+	stdout, _, err := RunSsh(executor_qemu_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_00"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -39,7 +39,7 @@ func TestQEMUInstance_LinuxBrNICx2(t *testing.T) {
 			t.Log("bridge link show dev "+instance_id+"_00: ", stdout.String())
 		}
 	}
-	stdout, _, err = RunSsh(executor_lxc_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_01"))
+	stdout, _, err = RunSsh(executor_qemu_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_01"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -61,8 +61,8 @@ func TestQEMUInstance_OVSBrNICx2(t *testing.T) {
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ovs_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
-	stdout, _, err := RunSsh(executor_lxc_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00"))
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ovs_ip, "echo info name | ncat -U /var/openvdc/instances/"+instance_id+"/monitor.socket", 10, 5)
+	stdout, _, err := RunSsh(executor_qemu_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00"))
 
 	if err != nil {
 		t.Error(err)
@@ -71,7 +71,7 @@ func TestQEMUInstance_OVSBrNICx2(t *testing.T) {
 			t.Log("ovs-vsctl port-to-br "+instance_id+"_00", stdout.String())
 		}
 	}
-	stdout, _, err = RunSsh(executor_lxc_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_01"))
+	stdout, _, err = RunSsh(executor_qemu_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_01"))
 	if err != nil {
 		t.Error(err)
 	} else {
