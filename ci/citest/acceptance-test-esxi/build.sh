@@ -26,6 +26,17 @@ function build_vm () {
           [[ $attempt -eq ${max_attempts} ]] && exit 1
   done
   echo "VM has now booted up."
+
+  add_ssh_key
+  sleep 5
+  run_ssh ${VMUSER}@$IP_ADDR "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
+  run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesos"
+  run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesosphere-zookeeper"
+  run_ssh ${VMUSER}@$IP_ADDR "shutdown -h 0"
+  sleep 5
+
+  echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
+  ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
 }
 
 function add_ssh_key () {
@@ -102,6 +113,9 @@ YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
 VMNAME="$BRANCH"
 BACKUPNAME="${VMNAME}_BACKUP"
 
+TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
+FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
+
 curl -fs --head "${YUM_REPO_URL}" > /dev/null
 if [[ "$?" != "0" ]]; then
   echo "Unable to reach '${YUM_REPO_URL}'."
@@ -110,35 +124,29 @@ if [[ "$?" != "0" ]]; then
 fi
 
 if [[ "$REBUILD" == "true" ]]; then
-  
-  #TODO: Use bashsteps at some later point?
+  if [[ $(govc vm.info $VMNAME -A) ]]; then
+    echo "Old VM found. Attempting to delete it."
+    govc guest.rm $VMNAME
+  fi
+  if [[ $(govc vm.info $BACKUPNAME -A) ]]; then
+    echo "Old Backup found. Attempting to delete it."
+    govc guest.rm $BACKUPNAME
+  fi
+
   build_vm
-  add_ssh_key
-  sleep 5
-  run_ssh ${VMUSER}@$IP_ADDR "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
-  run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesos"
-  run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesosphere-zookeeper"
-  run_ssh ${VMUSER}@$IP_ADDR "shutdown -h 0"
-  sleep 5
 
-  TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
-  FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
-
-  echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
-  ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
 else
-  echo "Already built"
-fi
+  if [[ $(govc vm.info $VMNAME -A) ]]; then
+    echo "Old VM found. Attempting to delete it."
+    govc guest.rm $VMNAME
+  fi
 
-if [[ $(govc vm.info $VMNAME -A) ]]; then
-  echo "VM $VMNAME found."
-else 
-    if [[ $(govc vm.info $BACKUPNAME -A) ]]; then
+  if [[ $(govc vm.info $BACKUPNAME -A) ]]; then
       echo "Creating VM. ${BACKUPNAME} > ${VMNAME} "
       ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
     else
-      echo "Neither $VMNAME nor $BACKUPNAME exists. Set REBUILD to true and run again."
-      exit 1
+      echo "${BACKUPNAME} not found. Building VM:"
+      build_vm
     fi
 fi
 
