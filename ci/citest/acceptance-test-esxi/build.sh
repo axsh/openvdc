@@ -1,7 +1,6 @@
 #!/bin/bash
 
 IP_ADDR=192.168.2.103
-VMNAME="test"
 DISKSPACE="20GB"
 MEMORY="8192"
 NETWORK="VM Network"
@@ -100,6 +99,9 @@ check_env_variables
 
 YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
 
+VMNAME="$BRANCH"
+BACKUPNAME="${VMNAME}_BACKUP"
+
 curl -fs --head "${YUM_REPO_URL}" > /dev/null
 if [[ "$?" != "0" ]]; then
   echo "Unable to reach '${YUM_REPO_URL}'."
@@ -122,11 +124,24 @@ if [[ "$REBUILD" == "true" ]]; then
   TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
   FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
 
-  ovftool -ds=$VM_DATASTORE -n="backup" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
-
+  echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
+  ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
 else
   echo "Already built"
-  #TODO: 
-  #Check if vm exists, if not; create by importing vmdk
-  #Install and setup openvdc
 fi
+
+if [[ $(govc vm.info $VMNAME -A) ]]; then
+  echo "VM $VMNAME found."
+else 
+    if [[ $(govc vm.info $BACKUPNAME -A) ]]; then
+      echo "Creating VM. ${BACKUPNAME} > ${VMNAME} "
+      ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
+    else
+      echo "Neither $VMNAME nor $BACKUPNAME exists. Set REBUILD to true and run again."
+      exit 1
+    fi
+fi
+
+govc vm.power -on=true $VMNAME
+
+#Todo: install openvdc
