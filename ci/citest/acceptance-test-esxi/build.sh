@@ -15,10 +15,8 @@ function run_ssh() {
         $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
 }
 
-function build_vm () {
-  govc vm.create -ds="$VM_DATASTORE" -iso="$ISO" -iso-datastore="$ISO_DATASTORE" -net="$NETWORK" -g="$OS" -disk="$DISKSPACE" -m="$MEMORY" -on=true -dump=true $VMNAME
-  echo "Sent command: vm.create -ds=$VM_DATASTORE -iso=$ISO -iso-datastore=$ISO_DATASTORE -net=$NETWORK -g=$OS -disk=$DISKSPACE -m=$MEMORY -on=true -dump=true $VMNAME"
-  echo "Waiting for VM to get created and boot up..."
+function wait_for_vm_to_boot () {
+  echo "Waiting for VM to boot up..."
   max_attempts=100
   while ! govc guest.start -l=${VMUSER}:${VMPASS} -vm=$VMNAME /bin/echo "Test"  2> /dev/null ; do
           sleep 5
@@ -26,6 +24,13 @@ function build_vm () {
           [[ $attempt -eq ${max_attempts} ]] && exit 1
   done
   echo "VM has now booted up."
+}
+
+function build_vm () {
+  govc vm.create -ds="$VM_DATASTORE" -iso="$ISO" -iso-datastore="$ISO_DATASTORE" -net="$NETWORK" -g="$OS" -disk="$DISKSPACE" -m="$MEMORY" -on=true -dump=true $VMNAME
+  echo "Sent command: vm.create -ds=$VM_DATASTORE -iso=$ISO -iso-datastore=$ISO_DATASTORE -net=$NETWORK -g=$OS -disk=$DISKSPACE -m=$MEMORY -on=true -dump=true $VMNAME"
+  
+  wait_for_vm_to_boot
 
   add_ssh_key
   sleep 5
@@ -109,14 +114,13 @@ check_dep "govc"
 check_dep "ovftool"
 check_env_variables
 
-YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
-
 VMNAME="$BRANCH"
 BACKUPNAME="${VMNAME}_BACKUP"
 
 TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
 FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
 
+YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
 curl -fs --head "${YUM_REPO_URL}" > /dev/null
 if [[ "$?" != "0" ]]; then
   echo "Unable to reach '${YUM_REPO_URL}'."
@@ -153,4 +157,16 @@ fi
 
 govc vm.power -on=true $VMNAME
 
-#Todo: install openvdc
+wait_for_vm_to_boot
+sleep 5
+
+run_ssh ${VMUSER}@$IP_ADDR "cat > /etc/yum.repos.d/openvdc.repo << EOS
+[openvdc]
+name=OpenVDC
+failovermethod=priority
+baseurl=${YUM_REPO_URL}
+enabled=1
+gpgcheck=0
+EOS"
+
+run_ssh ${VMUSER}@$IP_ADDR "yum install -y openvdc"
