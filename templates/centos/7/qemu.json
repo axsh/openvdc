@@ -3,9 +3,10 @@
   "template": {
     "type": "vm/qemu",
     "qemu_image": {
-      "download_url": "local/centos7.qcow2",
+      "download_url": "http:/ci.openvdc.org/img/centos7.qcow2",
       "format": "qcow2"
-    }
+    },
+    "use_kvm": true
   }
 }
 
