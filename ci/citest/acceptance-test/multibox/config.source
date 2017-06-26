@@ -36,6 +36,6 @@ BOXES_DIR="/data/openvdc-ci/boxes"
 CACHE_DIR="/data/openvdc-ci/branches"
 IMG_DIR="/data/openvdc-ci/images"
 
-REBUILD=false
+REBUILD=true
 BRANCH=feature-qemu-console
 RELEASE_SUFFIX=current

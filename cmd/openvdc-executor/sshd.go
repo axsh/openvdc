@@ -4,13 +4,14 @@ import (
 	"crypto"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/axsh/openvdc/model"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"golang.org/x/net/context"
 )
 
@@ -44,6 +45,7 @@ var KeyGenPathList = []string{
 	HostEcdsaKeyPath,
 	HostEd25519KeyPath,
 }
+
 func (sshd *SSHServer) Setup() error {
 	if model.GetBackendCtx(sshd.ctx) == nil {
 		return errors.New("Context does not have model connection")
@@ -52,12 +54,12 @@ func (sshd *SSHServer) Setup() error {
 		// Reading key file
 		buf, err := ioutil.ReadFile(path)
 		if err != nil {
-			return errors.Wrap(err, path + " doesn't exist")
+			return errors.Wrap(err, path+" doesn't exist")
 		}
 		// Check integrity of pem file
 		sshSigner, err := ssh.ParsePrivateKey(buf)
 		if err != nil {
-			return errors.Wrap(err, path + " is not a valid pem file")
+			return errors.Wrap(err, path+" is not a valid pem file")
 		}
 		sshd.config.AddHostKey(sshSigner)
 	}
@@ -167,7 +169,7 @@ Done:
 					_, err := console.Attach(session.console)
 					if err != nil {
 						reply = false
-						log.WithError(err).Error("Failed console.Attach")
+						log.WithError(err).Error("Failed console.Attach\n")
 						break
 					}
 				}
