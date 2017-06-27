@@ -8,6 +8,8 @@ NODES=(
    "10.0.100.13-vdc-executor-null"
    "10.0.100.14-vdc-executor-lxc"
    "10.0.100.15-vdc-executor-lxc-ovs"
+   "10.0.100.16-vdc-executor-kvm"
+   "10.0.100.17-vdc-executor-kvm-ovs"
 )
 
 NETWORK="10.0.100.0"

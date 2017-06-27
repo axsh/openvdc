@@ -19,6 +19,7 @@ func init() {
 func TestCmdTemplateValidate(t *testing.T) {
 	// Regular cases
 	RunCmdAndReportFail(t, "openvdc", "template", "validate", "centos/7/lxc")
+	RunCmdAndReportFail(t, "openvdc", "template", "validate", "centos/7/qemu")
 	RunCmdAndReportFail(t, "openvdc", "template", "validate", "/var/tmp/fixtures/lxc.json")
 	RunCmdAndReportFail(t, "openvdc", "template", "validate", "https://raw.githubusercontent.com/axsh/openvdc/master/templates/centos/7/lxc.json")
 
@@ -32,6 +33,14 @@ func TestCmdTemplateShow(t *testing.T) {
 		js := gjson.ParseBytes(stdout.Bytes())
 		if !js.Get("lxc_template").Exists() {
 			t.Error("lxc_template key not found")
+		}
+	}
+
+	{
+		stdout, _ := RunCmdAndReportFail(t, "openvdc", "template", "show", "centos/7/qemu")
+		js := gjson.ParseBytes(stdout.Bytes())
+		if !js.Get("qemu_image").Exists() {
+			t.Error("qemu_image not found")
 		}
 	}
 
