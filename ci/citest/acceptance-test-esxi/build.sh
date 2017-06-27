@@ -37,6 +37,8 @@ function build_vm () {
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesos"
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesosphere-zookeeper"
+  run_ssh ${VMUSER}@$IP_ADDR "systemctl disable mesos-slave"
+  run_ssh ${VMUSER}@$IP_ADDR "systemctl disable mesos-master"
   run_ssh ${VMUSER}@$IP_ADDR "shutdown -h 0"
   sleep 5
 
@@ -172,3 +174,9 @@ EOS"
 run_ssh ${VMUSER}@$IP_ADDR "yum install -y openvdc"
 run_ssh ${VMUSER}@$IP_ADDR "systemctl enable openvdc-scheduler"
 run_ssh ${VMUSER}@$IP_ADDR "systemctl start openvdc-scheduler"
+
+run_ssh ${VMUSER}@$IP_ADDR "systemctl enable mesos-slave"
+run_ssh ${VMUSER}@$IP_ADDR "systemctl start mesos-slave"
+
+run_ssh ${VMUSER}@$IP_ADDR "systemctl enable mesos-master"
+run_ssh ${VMUSER}@$IP_ADDR "systemctl start mesos-master"
