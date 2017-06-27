@@ -86,8 +86,8 @@
         "format": {
           "type": "string",
           "enum": [
-            "RAW",
-            "QCOW2"
+            "raw",
+            "qcow2"
           ]
         }
       },
@@ -96,7 +96,7 @@
         "format"
       ]
     },
-    "use_kvm" {
+    "use_kvm": {
       "type": "boolean",
       "default": true
     }
