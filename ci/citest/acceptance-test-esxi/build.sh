@@ -170,3 +170,5 @@ gpgcheck=0
 EOS"
 
 run_ssh ${VMUSER}@$IP_ADDR "yum install -y openvdc"
+run_ssh ${VMUSER}@$IP_ADDR "systemctl enable openvdc-scheduler"
+run_ssh ${VMUSER}@$IP_ADDR "systemctl start openvdc-scheduler"
