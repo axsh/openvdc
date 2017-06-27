@@ -35,3 +35,7 @@ BASE_BRANCH="${BASE_BRANCH:-master}"
 BOXES_DIR="/data/openvdc-ci/boxes"
 CACHE_DIR="/data/openvdc-ci/branches"
 IMG_DIR="/data/openvdc-ci/images"
+
+# Used for hardare accelerated virtualization
+# intel: vmx, amd: svm
+ACCEL_TYPE="vmx"
