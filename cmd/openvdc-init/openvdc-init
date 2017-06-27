@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
 
@@ -39,7 +40,7 @@ get_metadata() {
 
     if [[ ! -f "${key}" ]] ; then
         echo "datafile $key not foundr"
-        exit 1
+        return 1
     fi
 
     echo $(cat "${key}")
@@ -55,18 +56,20 @@ set_vdc_user() {
     # give root access
     if [[ "${ROOT_ACCESS}" == "true" ]] ; then
         grep -q "${VDC_USER}" /etc/sudoers || {
-            echo >> "${VDC_USER} ALL=(ALL) NOPASSWD: ALL" /etc/sudoers
+            echo "${VDC_USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
             echo "Adding ${VDC_USER} to sudoers"
         }
     fi
+
     # set automatic login
     if [[ "${AUTOLOGIN}" == "true" ]] ; then
         grep -q "${VDC_USER}" /etc/systemd/system/getty.target.wants/getty\@ttyS0.service || {
-            sed -i 's,\/agetty,\/agetty --autologin '${VDC_USER}',g' /etc/systemd/system/getty.target.wants/getty\@ttyS0.service
+            sed -i 's,\/agetty,\/agetty --noissue --skip-login --login-options "-f '${VDC_USER}'",g' /etc/systemd/system/getty.target.wants/getty\@ttyS0.service
+            sed -i 's,DefaultInstance=tty1,DefaultInstance=tty0,g' /etc/systemd/system/getty.target.wants/getty\@ttyS0.service
+            systemctl daemon-reload
             echo "Autologin as ${VDC_USER}"
         }
-        systemctl enable serial-getty\@ttyS0.service
-        systemctl start serial-getty\@ttyS0.service
+        systemctl restart getty\@ttyS0.service || echo "Failed to restart getty"
     fi
 }
 
@@ -90,13 +93,16 @@ set_network_interfaces() {
 
     (
         for(( i=0; i < ${#nics[@]}; i++)) ; do
+            ip_addr="$(get_metadata ${nics[$i]}/ipv4)"
+            [[ $? -eq 0 ]] || continue
+
             cat <<EOF > "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
 DEVICE=eth${i}
 BOOTPROT=static
 IPV6INIT=yes
 ONBOOT=yes
 TYPE=Ethernet
-IPADDR=$(get_metadata ${nic[$i]}/ipv4)
+IPADDR=${ip_addr}
 NETMASk=255.255.255.0
 EOF
             echo "Creating ifcfg-eth${i}"
@@ -113,3 +119,5 @@ EOF
     set_network_interfaces
     metadata_ops umount
 } > "${LOGFILE}" 2>&1
+
+sync
