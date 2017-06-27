@@ -17,6 +17,7 @@ IND_STEPS=(
     "openvswitch"
     "qemu"
     "kvm"
+    "ncat"
     "mesosphere-repo"
     "mesos-agent"
 )

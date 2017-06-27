@@ -16,6 +16,7 @@ IND_STEPS=(
     "epel"
     "qemu"
     "kvm"
+    "ncat"
     "bridge-utils"
     "mesosphere-repo"
     "mesos-agent"
