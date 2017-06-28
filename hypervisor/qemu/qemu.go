@@ -169,23 +169,37 @@ func (d *QEMUHypervisorDriver) log() *log.Entry {
 	return d.Base.Log
 }
 
+func url2Local(downloadUrl string) (string, error) {
+	parsedUrl, _ := url.Parse(downloadUrl)
+	localPath := settings.CachePath
+
+	if govalidator.IsRequestURL(downloadUrl) {
+		localPath = filepath.Join(localPath, parsedUrl.Host, parsedUrl.Path)
+		if _, err := os.Stat(localPath); err != nil {
+			// strip the filename from path
+			tmp := strings.Split(localPath, "/")
+			os.MkdirAll(strings.Join(tmp[0:len(tmp)-1], "/"), os.ModePerm)
+		}
+	} else {
+		return "", errors.Errorf("Unable to resolve download_url: %s", parsedUrl.String())
+	}
+	return localPath, nil
+}
+
 func (d *QEMUHypervisorDriver) getImage() (string, error) {
-	url := strings.Split(d.template.QemuImage.GetDownloadUrl(), "/")
-	imageFile := url[len(url)-1]
-	imageCachePath := filepath.Join(settings.CachePath, imageFile)
+	imageCachePath, err := url2Local(d.template.QemuImage.GetDownloadUrl())
+	remotePath := d.template.QemuImage.GetDownloadUrl()
+	if err != nil {
+		if settings.ImageServerUri != "" {
+			imageCachePath = filepath.Join(settings.CachePath, remotePath)
+			remotePath = settings.ImageServerUri +"/"+ remotePath
+		} else {
+			return "", err
+		}
+	}
 
 	if _, err := os.Stat(imageCachePath) ; err != nil {
 		d.log().Infoln("Downloading machine image...")
-		var remotePath string
-
-		if govalidator.IsURL(d.template.QemuImage.GetDownloadUrl()) {
-			remotePath = d.template.QemuImage.GetDownloadUrl()
-		} else {
-			if settings.ImageServerUri != "" {
-				remotePath = settings.ImageServerUri +"/"+ imageFile
-			}
-			return "", errors.Errorf("Unable to resolve download_url: %s", d.template.QemuImage.GetDownloadUrl())
-		}
 
 		file, err := os.Create(imageCachePath)
 		if err != nil {
