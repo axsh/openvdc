@@ -4,6 +4,7 @@ package qemu
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -54,11 +55,11 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args []string
 	var err error
 	conChan := make(chan error)
 	con.conChan = conChan
-	exitChan := make(chan string)
 
 	waitClosed := new(sync.WaitGroup)
 	waitClosed.Add(1)
 	go func() {
+		defer waitClosed.Done()
 		b := make([]byte, 8192)
 		for {
 			n, err := param.Stdin.Read(b)
@@ -66,9 +67,18 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args []string
 				errorString = "\nFailed to read from the from the console input buffer\n\n"
 				break
 			}
+
+			fmt.Println(b[0:n]) ////////////////////////////////////////////
+
 			if bytes.Contains(b[0:n], []byte{0x11}) {
-				exitChan <- "exit"
+				fmt.Println("received exit from stdin")
 				errorString = "\nConsole exited by ctrl-q\n\n"
+				fmt.Println("stdin set ctrl-q error string")
+
+				if _, err := connection.Write(b[0:n]); err != nil {
+					errorString = join("", "\nFailed to write to the qemu socket ", socket, " from the buffer\n\n")
+				}
+
 				break
 			}
 			_, err = connection.Write(b[0:n])
@@ -77,40 +87,41 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args []string
 				break
 			}
 		}
-		waitClosed.Done()
 	}()
 
 	waitClosed.Add(1)
 	go func() {
+		defer waitClosed.Done()
 		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
-	loop:
 		for {
-			select {
-			case exit := <-exitChan:
-				if exit == "exit" {
-					break loop
-				}
-			default:
-			}
 			n, err := connection.Read(b)
 			if err != nil {
 				errorString = join("", "\nFailed to read the qemu socket buffer from socket ", socket)
 				break
 			}
+
+			fmt.Println(b[0:n]) /////////////////////////////////////////////////////////
+
+			if bytes.Contains(b[0:n], []byte{0x11}) {
+				fmt.Println("received exit from socket")
+				errorString = "\nConsole exited by ctrl-q\n\n"
+				fmt.Println("socket set ctrl-q error string")
+				break
+			}
+
 			_, err = param.Stdout.Write(b[0:n])
 			if err != nil {
 				errorString = "\nFailed to write to the console stdout buffer\n\n"
 				break
 			}
 		}
-		waitClosed.Done()
 	}()
 
 	// waitClosed.Add(1)
 	// go func() {
 	// 	b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 	// 	for {
-	// 		n, err := // something akin to connection.Stderr.Read(b) is required here to get full console functionality
+	// 		n, err := // something like connection.Stderr.Read(b) is required here to get full console functionality
 	// 		if err != nil {
 	// 			conChan <- errors.Wrap(err, join("", "\nFailed to read the qemu socket buffer from socket ", socket))
 	// 			break
