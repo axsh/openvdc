@@ -175,7 +175,7 @@ Done:
 				}
 				go func() {
 					err := console.Wait()
-					log.WithError(err).Info("Console released")
+					log.WithError(err).Info("Console released") // this err is also logged from the quit chan when not nil...(currently on line 283)
 					quit <- err
 				}()
 			case "signal":
@@ -183,7 +183,7 @@ Done:
 					Signal string
 				}
 				if err := ssh.Unmarshal(r.Payload, &msg); err != nil {
-					log.WithError(err).Error("Failed to parse signal requeyst body")
+					log.WithError(err).Error("Failed to parse signal request body")
 					// Won't break the loop
 					break
 				}

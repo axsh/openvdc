@@ -3,9 +3,7 @@
 package qemu
 
 import (
-	"bufio"
 	"bytes"
-	"io"
 	"net"
 	"os"
 	"strings"
@@ -41,163 +39,97 @@ func join(separator string, args ...string) string {
 	return strings.Join(args, separator)
 }
 
-func (console *qemuConsole) unixSocketConsole(stdin, stdout, stderr *os.File) error {
-	socket := console.machine().Serial // if this socket is closed, we have no way to reopen it...yet
-
-	in := bufio.NewReader(stdin)
-	out := bufio.NewWriter(stdout)
-	stdErr := bufio.NewWriter(stderr)
-
-	connection, err := net.Dial("unix", socket)
-	if err != nil {
-		return errors.Wrap(err, join("", "\nFailed to connect to socket ", socket))
-	}
-
-	conChan := make(chan error)
-	go func(r io.Reader, readErrChan chan error) {
-		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
-		for {
-			n, err := r.Read(b)
-			if err != nil {
-				readErrChan <- errors.Wrap(err, join("", "\nFailed to read the qemu socket buffer from socket ", socket))
-				break
-			}
-
-			if bytes.Contains(b[0:n], []byte{0x01}) {
-				readErrChan <- errors.Wrap(err, "\nConsole exited by ctrl-a\n\n")
-				break
-			}
-
-			_, err = out.Write(b[0:n]) //this err could probably be scoped to only this block.
-			if err != nil {
-				readErrChan <- errors.Wrap(err, "\nFailed to write to the console stdout buffer\n\n")
-				break
-			}
-
-			_, err = stdErr.Write(b[0:n]) //this needs it's own listener to make a console. it is just a terminal as is.
-			if err != nil {
-				readErrChan <- errors.Wrap(err, "\nFailed to write to the console stderr buffer\n\n")
-				break
-			}
-		}
-	}(connection, conChan)
-
-	go func(w io.Writer, writeErrChan chan error) {
-		b := make([]byte, 8192)
-		for {
-			// err is for reads or writes shorter than the buffer size -- should probably retry in that case...
-			n, err := in.Read(b)
-			if err != nil {
-				writeErrChan <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
-				break
-			}
-			if bytes.Contains(b[0:n], []byte{0x11}) {
-				writeErrChan <- errors.Wrap(err, "\nConsole exited by ctrl-q\n\n")
-				break
-			}
-			_, err = w.Write(b[0:n])
-			if err != nil {
-				writeErrChan <- errors.Wrap(err, join("", "\nFailed to write to the qemu socket ", socket, " from the buffer\n\n"))
-				break
-			}
-		}
-	}(connection, conChan)
-
-	console.conChan = conChan
-
-	return nil
-}
-
 func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
 	// if con.machine().State != RUNNING {
 	// 	return nil, errors.New("kvm instance is not in a running state")
 	// }
 
-	fds := make([]*os.File, 6)
-	closeAll := func() {
-		for _, fd := range fds {
-			fd.Close()
-		}
+	socket := con.machine().Serial // if this socket is closed, we have no way to reopen it...yet
+	connection, connErr := net.Dial("unix", socket)
+	if connErr != nil {
+		return nil, errors.Wrap(connErr, join("", "\nFailed to connect to socket ", socket))
 	}
 
+	var errorString string
 	var err error
-	rIn, wIn, err := os.Pipe() // stdin
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed os.Pipe for stdin")
-	}
-	fds = append(fds, rIn, wIn)
-	con.fds = append(con.fds, wIn)
-	// con.fds = append(con.fds, rIn)
-	rOut, wOut, err := os.Pipe() // stdout
-	if err != nil {
-		defer closeAll()
-		return nil, errors.Wrap(err, "Failed os.Pipe for stdout")
-	}
-	fds = append(fds, rOut, wOut)
-	con.fds = append(con.fds, rOut)
-	// con.fds = append(con.fds, wOut)
-	rErr, wErr, err := os.Pipe() // stderr
-	if err != nil {
-		defer closeAll()
-		return nil, errors.Wrap(err, "Failed os.Pipe for stderr")
-	}
-	fds = append(fds, rErr, wErr)
-	con.fds = append(con.fds, rErr)
-	// con.fds = append(con.fds, wErr)
+	conChan := make(chan error)
+	con.conChan = conChan
+	exitChan := make(chan string)
 
 	waitClosed := new(sync.WaitGroup)
-	closeChan := make(chan hypervisor.Closed, 3)
 	waitClosed.Add(1)
 	go func() {
-		_, err := io.Copy(wIn, param.Stdin)
-		// _, err := io.Copy(rIn, param.Stdin)
-		if err == nil {
-			// param.Stdin was closed due to EOF so needs to send EOF to pipe as well
-			wIn.Close()
+		b := make([]byte, 8192)
+		for {
+			n, err := param.Stdin.Read(b)
+			if err != nil {
+				errorString = "\nFailed to read from the from the console input buffer\n\n"
+				break
+			}
+			if bytes.Contains(b[0:n], []byte{0x11}) {
+				exitChan <- "exit"
+				errorString = "\nConsole exited by ctrl-q\n\n"
+				break
+			}
+			_, err = connection.Write(b[0:n])
+			if err != nil {
+				errorString = join("", "\nFailed to write to the qemu socket ", socket, " from the buffer\n\n")
+				break
+			}
 		}
-		// TODO: handle err is not nil case
-		closeChan <- err
-		defer waitClosed.Done()
+		waitClosed.Done()
 	}()
+
 	waitClosed.Add(1)
 	go func() {
-		_, err := io.Copy(param.Stdout, rOut)
-		// _, err := io.Copy(param.Stdout, wOut)
-		closeChan <- err
-		defer waitClosed.Done()
+		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
+	loop:
+		for {
+			select {
+			case exit := <-exitChan:
+				if exit == "exit" {
+					break loop
+				}
+			default:
+			}
+			n, err := connection.Read(b)
+			if err != nil {
+				errorString = join("", "\nFailed to read the qemu socket buffer from socket ", socket)
+				break
+			}
+			_, err = param.Stdout.Write(b[0:n])
+			if err != nil {
+				errorString = "\nFailed to write to the console stdout buffer\n\n"
+				break
+			}
+		}
+		waitClosed.Done()
 	}()
-	waitClosed.Add(1)
-	go func() {
-		_, err := io.Copy(param.Stderr, rErr)
-		// _, err := io.Copy(param.Stderr, wErr)
-		closeChan <- err
-		defer waitClosed.Done()
-	}()
+
+	// waitClosed.Add(1)
+	// go func() {
+	// 	b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
+	// 	for {
+	// 		n, err := // something akin to connection.Stderr.Read(b) is required here to get full console functionality
+	// 		if err != nil {
+	// 			conChan <- errors.Wrap(err, join("", "\nFailed to read the qemu socket buffer from socket ", socket))
+	// 			break
+	// 		}
+	// 		_, err = param.Stderr.Write(b[0:n])
+	// 		if err != nil {
+	// 			conChan <- errors.Wrap(err, "\nFailed to write to the console stderr buffer\n\n")
+	// 			break
+	// 		}
+	// 	}
+	// 	waitClosed.Done()
+	// }()
+
 	go func() {
 		waitClosed.Wait()
-		defer close(closeChan)
+		conChan <- errors.Wrap(err, errorString)
 	}()
 
-	if err := con.unixSocketConsole(rIn, wOut, wErr); err != nil {
-		// if err := con.unixSocketConsole(wIn, rOut, rErr); err != nil {
-		defer func() {
-			closeAll()
-			con.fds = []*os.File{}
-		}()
-		return nil, err
-	}
-
-	// Close file descriptors for child process.
-	defer func() {
-		rIn.Close()
-		wOut.Close()
-		wErr.Close()
-		// wIn.Close()
-		// rOut.Close()
-		// rErr.Close()
-	}()
-
-	return closeChan, nil
+	return make(chan hypervisor.Closed), nil // as far as I can tell, this channel never gets used anywhere, but I am leaving it just in case (at any rate the only call I can find at line 169 of sshd.go is ignoring it)
 }
 
 func (d *QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
@@ -207,12 +139,8 @@ func (d *QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
 }
 
 func (con *qemuConsole) Wait() error {
-	// this should return nil when the user escapes the console.
-	conChan := <-con.conChan
-	if conChan != nil {
-		return conChan
-	}
-	return nil
+	// this should return when the user escapes the console.
+	return <-con.conChan
 }
 
 func (con *qemuConsole) ForceClose() error {
