@@ -16,7 +16,7 @@ func TestQEMUInstance(t *testing.T) {
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	// maybe we should open the server on a port rather than as file?
-	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | sudo ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
@@ -28,7 +28,7 @@ func TestQEMUInstance_LinuxBrNICx2(t *testing.T) {
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | ncat -U /var/openvdc/qeum-instances/"+instance_id+"/monitor.socket", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | sudo ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
 	stdout, _, err := RunSsh(executor_qemu_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_00"))
 	if err != nil {
 		t.Error(err)
