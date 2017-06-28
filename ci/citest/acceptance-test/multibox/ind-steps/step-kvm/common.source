@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# possibly useless to wrap this
+function kvm_enbabled {
+    lsmod | grep kmv*
+    return $?
+}
+
+function nested_enabled {
+    local disabled=false
+
+    case ${ACCEL_TYPE} in
+        vmx) [[ "$(cat /sys/module/kvm/intel/parameters/nested)" == "Y" ]] || disabled=true ;;
+        svm) [[ $(cat /sys/module/kvm_amd/parameters/nested) -eq 1 ]] || disabled=true ;;
+    esac
+
+    return $disabled
+}

@@ -8,6 +8,8 @@ NODES=(
    "10.0.100.13-vdc-executor-null"
    "10.0.100.14-vdc-executor-lxc"
    "10.0.100.15-vdc-executor-lxc-ovs"
+   "10.0.100.16-vdc-executor-qemu"
+   "10.0.100.17-vdc-executor-qemu-ovs"
 )
 
 NETWORK="10.0.100.0"
@@ -33,3 +35,7 @@ BASE_BRANCH="${BASE_BRANCH:-master}"
 BOXES_DIR="/data/openvdc-ci/boxes"
 CACHE_DIR="/data/openvdc-ci/branches"
 IMG_DIR="/data/openvdc-ci/images"
+
+# Used for hardare accelerated virtualization
+# intel: vmx, amd: svm
+ACCEL_TYPE="vmx"

@@ -96,9 +96,9 @@
         "format"
       ]
     },
-    "use_kvm" {
+    "use_kvm": {
       "type": "boolean",
-      "default": true
+      "default": false
     }
   }
 }
