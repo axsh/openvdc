@@ -1,6 +1,7 @@
 #!/bin/bash
 
-IP_ADDR=192.168.2.103
+TMP_IP=192.168.2.103
+NEW_IP=192.168.2.110 #Todo: Assign this somehow
 DISKSPACE="20GB"
 MEMORY="8192"
 NETWORK="VM Network"
@@ -8,6 +9,8 @@ ISO_DATASTORE="datastore1"
 ISO="images/centos7ks2.iso"
 VM_DATASTORE="datastore1"
 OS="centos7_64Guest"
+
+IP_ADDR=$TMP_IP
 
 function run_ssh() {
     local key=ssh_key
@@ -26,6 +29,16 @@ function wait_for_vm_to_boot () {
   echo "VM has now booted up."
 }
 
+function get_device_name () {
+  run_ssh ${VMUSER}@$IP_ADDR ip -o link show | awk -F': ' '{print$2}' | grep -Fvx -e lo
+}
+
+function assign_ip () {
+  DEVICE=$(get_device_name)
+  run_ssh ${VMUSER}@$IP_ADDR "sed '/^IPADDR/s/.*/IPADDR=${NEW_IP}/' /etc/sysconfig/network-scripts/ifcfg-${DEVICE} >> /etc/sysconfig/network-scripts/ifcfg-tmp"
+  run_ssh ${VMUSER}@$IP_ADDR "mv -f /etc/sysconfig/network-scripts/ifcfg-tmp /etc/sysconfig/network-scripts/ifcfg-${DEVICE}"
+}
+
 function build_vm () {
   govc vm.create -ds="$VM_DATASTORE" -iso="$ISO" -iso-datastore="$ISO_DATASTORE" -net="$NETWORK" -g="$OS" -disk="$DISKSPACE" -m="$MEMORY" -on=true -dump=true $VMNAME
   echo "Sent command: vm.create -ds=$VM_DATASTORE -iso=$ISO -iso-datastore=$ISO_DATASTORE -net=$NETWORK -g=$OS -disk=$DISKSPACE -m=$MEMORY -on=true -dump=true $VMNAME"
@@ -39,8 +52,10 @@ function build_vm () {
   run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesosphere-zookeeper"
   run_ssh ${VMUSER}@$IP_ADDR "systemctl disable mesos-slave"
   run_ssh ${VMUSER}@$IP_ADDR "systemctl disable mesos-master"
+  assign_ip
   run_ssh ${VMUSER}@$IP_ADDR "shutdown -h 0"
   sleep 5
+  IP_ADDR=$NEW_IP
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
   ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
