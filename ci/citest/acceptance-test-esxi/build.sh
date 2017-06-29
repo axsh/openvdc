@@ -174,8 +174,8 @@ fi
 
 govc vm.power -on=true $VMNAME
 
-wait_for_vm_to_boot
-sleep 5
+echo "Getting VM IP..."
+IP_ADDR=$(govc vm.ip $VMNAME)
 
 run_ssh ${VMUSER}@$IP_ADDR "cat > /etc/yum.repos.d/openvdc.repo << EOS
 [openvdc]
