@@ -10,14 +10,6 @@ endpoint = "zk://10.0.100.10:2181,10.0.100.11:2181,10.0.100.12:2181/openvdc"
 [bridges]
 name = "br0"
 type = "linux"
-	[bridges.linux]
-  up-script = "linux-bridge-up.sh.tmpl"
-	down-script = "linux-bridge-down.sh.tmpl"
-
-	[bridges.ovs]
-	up-script = "ovs-up.sh.tmpl"
-	down-script = "ovs-down.sh.tmpl"
-
 
 [executor-api]
 # listen = "0.0.0.0:19372"

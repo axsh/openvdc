@@ -6,13 +6,8 @@ script-path = "/etc/openvdc/scripts/"
 endpoint = "zk://10.0.100.10:2181,10.0.100.11:2181,10.0.100.12:2181/openvdc"
 
 [bridges]
-	[bridges.linux]
-
-	[bridges.ovs]
-        name = "br0"
-	up-script = "ovs-up.sh.tmpl"
-	down-script = "ovs-down.sh.tmpl"
-
+name = "br0"
+type = "ovs"
 
 [executor-api]
 # listen = "0.0.0.0:19372"
