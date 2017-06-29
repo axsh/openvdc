@@ -18,6 +18,11 @@ function run_ssh() {
         $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
 }
 
+function ssh_cmd() {
+	local cmd="$1"
+	run_ssh ${VMUSER}@$IP_ADDR "$cmd"
+}
+
 function wait_for_vm_to_boot () {
   echo "Waiting for VM to boot up..."
   max_attempts=100
@@ -30,13 +35,13 @@ function wait_for_vm_to_boot () {
 }
 
 function get_device_name () {
-  run_ssh ${VMUSER}@$IP_ADDR ip -o link show | awk -F': ' '{print$2}' | grep -Fvx -e lo
+  ssh_cmd `ip -o link show | awk -F': ' '{print$2}' | grep -Fvx -e lo`
 }
 
 function assign_ip () {
   DEVICE=$(get_device_name)
-  run_ssh ${VMUSER}@$IP_ADDR "sed '/^IPADDR/s/.*/IPADDR=${NEW_IP}/' /etc/sysconfig/network-scripts/ifcfg-${DEVICE} >> /etc/sysconfig/network-scripts/ifcfg-tmp"
-  run_ssh ${VMUSER}@$IP_ADDR "mv -f /etc/sysconfig/network-scripts/ifcfg-tmp /etc/sysconfig/network-scripts/ifcfg-${DEVICE}"
+  ssh_cmd "sed '/^IPADDR/s/.*/IPADDR=${NEW_IP}/' /etc/sysconfig/network-scripts/ifcfg-${DEVICE} >> /etc/sysconfig/network-scripts/ifcfg-tmp"
+  ssh_cmd "mv -f /etc/sysconfig/network-scripts/ifcfg-tmp /etc/sysconfig/network-scripts/ifcfg-${DEVICE}"
 }
 
 function build_vm () {
@@ -47,13 +52,13 @@ function build_vm () {
 
   add_ssh_key
   sleep 5
-  run_ssh ${VMUSER}@$IP_ADDR "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
-  run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesos"
-  run_ssh ${VMUSER}@$IP_ADDR "yum install -y mesosphere-zookeeper"
-  run_ssh ${VMUSER}@$IP_ADDR "systemctl disable mesos-slave"
-  run_ssh ${VMUSER}@$IP_ADDR "systemctl disable mesos-master"
+  ssh_cmd "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
+  ssh_cmd "yum install -y mesos"
+  ssh_cmd "yum install -y mesosphere-zookeeper"
+  ssh_cmd "systemctl disable mesos-slave"
+  ssh_cmd "systemctl disable mesos-master"
   assign_ip
-  run_ssh ${VMUSER}@$IP_ADDR "shutdown -h 0"
+  ssh_cmd "shutdown -h 0"
   sleep 5
   IP_ADDR=$NEW_IP
 
@@ -177,7 +182,7 @@ govc vm.power -on=true $VMNAME
 echo "Getting VM IP..."
 IP_ADDR=$(govc vm.ip $VMNAME)
 
-run_ssh ${VMUSER}@$IP_ADDR "cat > /etc/yum.repos.d/openvdc.repo << EOS
+ssh_cmd "cat > /etc/yum.repos.d/openvdc.repo << EOS
 [openvdc]
 name=OpenVDC
 failovermethod=priority
@@ -186,12 +191,11 @@ enabled=1
 gpgcheck=0
 EOS"
 
-run_ssh ${VMUSER}@$IP_ADDR "yum install -y openvdc"
-run_ssh ${VMUSER}@$IP_ADDR "systemctl enable openvdc-scheduler"
-run_ssh ${VMUSER}@$IP_ADDR "systemctl start openvdc-scheduler"
+ssh_cmd "yum install -y openvdc"
+ssh_cmd "systemctl enable openvdc-scheduler"
+ssh_cmd "systemctl start openvdc-scheduler"
+ssh_cmd "systemctl enable mesos-slave"
+ssh_cmd "systemctl start mesos-slave"
 
-run_ssh ${VMUSER}@$IP_ADDR "systemctl enable mesos-slave"
-run_ssh ${VMUSER}@$IP_ADDR "systemctl start mesos-slave"
-
-run_ssh ${VMUSER}@$IP_ADDR "systemctl enable mesos-master"
-run_ssh ${VMUSER}@$IP_ADDR "systemctl start mesos-master"
+ssh_cmd "systemctl enable mesos-master"
+ssh_cmd "systemctl start mesos-master"
