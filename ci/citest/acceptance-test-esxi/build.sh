@@ -19,7 +19,7 @@ function run_ssh() {
 }
 
 function ssh_cmd() {
-	local cmd="$1"
+	local cmd="${@}"
 	run_ssh ${VMUSER}@$IP_ADDR "$cmd"
 }
 
@@ -35,7 +35,7 @@ function wait_for_vm_to_boot () {
 }
 
 function get_device_name () {
-  ssh_cmd `ip -o link show | awk -F': ' '{print$2}' | grep -Fvx -e lo`
+  ssh_cmd ip -o link show | awk -F': ' '{print$2}' | grep -Fvx -e lo
 }
 
 function assign_ip () {
@@ -52,11 +52,12 @@ function build_vm () {
 
   add_ssh_key
   sleep 5
-  ssh_cmd "yum install -y http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
-  ssh_cmd "yum install -y mesos"
-  ssh_cmd "yum install -y mesosphere-zookeeper"
+  yum_install "http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
+  yum_install "mesos"
+  yum_install "mesosphere-zookeeper"
   ssh_cmd "systemctl disable mesos-slave"
   ssh_cmd "systemctl disable mesos-master"
+
   assign_ip
   ssh_cmd "shutdown -h 0"
   sleep 5
@@ -77,8 +78,9 @@ function add_ssh_key () {
   #TODO: Copy new ssh-keys to cache
 }
 
-function install_yum_package () {
-  local package="$1"  
+function yum_install () {
+  local package="$1"
+  ssh_cmd "yum install -y ${package}"
 }
 
 function check_dep() {
@@ -151,11 +153,11 @@ if [[ "$?" != "0" ]]; then
 fi
 
 if [[ "$REBUILD" == "true" ]]; then
-  if [[ $(govc vm.info $VMNAME -A) ]]; then
+  if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
     govc guest.rm $VMNAME
   fi
-  if [[ $(govc vm.info $BACKUPNAME -A) ]]; then
+  if [[ $(govc vm.info $BACKUPNAME) ]]; then
     echo "Old Backup found. Attempting to delete it."
     govc guest.rm $BACKUPNAME
   fi
@@ -163,12 +165,12 @@ if [[ "$REBUILD" == "true" ]]; then
   build_vm
 
 else
-  if [[ $(govc vm.info $VMNAME -A) ]]; then
+  if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
     govc guest.rm $VMNAME
   fi
 
-  if [[ $(govc vm.info $BACKUPNAME -A) ]]; then
+  if [[ $(govc vm.info $BACKUPNAME) ]]; then
       echo "Creating VM. ${BACKUPNAME} > ${VMNAME} "
       ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
     else
@@ -191,7 +193,7 @@ enabled=1
 gpgcheck=0
 EOS"
 
-ssh_cmd "yum install -y openvdc"
+yum_install "openvdc"
 ssh_cmd "systemctl enable openvdc-scheduler"
 ssh_cmd "systemctl start openvdc-scheduler"
 ssh_cmd "systemctl enable mesos-slave"
