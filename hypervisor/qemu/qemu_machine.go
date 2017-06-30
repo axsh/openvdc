@@ -6,7 +6,9 @@ import (
 	"os/exec"
 	"net"
 	"github.com/pkg/errors"
+	"bufio"
 	"time"
+	"strings"
 )
 
 type State int
@@ -95,16 +97,35 @@ func startStateEvaluation(timeout time.Duration, evaluationFunction func() bool)
 	return passed
 }
 
+
+func (m *Machine) HavePrompt() bool {
+	c, err := net.Dial("unix", m.Serial)
+	buf := bufio.NewReader(c)
+	defer c.Close()
+
+	if err != nil {
+		return false
+		// return errors.Errorf("Failed to connect to serial socket: %s:", d.machine.Serial)
+	}
+	if err := c.SetReadDeadline(time.Now().Add(5*time.Second)); err != nil {
+		return false
+	}
+
+	b, _ := buf.ReadBytes('\n')
+	fmt.Println(string(b))
+	return (strings.Contains(string(b), m.Name))
+}
+
 func (m *Machine) ScheduleState(nextState State, timeout time.Duration, callback func() bool) error {
 	// if m.State == nextState {
 	// 	return errors.Errorf("Already in state %s", stateValues[nextState])
 	// }
-
 	passed := <-startStateEvaluation(timeout, callback)
 	if !passed {
 		return errors.Errorf("Timed out scheduling state %s", stateValues[nextState])
 	}
 
+	fmt.Println("Setting state: " +stateValues[nextState])
 	m.State = nextState
 	return nil
 }
@@ -137,14 +158,14 @@ func (m *Machine) Start(startCmd string) error {
 	m.Process = cmd.Process
 	// TODO: add some error handling
 
-	return m.ScheduleState(STARTING, (30*time.Second), func() bool {
-		return true
+	return m.ScheduleState(STARTING, (30*time.Minute), func() bool {
+		err := m.MonitorCommand("info name")
+		return (err != nil)
 	})
 }
 
 func (m *Machine) MonitorCommand(cmd string) error {
-	c, err := net.Dial("unix", fmt.Sprintf("%s", m.Monitor))
-	fmt.Println(m.Monitor)
+	c, err := net.Dial("unix", m.Monitor)
 	if err != nil {
 		return errors.Errorf("Failed to connect to monitor socket %s:", m.Monitor)
 	}
