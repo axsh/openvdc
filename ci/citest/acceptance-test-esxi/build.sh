@@ -7,7 +7,7 @@ MEMORY="8192"
 NETWORK="VM Network"
 ISO_DATASTORE="datastore1"
 ISO="images/centos7ks2.iso"
-VM_DATASTORE="datastore1"
+VM_DATASTORE="datastore2"
 OS="centos7_64Guest"
 
 IP_ADDR=$TMP_IP
