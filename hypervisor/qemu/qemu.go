@@ -359,7 +359,7 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 		return errors.Wrap(err, "Failed machine.Reboot()")
 	}
 	return d.machine.ScheduleState(REBOOTING, 5*time.Minute, func() bool {
-		return d.machine.HavePrompt()
+		return (d.machine.HavePrompt() == false)
 	})
 }
 

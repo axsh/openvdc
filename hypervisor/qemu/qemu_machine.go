@@ -97,7 +97,6 @@ func startStateEvaluation(timeout time.Duration, evaluationFunction func() bool)
 	return passed
 }
 
-
 func (m *Machine) HavePrompt() bool {
 	c, err := net.Dial("unix", m.Serial)
 	buf := bufio.NewReader(c)
@@ -105,27 +104,23 @@ func (m *Machine) HavePrompt() bool {
 
 	if err != nil {
 		return false
-		// return errors.Errorf("Failed to connect to serial socket: %s:", d.machine.Serial)
 	}
 	if err := c.SetReadDeadline(time.Now().Add(5*time.Second)); err != nil {
 		return false
 	}
 
 	b, _ := buf.ReadBytes('\n')
-	fmt.Println(string(b))
 	return (strings.Contains(string(b), m.Name))
 }
 
+// since machine struct does not get saved in memory for each instance there may not be any points
+// in scheduling states as they are not stored anywhere
 func (m *Machine) ScheduleState(nextState State, timeout time.Duration, callback func() bool) error {
-	// if m.State == nextState {
-	// 	return errors.Errorf("Already in state %s", stateValues[nextState])
-	// }
 	passed := <-startStateEvaluation(timeout, callback)
 	if !passed {
 		return errors.Errorf("Timed out scheduling state %s", stateValues[nextState])
 	}
 
-	fmt.Println("Setting state: " +stateValues[nextState])
 	m.State = nextState
 	return nil
 }
@@ -150,7 +145,6 @@ func (m *Machine) Start(startCmd string) error {
 	cmdLine := &cmdLine{args: make([]string, 0)}
 
 	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m)...)
-	fmt.Println(cmd.Args)
 	if  err := cmd.Run(); err != nil {
 		return errors.Errorf("Failed to execute cmd: %s", cmd.Args)
 	}
@@ -188,7 +182,7 @@ func (m *Machine) Stop() error {
 
 func (m *Machine) Reboot() error {
 	m.MonitorCommand("system_reset")
-	return m.ScheduleState(RUNNING, (30*time.Second), func() bool {
-		return true
+	return m.ScheduleState(RUNNING, (5*time.Minute), func() bool {
+		return m.HavePrompt()
 	})
 }
