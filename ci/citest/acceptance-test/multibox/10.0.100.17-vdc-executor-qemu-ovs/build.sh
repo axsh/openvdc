@@ -20,7 +20,10 @@ IND_STEPS=(
     "ncat"
     "mesosphere-repo"
     "mesos-agent"
+    "vdc-images"
 )
+
+image_type=qemu
 
 build "${IND_STEPS[@]}"
 

@@ -349,6 +349,7 @@ func (d *QEMUHypervisorDriver) StopInstance() error {
 	}
 
 	return d.machine.ScheduleState(STOPPED, 5*time.Minute, func() bool {
+		// TODO: if states are to be kept, implement a way to evaluate that the instance is stopped (check process id? check serial i/o?)
 		return true
 	})
 }

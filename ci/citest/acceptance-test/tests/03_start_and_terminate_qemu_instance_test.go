@@ -15,7 +15,6 @@ func TestQEMUInstance(t *testing.T) {
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	// maybe we should open the server on a port rather than as file?
 	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | sudo ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)

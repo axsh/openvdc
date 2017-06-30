@@ -20,6 +20,7 @@ IND_STEPS=(
     "bridge-utils"
     "mesosphere-repo"
     "mesos-agent"
+    "vdc-images"
 )
 
 build "${IND_STEPS[@]}"
