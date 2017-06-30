@@ -4,7 +4,10 @@
 function cache_qemu_image () {
     : "${LOCAL_STORAGE_PATH:?"Needs to be set."}"
 
-    local img_url="${1}" path="${img_url#*//}" path="${path%/*}" img_file="${img_url##*/}" 
+    local img_url="${1}"
+    local path="${img_url#*//}"
+    local img_file="${img_url##*/}"
+    local path="${path%/*}"
 
     (
         $starting_step "Downloading image"
