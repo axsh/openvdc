@@ -246,6 +246,7 @@ Done:
 				}
 
 				// TODO: Skip /bin/sh -c if .Command does not contain shell keywords.
+				// shouldn't we let the user specify the shell of their choosing rather than forcing bourne?
 				if _, err := console.Exec(session.console, []string{"/bin/sh", "-c", execMsg.Command}); err != nil {
 					log.WithError(err).Error("Failed console.Exec")
 					reply = false
