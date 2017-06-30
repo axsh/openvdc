@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TMP_IP=192.168.2.103
-NEW_IP=192.168.2.110 #Todo: Assign this somehow
+NEW_IP=192.168.2.112 #Todo: Assign this somehow
 DISKSPACE="20GB"
 MEMORY="8192"
 NETWORK="VM Network"
@@ -13,23 +13,23 @@ OS="centos7_64Guest"
 IP_ADDR=$TMP_IP
 
 function run_ssh() {
-    local key=ssh_key
-    [[ -f ${key} ]] &&
-        $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
+  local key=ssh_key
+  [[ -f ${key} ]] &&
+  $(type -P ssh) -i "${key}" -o 'StrictHostKeyChecking=no' -o 'LogLevel=quiet' -o 'UserKnownHostsFile /dev/null' "${@}"
 }
 
 function ssh_cmd() {
-	local cmd="${@}"
-	run_ssh ${VMUSER}@$IP_ADDR "$cmd"
+  local cmd="${@}"
+  run_ssh ${VMUSER}@$IP_ADDR "$cmd"
 }
 
 function wait_for_vm_to_boot () {
   echo "Waiting for VM to boot up..."
   max_attempts=100
   while ! govc guest.start -l=${VMUSER}:${VMPASS} -vm=$VMNAME /bin/echo "Test"  2> /dev/null ; do
-          sleep 5
-          attempt=$(( attempt + 1 ))
-          [[ $attempt -eq ${max_attempts} ]] && exit 1
+    sleep 5
+    attempt=$(( attempt + 1 ))
+    [[ $attempt -eq ${max_attempts} ]] && exit 1
   done
   echo "VM has now booted up."
 }
@@ -95,18 +95,18 @@ function check_dep() {
 
 function check_env_variables () {
   if [[ -z "${VMUSER}" ]] ; then
-     echo "The VMUSER variable needs to be set."
-     exit 1
+    echo "The VMUSER variable needs to be set."
+    exit 1
   fi
 
   if [[ -z "${VMPASS}" ]] ; then
-     echo "The VMPASS variable needs to be set."
-     exit 1
+    echo "The VMPASS variable needs to be set."
+    exit 1
   fi
 
   if [[ -z "${GOVC_URL}" ]] ; then
-     echo "The GOVC_URL variable needs to be set. Example: https://username:password@ip/sdk"
-     exit 1
+    echo "The GOVC_URL variable needs to be set. Example: https://username:password@ip/sdk"
+    exit 1
   fi
 
   if [[ -z "${GOVC_DATACENTER}" ]] ; then
@@ -161,9 +161,7 @@ if [[ "$REBUILD" == "true" ]]; then
     echo "Old Backup found. Attempting to delete it."
     govc guest.rm $BACKUPNAME
   fi
-
   build_vm
-
 else
   if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
