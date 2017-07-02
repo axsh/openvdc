@@ -23,6 +23,8 @@ IND_STEPS=(
     "vdc-images"
 )
 
+image_type=qemu
+
 build "${IND_STEPS[@]}"
 
 # This is not part of the ind-steps because we don't want OpenVDC installed in
