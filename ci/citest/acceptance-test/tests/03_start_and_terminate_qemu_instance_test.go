@@ -14,7 +14,7 @@ func TestQEMUInstance(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 
 	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | sudo ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
@@ -26,7 +26,7 @@ func TestQEMUInstance_LinuxBrNICx2(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | sudo ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
 	stdout, _, err := RunSsh(executor_qemu_ip, fmt.Sprintf("/usr/sbin/bridge link show dev %s", instance_id+"_00"))
 	if err != nil {
@@ -60,7 +60,7 @@ func TestQEMUInstance_OVSBrNICx2(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 
 	RunCmdAndReportFail(t, "openvdc", "show", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_qemu_ovs_ip, "echo info name | sudo ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
 	stdout, _, err := RunSsh(executor_qemu_ovs_ip, fmt.Sprintf("sudo /usr/bin/ovs-vsctl port-to-br %s", instance_id+"_00"))
 

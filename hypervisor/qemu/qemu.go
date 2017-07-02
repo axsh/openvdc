@@ -337,7 +337,7 @@ func (d *QEMUHypervisorDriver) StartInstance() error {
 		return errors.Wrap(err, "Failed machien.Start()")
 	}
 
-	return d.machine.ScheduleState(RUNNING, 5*time.Minute, func () bool {
+	return d.machine.ScheduleState(RUNNING, 8*time.Minute, func () bool {
 		return d.machine.HavePrompt()
 	})
 }
@@ -348,7 +348,7 @@ func (d *QEMUHypervisorDriver) StopInstance() error {
 		return errors.Wrap(err, "Failed machine.Stop()")
 	}
 
-	return d.machine.ScheduleState(STOPPED, 5*time.Minute, func() bool {
+	return d.machine.ScheduleState(STOPPED, 8*time.Minute, func() bool {
 		// TODO: if states are to be kept, implement a way to evaluate that the instance is stopped (check process id? check serial i/o?)
 		return true
 	})
@@ -359,7 +359,7 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 	if err := d.machine.Reboot(); err != nil {
 		return errors.Wrap(err, "Failed machine.Reboot()")
 	}
-	return d.machine.ScheduleState(REBOOTING, 5*time.Minute, func() bool {
+	return d.machine.ScheduleState(REBOOTING, 8*time.Minute, func() bool {
 		return (d.machine.HavePrompt() == false)
 	})
 }

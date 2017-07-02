@@ -55,9 +55,9 @@ func TestCmdReboot_QEMU(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu", `{"node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
 
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
