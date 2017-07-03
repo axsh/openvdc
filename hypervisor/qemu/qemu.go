@@ -339,7 +339,7 @@ func (d *QEMUHypervisorDriver) StartInstance() error {
 	}
 
 	return d.machine.ScheduleState(RUNNING, 10*time.Minute, func () bool {
-		return d.machine.HavePrompt()
+		return d.machine.WaitForPrompt()
 	})
 }
 
@@ -361,7 +361,7 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 		return errors.Wrap(err, "Failed machine.Reboot()")
 	}
 	return d.machine.ScheduleState(RUNNING, 10*time.Minute, func() bool {
-		return d.machine.HavePrompt()
+		return d.machine.WaitForPrompt()
 	})
 }
 

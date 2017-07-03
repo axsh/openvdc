@@ -97,20 +97,54 @@ func startStateEvaluation(timeout time.Duration, evaluationFunction func() bool)
 	return passed
 }
 
+func (m *Machine) promptPattern () string {
+	return fmt.Sprintf("openvdc@%s", m.Name)
+}
+
 func (m *Machine) HavePrompt() bool {
 	c, err := net.Dial("unix", m.Serial)
-	buf := bufio.NewReader(c)
-	defer c.Close()
-
 	if err != nil {
 		return false
 	}
+
+	matchprompt := make(chan bool, 1)
+	buf := bufio.NewReader(c)
+	go func() {
+		defer c.Close()
+		c.SetReadDeadline(time.Now().Add(time.Second))
+		tries := 0
+		for {
+			if tries > 10 {
+				matchprompt<-false
+				return
+			}
+			line, _, _ := buf.ReadLine()
+			if strings.Contains(string(line), m.promptPattern()) {
+				matchprompt<-true
+				return
+			}
+			tries = tries + 1
+		}
+	}()
+
+	// send new line in order to trigger the prompt
+	fmt.Fprintf(c, "\n")
+	return <-matchprompt
+}
+
+func (m *Machine) WaitForPrompt() bool {
+	c, err := net.Dial("unix", m.Serial)
+	defer c.Close()
+	if err != nil {
+		return false
+	}
+	buf := bufio.NewReader(c)
+
 	if err := c.SetReadDeadline(time.Now().Add(5*time.Second)); err != nil {
 		return false
 	}
-
 	b, _ := buf.ReadBytes('\n')
-	return (strings.Contains(string(b), m.Name))
+	return (strings.Contains(string(b), m.promptPattern()))
 }
 
 // since machine struct does not get saved in memory for each instance there may not be any points
