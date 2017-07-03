@@ -152,7 +152,7 @@ func (m *Machine) Start(startCmd string) error {
 	m.Process = cmd.Process
 	// TODO: add some error handling
 
-	return m.ScheduleState(STARTING, (30*time.Minute), func() bool {
+	return m.ScheduleState(STARTING, (10*time.Minute), func() bool {
 		err := m.MonitorCommand("info name")
 		return (err != nil)
 	})
@@ -182,7 +182,7 @@ func (m *Machine) Stop() error {
 
 func (m *Machine) Reboot() error {
 	m.MonitorCommand("system_reset")
-	return m.ScheduleState(RUNNING, (8*time.Minute), func() bool {
-		return m.HavePrompt()
+	return m.ScheduleState(REBOOTING, (10*time.Minute), func() bool {
+		return (d.machine.HavePrompt() == false)
 	})
 }
