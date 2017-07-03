@@ -1,0 +1,9 @@
+{
+  "title": "CentOS7",
+  "template": {
+    "type": "vm/vmware",
+    "vcpu": 1,
+    "memory_gb": 1,
+    "diskspace": "10GB"
+  }
+}
