@@ -160,6 +160,14 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 				if agentAttrs.Hypervisor == "null" {
 					return offer
 				}
+			case *model.Template_Vmware:
+				if agentAttrs.Hypervisor == "vmware" {
+					vmware := i.GetTemplate().GetVmware()
+					if !model.IsMatchingNodeGroups(vmware, agentAttrs.NodeGroups) {
+						return nil
+					}
+					return offer
+				}
 			default:
 				log.Warnf("Unknown template type: %T", t)
 			}
