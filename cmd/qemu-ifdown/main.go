@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"os/exec"
-	"fmt"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/viper"
