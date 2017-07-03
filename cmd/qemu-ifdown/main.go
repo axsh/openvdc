@@ -39,13 +39,11 @@ func main () {
 	ifname := os.Args[1]
 	switch config.GetString("bridges.type") {
 	case "linux":
-		runCmd("brctl", []string{"delif", config.GetString("bridges.name"), ifname})
+		runCmd("ip", []string{"link", "set", "dev" ifname, "nomaster"})
 	case "ovs":
 		runCmd("ovs-vsctl", []string{"del-port", config.GetString("bridges.name"), ifname})
 	default:
 		// thrown error
 	}
-	runCmd("ip", []string{"link", "set", "dev", ifname, "down"})
-	fmt.Println(config)
-	fmt.Println(os.Args)
+	runCmd("ip", []string{"link", "set", "ifname, "down"})
 }

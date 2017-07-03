@@ -16,7 +16,6 @@ var DefaultConfPath string
 func runCmd(cmd string, args []string) {
 	c := exec.Command(cmd, args...)
 	c.Run()
-	fmt.Println(c.Args)
 }
 
 func init () {
@@ -40,14 +39,11 @@ func main () {
 	ifname := os.Args[1]
 	switch config.GetString("bridges.type") {
 	case "linux":
-		runCmd("brctl", []string{"addif", config.GetString("bridges.name"), ifname})
+		runCmd("ip", []string{"link", "set", "dev", ifname, "master", config.GetString("bridges.name")})
 	case "ovs":
 		runCmd("ovs-vsctl", []string{"add-port", config.GetString("bridges.name"), ifname})
 	default:
 		// throw error
 	}
-	runCmd("ip", []string{"link", "set", "dev", ifname, "up"})
-
-	fmt.Println(config)
-	fmt.Println(os.Args)
+	runCmd("ip", []string{"link", "set", ifname, "up"})
 }
