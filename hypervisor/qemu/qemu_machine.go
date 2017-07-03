@@ -183,6 +183,6 @@ func (m *Machine) Stop() error {
 func (m *Machine) Reboot() error {
 	m.MonitorCommand("system_reset")
 	return m.ScheduleState(REBOOTING, (10*time.Minute), func() bool {
-		return (d.machine.HavePrompt() == false)
+		return (m.HavePrompt() == false)
 	})
 }
