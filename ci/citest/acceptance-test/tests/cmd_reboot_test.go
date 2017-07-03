@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestCmdReboot(t *testing.T) {
+func TestLXCCmdReboot(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
