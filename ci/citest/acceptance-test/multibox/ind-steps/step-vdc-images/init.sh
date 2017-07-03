@@ -7,7 +7,7 @@ case "${image_type}" in
         ;;
     lxc) # stores on local image server
         IMAGES=( "${LXC_IMAGES[@]}" )
-        LOCAL_STORAGE_PATH="${NODE_DIR}/guestroot/var/ww/html/images"
+        LOCAL_STORAGE_PATH="${NODE_DIR}/guestroot/var/www/html/images"
         ;;
     *)
         echo "Unknown image type."
