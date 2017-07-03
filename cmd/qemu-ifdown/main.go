@@ -17,7 +17,7 @@ func runCmd(cmd string, args []string) {
 	c.Run()
 }
 
-func init () {
+func init() {
 	viper.SetDefault("bridges.type", "linux")
 	viper.SetDefault("bridges.name", "br0")
 	viper.SetConfigFile(DefaultConfPath)
@@ -33,7 +33,7 @@ func init () {
 	}
 }
 
-func main () {
+func main() {
 	config := viper.GetViper()
 	ifname := os.Args[1]
 	switch config.GetString("bridges.type") {

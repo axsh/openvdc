@@ -1,14 +1,15 @@
 package qemu
 
 import (
+	"bufio"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
-	"net"
-	"github.com/pkg/errors"
-	"bufio"
-	"time"
 	"strings"
+	"time"
+
+	"github.com/pkg/errors"
 )
 
 type State int
@@ -25,24 +26,24 @@ const (
 )
 
 var stateValues = map[State]string{
-	STOPPED : "STOPPED",
-	STARTING : "STARTING",
-	RUNNING : "RUNNING",
-	STOPPING : "STOPPING",
-	REBOOTING : "REBOOTING",
-	SHUTTINGDOWN : "SHUTTINGDOWN",
-	FAILED : "FAILED",
+	STOPPED:      "STOPPED",
+	STARTING:     "STARTING",
+	RUNNING:      "RUNNING",
+	STOPPING:     "STOPPING",
+	REBOOTING:    "REBOOTING",
+	SHUTTINGDOWN: "SHUTTINGDOWN",
+	FAILED:       "FAILED",
 }
 
 var MachineState = map[string]State{
-	"STOPPED" : STOPPED,
-	"STARTING" : STARTING,
-	"RUNNING" : RUNNING,
-	"STOPPING" : STOPPING,
-	"REBOOTING" : REBOOTING,
-	"SHUTTINGDOWN" : SHUTTINGDOWN,
-	"TERMINATING" : TERMINATING,
-	"FAILED" : FAILED,
+	"STOPPED":      STOPPED,
+	"STARTING":     STARTING,
+	"RUNNING":      RUNNING,
+	"STOPPING":     STOPPING,
+	"REBOOTING":    REBOOTING,
+	"SHUTTINGDOWN": SHUTTINGDOWN,
+	"TERMINATING":  TERMINATING,
+	"FAILED":       FAILED,
 }
 
 type Machine struct {
@@ -71,33 +72,7 @@ type NetDev struct {
 	Type         string
 }
 
-func startStateEvaluation(timeout time.Duration, evaluationFunction func() bool) <-chan bool {
-	passed := make(chan bool, 1)
-	timeoutc := make(chan bool, 1)
-
-	go func() {
-		time.Sleep(timeout)
-		timeoutc <-true
-	}()
-
-	go func() {
-		for {
-			select {
-			case <-timeoutc:
-				passed <-false
-				return
-			default:
-				if evaluationFunction() {
-					passed <-true
-					return
-				}
-			}
-		}
-	}()
-	return passed
-}
-
-func (m *Machine) promptPattern () string {
+func (m *Machine) promptPattern() string {
 	return fmt.Sprintf("openvdc@%s", m.Name)
 }
 
@@ -115,12 +90,12 @@ func (m *Machine) HavePrompt() bool {
 		tries := 0
 		for {
 			if tries > 10 {
-				matchprompt<-false
+				matchprompt <- false
 				return
 			}
 			line, _, _ := buf.ReadLine()
 			if strings.Contains(string(line), m.promptPattern()) {
-				matchprompt<-true
+				matchprompt <- true
 				return
 			}
 			tries = tries + 1
@@ -140,7 +115,7 @@ func (m *Machine) WaitForPrompt() bool {
 	}
 	buf := bufio.NewReader(c)
 
-	if err := c.SetReadDeadline(time.Now().Add(5*time.Second)); err != nil {
+	if err := c.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
 		return false
 	}
 	b, _ := buf.ReadBytes('\n')
@@ -149,21 +124,42 @@ func (m *Machine) WaitForPrompt() bool {
 
 // since machine struct does not get saved in memory for each instance there may not be any points
 // in scheduling states as they are not stored anywhere
-func (m *Machine) ScheduleState(nextState State, timeout time.Duration, callback func() bool) error {
-	passed := <-startStateEvaluation(timeout, callback)
-	if !passed {
-		return errors.Errorf("Timed out scheduling state %s", stateValues[nextState])
-	}
+func (m *Machine) ScheduleState(nextState State, timeout time.Duration, evaluation func() bool) error {
+	errorc := make(chan error)
+	timeoutc := make(chan bool, 1)
 
+	go func() {
+		time.Sleep(timeout)
+		timeoutc <- true
+	}()
+
+	go func() {
+		for {
+			select {
+			case <-timeoutc:
+				errorc <- errors.Errorf("Timed out scheduling state %s", stateValues[nextState])
+				return
+			default:
+				if evaluation() {
+					errorc <- nil
+					return
+				}
+			}
+		}
+	}()
+
+	if err := <-errorc; err != nil {
+		return err
+	}
 	m.State = nextState
 	return nil
 }
 
 func NewMachine(cores int, mem uint64) *Machine {
 	return &Machine{
-		Cores: cores,
-		Memory: mem,
-		Drives: make(map[string]Drive),
+		Cores:   cores,
+		Memory:  mem,
+		Drives:  make(map[string]Drive),
 		Display: "none",
 	}
 }
@@ -175,18 +171,17 @@ func (m *Machine) AddNICs(nics []NetDev) {
 }
 
 func (m *Machine) Start(startCmd string) error {
-	qemuCmd := fmt.Sprintf("%s", startCmd)
 	cmdLine := &cmdLine{args: make([]string, 0)}
 
-	cmd := exec.Command(qemuCmd, cmdLine.QemuBootCmd(m)...)
-	if  err := cmd.Run(); err != nil {
+	cmd := exec.Command(startCmd, cmdLine.QemuBootCmd(m)...)
+	if err := cmd.Run(); err != nil {
 		return errors.Errorf("Failed to execute cmd: %s", cmd.Args)
 	}
 
 	m.Process = cmd.Process
 	// TODO: add some error handling
 
-	return m.ScheduleState(STARTING, (10*time.Minute), func() bool {
+	return m.ScheduleState(STARTING, (10 * time.Minute), func() bool {
 		err := m.MonitorCommand("info name")
 		return (err != nil)
 	})
@@ -207,16 +202,14 @@ func (m *Machine) Stop() error {
 	if err := m.MonitorCommand("quit"); err != nil {
 		return err
 	}
-
 	os.Remove(m.Monitor)
 	os.Remove(m.Serial)
-
 	return nil
 }
 
 func (m *Machine) Reboot() error {
 	m.MonitorCommand("system_reset")
-	return m.ScheduleState(REBOOTING, (10*time.Minute), func() bool {
+	return m.ScheduleState(REBOOTING, (10 * time.Minute), func() bool {
 		return (m.HavePrompt() == false)
 	})
 }

@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strconv"
 )
+
 type cmdLine struct {
 	args []string
 }
 
-func (c *cmdLine) appendArgs(args... string) {
+func (c *cmdLine) appendArgs(args ...string) {
 	for _, arg := range args {
 		c.args = append(c.args, arg)
 	}
@@ -20,7 +21,7 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 		cmd.appendArgs("-enable-kvm")
 	}
 	if len(m.Serial) > 0 {
-		cmd.appendArgs("-serial", fmt.Sprintf("unix:%s,server,nowait",m.Serial))
+		cmd.appendArgs("-serial", fmt.Sprintf("unix:%s,server,nowait", m.Serial))
 	}
 	if len(m.Monitor) > 0 {
 		cmd.appendArgs("-monitor", fmt.Sprintf("unix:%s,server,nowait", m.Monitor))

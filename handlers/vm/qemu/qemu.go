@@ -56,7 +56,7 @@ func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 			return nil, errors.Wrap(err, "Failed json.Marshal")
 		}
 	}
-	
+
 	if err := json.Unmarshal(in, tmpl); err != nil {
 		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.QemuTemplate")
 	}

@@ -3,8 +3,8 @@
 package qemu
 
 import (
-	"testing"
 	"strings"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -13,15 +13,15 @@ func TestQemuBootCmd(t *testing.T) {
 	assert := assert.New(t)
 	cmdLine := &cmdLine{args: make([]string, 0)}
 	cmd := cmdLine.QemuBootCmd(&Machine{
-		Cores: 1,
-		Memory: 512,
-		Name: "machine",
+		Cores:   1,
+		Memory:  512,
+		Name:    "machine",
 		Monitor: "monitor",
-		Serial: "serial",
+		Serial:  "serial",
 		Pidfile: "pidfile",
 		Nics: []NetDev{
 			NetDev{
-				IfName: "if",
+				IfName:  "if",
 				MacAddr: "mac",
 			},
 		},
@@ -29,12 +29,12 @@ func TestQemuBootCmd(t *testing.T) {
 			"disk": Drive{
 				Image: &Image{
 					Format: "raw",
-					Path: "drive",
+					Path:   "drive",
 				},
 				If: "disk",
 			},
 		},
-		Kvm: true,
+		Kvm:     true,
 		Display: "none",
 	})
 
@@ -58,16 +58,16 @@ func TestQemuImgCmd(t *testing.T) {
 
 	cmdLine1 := &cmdLine{args: make([]string, 0)}
 	cmd1 := cmdLine1.QemuImgCmd(&Image{
-		Format: "raw",
+		Format:    "raw",
 		baseImage: "baseImage",
-		Path: "path",
+		Path:      "path",
 	})
 
 	cmdLine2 := &cmdLine{args: make([]string, 0)}
 	cmd2 := cmdLine2.QemuImgCmd(&Image{
 		Format: "raw",
-		Size: 1000,
-		Path: "path",
+		Size:   1000,
+		Path:   "path",
 	})
 
 	assert.Equal(strings.Join(cmd1, " "), "create -f raw path -b baseImage")

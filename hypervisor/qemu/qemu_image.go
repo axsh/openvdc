@@ -1,4 +1,3 @@
-
 package qemu
 
 import (
@@ -9,21 +8,21 @@ import (
 )
 
 type Image struct {
-	Path    string
-	Format  string
-	Size    int
+	Path      string
+	Format    string
+	Size      int
 	baseImage string
 }
 
 type Drive struct {
-	Image   *Image
-	If      string
+	Image *Image
+	If    string
 }
 
-func NewImage(path string,format string) *Image {
+func NewImage(path string, format string) *Image {
 	return &Image{
 		Format: format,
-		Path: path,
+		Path:   path,
 	}
 }
 
@@ -36,7 +35,7 @@ func (i *Image) SetBaseImage(baseImage string) error {
 	return nil
 }
 
-func (i *Image) SetSize(size int)  error {
+func (i *Image) SetSize(size int) error {
 	// todo check for base image ?
 	i.Size = size
 	return nil
@@ -45,7 +44,7 @@ func (i *Image) SetSize(size int)  error {
 func (i *Image) CreateImage() error {
 	cmdLine := &cmdLine{args: make([]string, 0)}
 	cmd := exec.Command("qemu-img", cmdLine.QemuImgCmd(i)...)
-	if stdout, err := cmd.CombinedOutput() ; err != nil {
+	if stdout, err := cmd.CombinedOutput(); err != nil {
 		return errors.Errorf("%s failed with: %s", cmd.Args, stdout)
 	}
 	return nil

@@ -21,7 +21,7 @@ func TestNewMachine(t *testing.T) {
 func TestAddNICs(t *testing.T) {
 	assert := assert.New(t)
 	machine := NewMachine(1, 512)
-	machine.AddNICs([]NetDev{NetDev{IfName: "if0"},NetDev{IfName: "if1"}})
+	machine.AddNICs([]NetDev{NetDev{IfName: "if0"}, NetDev{IfName: "if1"}})
 
 	assert.Equal(len(machine.Nics), 2)
 	for idx, nic := range machine.Nics {
