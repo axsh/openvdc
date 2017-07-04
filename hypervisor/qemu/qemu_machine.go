@@ -128,14 +128,9 @@ func (m *Machine) WaitForPrompt() bool {
 // in scheduling states as they are not stored anywhere
 func (m *Machine) ScheduleState(nextState State, timeout time.Duration, evaluation func() bool) error {
 	errorc := make(chan error)
-	timeoutc := make(chan bool, 1)
 
 	go func() {
-		time.Sleep(timeout)
-		timeoutc <- true
-	}()
-
-	go func() {
+		timeoutc := time.After(timeout)
 		for {
 			select {
 			case <-timeoutc:
