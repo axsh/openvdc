@@ -1,8 +1,16 @@
 [hypervisor]
 # driver = "null"
+
+# ----- lxc ------
 # script-path = "/etc/openvdc/scripts/"
 # image-server-uri = "http://127.0.0.1/images"
 # cache-path = "/var/cache/lxc/"
+
+# -----Vmware------
+# esxi-user = ""
+# esxi-pass = ""
+# esxi-ip = ""
+# esxi-insecure = true
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"

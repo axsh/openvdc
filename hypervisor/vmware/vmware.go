@@ -8,6 +8,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/model"
 	"github.com/spf13/viper"
+
+	"github.com/vmware/govmomi"
+	"github.com/vmware/govmomi/vim25/soap"
 )
 
 type BridgeType int
@@ -17,6 +20,15 @@ const (
 	Linux
 	OVS
 )
+
+var settings struct {
+	EsxiUser	string
+	EsxiPass	string
+	EsxiIp		string
+	EsxiInsecure	bool
+	BridgeName      string
+        BridgeType      BridgeType
+}
 
 func (t BridgeType) String() string {
 	switch t {
@@ -45,9 +57,37 @@ func (p *WmwareHypervisorProvider) Name () string {
 
 func init() {
 	hypervisor.RegisterProvider("wmware", &WmwareHypervisorProvider{})
+	viper.SetDefault("hypervisor.esxi-insecure", true)
 }
 
 func (p *WmwareHypervisorProvider) LoadConfig(sub *viper.Viper) error {
+	if sub.IsSet("bridges.name") {
+                settings.BridgeName = sub.GetString("bridges.name")
+                if sub.IsSet("bridges.type") {
+                        switch sub.GetString("bridges.type") {
+                        case "linux":
+                                settings.BridgeType = Linux
+                        case "ovs":
+                                settings.BridgeType = OVS
+                        default:
+                                return errors.Errorf("Unknown bridges.type value: %s", sub.GetString("bridges.type"))
+                        }
+                }
+        } else if sub.IsSet("bridges.linux.name") {
+                log.Warn("bridges.linux.name is obsolete option")
+                settings.BridgeName = sub.GetString("bridges.linux.name")
+                settings.BridgeType = Linux
+        } else if sub.IsSet("bridges.ovs.name") {
+                log.Warn("bridges.ovs.name is obsolete option")
+                settings.BridgeName = sub.GetString("bridges.ovs.name")
+                settings.BridgeType = OVS
+        }
+
+	settings.EsxiUser = sub.GetString("hypervisor.esxi-user")
+	settings.EsxiPass = sub.GetString("hypervisor.esxi-pass")
+	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
+	settings.EsxiInsecure = sub.GetString("hypervisor.esxi-insecure")
+
 	return nil
 }
 
