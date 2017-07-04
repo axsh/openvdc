@@ -60,6 +60,7 @@ func (m *Console) String() string            { return proto.CompactTextString(m)
 func (*Console) ProtoMessage()               {}
 func (*Console) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
+
 func (m *Console) GetType() Console_Transport {
 	if m != nil {
 		return m.Type
