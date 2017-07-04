@@ -10,11 +10,14 @@ import (
 
 var DefaultConfPath string
 
-// todo: error handling
-
 func runCmd(cmd string, args []string) {
 	c := exec.Command(cmd, args...)
-	c.Run()
+	if err := c.Run(); err != nil {
+		log.WithFields(log.Fields{
+			"cmd": cmd,
+			"args": args,
+		}).Fatal("Failed to execute command")
+	}
 }
 
 func init() {
@@ -36,13 +39,14 @@ func init() {
 func main() {
 	config := viper.GetViper()
 	ifname := os.Args[1]
+
 	switch config.GetString("bridges.type") {
 	case "linux":
 		runCmd("ip", []string{"link", "set", "dev", ifname, "nomaster"})
 	case "ovs":
 		runCmd("ovs-vsctl", []string{"del-port", config.GetString("bridges.name"), ifname})
 	default:
-		// thrown error
+		log.Fatalf("Unknown bridge type")
 	}
 	runCmd("ip", []string{"link", "set", ifname, "down"})
 }
