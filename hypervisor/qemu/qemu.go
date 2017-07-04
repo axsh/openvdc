@@ -124,7 +124,7 @@ func (p *QEMUHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 func (p *QEMUHypervisorProvider) CreateDriver(instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
 	qemuTmpl, ok := template.(*model.QemuTemplate)
 	if !ok {
-		return nil, errors.Errorf("template type is not *model.QemuTemplate: %T, template")
+		return nil, errors.Errorf("template type is not *model.QemuTemplate: %T", template)
 	}
 	driver := &QEMUHypervisorDriver{
 		Base: hypervisor.Base{
@@ -157,8 +157,8 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 	d.machine.Drives["disk"] = Drive{Image: NewImage(filepath.Join(instanceDir, "diskImage."+imageFormat), imageFormat)}
 	d.machine.Drives["meta"] = Drive{Image: NewImage(filepath.Join(instanceDir, "metadrive.img"), "raw"), If: "floppy"}
 	d.machine.Name = instanceId
-	d.machine.Monitor = fmt.Sprintf("%s", filepath.Join(instanceDir, "monitor.socket"))
-	d.machine.Serial = fmt.Sprintf("%s", filepath.Join(instanceDir, "serial.socket"))
+	d.machine.MonitorSocketPath = filepath.Join(instanceDir, "monitor.socket")
+	d.machine.SerialSocketPath = filepath.Join(instanceDir, "serial.socket")
 	d.machine.Kvm = d.template.GetUseKvm()
 	d.machine.AddNICs(netDev)
 }
@@ -176,7 +176,9 @@ func url2Local(downloadUrl string) (string, error) {
 		if _, err := os.Stat(localPath); err != nil {
 			// strip the filename from path
 			tmp := strings.Split(localPath, "/")
-			os.MkdirAll(strings.Join(tmp[0:len(tmp)-1], "/"), os.ModePerm)
+			if err := os.MkdirAll(strings.Join(tmp[0:len(tmp)-1], "/"), os.ModePerm); err != nil {
+				return "", errors.Errorf("Unable to create folder: %s", strings.Join(tmp[0:len(tmp)-1], "/"))
+			}
 		}
 	} else {
 		return "", errors.Errorf("Unable to resolve download_url: %s", parsedUrl.String())
@@ -225,18 +227,24 @@ func runCmd(cmd string, args []string) error {
 	return nil
 }
 
-func renderData(keyPath string, key string, value interface{}) {
+func renderData(keyPath string, key string, value interface{}) error {
 	switch value.(type) {
 	case string:
 		ioutil.WriteFile(filepath.Join(keyPath, key), []byte(value.(string)), 0644)
-		return
+		return nil
 	default:
 		kp := filepath.Join(keyPath, key)
-		os.MkdirAll(kp, os.ModePerm)
+		if err := os.MkdirAll(kp, os.ModePerm); err != nil {
+			return errors.Errorf("Unable to create folder: %s", kp)
+		}
 		for key, value := range value.(map[string]interface{}) {
-			renderData(kp, key, value)
+			if err := renderData(kp, key, value); err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
 func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap func(machine *Machine) map[string]interface{}) error {
@@ -249,7 +257,9 @@ func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap func(ma
 
 	for key, value := range datamap(d.machine) {
 		// ioutil.WriteFile(filepath.Join(mountPath, key), []byte(value), 0644)
-		renderData(mountPath, key, value)
+		if err := renderData(mountPath, key, value); err != nil {
+			return err
+		}
 	}
 
 	if err := runCmd("umount", []string{mountPath}); err != nil {
@@ -285,8 +295,13 @@ func (d *QEMUHypervisorDriver) buildMetadriveBase(metadrive *Image) error {
 func (d *QEMUHypervisorDriver) CreateInstance() error {
 	d.log().Infoln("Create instance...")
 	instanceDir := filepath.Join(settings.InstancePath, d.Base.Instance.GetId())
-	os.MkdirAll(instanceDir, os.ModePerm)
 
+	if err := os.MkdirAll(instanceDir, os.ModePerm); err != nil {
+		return errors.Errorf("Unable to create folder: %s", instanceDir)
+	}
+	if _, ok := d.machine.Drives["disk"]; !ok {
+		return errors.Errorf("Faild to assign disk image")
+	}
 	instanceImage := d.machine.Drives["disk"].Image
 	if _, err := os.Stat(instanceImage.Path); err != nil {
 		d.log().Infoln("Create instance image...")
@@ -302,6 +317,9 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 		}
 	}
 
+	if _, ok := d.machine.Drives["meta"]; !ok {
+		return errors.Errorf("Failed to assing metadrive image")
+	}
 	metadriveImage := d.machine.Drives["meta"].Image
 	if _, err := os.Stat(metadriveImage.Path); err != nil {
 		d.log().Infoln("Create metadrive image...")

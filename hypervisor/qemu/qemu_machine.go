@@ -47,19 +47,19 @@ var MachineState = map[string]State{
 }
 
 type Machine struct {
-	State   State
-	Cores   int
-	Memory  uint64
-	Name    string
-	Display string
-	Vnc     string
-	Monitor string
-	Serial  string
-	Pidfile string
-	Nics    []NetDev
-	Drives  map[string]Drive
-	Process *os.Process
-	Kvm     bool
+	State             State
+	Cores             int
+	Memory            uint64
+	Name              string
+	Display           string
+	Vnc               string
+	MonitorSocketPath string
+	SerialSocketPath  string
+	Pidfile           string
+	Nics              []NetDev
+	Drives            map[string]Drive
+	Process           *os.Process
+	Kvm               bool
 }
 
 type NetDev struct {
@@ -77,7 +77,7 @@ func (m *Machine) promptPattern() string {
 }
 
 func (m *Machine) HavePrompt() bool {
-	c, err := net.Dial("unix", m.Serial)
+	c, err := net.Dial("unix", m.SerialSocketPath)
 	if err != nil {
 		return false
 	}
@@ -108,7 +108,7 @@ func (m *Machine) HavePrompt() bool {
 }
 
 func (m *Machine) WaitForPrompt() bool {
-	c, err := net.Dial("unix", m.Serial)
+	c, err := net.Dial("unix", m.SerialSocketPath)
 	defer c.Close()
 	if err != nil {
 		return false
@@ -188,9 +188,9 @@ func (m *Machine) Start(startCmd string) error {
 }
 
 func (m *Machine) MonitorCommand(cmd string) error {
-	c, err := net.Dial("unix", m.Monitor)
+	c, err := net.Dial("unix", m.MonitorSocketPath)
 	if err != nil {
-		return errors.Errorf("Failed to connect to monitor socket %s:", m.Monitor)
+		return errors.Errorf("Failed to connect to monitor socket %s:", m.MonitorSocketPath)
 	}
 	defer c.Close()
 
@@ -202,8 +202,8 @@ func (m *Machine) Stop() error {
 	if err := m.MonitorCommand("quit"); err != nil {
 		return err
 	}
-	os.Remove(m.Monitor)
-	os.Remove(m.Serial)
+	os.Remove(m.MonitorSocketPath)
+	os.Remove(m.SerialSocketPath)
 	return nil
 }
 

@@ -13,12 +13,12 @@ func TestQemuBootCmd(t *testing.T) {
 	assert := assert.New(t)
 	cmdLine := &cmdLine{args: make([]string, 0)}
 	cmd := cmdLine.QemuBootCmd(&Machine{
-		Cores:   1,
-		Memory:  512,
-		Name:    "machine",
-		Monitor: "monitor",
-		Serial:  "serial",
-		Pidfile: "pidfile",
+		Cores:             1,
+		Memory:            512,
+		Name:              "machine",
+		MonitorSocketPath: "monitor",
+		SerialSocketPath:  "serial",
+		Pidfile:           "pidfile",
 		Nics: []NetDev{
 			NetDev{
 				IfName:  "if",

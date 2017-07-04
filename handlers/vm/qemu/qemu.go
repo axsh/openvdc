@@ -70,8 +70,12 @@ func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 }
 
 func (h *QemuHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate) {
+	qemuTmpl, ok := m.(*model.QemuTemplate)
+	if !ok {
+		panic("template type is not *model.QemuTemplate")
+	}
 	t.Item = &model.Template_Qemu{
-		Qemu: m.(*model.QemuTemplate),
+		Qemu: qemuTmpl,
 	}
 }
 
