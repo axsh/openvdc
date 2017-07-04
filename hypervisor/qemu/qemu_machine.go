@@ -82,8 +82,10 @@ func (m *Machine) HavePrompt() bool {
 		return false
 	}
 
-	matchprompt := make(chan bool, 1)
 	buf := bufio.NewReader(c)
+	matchprompt := make(chan bool, 1)
+	defer close(matchprompt)
+
 	go func() {
 		defer c.Close()
 		c.SetReadDeadline(time.Now().Add(time.Second))
