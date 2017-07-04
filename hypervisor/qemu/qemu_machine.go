@@ -199,8 +199,12 @@ func (m *Machine) Stop() error {
 	if err := m.MonitorCommand("quit"); err != nil {
 		return err
 	}
-	os.Remove(m.MonitorSocketPath)
-	os.Remove(m.SerialSocketPath)
+	if err := os.Remove(m.MonitorSocketPath); err != nil {
+		return errors.Errorf("Unable remove monitor socket path: %s".m.MonitorSocketPath)
+	}
+	if err := os.Remove(m.SerialSocketPath); err != nil {
+		return errors.Errorf("Unable remove serial socket path: %s".m.SerialSocketPath)
+	}
 	return nil
 }
 

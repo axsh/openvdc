@@ -250,7 +250,9 @@ func renderData(keyPath string, key string, value interface{}) error {
 func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap func(machine *Machine) map[string]interface{}) error {
 	mountPath := filepath.Join(filepath.Dir(metadataDrive.Path), "meta-data")
 
-	os.MkdirAll(mountPath, os.ModePerm)
+	if err := os.MkdirAll(mountPath, os.ModePerm); err != nil {
+		return errors.Errorf("Unable to create folder: %s", mountPath)
+	}
 	if err := runCmd("mount", []string{metadataDrive.Path, mountPath}); err != nil {
 		return errors.Errorf("Error: %s", err)
 	}
@@ -265,7 +267,9 @@ func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap func(ma
 	if err := runCmd("umount", []string{mountPath}); err != nil {
 		return errors.Errorf("Error: %s", err)
 	}
-	os.RemoveAll(mountPath)
+	if err := os.RemoveAll(mountPath); err != nil {
+		return errors.Errorf("Unable remove path: %s", mountPath)
+	}
 	return nil
 }
 

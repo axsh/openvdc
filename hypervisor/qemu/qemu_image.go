@@ -49,4 +49,3 @@ func (i *Image) CreateImage() error {
 	}
 	return nil
 }
-:
