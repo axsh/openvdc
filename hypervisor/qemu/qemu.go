@@ -363,6 +363,6 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 	})
 }
 
-func (d QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
-	return nil
-}
+// func (d QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
+// 	return nil
+// }

@@ -7,7 +7,7 @@
     "qemu_image": {
       "download_url": "https://ci.openvdc.org/img/centos7.qcow2",
       "format": "qcow2"
-    }
+    },
   }
 }
 
