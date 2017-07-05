@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestQEMUInstance(t *testing.T) {
+func TestQEMUInstance_KVMDisabled(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu", `{"interfaces":[{"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
@@ -20,8 +20,19 @@ func TestQEMUInstance(t *testing.T) {
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
 
+func TestQEMUInstance_KVMEnabled(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu_kvm", `{"interfaces":[{"type":"veth"}], "node_groups":["linuxbr"]}`)
+	instance_id := strings.TrimSpace(stdout.String())
+
+	_, _ = RunCmdAndReportFail(t, "openvdc", "show", instance_id)
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	RunSshWithTimeoutAndReportFail(t, executor_qemu_ip, "echo info name | sudo ncat -U /var/openvdc/qemu-instances/"+instance_id+"/monitor.socket", 10, 5)
+	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
+}
+
 func TestQEMUInstance_LinuxBrNICx2(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu",
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu_kvm",
 		`{"interfaces":[{"type":"veth"}, {"type":"veth"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
@@ -55,7 +66,7 @@ func TestQEMUInstance_LinuxBrNICx2(t *testing.T) {
 }
 
 func TestQEMUInstance_OVSBrNICx2(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu",
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu_kvm",
 		`{"interfaces":[{"type":"vif"}, {"type":"vif"}], "node_groups":["ovs"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
