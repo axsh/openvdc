@@ -51,6 +51,7 @@ message Template {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
+    VmwareTemplate vmware = 503;
   }
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
@@ -129,7 +130,7 @@ message VmwareTemplate {
     string chksum_type = 2 [json_name="chksum_type"];
     string chksum = 3;
   }
-  Image vmware_image = 5 [json_name="vmware__image"];
+  Image vmware_image = 5 [json_name="vmware_image"];
   message Interface {
     string type = 1;
     string macaddr = 2;
