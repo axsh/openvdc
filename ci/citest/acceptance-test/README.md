@@ -2,7 +2,7 @@
 
 This is the environment used on the OpenVDC CI to run the integration tests.
 
-![Test environment drawing](illustrations/acceptance-test.svg)
+[Click here for a visual illustration of the CI environment](illustrations/acceptance-test.svg)
 
 To run this environment locally first make a file containing the following environment variables.
 
