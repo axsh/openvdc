@@ -8,7 +8,7 @@ case ${ACCEL_TYPE} in
 esac
 
 nested="$(cat /sys/module/kvm_${procc_type}/parameters/nested)"
-!lsmod | grep -q kvm && {
+! lsmod | grep -q kvm && {
    echo "Host requires kvm module to be loaded"
    exit 255
 }
