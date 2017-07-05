@@ -111,10 +111,10 @@ func (m *Machine) HavePrompt() bool {
 
 func (m *Machine) WaitForPrompt() bool {
 	c, err := net.Dial("unix", m.SerialSocketPath)
-	defer c.Close()
 	if err != nil {
 		return false
 	}
+	defer c.Close()
 	buf := bufio.NewReader(c)
 
 	if err := c.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
@@ -130,6 +130,8 @@ func (m *Machine) ScheduleState(nextState State, timeout time.Duration, evaluati
 	errorc := make(chan error)
 
 	go func() {
+		defer close(errorc)
+
 		timeoutc := time.After(timeout)
 		for {
 			select {
