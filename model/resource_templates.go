@@ -11,12 +11,14 @@ type ResourceTemplate interface {
 	ResourceName() string
 }
 
-func (*NoneTemplate) isResourceTemplateKind() {}
-func (*NoneTemplate) ResourceName() string    { return "none" }
-func (*LxcTemplate) isResourceTemplateKind()  {}
-func (*LxcTemplate) ResourceName() string     { return "vm/lxc" }
-func (*NullTemplate) isResourceTemplateKind() {}
-func (*NullTemplate) ResourceName() string    { return "vm/null" }
+func (*NoneTemplate) isResourceTemplateKind()   {}
+func (*NoneTemplate) ResourceName() string      { return "none" }
+func (*LxcTemplate) isResourceTemplateKind()    {}
+func (*LxcTemplate) ResourceName() string       { return "vm/lxc" }
+func (*VmwareTemplate) isResourceTemplateKind() {}
+func (*VmwareTemplate) ResourceName() string    { return "vm/vmware" }
+func (*NullTemplate) isResourceTemplateKind()   {}
+func (*NullTemplate) ResourceName() string      { return "vm/null" }
 
 // InstanceResource is a marker interface for instance template structs.
 type InstanceResource interface {
@@ -32,6 +34,7 @@ type InstanceResource interface {
 
 func (*LxcTemplate) isInstanceResourceKind()  {}
 func (*NullTemplate) isInstanceResourceKind() {}
+func (*VmwareTemplate) isInstanceResourceKind()  {}
 
 // ResourceTemplate resolves the assigned object type of
 // "Template" OneOf field and cast to ResourceTemplate interface.
