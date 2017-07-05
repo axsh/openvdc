@@ -7,15 +7,16 @@ case ${ACCEL_TYPE} in
     *) echo "Invalid hardware acceleration" ; exit 255 ;;
 esac
 
-nested="$(cat /sys/module/kvm_${procc_type}/parameters/nested)"
-! lsmod | grep -q kvm && {
-   echo "Host requires kvm module to be loaded"
-   exit 255
-}
+case "$(cat /sys/module/kvm_${procc_type}/parameters/nested)" in
+    Y | 1) ;;
+    N | 0)
+        echo "Host requires nested to be turned on"
+        exit 255  ;;
+esac
 
-[[ "${nested}" == "N" || ${nested} -eq 0 ]] && {
-   echo "Host requires nested to be turned on" 
-   exit 255 
+! lsmod | grep -q kvm && {
+    echo "Host requires kvm module to be loaded"
+    exit 255
 }
 
 (
