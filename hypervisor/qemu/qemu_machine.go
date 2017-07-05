@@ -47,19 +47,19 @@ var MachineState = map[string]State{
 }
 
 type Machine struct {
-	State   State
-	Cores   int
-	Memory  uint64
-	Name    string
-	Display string
-	Vnc     string
-	Monitor string
-	Serial  string
-	Pidfile string
-	Nics    []NetDev
-	Drives  map[string]Drive
-	Process *os.Process
-	Kvm     bool
+	State             State
+	Cores             int
+	Memory            uint64
+	Name              string
+	Display           string
+	Vnc               string
+	MonitorSocketPath string
+	SerialSocketPath  string
+	Pidfile           string
+	Nics              []NetDev
+	Drives            map[string]Drive
+	Process           *os.Process
+	Kvm               bool
 }
 
 type NetDev struct {
@@ -77,13 +77,15 @@ func (m *Machine) promptPattern() string {
 }
 
 func (m *Machine) HavePrompt() bool {
-	c, err := net.Dial("unix", m.Serial)
+	c, err := net.Dial("unix", m.SerialSocketPath)
 	if err != nil {
 		return false
 	}
 
-	matchprompt := make(chan bool, 1)
 	buf := bufio.NewReader(c)
+	matchprompt := make(chan bool, 1)
+	defer close(matchprompt)
+
 	go func() {
 		defer c.Close()
 		c.SetReadDeadline(time.Now().Add(time.Second))
@@ -108,11 +110,11 @@ func (m *Machine) HavePrompt() bool {
 }
 
 func (m *Machine) WaitForPrompt() bool {
-	c, err := net.Dial("unix", m.Serial)
-	defer c.Close()
+	c, err := net.Dial("unix", m.SerialSocketPath)
 	if err != nil {
 		return false
 	}
+	defer c.Close()
 	buf := bufio.NewReader(c)
 
 	if err := c.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
@@ -126,14 +128,11 @@ func (m *Machine) WaitForPrompt() bool {
 // in scheduling states as they are not stored anywhere
 func (m *Machine) ScheduleState(nextState State, timeout time.Duration, evaluation func() bool) error {
 	errorc := make(chan error)
-	timeoutc := make(chan bool, 1)
 
 	go func() {
-		time.Sleep(timeout)
-		timeoutc <- true
-	}()
+		defer close(errorc)
 
-	go func() {
+		timeoutc := time.After(timeout)
 		for {
 			select {
 			case <-timeoutc:
@@ -188,9 +187,9 @@ func (m *Machine) Start(startCmd string) error {
 }
 
 func (m *Machine) MonitorCommand(cmd string) error {
-	c, err := net.Dial("unix", m.Monitor)
+	c, err := net.Dial("unix", m.MonitorSocketPath)
 	if err != nil {
-		return errors.Errorf("Failed to connect to monitor socket %s:", m.Monitor)
+		return errors.Errorf("Failed to connect to monitor socket %s:", m.MonitorSocketPath)
 	}
 	defer c.Close()
 
@@ -202,8 +201,12 @@ func (m *Machine) Stop() error {
 	if err := m.MonitorCommand("quit"); err != nil {
 		return err
 	}
-	os.Remove(m.Monitor)
-	os.Remove(m.Serial)
+	if err := os.Remove(m.MonitorSocketPath); err != nil {
+		return errors.Errorf("Unable remove monitor socket path: %s", m.MonitorSocketPath)
+	}
+	if err := os.Remove(m.SerialSocketPath); err != nil {
+		return errors.Errorf("Unable remove serial socket path: %s", m.SerialSocketPath)
+	}
 	return nil
 }
 

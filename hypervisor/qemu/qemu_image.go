@@ -49,7 +49,3 @@ func (i *Image) CreateImage() error {
 	}
 	return nil
 }
-
-func (i *Image) RemoveInstanceImage() error {
-	return nil
-}
