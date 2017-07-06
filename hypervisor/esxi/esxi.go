@@ -3,6 +3,8 @@
 package esxi
 
 import (
+	"net/url"
+	"path"
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/pkg/errors"
@@ -26,6 +28,7 @@ var settings struct {
 	EsxiPass	string
 	EsxiIp		string
 	EsxiInsecure	bool
+	EsxiUrl         string
 	BridgeName      string
         BridgeType      BridgeType
 }
@@ -58,6 +61,10 @@ func (p *EsxiHypervisorProvider) Name () string {
 func init() {
 	hypervisor.RegisterProvider("esxi", &EsxiHypervisorProvider{})
 	viper.SetDefault("hypervisor.esxi-insecure", true)
+
+	u, _ := url.Parse("https://")
+	u.Path = path.Join(u.Path, settings.EsxiUser, ":", settings.EsxiPass, "@", settings.EsxiIp, "/sdk")
+	settings.EsxiUrl = u.String()
 }
 
 func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
