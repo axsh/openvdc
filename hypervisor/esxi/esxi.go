@@ -5,6 +5,7 @@ package esxi
 import (
 	"net/url"
 	"path"
+	"context"
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
 	"github.com/pkg/errors"
@@ -52,6 +53,7 @@ type EsxiHypervisorDriver struct {
 	template  *model.EsxiTemplate
 	imageName string
 	hostName  string
+	esxiClient *govmomi.Client
 }
 
 func (p *EsxiHypervisorProvider) Name () string {
@@ -104,7 +106,20 @@ func (p *EsxiHypervisorProvider) CreateDriver (instance *model.Instance, templat
 		return nil, errors.Errorf("template type is not *model.WmwareTemplate: %T, template")
 	}
 
-	//Create VM
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	u, err := soap.ParseURL(settings.EsxiUrl)
+        if err != nil {
+                return nil, err
+        }
+
+	c, err := govmomi.NewClient(ctx, u, settings.Insecure)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer c.Logout(ctx)
 
 	driver := &EsxiHypervisorDriver{
 		Base: hypervisor.Base{
@@ -112,7 +127,7 @@ func (p *EsxiHypervisorProvider) CreateDriver (instance *model.Instance, templat
 			Instance: instance,
 		},
 		template: EsxiTmpl,
-		//vm: v,
+		esxiClient: c,
 	}
 	return driver, nil
 }
