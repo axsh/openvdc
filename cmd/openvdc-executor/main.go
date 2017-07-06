@@ -29,20 +29,53 @@ type VDCExecutor struct {
 	nodeInfo           *model.ExecutorNode
 }
 
-func newVDCExecutor(ctx context.Context, provider hypervisor.HypervisorProvider, node *model.ExecutorNode) *VDCExecutor {
+func newVDCExecutor(ctx context.Context, node *model.ExecutorNode) *VDCExecutor {
 	return &VDCExecutor{
-		hypervisorProvider: provider,
-		ctx:                ctx,
-		nodeInfo:           node,
+		ctx:      ctx,
+		nodeInfo: node,
 	}
 }
 
+func (exec *VDCExecutor) GetHypervisorProvider() hypervisor.HypervisorProvider {
+	return exec.hypervisorProvider
+}
+
 func (exec *VDCExecutor) Registered(driver exec.ExecutorDriver, execInfo *mesos.ExecutorInfo, fwinfo *mesos.FrameworkInfo, slaveInfo *mesos.SlaveInfo) {
-	log.Infoln("Registered Executor on slave ", slaveInfo.GetHostname())
+	log.Infoln("Registering Executor on slave ", slaveInfo.GetHostname())
+	// Read and validate passed slave attributes: /etc/mesos-slave/attributes or --attributes
+	for _, attr := range slaveInfo.Attributes {
+		switch attr.GetName() {
+		case "hypervisor":
+			var ok bool
+			exec.hypervisorProvider, ok = hypervisor.FindProvider(attr.GetText().GetValue())
+			if !ok {
+				log.Errorf("Unknown hypervisor driver: %s", attr.GetText().GetValue())
+			}
+		case "openvdc-node-id":
+			exec.nodeInfo.NodeId = attr.GetText().GetValue()
+		}
+	}
+	if exec.nodeInfo.NodeId == "" {
+		_, err := driver.Abort()
+		log.WithError(err).Error("Failed to find 'openvdc-node-id' attribute")
+		return
+	}
+	if exec.hypervisorProvider == nil {
+		_, err := driver.Abort()
+		log.WithError(err).Error("Failed to find 'hypervisor' attribute")
+		return
+	}
+	if err := exec.hypervisorProvider.LoadConfig(viper.GetViper()); err != nil {
+		log.WithError(err).Error("Failed hypervisorProvider.LoadConfig")
+		driver.Abort()
+		return
+	}
+
 	exec.nodeInfo.Id = slaveInfo.GetId().GetValue()
 	err := model.Cluster(exec.ctx).Register(exec.nodeInfo)
 	if err != nil {
-		log.Error(err)
+		driver.Abort()
+		log.WithError(err).Error("Failed OpenVDC cluster registration")
 		return
 	}
 	log.Infoln("Registered on OpenVDC cluster service: ", exec.nodeInfo)
@@ -59,6 +92,17 @@ func (exec *VDCExecutor) Disconnected(driver exec.ExecutorDriver) {
 func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) {
 	log.Infoln("Launching task", taskInfo.GetName(), "with command", taskInfo.Command.GetValue())
 
+	var lastErr error
+	defer func() {
+		if lastErr == nil {
+			return
+		}
+		driver.SendStatusUpdate(&mesos.TaskStatus{
+			TaskId:  taskInfo.GetTaskId(),
+			State:   mesos.TaskState_TASK_FAILED.Enum(),
+			Message: proto.String(lastErr.Error()),
+		})
+	}()
 	_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
 		State:  mesos.TaskState_TASK_STARTING.Enum(),
@@ -67,16 +111,40 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		log.WithError(err).Errorln("Couldn't send status update")
 		return
 	}
-	if err := exec.bootInstance(driver, taskInfo); err != nil {
+
+	instanceID := taskInfo.GetTaskId().GetValue()
+
+	var ctx context.Context
+	ctx, lastErr = model.Connect(context.Background(), &zkAddr)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed model.Connect")
 		return
 	}
+	var instance *model.Instance
+	instance, lastErr = model.Instances(ctx).FindByID(instanceID)
+	if lastErr != nil {
+		log.WithError(lastErr).Error("Failed to fetch instance %s", instanceID)
+		return
+	}
+	instanceState := instance.GetLastState()
 
-	_, err = driver.SendStatusUpdate(&mesos.TaskStatus{
+	if instanceState.State == model.InstanceState_QUEUED {
+		if err := exec.bootInstance(driver, taskInfo); err != nil {
+			// bootInstance() handles driver.SendStatusUpdate by itself.
+			return
+		}
+	} else {
+		if err := exec.recoverInstance(instance); err != nil {
+			log.WithError(err).Error("Failed recoverInstance")
+		}
+	}
+
+	_, err1 := driver.SendStatusUpdate(&mesos.TaskStatus{
 		TaskId: taskInfo.GetTaskId(),
 		State:  mesos.TaskState_TASK_RUNNING.Enum(),
 	})
-	if err != nil {
-		log.WithError(err).Errorln("Couldn't send status update")
+	if err1 != nil {
+		log.WithError(err1).Errorln("Couldn't send status update")
 		return
 	}
 }
@@ -104,6 +172,22 @@ func recordFailedState(ctx context.Context, driver exec.ExecutorDriver, instance
 	}
 	if err1 == nil && err2 == nil {
 		log.Info("Proceeded recording task failure")
+	}
+	return nil
+}
+
+func (exec *VDCExecutor) recoverInstance(instance *model.Instance) error {
+	provider := exec.GetHypervisorProvider()
+	if provider != nil {
+		return errors.New("HypervisorProvider is not ready")
+	}
+	hv, err := provider.CreateDriver(instance, instance.ResourceTemplate())
+	if err != nil {
+		return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instance.GetId())
+	}
+	err = hv.Recover(*instance.LastState)
+	if err != nil {
+		return errors.Wrapf(err, "Hypervisor failed to recover instance. InstanceID: %s", instance.GetId())
 	}
 	return nil
 }
@@ -165,6 +249,13 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	log.Infof("Instance launched successfully")
 	// Here can bring the instance state to RUNNING finally.
 	finState = model.InstanceState_RUNNING
+
+	err = model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_CONNECTED)
+
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_CONNECTED)
+	}
+
 	return nil
 }
 
@@ -217,6 +308,13 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	log.Infof("Instance started successfully")
 	// Here can bring the instance state to RUNNING finally.
 	finState = model.InstanceState_RUNNING
+
+	err = model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_CONNECTED)
+
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_CONNECTED)
+	}
+
 	return nil
 }
 
@@ -463,7 +561,6 @@ func startExecutorAPIServer(ctx context.Context, listener net.Listener) *executo
 }
 
 func init() {
-	viper.SetDefault("hypervisor.driver", "null")
 	viper.SetDefault("zookeeper.endpoint", "zk://localhost/openvdc")
 	viper.SetDefault("executor-api.listen", "0.0.0.0:"+defaultExecutorAPIPort)
 	viper.SetDefault("executor-api.advertise-ip", "")
@@ -473,8 +570,6 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
 	pfs.String("config", DefaultConfPath, "Load config file from the path")
-	pfs.String("hypervisor", viper.GetString("hypervisor.driver"), "Hypervisor driver name")
-	viper.BindPFlag("hypervisor.driver", pfs.Lookup("hypervisor"))
 	pfs.String("zk", viper.GetString("zookeeper.endpoint"), "Zookeeper address")
 	viper.BindPFlag("zookeeper.endpoint", pfs.Lookup("zk"))
 }
@@ -510,15 +605,6 @@ func execute(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatal("Invalid zookeeper endpoint: ", viper.GetString("zookeeper.endpoint"))
 	}
 
-	provider, ok := hypervisor.FindProvider(viper.GetString("hypervisor.driver"))
-	if ok == false {
-		log.Fatalln("Unknown hypervisor name:", viper.GetString("hypervisor.driver"))
-	}
-	if err := provider.LoadConfig(viper.GetViper()); err != nil {
-		log.WithError(err).Fatal("Failed to apply hypervisor configuration")
-	}
-	log.Infof("Initializing executor: hypervisor %s\n", provider.Name())
-
 	ctx, err := model.ClusterConnect(context.Background(), &zkAddr)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to connect to cluster service %s", zkAddr.String())
@@ -543,9 +629,6 @@ func execute(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.WithError(err).Fatalln("Faild to bind address for Executor gRPC API: ", viper.GetString("executor-api.listen"))
 	}
-	s := startExecutorAPIServer(ctx, executorAPIListener)
-	defer s.GracefulStop()
-	log.Infof("Listening Executor gRPC API on %s", executorAPIListener.Addr().String())
 	exposedExecutorAPIAddr := executorAPIListener.Addr().String()
 	if viper.GetString("executor-api.advertise-ip") != "" {
 		_, port, err := net.SplitHostPort(exposedExecutorAPIAddr)
@@ -553,21 +636,18 @@ func execute(cmd *cobra.Command, args []string) {
 			log.WithError(err).Fatal("Failed to parse host:port: ", exposedExecutorAPIAddr)
 		}
 		exposedExecutorAPIAddr = net.JoinHostPort(viper.GetString("executor-api.advertise-ip"), port)
-		log.Infof("Exposed Executor gRPC API on %s", exposedExecutorAPIAddr)
 	}
+
+	s := startExecutorAPIServer(ctx, executorAPIListener)
+	defer s.GracefulStop()
+	log.Infof("Listening Executor gRPC API on %s", executorAPIListener.Addr().String())
+	log.Infof("Exposed Executor gRPC API on %s", exposedExecutorAPIAddr)
 
 	sshListener, err := net.Listen("tcp", viper.GetString("console.ssh.listen"))
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to listen SSH on %s", sshListener.Addr().String())
 	}
 	defer sshListener.Close()
-
-	sshd := NewSSHServer(provider, ctx)
-	if err := sshd.Setup(); err != nil {
-		log.WithError(err).Fatal("Failed to setup SSH Server")
-	}
-	go sshd.Run(sshListener)
-	log.Infof("Listening SSH on %s", sshListener.Addr().String())
 	exposedSSHAddr := sshListener.Addr().String()
 	if viper.GetString("console.ssh.advertise-ip") != "" {
 		_, port, err := net.SplitHostPort(exposedSSHAddr)
@@ -575,18 +655,27 @@ func execute(cmd *cobra.Command, args []string) {
 			log.WithError(err).Fatal("Failed to parse host:port: ", exposedSSHAddr)
 		}
 		exposedSSHAddr = net.JoinHostPort(viper.GetString("console.ssh.advertise-ip"), port)
-		log.Infof("Exposed SSH on %s", exposedSSHAddr)
 	}
 
-	node := &model.ExecutorNode{
+	clusterNode := &model.ExecutorNode{
 		GrpcAddr: exposedExecutorAPIAddr,
 		Console: &model.Console{
 			Type:     model.Console_SSH,
 			BindAddr: exposedSSHAddr,
 		},
 	}
+	vdcExecutor := newVDCExecutor(ctx, clusterNode)
+
+	sshd := NewSSHServer(vdcExecutor, ctx)
+	if err := sshd.Setup(); err != nil {
+		log.WithError(err).Fatal("Failed to setup SSH Server")
+	}
+	go sshd.Run(sshListener)
+	log.Infof("Listening SSH on %s", sshListener.Addr().String())
+	log.Infof("Exposed SSH on %s", exposedSSHAddr)
+
 	dconfig := exec.DriverConfig{
-		Executor: newVDCExecutor(ctx, provider, node),
+		Executor: vdcExecutor,
 	}
 	driver, err := exec.NewMesosExecutorDriver(dconfig)
 	if err != nil {

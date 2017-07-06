@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+
+package model;
+
+option go_package = "github.com/axsh/openvdc/model";
+
+message CrashedNode {
+  string uuid = 1;
+  string agent_id = 2;
+  string agent_mesos_id = 3;
+  bool reconnected = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp reconnected_at = 6;
+}

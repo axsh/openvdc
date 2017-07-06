@@ -1,5 +1,4 @@
 [hypervisor]
-driver = "lxc"
 script-path = "/etc/openvdc/scripts/"
 image-server-uri = "http://10.0.100.12/images"
 cache-path = "/var/cache/lxc/"

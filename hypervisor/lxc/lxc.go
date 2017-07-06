@@ -173,8 +173,6 @@ func (d *LXCHypervisorDriver) modifyConf() error {
 	}
 	defer lxcconf.Close()
 
-	// Start to append lxc.network entries to tmp file.
-
 	// Append comment header
 	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n")
 
@@ -262,6 +260,34 @@ var lxcArch = map[string]string{
 	"amd64": "amd64",
 	"386":   "i386",
 	// TODO: powerpc, arm, arm64
+}
+
+func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
+
+	switch instanceState.State {
+	case model.InstanceState_RUNNING:
+		if d.container.State() == lxc.STOPPED {
+			err := d.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.container.Name())
+			}
+		}
+
+	case model.InstanceState_STOPPED:
+		if d.container.State() == lxc.STOPPED {
+			err := d.StartInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance:  %s", d.container.Name())
+			}
+			err = d.StopInstance()
+			if err != nil {
+				return errors.Wrapf(err, "Failed to stop instance:  %s", d.container.Name())
+			}
+		}
+	default:
+	}
+
+	return nil
 }
 
 func (d *LXCHypervisorDriver) CreateInstance() error {

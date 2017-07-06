@@ -14,22 +14,26 @@ import (
 	"golang.org/x/net/context"
 )
 
+type HypervisorProviderFinder interface {
+	GetHypervisorProvider() hypervisor.HypervisorProvider
+}
+
 type SSHServer struct {
 	config   *ssh.ServerConfig
 	listener net.Listener
-	provider hypervisor.HypervisorProvider
+	finder   HypervisorProviderFinder
 	ctx      context.Context
 }
 
-func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *SSHServer {
+func NewSSHServer(finder HypervisorProviderFinder, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
 
 	return &SSHServer{
-		config:   config,
-		provider: provider,
-		ctx:      ctx,
+		config: config,
+		finder: finder,
+		ctx:    ctx,
 	}
 }
 
@@ -61,6 +65,7 @@ func (sshd *SSHServer) Setup() error {
 		}
 		sshd.config.AddHostKey(sshSigner)
 	}
+
 	return nil
 }
 
@@ -89,16 +94,22 @@ func (sshd *SSHServer) Run(listener net.Listener) {
 				return
 			}
 
-			hv, err := sshd.provider.CreateDriver(inst, inst.ResourceTemplate())
-			if err != nil {
-				log.WithError(err).Errorf("Failed HypervisorProvider.CreateDriver: %T", sshd.provider)
-				sshConn.Close()
-				return
-			}
 			for newChannel := range chans {
 				if t := newChannel.ChannelType(); t != "session" {
 					newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t))
 					continue
+				}
+				provider := sshd.finder.GetHypervisorProvider()
+				if provider == nil {
+					log.Error("HypervisorProvider is not ready")
+					newChannel.Reject(ssh.Prohibited, "HypervisorProvider is not ready")
+					continue
+				}
+				hv, err := provider.CreateDriver(inst, inst.ResourceTemplate())
+				if err != nil {
+					log.WithError(err).Errorf("Failed HypervisorProvider.CreateDriver: %T", provider)
+					sshConn.Close()
+					return
 				}
 				session := sshSession{
 					instanceID: instanceID,
