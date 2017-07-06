@@ -160,10 +160,10 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 				if agentAttrs.Hypervisor == "null" {
 					return offer
 				}
-			case *model.Template_Vmware:
-				if agentAttrs.Hypervisor == "vmware" {
-					vmware := i.GetTemplate().GetVmware()
-					if !model.IsMatchingNodeGroups(vmware, agentAttrs.NodeGroups) {
+			case *model.Template_Esxi:
+				if agentAttrs.Hypervisor == "esxi" {
+					esxi := i.GetTemplate().GetEsxi()
+					if !model.IsMatchingNodeGroups(esxi, agentAttrs.NodeGroups) {
 						return nil
 					}
 					return offer

@@ -51,7 +51,7 @@ message Template {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
-    VmwareTemplate vmware = 503;
+    EsxiTemplate esxi = 503;
   }
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
@@ -120,7 +120,7 @@ message LxcTemplate {
   repeated string node_groups = 8 [json_name="node_groups"];
 }
 
-message VmwareTemplate {
+message EsxiTemplate {
   int32 vcpu = 1;
   int32 memory_gb = 2 [json_name="memory_gb"];
   int32 min_vcpu = 3 [json_name="min_vcpu"];
@@ -130,7 +130,7 @@ message VmwareTemplate {
     string chksum_type = 2 [json_name="chksum_type"];
     string chksum = 3;
   }
-  Image vmware_image = 5 [json_name="vmware_image"];
+  Image esxi_image = 5 [json_name="esxi_image"];
   message Interface {
     string type = 1;
     string macaddr = 2;

@@ -15,8 +15,8 @@ func (*NoneTemplate) isResourceTemplateKind()   {}
 func (*NoneTemplate) ResourceName() string      { return "none" }
 func (*LxcTemplate) isResourceTemplateKind()    {}
 func (*LxcTemplate) ResourceName() string       { return "vm/lxc" }
-func (*VmwareTemplate) isResourceTemplateKind() {}
-func (*VmwareTemplate) ResourceName() string    { return "vm/vmware" }
+func (*EsxiTemplate) isResourceTemplateKind() {}
+func (*EsxiTemplate) ResourceName() string    { return "vm/esxi" }
 func (*NullTemplate) isResourceTemplateKind()   {}
 func (*NullTemplate) ResourceName() string      { return "vm/null" }
 
@@ -34,7 +34,7 @@ type InstanceResource interface {
 
 func (*LxcTemplate) isInstanceResourceKind()  {}
 func (*NullTemplate) isInstanceResourceKind() {}
-func (*VmwareTemplate) isInstanceResourceKind()  {}
+func (*EsxiTemplate) isInstanceResourceKind()  {}
 
 // ResourceTemplate resolves the assigned object type of
 // "Template" OneOf field and cast to ResourceTemplate interface.

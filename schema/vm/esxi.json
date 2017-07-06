@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "description": "OpenVDC Resource Template: vm/vmware",
+  "description": "OpenVDC Resource Template: vm/esxi",
   "type": "object",
   "required": [
     "type"
@@ -11,7 +11,7 @@
     },
     "type": {
       "enum": [
-        "vm/vmware"
+        "vm/esxi"
       ]
     },
     "min_vcpu": {

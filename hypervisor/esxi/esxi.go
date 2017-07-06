@@ -1,6 +1,6 @@
 // +build linux
 
-package vmware
+package esxi
 
 import (
 	log "github.com/Sirupsen/logrus"
@@ -41,26 +41,26 @@ func (t BridgeType) String() string {
 	}
 }
 
-type VmwareHypervisorProvider struct {
+type EsxiHypervisorProvider struct {
 }
 
-type WmwareHypervisorDriver struct {
+type EsxiHypervisorDriver struct {
 	hypervisor.Base
-	template  *model.WmwareTemplate
+	template  *model.EsxiTemplate
 	imageName string
 	hostName  string
 }
 
-func (p *WmwareHypervisorProvider) Name () string {
-	return "wmware"
+func (p *EsxiHypervisorProvider) Name () string {
+	return "esxi"
 }
 
 func init() {
-	hypervisor.RegisterProvider("wmware", &WmwareHypervisorProvider{})
+	hypervisor.RegisterProvider("esxi", &EsxiHypervisorProvider{})
 	viper.SetDefault("hypervisor.esxi-insecure", true)
 }
 
-func (p *WmwareHypervisorProvider) LoadConfig(sub *viper.Viper) error {
+func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	if sub.IsSet("bridges.name") {
                 settings.BridgeName = sub.GetString("bridges.name")
                 if sub.IsSet("bridges.type") {
@@ -91,49 +91,49 @@ func (p *WmwareHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
-func (p *WmwareHypervisorProvider) CreateDriver (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
-	WmwareTmpl, ok := template.(*model.WmwareTemplate)
+func (p *EsxiHypervisorProvider) CreateDriver (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
+	EsxiTmpl, ok := template.(*model.EsxiTemplate)
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.WmwareTemplate: %T, template")
 	}
 
 	//Create VM
 
-	driver := &WmwareHypervisorDriver{
+	driver := &EsxiHypervisorDriver{
 		Base: hypervisor.Base{
-			Log: log.WithFields(log.Fields{"Hypervisor": "vmware", "instance_id": instance.GetId()}),
+			Log: log.WithFields(log.Fields{"Hypervisor": "esxi", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
-		template: vmwareTmpl,
+		template: EsxiTmpl,
 		//vm: v,
 	}
 	return driver, nil
 }
 
-func (d *WmwareHypervisorDriver) log() *log.Entry {
+func (d *EsxiHypervisorDriver) log() *log.Entry {
 	return d.Base.Log
 }
 
-func (d *WmwareHypervisorDriver) CreateInstance() error {
+func (d *EsxiHypervisorDriver) CreateInstance() error {
 	return nil
 }
 
-func (d *WmwareHypervisorDriver) DestroyInstance() error {
+func (d *EsxiHypervisorDriver) DestroyInstance() error {
 	return nil
 }
 
-func (d *WmwareHypervisorDriver) StartInstance() error {
+func (d *EsxiHypervisorDriver) StartInstance() error {
 	return nil
 }
 
-func (d *WmwareHypervisorDriver) StopInstance() error {
+func (d *EsxiHypervisorDriver) StopInstance() error {
 	return nil
 }
 
-func (d WmwareHypervisorDriver) RebootInstance() error {
+func (d EsxiHypervisorDriver) RebootInstance() error {
 	return nil
 }
 
-func (d WmwareHypervisorDriver) InstanceConsole() hypervisor.Console {
+func (d EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
 	return nil
 }
