@@ -1,0 +1,20 @@
+[hypervisor]
+driver = "qemu"
+script-path = "/etc/openvdc/scripts/"
+
+[zookeeper]
+endpoint = "zk://10.0.100.10:2181,10.0.100.11:2181,10.0.100.12:2181/openvdc"
+
+[bridges]
+name = "br0"
+type = "ovs"
+
+[executor-api]
+# listen = "0.0.0.0:19372"
+advertise-ip = "10.0.100.17"
+
+[console]
+
+[console.ssh]
+# listen = ""
+advertise-ip = "10.0.100.17"

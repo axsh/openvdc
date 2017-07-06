@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestCmdReboot(t *testing.T) {
+func TestLXCCmdReboot(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 
@@ -49,4 +49,16 @@ func testCmdReboot_Centos7(t *testing.T, instance_id string) {
 	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, fmt.Sprintf("sudo lxc-attach -n %s -- test -f /var/lock/subsys/local", instance_id), 10, 5)
+}
+
+func TestCmdReboot_QEMU(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu_kvm", `{"node_groups":["linuxbr"]}`)
+	instance_id := strings.TrimSpace(stdout.String())
+
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"REBOOTING"})
+
+	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }

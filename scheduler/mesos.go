@@ -160,6 +160,14 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 				if agentAttrs.Hypervisor == "null" {
 					return offer
 				}
+			case *model.Template_Qemu:
+				if agentAttrs.Hypervisor == "qemu" {
+					qemu := i.GetTemplate().GetQemu()
+					if !model.IsMatchingNodeGroups(qemu, agentAttrs.NodeGroups) {
+						return nil
+					}
+					return offer
+				}
 			default:
 				log.Warnf("Unknown template type: %T", t)
 			}
@@ -196,6 +204,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			},
 		}
 
+		instanceResource := i.ResourceTemplate().(model.InstanceResource)
 		taskId := util.NewTaskID(i.GetId())
 		task := &mesos.TaskInfo{
 			Name:     proto.String("VDC" + "_" + taskId.GetValue()),
@@ -204,8 +213,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 			Data:     []byte("instance_id=" + i.GetId()),
 			Executor: executor,
 			Resources: []*mesos.Resource{
-				util.NewScalarResource("cpus", float64(i.GetTemplate().GetLxc().GetVcpu())),
-				util.NewScalarResource("mem", float64(i.GetTemplate().GetLxc().GetMemoryGb()*1024)),
+				util.NewScalarResource("cpus", float64(instanceResource.GetVcpu())),
+				util.NewScalarResource("mem", float64(instanceResource.GetMemoryGb()*1024)),
 			},
 		}
 
