@@ -28,6 +28,9 @@
         },
         {
           "$ref": "./vm/null.json#"
+        },
+        {
+          "$ref": "./vm/qemu.json#"
         }
       ]
     }
