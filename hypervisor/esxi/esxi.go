@@ -114,7 +114,7 @@ func (p *EsxiHypervisorProvider) CreateDriver (instance *model.Instance, templat
                 return nil, err
         }
 
-	c, err := govmomi.NewClient(ctx, u, settings.Insecure)
+	c, err := govmomi.NewClient(ctx, u, settings.EsxiInsecure)
 	if err != nil {
 		log.Fatal(err)
 	}
