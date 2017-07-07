@@ -63,10 +63,6 @@ func (p *EsxiHypervisorProvider) Name () string {
 func init() {
 	hypervisor.RegisterProvider("esxi", &EsxiHypervisorProvider{})
 	viper.SetDefault("hypervisor.esxi-insecure", true)
-
-	u, _ := url.Parse("https://")
-	u.Path = path.Join(u.Path, settings.EsxiUser, ":", settings.EsxiPass, "@", settings.EsxiIp, "/sdk")
-	settings.EsxiUrl = u.String()
 }
 
 func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
@@ -96,6 +92,10 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiPass = sub.GetString("hypervisor.esxi-pass")
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
+
+	u, _ := url.Parse("https://")
+	u.Path = path.Join(u.Path, settings.EsxiUser, ":", settings.EsxiPass, "@", settings.EsxiIp, "/sdk")
+	settings.EsxiUrl = u.String()
 
 	return nil
 }
