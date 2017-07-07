@@ -95,7 +95,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiUser = sub.GetString("hypervisor.esxi-user")
 	settings.EsxiPass = sub.GetString("hypervisor.esxi-pass")
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
-	settings.EsxiInsecure = sub.GetString("hypervisor.esxi-insecure")
+	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 
 	return nil
 }
