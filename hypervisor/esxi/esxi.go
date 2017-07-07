@@ -3,6 +3,7 @@
 package esxi
 
 import (
+	"fmt"
 	"net/url"
 	"path"
 	"context"
@@ -93,8 +94,9 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 
+	esxiInfo := fmt.Sprintf("%s:%s@%s",settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
 	u, _ := url.Parse("https://")
-	u.Path = path.Join(u.Path, settings.EsxiUser, ":", settings.EsxiPass, "@", settings.EsxiIp, "/sdk")
+	u.Path = path.Join(u.Path, esxiInfo, "sdk")
 	settings.EsxiUrl = u.String()
 
 	return nil
