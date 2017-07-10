@@ -167,12 +167,16 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 	// these devices are required for communication through the qemu guest agent
 	d.machine.AgentSocketPath = filepath.Join(instanceDir, "agent.socket")
 	virtioserialDev := NewDevice(DevType)
+	virtioserialDev.AddDriver("virtio-serial")
+
 	hostDev := NewDevice(CharType)
 	hostDev.AddDriver("socket")
-	hostDev.AddDriverOption("path", fmt.Sprintf("%s,servier,nowait", d.machine.AgentSocketPath))
+	hostDev.AddDriverOption("path", fmt.Sprintf("%s,server,nowait", d.machine.AgentSocketPath))
+
 	guestDev := NewDevice(DevType)
 	guestDev.AddDriver("virtserialport")
 	guestDev.AddDriverOption("name", instanceId)
+
 	hostDev.LinkToGuestDevice(instanceId, guestDev)
 
 	d.machine.AddDevice(virtioserialDev)
@@ -372,7 +376,7 @@ func (d *QEMUHypervisorDriver) DestroyInstance() error {
 func (d *QEMUHypervisorDriver) StartInstance() error {
 	d.log().Infoln("Starting qemu instance...")
 	if err := d.machine.Start(filepath.Join(settings.QemuPath, settings.QemuProvider)); err != nil {
-		return errors.Wrap(err, "Failed machien.Start()")
+		return errors.Wrap(err, "Failed machine.Start()")
 	}
 
 	return d.machine.ScheduleState(RUNNING, 10*time.Minute, func() bool {

@@ -43,7 +43,9 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 		cmd.appendArgs("-net", "none")
 	}
 	for _, device := range m.Devices {
-		cmd.appendArgs(device.EvaluateCliCmd())
+		for _, arg := range device.EvaluateCliCmd() {
+			cmd.appendArgs(arg)
+		}
 	}
 	cmd.appendArgs("-display", m.Display)
 	cmd.appendArgs("-daemonize")

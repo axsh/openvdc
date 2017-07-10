@@ -74,14 +74,16 @@ func (d *Device) LinkToGuestDevice(id string, guestDevice *Device) {
 	guestDevice.AddDriverOption(d.DeviceType, id)
 }
 
-func (d *Device) EvaluateCliCmd() string {
+func (d *Device) EvaluateCliCmd() []string {
+	var arg []string
 	var opt string
-	arg := strings.Join([]string{"-", d.DeviceType}, "")
+	arg = append(arg, strings.Join([]string{"-", d.DeviceType}, ""))
 	if len(d.Params.Driver) > 0 {
 		opt = d.Params.Driver
 		for _, o := range d.Params.Options {
 			opt = strings.Join([]string{opt, ",", o.key, "=", o.value}, "")
 		}
 	}
-	return strings.Join([]string{arg, opt}, " ")
+	arg = append(arg, opt)
+	return arg
 }
