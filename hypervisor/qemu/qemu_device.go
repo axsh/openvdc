@@ -6,6 +6,24 @@ import (
 )
 
 // -device virtio-serial -chardev socket,path=/tmp/foo,server,nowait,id=foo -device virtserialport,chardev=foo,name=org.fedoraproject.port.0
+type DeviceType int
+
+const (
+	DevType DeviceType = iota // 0
+	NetType
+	CharType
+)
+
+func (t DeviceType) String() string {
+	switch t {
+	case NetType:
+		return "netdev"
+	case CharType:
+		return "chardev"
+	default:
+		return "device"
+	}
+}
 
 type DriverOption struct {
 	key   string
@@ -13,32 +31,23 @@ type DriverOption struct {
 }
 
 type Device struct {
-	Type        string
-	Id          string
+	DeviceType  string
 	Params      *DeviceParams
-	GuestDevice *Device
 }
 
 type DeviceParams struct {
 	Driver   string
-
 	// Wrap the key value pair here because maps are not sorted
 	Options  []DriverOption
 }
 
-func NewDevice(id string) *Device {
+func NewDevice(deviceType DeviceType) *Device {
 	return &Device{
-		Type: "device",
-		Id: id,
+		DeviceType: deviceType.String(),
 		Params: &DeviceParams{
 			Options: make([]DriverOption, 0),
 		},
 	}
-}
-
-
-func (d *Device) SetDeviceType(deviceType string) {
-	d.Type = deviceType
 }
 
 func (d *Device) AddDriver(driverType string) error {
@@ -60,23 +69,19 @@ func (d *Device) AddDriverOption(key string, value string) error {
 	return nil
 }
 
-func (d *Device) AddGuestDevice(deviceType string) {
-	d.GuestDevice = NewDevice(d.Id)
-	d.GuestDevice.AddDriver(deviceType)
-	d.GuestDevice.AddDriverOption(d.Type, d.GuestDevice.Id)
+func (d *Device) LinkToGuestDevice(id string, guestDevice *Device) {
+	d.AddDriverOption("id", id)
+	d.AddDriverOption(d.DeviceType, id)
 }
 
 func (d *Device) EvaluateCliCmd() string {
 	var opt string
-	arg := strings.Join([]string{"-", d.Type}, "")
+	arg := strings.Join([]string{"-", d.DeviceType}, "")
 	if len(d.Params.Driver) > 0 {
 		opt = d.Params.Driver
 		for _, o := range d.Params.Options {
 			opt = strings.Join([]string{opt, ",", o.key, "=", o.value}, "")
 		}
-	}
-	if d.GuestDevice != nil {
-		opt = strings.Join([]string{opt, d.GuestDevice.EvaluateCliCmd()}, " ")
 	}
 	return strings.Join([]string{arg, opt}, " ")
 }
