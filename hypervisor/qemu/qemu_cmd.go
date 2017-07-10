@@ -43,7 +43,7 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 		cmd.appendArgs("-net", "none")
 	}
 	for _, device := range m.Devices {
-		for _, arg := range device.EvaluateCliCmd() {
+		for _, arg := range device.BuildArg() {
 			cmd.appendArgs(arg)
 		}
 	}

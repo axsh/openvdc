@@ -74,7 +74,7 @@ func (d *Device) LinkToGuestDevice(id string, guestDevice *Device) {
 	guestDevice.AddDriverOption(d.DeviceType, id)
 }
 
-func (d *Device) EvaluateCliCmd() []string {
+func (d *Device) BuildArg() []string {
 	var arg []string
 	var opt string
 	arg = append(arg, strings.Join([]string{"-", d.DeviceType}, ""))

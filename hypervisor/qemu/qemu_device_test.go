@@ -44,3 +44,14 @@ func TestLinkToGuestDevice(t *testing.T) {
 	assert.Equal(device2.Params.Options[0].key, "netdev")
 	assert.Equal(device2.Params.Options[0].value, "dev")
 }
+
+func TestBuildArg(t *testing.T) {
+	assert := assert.New(t)
+	device := NewDevice(DevType)
+	device.AddDriver("driver")
+	device.AddDriverOption("id", "driver")
+	args := device.EvaluateCliCmd()
+
+	assert.NotNil(args)
+	assert.Equal(len(args), 2)
+}
