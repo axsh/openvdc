@@ -160,7 +160,24 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 	d.machine.MonitorSocketPath = filepath.Join(instanceDir, "monitor.socket")
 	d.machine.SerialSocketPath = filepath.Join(instanceDir, "serial.socket")
 	d.machine.Kvm = d.template.GetUseKvm()
-	d.machine.AddNICs(netDev)
+	for _, dev := range d.machine.AddNICs(netDev) {
+		d.machine.AddDevice(dev)
+	}
+
+	// these devices are required for communication through the qemu guest agent
+	d.machine.AgentSocketPath = filepath.Join(instanceDir, "agent.socket")
+	virtioserialDev := NewDevice(DevType)
+	hostDev := NewDevice(CharType)
+	hostDev.AddDriver("socket")
+	hostDev.AddDriverOption("path", fmt.Sprintf("%s,servier,nowait", d.machine.AgentSocketPath))
+	guestDev := NewDevice(DevType)
+	guestDev.AddDriver("virtserialport")
+	guestDev.AddDriverOption("name", instanceId)
+	hostDev.LinkToGuestDevice(instanceId, guestDev)
+
+	d.machine.AddDevice(virtioserialDev)
+	d.machine.AddDevice(hostDev)
+	d.machine.AddDevice(guestDev)
 }
 
 func (d *QEMUHypervisorDriver) log() *log.Entry {
