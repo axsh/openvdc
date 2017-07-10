@@ -55,6 +55,8 @@ type Machine struct {
 	Vnc               string
 	MonitorSocketPath string
 	SerialSocketPath  string
+	AgentSocketPath   string
+	Devices           []*Device
 	Pidfile           string
 	Nics              []NetDev
 	Drives            map[string]Drive
@@ -159,12 +161,22 @@ func NewMachine(cores int, mem uint64) *Machine {
 		Cores:   cores,
 		Memory:  mem,
 		Drives:  make(map[string]Drive),
+		Devices: make([]*Device, 0),
 		Display: "none",
 	}
 }
 
 func (m *Machine) AddNICs(nics []NetDev) {
 	for _, nic := range nics {
+		netDev := NewDevice(nic.IfName)
+		netDev.SetDeviceType("netdev")
+		netDev.AddDriver("tap")
+		netDev.AddGuestDevice("virtio-net-pci")
+		if len(nic.MacAddr) > 0 {
+			netDev.GuestDevice.AddDriverOption("mac", nic.MacAddr)
+		}
+
+		m.Devices = append(m.Devices, netDev)
 		m.Nics = append(m.Nics, nic)
 	}
 }

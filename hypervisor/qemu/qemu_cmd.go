@@ -41,17 +41,9 @@ func (cmd *cmdLine) QemuBootCmd(m *Machine) []string {
 	}
 	if len(m.Nics) == 0 {
 		cmd.appendArgs("-net", "none")
-	} else {
-		for _, nic := range m.Nics {
-			netdevOpts := fmt.Sprintf("tap,ifname=%s,id=%s", nic.IfName, nic.IfName)
-			deviceOpts := fmt.Sprintf("virtio-net-pci,netdev=%s", nic.IfName)
-			if len(nic.MacAddr) > 0 {
-				deviceOpts = fmt.Sprintf("%s,mac=%s", deviceOpts, nic.MacAddr)
-			}
-
-			cmd.appendArgs("-netdev", netdevOpts)
-			cmd.appendArgs("-device", deviceOpts)
-		}
+	}
+	for _, device := range m.Devices {
+		cmd.appendArgs(device.EvaluateCliCmd())
 	}
 	cmd.appendArgs("-display", m.Display)
 	cmd.appendArgs("-daemonize")

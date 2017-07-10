@@ -19,6 +19,30 @@ func TestQemuBootCmd(t *testing.T) {
 		MonitorSocketPath: "monitor",
 		SerialSocketPath:  "serial",
 		Pidfile:           "pidfile",
+		Devices: []*Device{
+			&Device{
+				Type: "netdev",
+				Id: "if",
+				Params: &DeviceParams{
+					Driver: "tap",
+					Options: []DriverOption{
+						DriverOption{key: "ifname", value: "if"},
+						DriverOption{key: "id", value: "if"},
+					},
+				},
+				GuestDevice: &Device{
+					Type: "device",
+					Id: "if",
+					Params: &DeviceParams{
+						Driver: "virtio-net-pci",
+						Options: []DriverOption{
+							DriverOption{key: "netdev", value: "if"},
+							DriverOption{key: "mac", value: "mac"},
+						},
+					},
+				},
+			},
+		},
 		Nics: []NetDev{
 			NetDev{
 				IfName:  "if",

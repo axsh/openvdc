@@ -353,7 +353,7 @@ func (d *QEMUHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *QEMUHypervisorDriver) StartInstance() error {
-	d.log().Infoln("Starting qemu instnace...")
+	d.log().Infoln("Starting qemu instance...")
 	if err := d.machine.Start(filepath.Join(settings.QemuPath, settings.QemuProvider)); err != nil {
 		return errors.Wrap(err, "Failed machien.Start()")
 	}
