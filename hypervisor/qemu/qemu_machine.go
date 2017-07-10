@@ -58,13 +58,13 @@ type Machine struct {
 	AgentSocketPath   string
 	Devices           []*Device
 	Pidfile           string
-	Nics              []NetDev
+	Nics              []Nic
 	Drives            map[string]Drive
 	Process           *os.Process
 	Kvm               bool
 }
 
-type NetDev struct {
+type Nic struct {
 	IfName       string
 	Index        string
 	Ipv4Addr     string
@@ -166,19 +166,29 @@ func NewMachine(cores int, mem uint64) *Machine {
 	}
 }
 
-func (m *Machine) AddNICs(nics []NetDev) {
+func (m*Machine) AddNICs(nics []Nic) []*Device {
+	var netDevs []*Device
 	for _, nic := range nics {
-		netDev := NewDevice(nic.IfName)
-		netDev.SetDeviceType("netdev")
-		netDev.AddDriver("tap")
-		netDev.AddGuestDevice("virtio-net-pci")
+		hostDev := NewDevice(NetType)
+		hostDev.AddDriver("tap")
+
+		guestDev := NewDevice(DevType)
+		guestDev.AddDriver("virtio-net-pci")
+
 		if len(nic.MacAddr) > 0 {
-			netDev.GuestDevice.AddDriverOption("mac", nic.MacAddr)
+			guestDev.AddDriverOption("mac", nic.MacAddr)
 		}
 
-		m.Devices = append(m.Devices, netDev)
+		hostDev.LinkToGuestDevice(nic.IfName, guestDev)
+		netDevs = append(netDevs, hostDev)
+		netDevs = append(netDevs, guestDev)
 		m.Nics = append(m.Nics, nic)
 	}
+	return netDevs
+}
+
+func (m *Machine) AddDevice(device *Device) {
+	m.Devices = append(m.Devices, device)
 }
 
 func (m *Machine) Start(startCmd string) error {

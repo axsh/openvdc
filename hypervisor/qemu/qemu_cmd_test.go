@@ -21,8 +21,7 @@ func TestQemuBootCmd(t *testing.T) {
 		Pidfile:           "pidfile",
 		Devices: []*Device{
 			&Device{
-				Type: "netdev",
-				Id: "if",
+				DeviceType: "netdev",
 				Params: &DeviceParams{
 					Driver: "tap",
 					Options: []DriverOption{
@@ -30,21 +29,20 @@ func TestQemuBootCmd(t *testing.T) {
 						DriverOption{key: "id", value: "if"},
 					},
 				},
-				GuestDevice: &Device{
-					Type: "device",
-					Id: "if",
-					Params: &DeviceParams{
-						Driver: "virtio-net-pci",
-						Options: []DriverOption{
-							DriverOption{key: "netdev", value: "if"},
-							DriverOption{key: "mac", value: "mac"},
-						},
+			},
+			&Device{
+				DeviceType: "device",
+				Params: &DeviceParams{
+					Driver: "virtio-net-pci",
+					Options: []DriverOption{
+						DriverOption{key: "netdev", value: "if"},
+						DriverOption{key: "mac", value: "mac"},
 					},
 				},
 			},
 		},
-		Nics: []NetDev{
-			NetDev{
+		Nics: []Nic{
+			Nic{
 				IfName:  "if",
 				MacAddr: "mac",
 			},
