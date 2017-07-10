@@ -71,7 +71,7 @@ func (d *Device) AddDriverOption(key string, value string) error {
 
 func (d *Device) LinkToGuestDevice(id string, guestDevice *Device) {
 	d.AddDriverOption("id", id)
-	d.AddDriverOption(d.DeviceType, id)
+	guestDevice.AddDriverOption(d.DeviceType, id)
 }
 
 func (d *Device) EvaluateCliCmd() string {

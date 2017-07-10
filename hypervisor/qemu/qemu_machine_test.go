@@ -28,3 +28,10 @@ func TestAddNICs(t *testing.T) {
 		assert.Equal(fmt.Sprintf("if%d", idx), nic.IfName)
 	}
 }
+
+func TestAddDevice(t *testing.T) {
+	assert := assert.New(t)
+	machine := NewMachine(1, 512)
+	machine.AddDevice(NewDevice(DevType))
+	assert.Equal(len(machine.Devices), 1)
+}
