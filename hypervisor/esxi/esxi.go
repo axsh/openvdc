@@ -3,18 +3,20 @@
 package esxi
 
 import (
+	//	"bytes"
 	"fmt"
 	"net/url"
+	//	"os/exec"
 	"path"
-	"context"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
-	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/model"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-
-	"github.com/vmware/govmomi"
-	"github.com/vmware/govmomi/vim25/soap"
+	govc "github.com/vmware/govmomi/govc/cli"
+	_ "github.com/vmware/govmomi/govc/vm"
+	_ "github.com/vmware/govmomi/govc/datastore"
 )
 
 type BridgeType int
@@ -26,13 +28,14 @@ const (
 )
 
 var settings struct {
-	EsxiUser	string
-	EsxiPass	string
-	EsxiIp		string
-	EsxiInsecure	bool
-	EsxiUrl         string
-	BridgeName      string
-        BridgeType      BridgeType
+	EsxiUser       string
+	EsxiPass       string
+	EsxiIp         string
+	EsxiInsecure   bool
+	EsxiHostSshkey string
+	EsxiUrl        string
+	BridgeName     string
+	BridgeType     BridgeType
 }
 
 func (t BridgeType) String() string {
@@ -54,10 +57,10 @@ type EsxiHypervisorDriver struct {
 	template  *model.EsxiTemplate
 	imageName string
 	hostName  string
-	esxiClient *govmomi.Client
+	vmName    string
 }
 
-func (p *EsxiHypervisorProvider) Name () string {
+func (p *EsxiHypervisorProvider) Name() string {
 	return "esxi"
 }
 
@@ -68,33 +71,34 @@ func init() {
 
 func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	if sub.IsSet("bridges.name") {
-                settings.BridgeName = sub.GetString("bridges.name")
-                if sub.IsSet("bridges.type") {
-                        switch sub.GetString("bridges.type") {
-                        case "linux":
-                                settings.BridgeType = Linux
-                        case "ovs":
-                                settings.BridgeType = OVS
-                        default:
-                                return errors.Errorf("Unknown bridges.type value: %s", sub.GetString("bridges.type"))
-                        }
-                }
-        } else if sub.IsSet("bridges.linux.name") {
-                log.Warn("bridges.linux.name is obsolete option")
-                settings.BridgeName = sub.GetString("bridges.linux.name")
-                settings.BridgeType = Linux
-        } else if sub.IsSet("bridges.ovs.name") {
-                log.Warn("bridges.ovs.name is obsolete option")
-                settings.BridgeName = sub.GetString("bridges.ovs.name")
-                settings.BridgeType = OVS
-        }
+		settings.BridgeName = sub.GetString("bridges.name")
+		if sub.IsSet("bridges.type") {
+			switch sub.GetString("bridges.type") {
+			case "linux":
+				settings.BridgeType = Linux
+			case "ovs":
+				settings.BridgeType = OVS
+			default:
+				return errors.Errorf("Unknown bridges.type value: %s", sub.GetString("bridges.type"))
+			}
+		}
+	} else if sub.IsSet("bridges.linux.name") {
+		log.Warn("bridges.linux.name is obsolete option")
+		settings.BridgeName = sub.GetString("bridges.linux.name")
+		settings.BridgeType = Linux
+	} else if sub.IsSet("bridges.ovs.name") {
+		log.Warn("bridges.ovs.name is obsolete option")
+		settings.BridgeName = sub.GetString("bridges.ovs.name")
+		settings.BridgeType = OVS
+	}
 
 	settings.EsxiUser = sub.GetString("hypervisor.esxi-user")
 	settings.EsxiPass = sub.GetString("hypervisor.esxi-pass")
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
+	settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
 
-	esxiInfo := fmt.Sprintf("%s:%s@%s",settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
+	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
 	u, _ := url.Parse("https://")
 	u.Path = path.Join(u.Path, esxiInfo, "sdk")
 	settings.EsxiUrl = u.String()
@@ -102,35 +106,21 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	return nil
 }
 
-func (p *EsxiHypervisorProvider) CreateDriver (instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
+func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
 	EsxiTmpl, ok := template.(*model.EsxiTemplate)
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.WmwareTemplate: %T, template")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	u, err := soap.ParseURL(settings.EsxiUrl)
-        if err != nil {
-                return nil, err
-        }
-
-	c, err := govmomi.NewClient(ctx, u, settings.EsxiInsecure)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer c.Logout(ctx)
-
 	driver := &EsxiHypervisorDriver{
 		Base: hypervisor.Base{
-			Log: log.WithFields(log.Fields{"Hypervisor": "esxi", "instance_id": instance.GetId()}),
+			Log:      log.WithFields(log.Fields{"Hypervisor": "esxi", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
 		template: EsxiTmpl,
-		esxiClient: c,
+		vmName:   instance.GetId(),
 	}
+
 	return driver, nil
 }
 
@@ -139,6 +129,17 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
+
+	args := []string{
+                "datastore.mkdir",
+                "-dc=ha-datacenter",
+                "-k=true",
+                fmt.Sprintf("-u=%s", settings.EsxiUrl),
+                "-ds=datastore2",
+                d.vmName,
+        }	
+        govc.Run(args)
+
 	return nil
 }
 
@@ -147,6 +148,7 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
+
 	return nil
 }
 
