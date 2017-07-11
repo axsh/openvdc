@@ -167,17 +167,27 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 	govc.Run(args)
 
-
 	//Register new VM
-        args = []string{
-                "vm.register",
-                "-dc=ha-datacenter",
-                "-k=true",
-                fmt.Sprintf("-u=%s", settings.EsxiUrl),
-                "-ds=datastore2",
-                fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName),
-        }
-        govc.Run(args)
+	args = []string{
+		"vm.register",
+		"-dc=ha-datacenter",
+		"-k=true",
+		fmt.Sprintf("-u=%s", settings.EsxiUrl),
+		"-ds=datastore2",
+		fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName),
+	}
+	govc.Run(args)
+
+	//Rename VM
+	args = []string{
+		"vm.change",
+		"-dc=ha-datacenter",
+		"-k=true",
+		fmt.Sprintf("-u=%s", settings.EsxiUrl),
+		fmt.Sprintf("-name=%s", d.vmName),
+		fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName),
+	}
+	govc.Run(args)
 
 	return nil
 }
