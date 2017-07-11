@@ -189,6 +189,17 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 	govc.Run(args)
 
+	//Start VM
+        args = []string{
+                "vm.power",
+                "-dc=ha-datacenter",
+                "-k=true",
+                fmt.Sprintf("-u=%s", settings.EsxiUrl),
+                "-on=true",
+                fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName),
+        }
+        govc.Run(args)
+
 	return nil
 }
 
