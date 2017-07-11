@@ -11,6 +11,7 @@
 # esxi-pass = ""
 # esxi-ip = ""
 # esxi-insecure = true
+# esxi-host-sshkey = ""
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"
