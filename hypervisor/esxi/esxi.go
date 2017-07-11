@@ -3,10 +3,10 @@
 package esxi
 
 import (
-	//	"bytes"
+	"bytes"
 	"fmt"
 	"net/url"
-	//	"os/exec"
+	"os/exec"
 	"path"
 
 	log "github.com/Sirupsen/logrus"
@@ -129,7 +129,8 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
-
+	
+	//Create new folder 
 	args := []string{
                 "datastore.mkdir",
                 "-dc=ha-datacenter",
@@ -139,6 +140,20 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
                 d.vmName,
         }	
         govc.Run(args)
+
+	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
+	"datastore2","Centos7","Centos7","datastore2",d.vmName,"Centos7") //Todo: Don't use hardcoded values
+
+	cmd := exec.Command("ssh", "-i", settings.EsxiHostSshkey, "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=quiet", "-o", "UserKnownHostsFile /dev/null", fmt.Sprintf("root@%s", settings.EsxiIp), vmkfstoolsCmd)
+        var out bytes.Buffer
+        var stderr bytes.Buffer
+        cmd.Stdout = &out
+        cmd.Stderr = &stderr
+        err := cmd.Run()
+        if err != nil {
+        	fmt.Println(stderr.String()) //Todo: Return error in better way
+        	log.Fatal(err)
+        }
 
 	return nil
 }
