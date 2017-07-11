@@ -15,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	govc "github.com/vmware/govmomi/govc/cli"
-	_ "github.com/vmware/govmomi/govc/vm"
 	_ "github.com/vmware/govmomi/govc/datastore"
+	_ "github.com/vmware/govmomi/govc/vm"
 )
 
 type BridgeType int
@@ -129,31 +129,43 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
-	
-	//Create new folder 
+
+	// Create new folder
 	args := []string{
-                "datastore.mkdir",
-                "-dc=ha-datacenter",
-                "-k=true",
-                fmt.Sprintf("-u=%s", settings.EsxiUrl),
-                "-ds=datastore2",
-                d.vmName,
-        }	
-        govc.Run(args)
+		"datastore.mkdir",
+		"-dc=ha-datacenter",
+		"-k=true",
+		fmt.Sprintf("-u=%s", settings.EsxiUrl),
+		"-ds=datastore2",
+		d.vmName,
+	}
+	govc.Run(args)
 
+	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
 	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
-	"datastore2","Centos7","Centos7","datastore2",d.vmName,"Centos7") //Todo: Don't use hardcoded values
-
+		"datastore2", "Centos7", "Centos7", "datastore2", d.vmName, "Centos7") //Todo: Don't use hardcoded values
 	cmd := exec.Command("ssh", "-i", settings.EsxiHostSshkey, "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=quiet", "-o", "UserKnownHostsFile /dev/null", fmt.Sprintf("root@%s", settings.EsxiIp), vmkfstoolsCmd)
-        var out bytes.Buffer
-        var stderr bytes.Buffer
-        cmd.Stdout = &out
-        cmd.Stderr = &stderr
-        err := cmd.Run()
-        if err != nil {
-        	fmt.Println(stderr.String()) //Todo: Return error in better way
-        	log.Fatal(err)
-        }
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(stderr.String()) //Todo: Return error in better way
+		log.Fatal(err)
+	}
+
+	//Copy .vmx-file
+	args = []string{
+		"datastore.cp",
+		"-dc=ha-datacenter",
+		"-k=true",
+		fmt.Sprintf("-u=%s", settings.EsxiUrl),
+		"-ds=datastore2",
+		fmt.Sprintf("%s/%s.vmx", "Centos7", "Centos7"),
+		fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName),
+	}
+	govc.Run(args)
 
 	return nil
 }
