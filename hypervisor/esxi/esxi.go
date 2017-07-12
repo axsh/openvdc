@@ -179,6 +179,10 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
+
+	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+
 	return nil
 }
 
