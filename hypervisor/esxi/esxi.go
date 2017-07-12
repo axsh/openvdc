@@ -28,14 +28,17 @@ const (
 )
 
 var settings struct {
-	EsxiUser       string
-	EsxiPass       string
-	EsxiIp         string
-	EsxiInsecure   bool
-	EsxiHostSshkey string
-	EsxiUrl        string
-	BridgeName     string
-	BridgeType     BridgeType
+	EsxiUser        string
+	EsxiPass        string
+	EsxiIp          string
+	EsxiInsecure    bool
+	EsxiHostSshkey  string
+	EsxiVmUser      string
+        EsxiVmPass      string
+	EsxiVmDatastore string
+	EsxiUrl         string
+	BridgeName      string
+	BridgeType      BridgeType
 }
 
 func (t BridgeType) String() string {
@@ -97,6 +100,9 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
+	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
+	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
+	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
 	u, _ := url.Parse("https://")
