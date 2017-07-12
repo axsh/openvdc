@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os/exec"
 	"path"
+	"strconv"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -32,6 +33,7 @@ var settings struct {
 	EsxiUser        string
 	EsxiPass        string
 	EsxiIp          string
+	EsxiDatacenter  string
 	EsxiInsecure    bool
 	EsxiHostSshkey  string
 	EsxiVmUser      string
@@ -99,6 +101,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiUser = sub.GetString("hypervisor.esxi-user")
 	settings.EsxiPass = sub.GetString("hypervisor.esxi-pass")
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
+	settings.EsxiDatacenter = sub.GetString("hypervisor.esxi-datacenter")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
@@ -140,8 +143,8 @@ func esxiCmd(args ...string) {
 	var a []string
 
 	a = append(a, args[0])
-	a = append(a, fmt.Sprintf("-dc=%s", "ha-datacenter"))
-	a = append(a, fmt.Sprintf("-k=%s", "true"))
+	a = append(a, fmt.Sprintf("-dc=%s", settings.EsxiDatacenter))
+	a = append(a, fmt.Sprintf("-k=%s", strconv.FormatBool(settings.EsxiInsecure)))
 	a = append(a, fmt.Sprintf("-u=%s", settings.EsxiUrl))
 
 	for i := 1; i < len(args); i++ {

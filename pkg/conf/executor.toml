@@ -10,10 +10,12 @@
 # esxi-user = ""
 # esxi-pass = ""
 # esxi-ip = ""
+# esxi-datacenter = "ha-datacenter"
 # esxi-insecure = true
 # esxi-host-sshkey = ""
 # esxi-vm-user = ""
 # esxi-vm-pass = ""
+# esxi-vm-datastore = ""
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"
