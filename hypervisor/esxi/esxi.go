@@ -17,6 +17,7 @@ import (
 	cli "github.com/vmware/govmomi/govc/cli"
 	_ "github.com/vmware/govmomi/govc/datastore"
 	_ "github.com/vmware/govmomi/govc/vm"
+	_ "github.com/vmware/govmomi/govc/vm/guest"
 )
 
 type BridgeType int
@@ -34,7 +35,7 @@ var settings struct {
 	EsxiInsecure    bool
 	EsxiHostSshkey  string
 	EsxiVmUser      string
-        EsxiVmPass      string
+	EsxiVmPass      string
 	EsxiVmDatastore string
 	EsxiUrl         string
 	BridgeName      string
@@ -193,7 +194,7 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
-        esxiCmd("vm.power", "-on=true","-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+	esxiCmd("vm.power", "-on=true", "-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	return nil
 }
@@ -206,6 +207,10 @@ func (d *EsxiHypervisorDriver) StopInstance() error {
 }
 
 func (d EsxiHypervisorDriver) RebootInstance() error {
+
+	//Linux
+	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/sbin/reboot")
+
 	return nil
 }
 
