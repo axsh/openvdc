@@ -153,11 +153,11 @@ func esxiCmd(args ...string) {
 func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	// Create new folder
-	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s", "datastore2"), d.vmName)
+	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), d.vmName)
 
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
 	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
-		"datastore2", "Centos7", "Centos7", "datastore2", d.vmName, "Centos7") //Todo: Don't use hardcoded values
+		settings.EsxiVmDatastore, "Centos7", "Centos7", settings.EsxiVmDatastore, d.vmName, "Centos7") //Todo: Don't use hardcoded values
 	cmd := exec.Command("ssh", "-i", settings.EsxiHostSshkey, "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=quiet", "-o", "UserKnownHostsFile /dev/null", fmt.Sprintf("root@%s", settings.EsxiIp), vmkfstoolsCmd)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -170,37 +170,37 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	//Copy .vmx-file
-	esxiCmd("datastore.cp", fmt.Sprintf("-ds=%s", "datastore2"), fmt.Sprintf("%s/%s.vmx", "Centos7", "Centos7"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
+	esxiCmd("datastore.cp", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/%s.vmx", "Centos7", "Centos7"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
 
 	//Register new VM
-	esxiCmd("vm.register", fmt.Sprintf("-ds=%s", "datastore2"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
+	esxiCmd("vm.register", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
 
 	//Rename VM
-	esxiCmd("vm.change", fmt.Sprintf("-name=%s", d.vmName), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+	esxiCmd("vm.change", fmt.Sprintf("-name=%s", d.vmName), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	//Start VM
-	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	return nil
 }
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
 
-	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
-	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	return nil
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
-        esxiCmd("vm.power", "-on=true","-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+        esxiCmd("vm.power", "-on=true","-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	return nil
 }
 
 func (d *EsxiHypervisorDriver) StopInstance() error {
 	//Suspend to save machine state
-	esxiCmd("vm.power", "-suspend=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+	esxiCmd("vm.power", "-suspend=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	return nil
 }
