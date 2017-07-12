@@ -130,24 +130,24 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 
 func esxiCmd(args ...string) {
 
-        var a []string
+	var a []string
 
-        a = append(a, args[0])
-        a = append(a, fmt.Sprintf("-dc=%s", "ha-datacenter"))
-        a = append(a, fmt.Sprintf("-k=%s", "true"))
+	a = append(a, args[0])
+	a = append(a, fmt.Sprintf("-dc=%s", "ha-datacenter"))
+	a = append(a, fmt.Sprintf("-k=%s", "true"))
 	a = append(a, fmt.Sprintf("-u=%s", settings.EsxiUrl))
 
-        for i := 1; i < len(args); i++ {
-                a = append(a, args[i])
-        }
+	for i := 1; i < len(args); i++ {
+		a = append(a, args[i])
+	}
 
-      	cli.Run(a)
+	cli.Run(a)
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	// Create new folder
-	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s","datastore2"), d.vmName)
+	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s", "datastore2"), d.vmName)
 
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
 	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
@@ -164,10 +164,10 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	//Copy .vmx-file
-	esxiCmd("datastore.cp", fmt.Sprintf("-ds=%s","datastore2"), fmt.Sprintf("%s/%s.vmx", "Centos7", "Centos7"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
+	esxiCmd("datastore.cp", fmt.Sprintf("-ds=%s", "datastore2"), fmt.Sprintf("%s/%s.vmx", "Centos7", "Centos7"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
 
 	//Register new VM
-	esxiCmd("vm.register", fmt.Sprintf("-ds=%s","datastore2"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
+	esxiCmd("vm.register", fmt.Sprintf("-ds=%s", "datastore2"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
 
 	//Rename VM
 	esxiCmd("vm.change", fmt.Sprintf("-name=%s", d.vmName), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
