@@ -187,11 +187,15 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
+        esxiCmd("vm.power", "-on=true","-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
 
 	return nil
 }
 
 func (d *EsxiHypervisorDriver) StopInstance() error {
+	//Suspend to save machine state
+	esxiCmd("vm.power", "-suspend=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", "datastore2", d.vmName, d.vmName))
+
 	return nil
 }
 
