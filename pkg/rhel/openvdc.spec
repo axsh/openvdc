@@ -53,6 +53,7 @@ mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/ssh
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
+mkdir -p "$RPM_BUILD_ROOT"/usr/sbin
 ln -sf /opt/axsh/openvdc/bin/openvdc-executor  "$RPM_BUILD_ROOT"/usr/sbin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
