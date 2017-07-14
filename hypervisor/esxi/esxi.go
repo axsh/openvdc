@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 
 	log "github.com/Sirupsen/logrus"
@@ -30,6 +31,7 @@ const (
 )
 
 var settings struct {
+	ScriptPath      string
 	EsxiUser        string
 	EsxiPass        string
 	EsxiIp          string
@@ -98,6 +100,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		settings.BridgeType = OVS
 	}
 
+	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.EsxiUser = sub.GetString("hypervisor.esxi-user")
 	settings.EsxiPass = sub.GetString("hypervisor.esxi-pass")
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
@@ -167,8 +170,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println(stderr.String()) //Todo: Return error in better way
-		log.Fatal(err)
+		return errors.Errorf(stderr.String(), "Error cloning vmdk")
 	}
 
 	//Copy .vmx-file
@@ -196,11 +198,15 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
+	//TODO: Check for errors.
+
 	return nil
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
 	esxiCmd("vm.power", "-on=true", "-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
+	//TODO: Check for errors.
 
 	return nil
 }
@@ -209,12 +215,16 @@ func (d *EsxiHypervisorDriver) StopInstance() error {
 	//Suspend to save machine state
 	esxiCmd("vm.power", "-suspend=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
+	//TODO: Check for errors.
+
 	return nil
 }
 
 func (d EsxiHypervisorDriver) RebootInstance() error {
 	//Linux
 	d.RunGuestCmd("/sbin/reboot")
+
+	//TODO: Check for errors.
 
 	return nil
 }
@@ -228,16 +238,17 @@ func (d EsxiHypervisorDriver) RunGuestCmd(cmd string) {
 }
 
 func (d EsxiHypervisorDriver) NetworkConfig() error {
-
 	if len(d.template.Interfaces) > 0 && settings.BridgeType == None {
 		d.log().Errorf("Network interfaces are requested to create but no bridge is configured")
 	}
-	
+
 	//TODO: Setup multiple interfaces
-	esxiCmd("guest.upload", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass),"-perm=1", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/etc/openvdc/scripts/esxi-vm-config.sh", "/tmp/testscript.sh")
+	esxiCmd("guest.upload", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), "-perm=1", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), filepath.Join(settings.ScriptPath, "esxi-vm-config.sh"), "/tmp/testscript.sh")
 	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/tmp/testscript.sh", d.template.Interfaces[0].Ipv4Addr)
 
 	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/bin/systemctl", "restart", "network")
+
+	//TODO: Check for errors.
 
 	return nil
 }
