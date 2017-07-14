@@ -139,7 +139,6 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 }
 
 func esxiCmd(args ...string) {
-
 	var a []string
 
 	a = append(a, args[0])
@@ -155,13 +154,12 @@ func esxiCmd(args ...string) {
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
-
 	// Create new folder
 	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), d.vmName)
 
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
 	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
-		settings.EsxiVmDatastore, "Centos7", "Centos7", settings.EsxiVmDatastore, d.vmName, "Centos7") //Todo: Don't use hardcoded values
+		settings.EsxiVmDatastore, "CentOS7", "CentOS7", settings.EsxiVmDatastore, d.vmName, "CentOS7") //Todo: Don't use hardcoded values
 	cmd := exec.Command("ssh", "-i", settings.EsxiHostSshkey, "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=quiet", "-o", "UserKnownHostsFile /dev/null", fmt.Sprintf("root@%s", settings.EsxiIp), vmkfstoolsCmd)
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -174,7 +172,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	//Copy .vmx-file
-	esxiCmd("datastore.cp", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/%s.vmx", "Centos7", "Centos7"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
+	esxiCmd("datastore.cp", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/%s.vmx", "CentOS7", "CentOS7"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
 
 	//Register new VM
 	esxiCmd("vm.register", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
@@ -185,11 +183,14 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	//Start VM
 	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
+	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
+	d.NetworkConfig()
+
 	return nil
 }
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
-
 	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
@@ -210,13 +211,29 @@ func (d *EsxiHypervisorDriver) StopInstance() error {
 }
 
 func (d EsxiHypervisorDriver) RebootInstance() error {
-
 	//Linux
-	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/sbin/reboot")
+	d.RunGuestCmd("/sbin/reboot")
 
 	return nil
 }
 
 func (d EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
+	return nil
+}
+
+func (d EsxiHypervisorDriver) RunGuestCmd(cmd string) {
+	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), cmd)
+}
+
+func (d EsxiHypervisorDriver) NetworkConfig() error {
+
+	if len(d.template.Interfaces) > 0 && settings.BridgeType == None {
+		d.log().Errorf("Network interfaces are requested to create but no bridge is configured")
+	}
+	
+	//TODO: Setup multiple interfaces
+	esxiCmd("guest.upload", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass),"-perm=1", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/etc/openvdc/scripts/esxi-vm-config.sh", "/tmp/testscript.sh")
+	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/tmp/testscript.sh", d.template.Interfaces[0].Ipv4Addr)
+
 	return nil
 }
