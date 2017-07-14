@@ -50,7 +50,7 @@ func TestBuildArg(t *testing.T) {
 	device := NewDevice(DevType)
 	device.AddDriver("driver")
 	device.AddDriverOption("id", "driver")
-	args := device.EvaluateCliCmd()
+	args := device.BuildArg()
 
 	assert.NotNil(args)
 	assert.Equal(len(args), 2)

@@ -3,7 +3,6 @@
 package qemu
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
