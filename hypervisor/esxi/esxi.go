@@ -187,6 +187,8 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	d.NetworkConfig()
 
+	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
 	return nil
 }
 
@@ -234,6 +236,8 @@ func (d EsxiHypervisorDriver) NetworkConfig() error {
 	//TODO: Setup multiple interfaces
 	esxiCmd("guest.upload", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass),"-perm=1", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/etc/openvdc/scripts/esxi-vm-config.sh", "/tmp/testscript.sh")
 	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/tmp/testscript.sh", d.template.Interfaces[0].Ipv4Addr)
+
+	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/bin/systemctl", "restart", "network")
 
 	return nil
 }
