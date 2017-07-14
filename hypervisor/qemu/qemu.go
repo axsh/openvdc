@@ -175,7 +175,7 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 
 	guestDev := NewDevice(DevType)
 	guestDev.AddDriver("virtserialport")
-	guestDev.AddDriverOption("name", instanceId)
+	guestDev.AddDriverOption("name", "org.qemu.guest_agent.0")
 
 	hostDev.LinkToGuestDevice(instanceId, guestDev)
 
