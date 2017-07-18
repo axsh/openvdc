@@ -21,12 +21,14 @@ type EsxiHandler struct {
 }
 
 func (h *EsxiHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
-	tmpl := &model.EsxiTemplate{}
-	if err := json.Unmarshal(in, tmpl); err != nil {
-		return nil, err
+	tmpl := &model.EsxiTemplate{EsxiImage: &model.EsxiTemplate_Image{}}
+
+	type EsxiImage struct {
+		DownloadUrl string `json:"download_url,omitempty"`
 	}
+
 	var json_template struct {
-		Template map[string]json.RawMessage `json:"esxi_template,omitempty"`
+		EsxiImage EsxiImage `json:"esxi_image,omitempty"`
 	}
 	if err := json.Unmarshal(in, &json_template); err != nil {
 		return nil, err
@@ -36,8 +38,12 @@ func (h *EsxiHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 }
 
 func (h *EsxiHandler) SetTemplateItem(t *model.Template, m model.ResourceTemplate) {
+	esxiTmpl, ok := m.(*model.EsxiTemplate)
+	if !ok {
+		panic("template type is not *model.EsxiTemplate")
+	}
 	t.Item = &model.Template_Esxi{
-		Esxi: m.(*model.EsxiTemplate),
+		Esxi: esxiTmpl,
 	}
 }
 
