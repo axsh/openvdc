@@ -8,7 +8,7 @@ import (
 
 func TestNewDevice(t *testing.T) {
 	assert := assert.New(t)
-	device := NewDevice(DevType) 
+	device := NewDevice(DevType)
 	assert.NotNil(device)
 	assert.Equal("device", device.DeviceType)
 	assert.NotNil(device.Params)

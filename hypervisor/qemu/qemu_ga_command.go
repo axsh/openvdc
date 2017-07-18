@@ -1,13 +1,13 @@
 package qemu
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
-	"bufio"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -16,7 +16,7 @@ type QEMUCommandArgs struct {
 	Pid             int      `json:"pid,omitempty"`
 	Path            string   `json:"path,omitempty"`
 	Args            []string `json:"arg,omitempty"`
-	EnvironmentVars []string `json:"env,omitempty"` 
+	EnvironmentVars []string `json:"env,omitempty"`
 	CaptureOutput   bool     `json:"capture-output,omitempty"`
 }
 
@@ -42,7 +42,7 @@ func NewQEMUCommand(cmd []string, output bool) *QEMUCommand {
 	gaCmd := &QEMUCommand{
 		Command: "guest-exec",
 		Arguments: &QEMUCommandArgs{
-			Path: cmd[0],
+			Path:          cmd[0],
 			CaptureOutput: output,
 		},
 	}
@@ -60,12 +60,11 @@ func NewQEMUCommand(cmd []string, output bool) *QEMUCommand {
 func (c *QEMUCommand) convertToJson() (string, error) {
 	query, err := json.Marshal(c)
 	if err != nil {
-		return "",err
+		return "", err
 	}
 
 	return string(query), nil
 }
-
 
 func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 	readBuf := bufio.NewReader(conn)
@@ -81,7 +80,7 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 		conn.SetReadDeadline(time.Now().Add(time.Second))
 		var timeout time.Time
 		go func() {
-			timeout = <- time.After(time.Second*10)
+			timeout = <-time.After(time.Second * 10)
 		}()
 
 		for {
@@ -93,7 +92,7 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 				}
 				switch cmd.Command {
 				case "guest-exec-status":
-					if resp.Return.Exited { 
+					if resp.Return.Exited {
 						errc <- nil
 						return
 					}
@@ -107,11 +106,11 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 					return
 				}
 			}
-			if (!timeout.IsZero()) {
+			if !timeout.IsZero() {
 				errc <- errors.Errorf("No response from agent, timed out: %s", query)
 				return
 			}
-			time.Sleep(time.Second*1)
+			time.Sleep(time.Second * 1)
 		}
 	}
 

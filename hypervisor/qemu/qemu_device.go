@@ -1,8 +1,8 @@
 package qemu
 
 import (
-	"strings"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 // -device virtio-serial -chardev socket,path=/tmp/foo,server,nowait,id=foo -device virtserialport,chardev=foo,name=org.fedoraproject.port.0
@@ -31,14 +31,14 @@ type DriverOption struct {
 }
 
 type Device struct {
-	DeviceType  string
-	Params      *DeviceParams
+	DeviceType string
+	Params     *DeviceParams
 }
 
 type DeviceParams struct {
-	Driver   string
+	Driver string
 	// Wrap the key value pair here because maps are not sorted
-	Options  []DriverOption
+	Options []DriverOption
 }
 
 func NewDevice(deviceType DeviceType) *Device {

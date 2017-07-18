@@ -166,7 +166,7 @@ func NewMachine(cores int, mem uint64) *Machine {
 	}
 }
 
-func (m*Machine) AddNICs(nics []Nic) []*Device {
+func (m *Machine) AddNICs(nics []Nic) []*Device {
 	var netDevs []*Device
 	for _, nic := range nics {
 		hostDev := NewDevice(NetType)

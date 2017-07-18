@@ -77,7 +77,7 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 			return nil, err
 		}
 	}
-	go func () {
+	go func() {
 		defer close(closeChan)
 		waitClosed.Wait()
 	}()
@@ -121,19 +121,19 @@ func (c *consoleWaitError) Error() string {
 }
 
 func (c *consoleWaitError) ExitCode() int {
-	if (c.Exitcode != 0) {
+	if c.Exitcode != 0 {
 		return 1
 	}
 	return 0
 }
 
-func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup) error  {
+func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup) error {
 	waitClosed.Add(1)
 	go func() {
 		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 		for {
 			select {
-			case err := <- con.conChan:
+			case err := <-con.conChan:
 				con.conChan <- err
 				break
 			default:
@@ -163,7 +163,7 @@ func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *
 			con.socketConn.SetDeadline(time.Now().Add(time.Second))
 			n, err := con.socketConn.Read(b)
 			select {
-			case err := <- con.conChan:
+			case err := <-con.conChan:
 				if _, e := param.Stdout.Write([]byte{0x0A}); e != nil {
 					con.conChan <- errors.Wrap(e, "\nFailed to write the linefeed character on exit\n\n")
 				} else {
