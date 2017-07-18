@@ -51,7 +51,8 @@ message Template {
     NoneTemplate none = 500;
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
-    EsxiTemplate esxi = 503;
+    QemuTemplate qemu = 503;
+    EsxiTemplate esxi = 504;
   }
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
@@ -78,7 +79,7 @@ message LxcTemplate {
   repeated Interface interfaces = 6;
   message Template {
     // Template specifies the name of the template.
-	  string template = 1;
+    string template = 1;
 
     // Backend specifies the type of the backend.
     int32 backend = 2;
@@ -117,6 +118,33 @@ message LxcTemplate {
     repeated string extra_args = 13 [json_name="extra_args"] ;
   }
   Template lxc_template = 7 [json_name="lxc_template"];
+  repeated string node_groups = 8 [json_name="node_groups"];
+}
+
+message QemuTemplate {
+  int32 vcpu = 1;
+  int32 memory_gb = 2 [json_name="memory_gb"];
+  int32 min_vcpu = 3 [json_name="min_vcpu"];
+  int32 min_memory_gb = 4 [json_name="min_memory_gb"];
+  message Image {
+    string download_url = 1 [json_name="download_url"];
+    string chksum_type = 2 [json_name="chksum_type"];
+    string chksum = 3;
+    enum Format {
+      RAW = 0;
+      QCOW2 = 1;
+    }
+    Format format = 4 [json_name="format"];
+  }
+  Image qemu_image = 5 [json_name="qemu_image"];
+  message Interface {
+    string type = 1;
+    string macaddr = 2;
+    string ipv4addr = 3;
+    //string bridge = 4; // Obsolete
+  }
+  bool use_kvm = 6 [json_name="use_kvm"];
+  repeated Interface interfaces = 7;
   repeated string node_groups = 8 [json_name="node_groups"];
 }
 

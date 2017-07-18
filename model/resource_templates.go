@@ -15,6 +15,8 @@ func (*NoneTemplate) isResourceTemplateKind()   {}
 func (*NoneTemplate) ResourceName() string      { return "none" }
 func (*LxcTemplate) isResourceTemplateKind()    {}
 func (*LxcTemplate) ResourceName() string       { return "vm/lxc" }
+func (*QemuTemplate) isResourceTemplateKind()  {}
+func (*QemuTemplate) ResourceName() string     { return "vm/qemu" }
 func (*EsxiTemplate) isResourceTemplateKind() {}
 func (*EsxiTemplate) ResourceName() string    { return "vm/esxi" }
 func (*NullTemplate) isResourceTemplateKind()   {}
@@ -33,6 +35,7 @@ type InstanceResource interface {
 }
 
 func (*LxcTemplate) isInstanceResourceKind()  {}
+func (*QemuTemplate) isInstanceResourceKind()  {}
 func (*NullTemplate) isInstanceResourceKind() {}
 func (*EsxiTemplate) isInstanceResourceKind()  {}
 

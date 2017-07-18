@@ -39,6 +39,12 @@
 			"revisionTime": "2016-11-08T19:08:11Z"
 		},
 		{
+			"checksumSHA1": "FDV1HT/HwDJ1G2LPEJG2o/gsWz4=",
+			"path": "github.com/asaskevich/govalidator",
+			"revision": "aa5cce4a76edb1a5acecab1870c17abbffb5419e",
+			"revisionTime": "2017-05-29T11:00:29Z"
+		},
+		{
 			"checksumSHA1": "Z/gwISedxg/Os0Y4hhvDF9dCipw=",
 			"path": "github.com/boltdb/bolt",
 			"revision": "315c65d4cf4f5278c73477a35fb1f9b08365d340",
