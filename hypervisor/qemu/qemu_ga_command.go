@@ -9,7 +9,7 @@ import (
 	"time"
 	"strings"
 
-	// log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
@@ -33,7 +33,8 @@ type QEMUResponse struct {
 type QEMUCommandResponse struct {
 	Pid      int    `json:"pid,omitempty"`
 	Exited   bool   `json:"exited,omitempty"`
-	exitcode int    `json:"exitcode,omitempty"`
+	Signal   int    `json:"signal,omitempty"`
+	Exitcode int    `json:"exitcode,omitempty"`
 	Stdout   string `json:"out-data,omitempty"`
 	Stderr   string `json:"err-data,omitempty"`
 }
@@ -66,13 +67,8 @@ func (c *QEMUCommand) convertToJson() (string, error) {
 	return string(query), nil
 }
 
-func (c *QEMUCommand) SendCommand(socket string) (*QEMUCommandResponse, error) {
-	conn, err := net.Dial("unix", socket)
-	if err != nil {
-		return nil, errors.Errorf("Failed to connect to %s", socket)
-	}
-	defer conn.Close()
 
+func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 	readBuf := bufio.NewReader(conn)
 	errc := make(chan error)
 	sendQuery := func(cmd *QEMUCommand, resp *QEMUResponse) {
@@ -81,9 +77,14 @@ func (c *QEMUCommand) SendCommand(socket string) (*QEMUCommandResponse, error) {
 			errc <- errors.Wrap(err, "Failed to mashal json")
 		}
 		if _, err := fmt.Fprint(conn, strings.Join([]string{query, "\n"}, "")); err != nil {
-			errc <- errors.Errorf("Failed to write to socket: %s", socket)
+			errc <- errors.Errorf("Failed to write to socket")
 		}
 		conn.SetReadDeadline(time.Now().Add(time.Second))
+		var timeout time.Time
+		go func() {
+			timeout = <- time.After(time.Second*10)
+		}()
+
 		for {
 			line, _, _ := readBuf.ReadLine()
 			if len(line) > 0 {
@@ -99,7 +100,7 @@ func (c *QEMUCommand) SendCommand(socket string) (*QEMUCommandResponse, error) {
 					}
 					// guest-exec-status requires the command to have exited before the stdout/stderr/exitcode fields are returned
 					if _, err := fmt.Fprint(conn, strings.Join([]string{query, "\n"}, "")); err != nil {
-						errc <- errors.Errorf("Failed to write to socket: %s", socket)
+						errc <- errors.Errorf("Failed to write to socket")
 					}
 					continue
 				default:
@@ -107,6 +108,11 @@ func (c *QEMUCommand) SendCommand(socket string) (*QEMUCommandResponse, error) {
 					return
 				}
 			}
+			if (!timeout.IsZero()) {
+				errc <- errors.Errorf("No response from agent, timed out: %s", query)
+				return
+			}
+			time.Sleep(time.Second*1)
 		}
 	}
 
@@ -118,14 +124,17 @@ func (c *QEMUCommand) SendCommand(socket string) (*QEMUCommandResponse, error) {
 
 	statusResp := &QEMUResponse{}
 	go sendQuery(&QEMUCommand{Command: "guest-exec-status", Arguments: &QEMUCommandArgs{Pid: pidResp.Return.Pid}}, statusResp)
+
+
 	if err := <-errc; err != nil {
 		return nil, err
 	}
-	statusResp.Return.Stdout = base64toUTF8(statusResp.Return.Stdout)
+
+	log.Info(statusResp.Return)
 	return statusResp.Return, nil
 }
 
-func base64toUTF8(str string) string {
+func Base64toUTF8(str string) string {
 	b, _ := base64.StdEncoding.DecodeString(str)
 	return string(b)
 }
