@@ -32,10 +32,10 @@ func TestLXCCmdConsole_ShowOption(t *testing.T) {
 }
 
 func TestQEMUCmdConsole_ShowOption(t *testing.T) {
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu_kvm")
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu_ga")
 	instance_id := strings.TrimSpace(stdout.String())
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	runConsoleCmd(instance_id, t)
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
+	WaitInstance(t, 10*time.Minute, instance_id, "TERMINATED", nil)
 }
