@@ -154,7 +154,7 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
-	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_STOPPED); err != nil {
+	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_REBOOTING); err != nil {
 		log.WithFields(log.Fields{
 			"instance_id": in.GetInstanceId(),
 			"state":       inst.GetLastState().GetState(),
