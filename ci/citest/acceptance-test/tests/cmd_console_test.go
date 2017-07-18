@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func runConsoleCmdPiped(instance_id, string, t *testing.T) {
+func runConsoleCmdPiped(instance_id string, t *testing.T) {
 	RunCmdAndReportFail(t, "sh", "-c", fmt.Sprintf("echo 'ls' | openvdc console %s", instance_id))
 	RunCmdAndExpectFail(t, "sh", "-c", fmt.Sprintf("echo 'false' | openvdc console %s", instance_id))
 }
