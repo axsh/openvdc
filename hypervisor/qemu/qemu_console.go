@@ -19,7 +19,8 @@ import (
 type qemuConsole struct {
 	qemu       *QEMUHypervisorDriver
 	attached   *os.Process // this should be removed in favor of a channel as below
-	serialConn net.Conn
+	socketConn net.Conn
+	socketPath string
 	conChan    chan error
 	fds        []*os.File
 	tty        string
@@ -29,10 +30,12 @@ type qemuConsole struct {
 // instead, this mimics the lxc behavior by simply wrapping the Attach command...
 // this is strange to me (maybe consider using the existing ConsoleParam struct to pass the args?).
 func (con *qemuConsole) Exec(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
+	con.socketPath = con.qemu.machine.AgentSocketPath
 	return con.pipeAttach(param, args...)
 }
 
 func (con *qemuConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
+	con.socketPath = con.qemu.machine.SerialSocketPath
 	return con.pipeAttach(param)
 }
 
@@ -51,37 +54,29 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 	var err error
 	waitClosed := new(sync.WaitGroup)
 	closeChan := make(chan hypervisor.Closed)
-	socket := con.qemu.machine.SerialSocketPath
-	con.serialConn, err = net.Dial("unix", socket)
 	con.conChan = make(chan error, 1)
-
-	if err != nil {
-		defer con.serialConn.Close()
-		return nil, errors.Wrap(err, join("", "\nFailed to connect to socket ", socket))
+	if con.socketConn, err = net.Dial("unix", con.socketPath); err != nil {
+		return nil, errors.Wrap(err, join(" ", "\nFailed to connect to socket", con.socketPath))
 	}
 
-	b := make([]byte, 8192)
-	if _, err := con.serialConn.Write([]byte("\n")); err != nil {
-		defer con.serialConn.Close()
-		log.WithError(err).Error(join("", "\nFailed to write to the qemu socket ", socket, " from the buffer\n\n"))
-	}
-
-	if _, err := con.serialConn.Read(b); err != nil {
-		defer con.serialConn.Close()
-		log.WithError(err).Error(join("", "\nFailed to read the qemu socket buffer from socket ", socket))
-	}
-
-	log.Info("Received prompt")
 	if len(args) == 0 {
-		err = con.attachShell(param, waitClosed)
+		b := make([]byte, 8192)
+		if _, err = con.socketConn.Write([]byte("\n")); err != nil {
+			return nil, errors.Wrap(err, join(" ", "\nFailed to write to the qemu socket", con.socketPath, "from the buffer\n\n"))
+		}
+		if _, err = con.socketConn.Read(b); err != nil {
+			return nil, errors.Wrap(err, join(" ", "\nFailed to read the qemu socket buffer from socket", con.socketPath))
+		}
+		log.Info("Received prompt")
+		if err = con.attachShell(param, waitClosed); err != nil {
+			return nil, err
+		}
 	} else {
-		err = con.execCommand(param, waitClosed, args...)
+		defer con.socketConn.Close()
+		if err = con.execCommand(param, waitClosed, args...); err != nil {
+			return nil, err
+		}
 	}
-	if err != nil {
-		defer con.serialConn.Close()
-		closeChan <- err
-	}
-
 	go func () {
 		defer close(closeChan)
 		waitClosed.Wait()
@@ -90,18 +85,46 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 }
 
 func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) error {
+	var gaResp *QEMUCommandResponse
+	var err error
 	waitClosed.Add(1)
+
 	gaCmd := NewQEMUCommand(args, true)
-	gaResp, err := gaCmd.SendCommand(con.qemu.machine.AgentSocketPath)
+	gaResp, err = gaCmd.SendCommand(con.socketConn)
 	if err != nil {
 		return err
 	}
-	param.Stdout.Write([]byte(gaResp.Stdout))
+
+	cmdStderr := Base64toUTF8(gaResp.Stderr)
+	cmdStdout := Base64toUTF8(gaResp.Stdout)
 	defer func() {
-		con.conChan <- nil
+		con.conChan <- &consoleWaitError{
+			QEMUCommandResponse: gaResp,
+		}
 		waitClosed.Done()
 	}()
+
+	if gaResp.Exitcode != 0 {
+		param.Stdout.Write([]byte(cmdStderr))
+	} else {
+		param.Stdout.Write([]byte(cmdStdout))
+	}
 	return nil
+}
+
+type consoleWaitError struct {
+	*QEMUCommandResponse
+}
+
+func (c *consoleWaitError) Error() string {
+	return fmt.Sprintf("Process failed with %d", c.Exitcode)
+}
+
+func (c *consoleWaitError) ExitCode() int {
+	if (c.Exitcode != 0) {
+		return 1
+	}
+	return 0
 }
 
 func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup) error  {
@@ -124,7 +147,7 @@ func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *
 					log.Info("Received exit from stdin")
 					con.conChan <- errors.Wrap(err, "\nConsole exited by ctrl-q\n\n")
 				}
-				_, err = con.serialConn.Write(b[0:n])
+				_, err = con.socketConn.Write(b[0:n])
 				if err != nil {
 					con.conChan <- errors.Wrap(err, "\nFailed to write to the qemu socket from the buffer\n\n")
 				}
@@ -137,8 +160,8 @@ func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *
 	go func() {
 		b := make([]byte, 8192)
 		for {
-			con.serialConn.SetDeadline(time.Now().Add(time.Second))
-			n, err := con.serialConn.Read(b)
+			con.socketConn.SetDeadline(time.Now().Add(time.Second))
+			n, err := con.socketConn.Read(b)
 			select {
 			case err := <- con.conChan:
 				if _, e := param.Stdout.Write([]byte{0x0A}); e != nil {
@@ -180,8 +203,9 @@ func (d *QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
 func (con *qemuConsole) Wait() error {
 	// this should return when the user escapes the console.
 	defer func() {
-		con.serialConn.Close()
-		con.serialConn = nil
+		con.socketConn.Close()
+		con.socketConn = nil
+		con.socketPath = ""
 		con.fds = nil
 		con.attached = nil
 		con.conChan = nil
