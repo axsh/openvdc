@@ -9,7 +9,6 @@ import (
 	"time"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
@@ -124,13 +123,10 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 
 	statusResp := &QEMUResponse{}
 	go sendQuery(&QEMUCommand{Command: "guest-exec-status", Arguments: &QEMUCommandArgs{Pid: pidResp.Return.Pid}}, statusResp)
-
-
 	if err := <-errc; err != nil {
 		return nil, err
 	}
 
-	log.Info(statusResp.Return)
 	return statusResp.Return, nil
 }
 
