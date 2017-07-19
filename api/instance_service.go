@@ -145,31 +145,35 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 	if in.GetInstanceId() == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
 	}
+	log := log.WithField("instance_id", in.GetInstanceId())
 
 	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
 	if err != nil {
-		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		log.WithError(err).Error("Failed to find the instance")
 		return nil, err
 	}
+	log = log.WithField("state", inst.GetLastState().GetState())
 	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
 	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_REBOOTING); err != nil {
-		log.WithFields(log.Fields{
-			"instance_id": in.GetInstanceId(),
-			"state":       inst.GetLastState().GetState(),
-		}).Error(err)
-
+		log.WithError(err).Error("Failed state validation")
+		return nil, err
+	}
+	// Update instance state when the API method is call. RUNNING -> REBOOTING has no intermediate states
+	// so the client is hard to detect if the reboot request is being processed or not right after
+	// making the API call .
+	if err := model.Instances(ctx).UpdateState(inst.GetId(), model.InstanceState_REBOOTING); err != nil {
+		log.WithError(err).Error("Failed to update instance state")
 		return nil, err
 	}
 
-	instanceID := in.InstanceId
-	if err := s.sendCommand(ctx, "reboot", instanceID); err != nil {
+	if err := s.sendCommand(ctx, "reboot", inst.GetId()); err != nil {
 		log.WithError(err).Error("Failed sendCommand(reboot)")
 		return nil, err
 	}
 
-	return &RebootReply{InstanceId: instanceID}, nil
+	return &RebootReply{InstanceId: inst.GetId()}, nil
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
