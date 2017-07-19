@@ -89,7 +89,7 @@ func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 	var err error
 	waitClosed.Add(1)
 
-	gaCmd := NewQEMUCommand(args, true)
+	gaCmd := NewQEMUExecCommand(args, true)
 	gaResp, err = gaCmd.SendCommand(con.socketConn)
 	if err != nil {
 		return err

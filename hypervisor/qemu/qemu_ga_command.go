@@ -12,6 +12,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO: add more types?
+type CommandType int
+
+const (
+	GuestExec CommandType = iota // 0
+	GuestExecStatus
+	GuestPing
+)
+
+var guestCommand = map[CommandType]string{
+	GuestExec:       "guest-exec",
+	GuestExecStatus: "guest-exec-status",
+	GuestPing:       "guest-ping",
+}
+
 type QEMUCommandArgs struct {
 	Pid             int      `json:"pid,omitempty"`
 	Path            string   `json:"path,omitempty"`
@@ -38,9 +53,24 @@ type QEMUCommandResponse struct {
 	Stderr   string `json:"err-data,omitempty"`
 }
 
-func NewQEMUCommand(cmd []string, output bool) *QEMUCommand {
+func NewQEMUCommand(cmdType CommandType) *QEMUCommand {
+	return &QEMUCommand{
+		Command: guestCommand[cmdType],
+	}
+}
+
+func NewQEMUExecStatusCommand(pid int) *QEMUCommand {
+	return &QEMUCommand{
+		Command: guestCommand[GuestExecStatus],
+		Arguments: &QEMUCommandArgs{
+			Pid: pid,
+		},
+	}
+}
+
+func NewQEMUExecCommand(cmd []string, output bool) *QEMUCommand {
 	gaCmd := &QEMUCommand{
-		Command: "guest-exec",
+		Command: guestCommand[GuestExec],
 		Arguments: &QEMUCommandArgs{
 			Path:          cmd[0],
 			CaptureOutput: output,
@@ -60,12 +90,15 @@ func NewQEMUCommand(cmd []string, output bool) *QEMUCommand {
 func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 	readBuf := bufio.NewReader(conn)
 	errc := make(chan error)
+
+	var err error
+
 	sendRequest := func(cmd *QEMUCommand, resp *QEMUResponse) {
 		var request []byte
-		if request, err := json.Marshal(cmd); err != nil {
+		if request, err = json.Marshal(cmd); err != nil {
 			errc <- errors.Wrap(err, "Failed to mashal json")
 		}
-		if _, err := fmt.Fprint(conn, strings.Join([]string{string(request), "\n"}, "")); err != nil {
+		if _, err = fmt.Fprint(conn, strings.Join([]string{string(request), "\n"}, "")); err != nil {
 			errc <- errors.Errorf("Failed to write to socket")
 		}
 		conn.SetReadDeadline(time.Now().Add(time.Second))
@@ -77,7 +110,7 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 		for {
 			line, _, _ := readBuf.ReadLine()
 			if len(line) > 0 {
-				if err := json.Unmarshal(line, &resp); err != nil {
+				if err = json.Unmarshal(line, &resp); err != nil {
 					errc <- errors.Errorf("failed to unmarshal: %s", string(line))
 					return
 				}
@@ -88,7 +121,7 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 						return
 					}
 					// guest-exec-status requires the command to have exited before the stdout/stderr/exitcode fields are returned
-					if _, err := fmt.Fprint(conn, strings.Join([]string{string(request), "\n"}, "")); err != nil {
+					if _, err = fmt.Fprint(conn, strings.Join([]string{string(request), "\n"}, "")); err != nil {
 						errc <- errors.Errorf("Failed to write to socket")
 					}
 					continue
@@ -107,13 +140,13 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 
 	pidResp := &QEMUResponse{}
 	go sendRequest(c, pidResp)
-	if err := <-errc; err != nil {
+	if err = <-errc; err != nil {
 		return nil, err
 	}
 
 	statusResp := &QEMUResponse{}
-	go sendRequest(&QEMUCommand{Command: "guest-exec-status", Arguments: &QEMUCommandArgs{Pid: pidResp.Return.Pid}}, statusResp)
-	if err := <-errc; err != nil {
+	go sendRequest(NewQEMUExecStatusCommand(pidResp.Return.Pid), statusResp)
+	if err = <-errc; err != nil {
 		return nil, err
 	}
 
