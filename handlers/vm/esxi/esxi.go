@@ -34,6 +34,14 @@ func (h *EsxiHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		return nil, err
 	}
 
+	if err := json.Unmarshal(in, tmpl); err != nil {
+		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.EsxiTemplate")
+	}
+	
+	if tmpl.GetEsxiImage() == nil {
+		return nil, handlers.ErrInvalidTemplate(h, "esxi_image must exist")
+	}
+
 	return tmpl, nil
 }
 
@@ -91,7 +99,8 @@ func (h *EsxiHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) 
 	if err := json.Unmarshal(in, minput); err != nil {
 		return errors.WithStack(err)
 	}
-
+	
+	minput.EsxiImage = nil
 	proto.Merge(mdst, minput)
 	return nil
 }
