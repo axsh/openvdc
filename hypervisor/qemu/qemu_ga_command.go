@@ -57,24 +57,15 @@ func NewQEMUCommand(cmd []string, output bool) *QEMUCommand {
 	return gaCmd
 }
 
-func (c *QEMUCommand) convertToJson() (string, error) {
-	query, err := json.Marshal(c)
-	if err != nil {
-		return "", err
-	}
-
-	return string(query), nil
-}
-
 func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 	readBuf := bufio.NewReader(conn)
 	errc := make(chan error)
-	sendQuery := func(cmd *QEMUCommand, resp *QEMUResponse) {
-		query, err := cmd.convertToJson()
-		if err != nil {
+	sendRequest := func(cmd *QEMUCommand, resp *QEMUResponse) {
+		var request []byte
+		if request, err := json.Marshal(cmd); err != nil {
 			errc <- errors.Wrap(err, "Failed to mashal json")
 		}
-		if _, err := fmt.Fprint(conn, strings.Join([]string{query, "\n"}, "")); err != nil {
+		if _, err := fmt.Fprint(conn, strings.Join([]string{string(request), "\n"}, "")); err != nil {
 			errc <- errors.Errorf("Failed to write to socket")
 		}
 		conn.SetReadDeadline(time.Now().Add(time.Second))
@@ -97,7 +88,7 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 						return
 					}
 					// guest-exec-status requires the command to have exited before the stdout/stderr/exitcode fields are returned
-					if _, err := fmt.Fprint(conn, strings.Join([]string{query, "\n"}, "")); err != nil {
+					if _, err := fmt.Fprint(conn, strings.Join([]string{string(request), "\n"}, "")); err != nil {
 						errc <- errors.Errorf("Failed to write to socket")
 					}
 					continue
@@ -107,7 +98,7 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 				}
 			}
 			if !timeout.IsZero() {
-				errc <- errors.Errorf("No response from agent, timed out: %s", query)
+				errc <- errors.Errorf("No response from agent, timed out: %s", string(request))
 				return
 			}
 			time.Sleep(time.Second * 1)
@@ -115,13 +106,13 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 	}
 
 	pidResp := &QEMUResponse{}
-	go sendQuery(c, pidResp)
+	go sendRequest(c, pidResp)
 	if err := <-errc; err != nil {
 		return nil, err
 	}
 
 	statusResp := &QEMUResponse{}
-	go sendQuery(&QEMUCommand{Command: "guest-exec-status", Arguments: &QEMUCommandArgs{Pid: pidResp.Return.Pid}}, statusResp)
+	go sendRequest(&QEMUCommand{Command: "guest-exec-status", Arguments: &QEMUCommandArgs{Pid: pidResp.Return.Pid}}, statusResp)
 	if err := <-errc; err != nil {
 		return nil, err
 	}
