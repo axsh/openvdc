@@ -28,7 +28,7 @@ func TestFailedState_StopInstance(t *testing.T) {
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunCmdAndReportFail(t, "openvdc", "stop", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "FAILED", []string{"STOPPING"})
+	WaitInstance(t, 5*time.Minute, instance_id, "FAILED", []string{"RUNNING", "STOPPING"})
 }
 
 func TestFailedState_RebootInstance(t *testing.T) {
@@ -37,7 +37,7 @@ func TestFailedState_RebootInstance(t *testing.T) {
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunCmdAndReportFail(t, "openvdc", "reboot", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "FAILED", []string{"REBOOTING"})
+	WaitInstance(t, 5*time.Minute, instance_id, "FAILED", []string{"RUNNING", "REBOOTING"})
 }
 
 func TestFailedState_DestroyInstance(t *testing.T) {
@@ -46,5 +46,5 @@ func TestFailedState_DestroyInstance(t *testing.T) {
 
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	RunCmdAndReportFail(t, "openvdc", "destroy", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "FAILED", []string{"SHUTTINGDOWN"})
+	WaitInstance(t, 5*time.Minute, instance_id, "FAILED", []string{"RUNNING", "SHUTTINGDOWN"})
 }
