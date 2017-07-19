@@ -78,6 +78,15 @@ def stage_acceptance(label) {
   }
 }
 
+def stage_acceptance_esxi(label) {
+  node("esxi") {
+    stage "Acceptance Test ${label}"
+    checkout_and_merge()
+    write_build_env(label)
+    sh "./ci/citest/acceptance-test-esxi/build.sh ./build.env"
+  }
+}
+
 node() {
     stage "Checkout"
     try {
@@ -105,4 +114,5 @@ for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
   stage_acceptance(label)
+  stage_acceptance_esxi(label)
 }
