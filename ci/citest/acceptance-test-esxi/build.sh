@@ -1,14 +1,14 @@
 #!/bin/bash
 
-TMP_IP=192.168.2.103
-NEW_IP=192.168.2.112 #Todo: Assign this somehow
-DISKSPACE="20GB"
-MEMORY="8192"
-NETWORK="VM Network"
-ISO_DATASTORE="datastore1"
-ISO="images/centos7ks2.iso"
-VM_DATASTORE="datastore2"
-OS="centos7_64Guest"
+TMP_IP=$TMP_IP   #Static ip set by iso kickstart-script
+NEW_IP=$NEW_IP   #The ip will get assigned to this during installation.
+DISKSPACE=$1BOX_DISKSPACE
+MEMORY=$1BOX_MEMORY
+NETWORK=$NETWORK
+ISO_DATASTORE=$ISO_DATASTORE
+ISO=$ISO
+VM_DATASTORE=$VM_DATASTORE
+OS=$OS
 
 IP_ADDR=$TMP_IP
 
@@ -94,6 +94,38 @@ function check_dep() {
 }
 
 function check_env_variables () {
+  if [[ -z "${TMP_IP}" ]] ; then
+    echo "The TMP_IP variable needs to be set."
+    exit 1
+  fi
+  if [[ -z "${NEW_IP}" ]] ; then
+    echo "The NEW_IP variable needs to be set."
+    exit 1
+  fi
+  if [[ -z "${NETWORK}" ]] ; then
+    echo "The NETWORK variable needs to be set."
+    exit 1
+  fi
+  if [[ -z "${ISO_DATASTORE}" ]] ; then
+    echo "The ISO_DATASTORE variable needs to be set."
+    exit 1
+  fi
+  if [[ -z "${ISO}" ]] ; then
+    echo "The ISO variable needs to be set."
+    exit 1
+  fi
+  if [[ -z "${VM_DATASTORE}" ]] ; then
+    echo "The VM_DATASTORE variable needs to be set."
+    exit 1
+  fi
+  if [[ -z "${1BOX_DISKSPACE}" ]] ; then
+    echo "The 1BOX_DISKSPACE variable needs to be set."
+    exit 1
+  fi
+  if [[ -z "${1BOX_MEMORY}" ]] ; then
+    echo "The 1BOX_MEMORY variable needs to be set."
+    exit 1
+  fi
   if [[ -z "${VMUSER}" ]] ; then
     echo "The VMUSER variable needs to be set."
     exit 1
@@ -110,11 +142,13 @@ function check_env_variables () {
   fi
 
   if [[ -z "${GOVC_DATACENTER}" ]] ; then
-    export GOVC_DATACENTER='ha-datacenter'
+    echo "The GOVC_DATACENTER variable needs to be set."
+    exit 1
   fi
 
   if [[ -z "${GOVC_INSECURE}" ]] ; then
-    export GOVC_INSECURE=true
+    echo "The GOVC_INSECURE variable needs to be set."
+    exit 1
   fi
 
   if [[ -z "${BRANCH}" ]] ; then
