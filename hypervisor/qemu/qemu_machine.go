@@ -171,6 +171,7 @@ func (m *Machine) AddNICs(nics []Nic) []*Device {
 	for _, nic := range nics {
 		hostDev := NewDevice(NetType)
 		hostDev.AddDriver("tap")
+		hostDev.AddDriverOption("ifname", nic.IfName)
 
 		guestDev := NewDevice(DevType)
 		guestDev.AddDriver("virtio-net-pci")
