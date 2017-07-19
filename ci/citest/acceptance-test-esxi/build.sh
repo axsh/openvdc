@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex -o pipefail
+
 BUILD_ENV_PATH=${1:?"ERROR: env file is not given."}
 
 if [[ -n "${BUILD_ENV_PATH}" && ! -f "${BUILD_ENV_PATH}" ]]; then
