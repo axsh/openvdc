@@ -1,14 +1,15 @@
 #!/bin/bash
 
-TMP_IP=$TMP_IP   #Static ip set by iso kickstart-script
-NEW_IP=$NEW_IP   #The ip will get assigned to this during installation.
-DISKSPACE=$BOX_DISKSPACE
-MEMORY=$BOX_MEMORY
-NETWORK=$NETWORK
-ISO_DATASTORE=$ISO_DATASTORE
-ISO=$ISO
-VM_DATASTORE=$VM_DATASTORE
-OS=$OS
+BUILD_ENV_PATH=${1:?"ERROR: env file is not given."}
+
+if [[ -n "${BUILD_ENV_PATH}" && ! -f "${BUILD_ENV_PATH}" ]]; then
+  echo "ERROR: Can't find the file: ${BUILD_ENV_PATH}" >&2
+  exit 1
+fi
+
+set -a
+. ${BUILD_ENV_PATH}
+set +a
 
 IP_ADDR=$TMP_IP
 
@@ -45,8 +46,8 @@ function assign_ip () {
 }
 
 function build_vm () {
-  govc vm.create -ds="$VM_DATASTORE" -iso="$ISO" -iso-datastore="$ISO_DATASTORE" -net="$NETWORK" -g="$OS" -disk="$DISKSPACE" -m="$MEMORY" -on=true -dump=true $VMNAME
-  echo "Sent command: vm.create -ds=$VM_DATASTORE -iso=$ISO -iso-datastore=$ISO_DATASTORE -net=$NETWORK -g=$OS -disk=$DISKSPACE -m=$MEMORY -on=true -dump=true $VMNAME"
+  govc vm.create -ds="$VM_DATASTORE" -iso="$ISO" -iso-datastore="$ISO_DATASTORE" -net="$NETWORK" -g="$OS" -disk="$BOX_DISKSPACE" -m="$BOX_MEMORY" -on=true -dump=true $VMNAME
+  echo "Sent command: vm.create -ds=$VM_DATASTORE -iso=$ISO -iso-datastore=$ISO_DATASTORE -net=$NETWORK -g=$OS -disk=$BOX_DISKSPACE -m=$BOX_MEMORY -on=true -dump=true $VMNAME"
   
   wait_for_vm_to_boot
 
@@ -119,11 +120,11 @@ function check_env_variables () {
     exit 1
   fi
   if [[ -z "${BOX_DISKSPACE}" ]] ; then
-    echo "The 1BOX_DISKSPACE variable needs to be set."
+    echo "The BOX_DISKSPACE variable needs to be set."
     exit 1
   fi
   if [[ -z "${BOX_MEMORY}" ]] ; then
-    echo "The 1BOX_MEMORY variable needs to be set."
+    echo "The BOX_MEMORY variable needs to be set."
     exit 1
   fi
   if [[ -z "${VMUSER}" ]] ; then
