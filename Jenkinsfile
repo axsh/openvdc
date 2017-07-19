@@ -98,7 +98,7 @@ def stage_acceptance(label) {
 
 def stage_acceptance_esxi(label) {
   node("esxi") {
-    stage "Acceptance Test ${label}"
+    stage "Acceptance Test Esxi ${label}"
     checkout_and_merge()
     write_build_env(label, "acceptance-esxi")
     sh "./ci/citest/acceptance-test-esxi/build.sh ./build.env"
