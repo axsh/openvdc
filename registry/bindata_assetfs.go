@@ -168,7 +168,7 @@ func schemaVmQemuJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema/vm/qemu.json", size: 1970, mode: os.FileMode(420), modTime: time.Unix(1498636999, 0)}
+	info := bindataFileInfo{name: "schema/vm/qemu.json", size: 1970, mode: os.FileMode(420), modTime: time.Unix(1500455418, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
