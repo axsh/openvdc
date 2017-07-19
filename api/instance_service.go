@@ -156,7 +156,7 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
-	if err := inst.GetLastState().ValidateGoalState(model.InstanceState_REBOOTING); err != nil {
+	if err := inst.GetLastState().ValidateNextState(model.InstanceState_REBOOTING); err != nil {
 		log.WithError(err).Error("Failed state validation")
 		return nil, err
 	}
