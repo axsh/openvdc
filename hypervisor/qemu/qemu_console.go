@@ -174,13 +174,9 @@ func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *
 				if err != nil && !err.(net.Error).Timeout() {
 					con.conChan <- errors.Wrap(err, "\nFailed to read the qemu socket buffer from socket ")
 				}
-				fmt.Println(join("", string(b[0:n]), " - from socket"))
-
+				// exit on ctrl + q
 				if bytes.Contains(b[0:n], []byte{0x11}) {
-					log.WithError(err).Info("Received exit from stdin")
 					con.conChan <- nil
-					// conChan <- errors.Wrap(err, "\nConsole exited by ctrl-q\n\n")
-					// log.WithError(err).Info("Stdin set ctrl-q error string")
 				}
 				_, err = param.Stdout.Write(b[0:n])
 				if err != nil {
