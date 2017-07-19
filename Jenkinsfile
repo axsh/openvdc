@@ -25,7 +25,7 @@ def ask_build_parameter = { ->
 // Environment variables supplied by Jenkins system configuration:
 // env.REPO_BASE_DIR
 // env.BUILD_CACHE_DIR
-def write_build_env(label, stage) {
+def write_build_env(label) {
   def build_env="""# These parameters are read from bash and docker --env-file.
 # So do not use single or double quote for the value part.
 LEAVE_CONTAINER=${buildParams.LEAVE_CONTAINER}
@@ -39,11 +39,6 @@ GIT_BRANCH=${env.BRANCH_NAME}
 BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
 SHA=${SHA}
-"""
-  writeFile(file: "build.env", text: build_env)
-
-  if( stage == "acceptance-esxi" ){
-    def esxi_env="""
 BOX_DISKSPACE=${env.BOX_DISKSPACE}
 BOX_MEMORY=${env.BOX_MEMORY}
 GOVC_DATACENTER=${env.GOVC_DATACENTER}
@@ -56,9 +51,7 @@ NEW_IP=${env.NEW_IP}
 OS=${env.OS}
 TMP_IP=${env.TMP_IP}
 """
-    sh "echo ${esxi_env} >> build.env"
-  }
-
+  writeFile(file: "build.env", text: build_env)
 }
 
 def checkout_and_merge() {
@@ -73,7 +66,7 @@ def stage_unit_test(label) {
   node(label) {
     stage "Units Tests ${label}"
     checkout_and_merge()
-    write_build_env(label, "unit-test")
+    write_build_env(label)
     sh "./ci/citest/unit-tests/unit-tests.sh ./build.env"
   }
 }
@@ -82,7 +75,7 @@ def stage_rpmbuild(label) {
   node(label) {
     stage "RPM Build ${label}"
     checkout_and_merge()
-    write_build_env(label, "rpm")
+    write_build_env(label)
     sh "./ci/citest/rpmbuild/rpmbuild.sh ./build.env"
   }
 }
@@ -91,7 +84,7 @@ def stage_acceptance(label) {
   node("multibox") {
     stage "Acceptance Test ${label}"
     checkout_and_merge()
-    write_build_env(label, "acceptance")
+    write_build_env(label)
     sh "./ci/citest/acceptance-test/build_and_run_in_docker.sh ./build.env"
   }
 }
@@ -100,7 +93,7 @@ def stage_acceptance_esxi(label) {
   node("esxi") {
     stage "Acceptance Test Esxi ${label}"
     checkout_and_merge()
-    write_build_env(label, "acceptance-esxi")
+    write_build_env(label)
     sh "./ci/citest/acceptance-test-esxi/build.sh ./build.env"
   }
 }
