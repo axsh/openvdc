@@ -2,8 +2,8 @@
 
 TMP_IP=$TMP_IP   #Static ip set by iso kickstart-script
 NEW_IP=$NEW_IP   #The ip will get assigned to this during installation.
-DISKSPACE=$1BOX_DISKSPACE
-MEMORY=$1BOX_MEMORY
+DISKSPACE=$BOX_DISKSPACE
+MEMORY=$BOX_MEMORY
 NETWORK=$NETWORK
 ISO_DATASTORE=$ISO_DATASTORE
 ISO=$ISO
@@ -24,7 +24,7 @@ function ssh_cmd() {
 }
 
 function wait_for_vm_to_boot () {
-  echo "Waiting for VM to boot up..."
+  echo "Installing OS..."
   max_attempts=100
   while ! govc guest.start -l=${VMUSER}:${VMPASS} -vm=$VMNAME /bin/echo "Test"  2> /dev/null ; do
     sleep 5
@@ -118,11 +118,11 @@ function check_env_variables () {
     echo "The VM_DATASTORE variable needs to be set."
     exit 1
   fi
-  if [[ -z "${1BOX_DISKSPACE}" ]] ; then
+  if [[ -z "${BOX_DISKSPACE}" ]] ; then
     echo "The 1BOX_DISKSPACE variable needs to be set."
     exit 1
   fi
-  if [[ -z "${1BOX_MEMORY}" ]] ; then
+  if [[ -z "${BOX_MEMORY}" ]] ; then
     echo "The 1BOX_MEMORY variable needs to be set."
     exit 1
   fi
