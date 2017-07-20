@@ -174,17 +174,17 @@ fi
 if [[ "$REBUILD" == "true" ]]; then
   if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
-    govc guest.rm $VMNAME
+    govc vm.destroy $VMNAME
   fi
   if [[ $(govc vm.info $BACKUPNAME) ]]; then
     echo "Old Backup found. Attempting to delete it."
-    govc guest.rm $BACKUPNAME
+    govc vm.destroy $BACKUPNAME
   fi
   build_vm
 else
   if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
-    govc guest.rm $VMNAME
+    govc vm.destroy $VMNAME
   fi
 
   if [[ $(govc vm.info $BACKUPNAME) ]]; then
@@ -228,4 +228,4 @@ ssh_cmd "shutdown -h 0"
 sleep 30
 
 echo "Removing VM..."
-govc guest.rm $VMNAME
+govc vm.destroy $VMNAME
