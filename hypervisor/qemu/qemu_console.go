@@ -85,26 +85,26 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 }
 
 func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) error {
-	var gaResp *QEMUCommandResponse
+	var guestAgentResp *GuestAgentCommandResponse
 	var err error
 	waitClosed.Add(1)
 
-	gaCmd := NewQEMUExecCommand(args, true)
-	gaResp, err = gaCmd.SendCommand(con.socketConn)
+	guestAgentReq := NewGuestAgentExecRequest(args, true)
+	guestAgentResp, err = guestAgentReq.SendRequest(con.socketConn)
 	if err != nil {
 		return err
 	}
 
-	cmdStderr := Base64toUTF8(gaResp.Stderr)
-	cmdStdout := Base64toUTF8(gaResp.Stdout)
+	cmdStderr := Base64toUTF8(guestAgentResp.Stderr)
+	cmdStdout := Base64toUTF8(guestAgentResp.Stdout)
 	defer func() {
 		con.conChan <- &consoleWaitError{
-			QEMUCommandResponse: gaResp,
+			GuestAgentCommandResponse: guestAgentResp,
 		}
 		waitClosed.Done()
 	}()
 
-	if gaResp.Exitcode != 0 {
+	if guestAgentResp.Exitcode != 0 {
 		param.Stdout.Write([]byte(cmdStderr))
 	} else {
 		param.Stdout.Write([]byte(cmdStdout))
@@ -113,7 +113,7 @@ func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 }
 
 type consoleWaitError struct {
-	*QEMUCommandResponse
+	*GuestAgentCommandResponse
 }
 
 func (c *consoleWaitError) Error() string {

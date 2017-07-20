@@ -27,7 +27,7 @@ var guestCommand = map[CommandType]string{
 	GuestPing:       "guest-ping",
 }
 
-type QEMUCommandArgs struct {
+type GuestAgentCommandArgs struct {
 	Pid             int      `json:"pid,omitempty"`
 	Path            string   `json:"path,omitempty"`
 	Args            []string `json:"arg,omitempty"`
@@ -35,16 +35,16 @@ type QEMUCommandArgs struct {
 	CaptureOutput   bool     `json:"capture-output,omitempty"`
 }
 
-type QEMUCommand struct {
-	Command   string           `json:"execute"`
-	Arguments *QEMUCommandArgs `json:"arguments"`
+type GuestAgentRequest struct {
+	Command   string                 `json:"execute"`
+	Arguments *GuestAgentCommandArgs `json:"arguments"`
 }
 
-type QEMUResponse struct {
-	Return *QEMUCommandResponse `json:"return"`
+type GuestAgentResponse struct {
+	Return *GuestAgentCommandResponse `json:"return"`
 }
 
-type QEMUCommandResponse struct {
+type GuestAgentCommandResponse struct {
 	Pid      int    `json:"pid,omitempty"`
 	Exited   bool   `json:"exited,omitempty"`
 	Signal   int    `json:"signal,omitempty"`
@@ -53,25 +53,25 @@ type QEMUCommandResponse struct {
 	Stderr   string `json:"err-data,omitempty"`
 }
 
-func NewQEMUCommand(cmdType CommandType) *QEMUCommand {
-	return &QEMUCommand{
+func NewGuestAgentRequest(cmdType CommandType) *GuestAgentRequest {
+	return &GuestAgentRequest{
 		Command: guestCommand[cmdType],
 	}
 }
 
-func NewQEMUExecStatusCommand(pid int) *QEMUCommand {
-	return &QEMUCommand{
+func NewGuestAgentExecStatusRequest(pid int) *GuestAgentRequest {
+	return &GuestAgentRequest{
 		Command: guestCommand[GuestExecStatus],
-		Arguments: &QEMUCommandArgs{
+		Arguments: &GuestAgentCommandArgs{
 			Pid: pid,
 		},
 	}
 }
 
-func NewQEMUExecCommand(cmd []string, output bool) *QEMUCommand {
-	gaCmd := &QEMUCommand{
+func NewGuestAgentExecRequest(cmd []string, output bool) *GuestAgentRequest {
+	gaCmd := &GuestAgentRequest{
 		Command: guestCommand[GuestExec],
-		Arguments: &QEMUCommandArgs{
+		Arguments: &GuestAgentCommandArgs{
 			Path:          cmd[0],
 			CaptureOutput: output,
 		},
@@ -87,13 +87,13 @@ func NewQEMUExecCommand(cmd []string, output bool) *QEMUCommand {
 	return gaCmd
 }
 
-func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
+func (c *GuestAgentRequest) SendRequest(conn net.Conn) (*GuestAgentCommandResponse, error) {
 	readBuf := bufio.NewReader(conn)
 	errc := make(chan error)
 
 	var err error
 
-	sendRequest := func(cmd *QEMUCommand, resp *QEMUResponse) {
+	sendRequest := func(cmd *GuestAgentRequest, resp *GuestAgentResponse) {
 		var request []byte
 		if request, err = json.Marshal(cmd); err != nil {
 			errc <- errors.Wrap(err, "Failed to mashal json")
@@ -138,14 +138,14 @@ func (c *QEMUCommand) SendCommand(conn net.Conn) (*QEMUCommandResponse, error) {
 		}
 	}
 
-	pidResp := &QEMUResponse{}
+	pidResp := &GuestAgentResponse{}
 	go sendRequest(c, pidResp)
 	if err = <-errc; err != nil {
 		return nil, err
 	}
 
-	statusResp := &QEMUResponse{}
-	go sendRequest(NewQEMUExecStatusCommand(pidResp.Return.Pid), statusResp)
+	statusResp := &GuestAgentResponse{}
+	go sendRequest(NewGuestAgentExecStatusRequest(pidResp.Return.Pid), statusResp)
 	if err = <-errc; err != nil {
 		return nil, err
 	}
