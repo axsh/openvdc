@@ -46,7 +46,7 @@ function clone_base_vm () {
   ssh_cmd "/bin/systemctl disable mesos-master"
 
   ssh_cmd "shutdown -h 0"
-  sleep 10
+  sleep 30
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
   echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
@@ -225,7 +225,7 @@ echo "Installation complete."
 
 echo "Powering off VM..."
 ssh_cmd "shutdown -h 0"
-sleep 10
+sleep 30
 
 echo "Removing VM..."
 govc guest.rm $VMNAME
