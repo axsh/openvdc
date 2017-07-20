@@ -46,9 +46,8 @@ GOVC_INSECURE=${env.GOVC_INSECURE}
 GOVC_URL=${env.GOVC_URL}
 ISO=${env.ISO}
 ISO_DATASTORE=${env.ISO_DATASTORE}
-NEW_IP=${env.NEW_IP}
+IP_ADDRESS=${env.IP_ADDRESS}
 OS=${env.OS}
-TMP_IP=${env.TMP_IP}
 """
   writeFile(file: "build.env", text: build_env)
 }
