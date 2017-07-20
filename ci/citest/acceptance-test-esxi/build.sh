@@ -220,3 +220,12 @@ ssh_cmd "systemctl enable mesos-master"
 ssh_cmd "systemctl start mesos-master"
 
 echo "Installation complete."
+
+# TODO: Run Tests
+
+echo "Powering off VM..."
+ssh_cmd "shutdown -h 0"
+sleep 10
+
+echo "Removing VM..."
+govc guest.rm $VMNAME
