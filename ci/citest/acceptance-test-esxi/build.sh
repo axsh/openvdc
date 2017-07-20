@@ -14,6 +14,7 @@ set -a
 set +a
 
 IP_ADDR=$TMP_IP
+NETWORK="VM Network"
 
 function run_ssh() {
   local key=ssh_key
