@@ -13,7 +13,7 @@ set -a
 . ${BUILD_ENV_PATH}
 set +a
 
-IP_ADDR=$TMP_IP
+IP_ADDR=$IP_ADDRESS
 NETWORK="VM Network"
 
 function run_ssh() {
@@ -27,45 +27,26 @@ function ssh_cmd() {
   run_ssh ${VMUSER}@$IP_ADDR "$cmd"
 }
 
-function wait_for_vm_to_boot () {
-  echo "Installing OS..."
-  max_attempts=100
-  while ! govc guest.start -l=${VMUSER}:${VMPASS} -vm=$VMNAME /bin/echo "Test"  2> /dev/null ; do
-    sleep 5
-    attempt=$(( attempt + 1 ))
-    [[ $attempt -eq ${max_attempts} ]] && exit 1
-  done
-  echo "VM has now booted up."
-}
+function clone_base_vm () {
+  BASE="base"
+  echo "Cloning VM. ${BASE} > ${1}"
+  ovftool -ds=$VM_DATASTORE -n="$1" --noImageFiles $2$BASE $2
 
-function get_device_name () {
-  ssh_cmd ip -o link show | awk -F': ' '{print$2}' | grep -Fvx -e lo
-}
+  govc vm.power -on=true $VMNAME
 
-function assign_ip () {
-  DEVICE=$(get_device_name)
-  ssh_cmd "sed '/^IPADDR/s/.*/IPADDR=${NEW_IP}/' /etc/sysconfig/network-scripts/ifcfg-${DEVICE} >> /etc/sysconfig/network-scripts/ifcfg-tmp"
-  ssh_cmd "mv -f /etc/sysconfig/network-scripts/ifcfg-tmp /etc/sysconfig/network-scripts/ifcfg-${DEVICE}"
-}
-
-function build_vm () {
-  govc vm.create -ds="$VM_DATASTORE" -iso="$ISO" -iso-datastore="$ISO_DATASTORE" -net="$NETWORK" -g="$OS" -disk="$BOX_DISKSPACE" -m="$BOX_MEMORY" -on=true -dump=true $VMNAME
-  echo "Sent command: vm.create -ds=$VM_DATASTORE -iso=$ISO -iso-datastore=$ISO_DATASTORE -net=$NETWORK -g=$OS -disk=$BOX_DISKSPACE -m=$BOX_MEMORY -on=true -dump=true $VMNAME"
-  
-  wait_for_vm_to_boot
+  echo "Waiting for VM to get assigned IP"
+  govc vm.ip -wait 3m $VMNAME
 
   add_ssh_key
-  sleep 5
+
   yum_install "http://repos.mesosphere.io/el/7/noarch/RPMS/mesosphere-el-repo-7-1.noarch.rpm"
   yum_install "mesos"
   yum_install "mesosphere-zookeeper"
-  ssh_cmd "systemctl disable mesos-slave"
-  ssh_cmd "systemctl disable mesos-master"
+  ssh_cmd "/bin/systemctl disable mesos-slave"
+  ssh_cmd "/bin/systemctl disable mesos-master"
 
-  assign_ip
   ssh_cmd "shutdown -h 0"
-  sleep 5
-  IP_ADDR=$NEW_IP
+  sleep 10
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
   ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
@@ -78,8 +59,12 @@ function add_ssh_key () {
   chmod 600 ./ssh_key.pub
   govc guest.mkdir -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" -p /root/.ssh
   govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" ./ssh_key.pub /root/.ssh/authorized_keys
-  [[ -f ~/.ssh/known_hosts ]] && ssh-keygen -R $IP_ADDR
-  #TODO: Copy new ssh-keys to cache
+  ssh-keygen -R $IP_ADDR
+}
+
+function vm_cmd () {
+  PSID=$(govc guest.start -l=${VMUSER}:${VMPASS} -dump=true -vm ${VMNAME} $@)
+  govc guest.ps -l=${VMUSER}:${VMPASS} -vm ${VMNAME} -p $PSID -X=true -x=true
 }
 
 function yum_install () {
@@ -98,12 +83,8 @@ function check_dep() {
 }
 
 function check_env_variables () {
-  if [[ -z "${TMP_IP}" ]] ; then
-    echo "The TMP_IP variable needs to be set."
-    exit 1
-  fi
-  if [[ -z "${NEW_IP}" ]] ; then
-    echo "The NEW_IP variable needs to be set."
+  if [[ -z "${IP_ADDRESS}" ]] ; then
+    echo "The IP_ADDRESS variable needs to be set."
     exit 1
   fi
   if [[ -z "${NETWORK}" ]] ; then
@@ -211,14 +192,14 @@ else
       ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
     else
       echo "${BACKUPNAME} not found. Building VM:"
-      build_vm
+      clone_base_vm $VMNAME $FIXED_URL
     fi
 fi
 
 govc vm.power -on=true $VMNAME
 
-echo "Getting VM IP..."
-IP_ADDR=$(govc vm.ip $VMNAME)
+echo "Waiting for VM to get assigned IP"
+govc vm.ip -wait 3m $VMNAME
 
 ssh_cmd "cat > /etc/yum.repos.d/openvdc.repo << EOS
 [openvdc]
@@ -237,3 +218,5 @@ ssh_cmd "systemctl start mesos-slave"
 
 ssh_cmd "systemctl enable mesos-master"
 ssh_cmd "systemctl start mesos-master"
+
+echo "Installation complete."
