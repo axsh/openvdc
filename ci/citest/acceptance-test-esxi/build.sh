@@ -30,7 +30,7 @@ function ssh_cmd() {
 function clone_base_vm () {
   BASE="base"
   echo "Cloning VM. ${BASE} > ${1}"
-  ovftool -ds=$VM_DATASTORE -n="$1" --noImageFiles $2$BASE $2
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$1" --noImageFiles $2$BASE $2
 
   govc vm.power -on=true $VMNAME
 
@@ -49,7 +49,7 @@ function clone_base_vm () {
   sleep 10
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
-  ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
 }
 
 function add_ssh_key () {
@@ -189,7 +189,7 @@ else
 
   if [[ $(govc vm.info $BACKUPNAME) ]]; then
       echo "Creating VM. ${BACKUPNAME} > ${VMNAME} "
-      ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
+      echo "yes" | ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
     else
       echo "${BACKUPNAME} not found. Building VM:"
       clone_base_vm $VMNAME $FIXED_URL
