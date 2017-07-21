@@ -212,6 +212,8 @@ ssh_cmd "systemctl start mesos-slave"
 
 ssh_cmd "systemctl enable mesos-master"
 ssh_cmd "systemctl start mesos-master"
+ssh_cmd "cp /opt/axsh/openvdc/bin/openvdc-executor /bin/"
+
 
 echo "Installation complete."
 
