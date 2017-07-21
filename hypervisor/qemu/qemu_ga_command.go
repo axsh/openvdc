@@ -134,6 +134,7 @@ func (c *GuestAgentRequest) SendRequest(conn net.Conn, response *GuestAgentRespo
 					return
 				}
 				time.Sleep(time.Second * 1)
+				continue
 			}
 
 			switch guestCommandType[c.Command] {
