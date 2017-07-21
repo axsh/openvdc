@@ -91,14 +91,6 @@ function check_env_variables () {
     echo "The NETWORK variable needs to be set."
     exit 1
   fi
-  if [[ -z "${ISO_DATASTORE}" ]] ; then
-    echo "The ISO_DATASTORE variable needs to be set."
-    exit 1
-  fi
-  if [[ -z "${ISO}" ]] ; then
-    echo "The ISO variable needs to be set."
-    exit 1
-  fi
   if [[ -z "${VM_DATASTORE}" ]] ; then
     echo "The VM_DATASTORE variable needs to be set."
     exit 1
