@@ -36,6 +36,7 @@ function clone_base_vm () {
 
   echo "Waiting for VM to get assigned IP"
   govc vm.ip -wait 3m $VMNAME
+  sleep 10
 
   add_ssh_key
 
@@ -192,6 +193,7 @@ govc vm.power -on=true $VMNAME
 
 echo "Waiting for VM to get assigned IP"
 govc vm.ip -wait 3m $VMNAME
+sleep 10
 
 ssh_cmd "cat > /etc/yum.repos.d/openvdc.repo << EOS
 [openvdc]
