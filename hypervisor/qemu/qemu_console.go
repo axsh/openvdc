@@ -85,26 +85,32 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 }
 
 func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) error {
-	var guestAgentResp *GuestAgentCommandResponse
-	var err error
 	waitClosed.Add(1)
+	var err error
+	// execResp := &GuestAgentResponse{}
+	// statusResp:= &GuestAgentResponse{}
 
-	guestAgentReq := NewGuestAgentExecRequest(args, true)
-	guestAgentResp, err = guestAgentReq.SendRequest(con.socketConn)
-	if err != nil {
+	var execResp GuestAgentResponse
+	var statusResp GuestAgentResponse
+
+	if err = NewGuestAgentExecRequest(args, true).SendRequest(con.socketConn, &execResp); err != nil {
+		return err
+	}
+	if err = NewGuestAgentExecStatusRequest(execResp.Return.(*ExecResponse).Pid).SendRequest(con.socketConn, &statusResp); err != nil {
 		return err
 	}
 
-	cmdStderr := Base64toUTF8(guestAgentResp.Stderr)
-	cmdStdout := Base64toUTF8(guestAgentResp.Stdout)
+	resp := statusResp.Return.(*ExecStatusResponse)
+	cmdStderr := Base64toUTF8(resp.Stderr)
+	cmdStdout := Base64toUTF8(resp.Stdout)
 	defer func() {
 		con.conChan <- &consoleWaitError{
-			GuestAgentCommandResponse: guestAgentResp,
+			ExecStatusResponse: resp,
 		}
 		waitClosed.Done()
 	}()
 
-	if guestAgentResp.Exitcode != 0 {
+	if resp.Exitcode != 0 {
 		param.Stdout.Write([]byte(cmdStderr))
 	} else {
 		param.Stdout.Write([]byte(cmdStdout))
@@ -113,7 +119,7 @@ func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 }
 
 type consoleWaitError struct {
-	*GuestAgentCommandResponse
+	*ExecStatusResponse
 }
 
 func (c *consoleWaitError) Error() string {
@@ -121,7 +127,7 @@ func (c *consoleWaitError) Error() string {
 }
 
 func (c *consoleWaitError) ExitCode() int {
-	if c.Exitcode != 0 {
+		if c.Exitcode != 0 {
 		return 1
 	}
 	return 0
