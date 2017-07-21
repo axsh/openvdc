@@ -87,9 +87,6 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) error {
 	waitClosed.Add(1)
 	var err error
-	// execResp := &GuestAgentResponse{}
-	// statusResp:= &GuestAgentResponse{}
-
 	var execResp GuestAgentResponse
 	var statusResp GuestAgentResponse
 
