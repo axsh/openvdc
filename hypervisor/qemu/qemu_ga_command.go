@@ -43,11 +43,11 @@ type GuestAgentResponse struct {
 }
 
 type ExecStatusResponse struct {
-	Exited   bool      `json:"exited,omitempty"`
-	Signal   int       `json:"signal,omitempty"`
-	Exitcode int       `json:"exitcode,omitempty"`
-	Stdout   string    `json:"out-data,omitempty"`
-	Stderr   string    `json:"err-data,omitempty"`
+	Exited      bool   `json:"exited,omitempty"`
+	Signal      int    `json:"signal,omitempty"`
+	Exitcode    int    `json:"exitcode,omitempty"`
+	Stdout      string `json:"out-data,omitempty"`
+	Stderr      string `json:"err-data,omitempty"`
 	TruncStdOut string `json:"out-truncated,omitempty"`
 	TruncStdErr string `json:"err-truncated,omitempty"`
 }
@@ -95,7 +95,7 @@ func NewGuestAgentExecRequest(cmd []string, output bool) *GuestAgentRequest {
 	}
 
 	return &GuestAgentRequest{
-		Command: guestCommand[GuestExec],
+		Command:   guestCommand[GuestExec],
 		Arguments: execReq,
 	}
 }

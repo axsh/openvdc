@@ -124,7 +124,7 @@ func (c *consoleWaitError) Error() string {
 }
 
 func (c *consoleWaitError) ExitCode() int {
-		if c.Exitcode != 0 {
+	if c.Exitcode != 0 {
 		return 1
 	}
 	return 0
