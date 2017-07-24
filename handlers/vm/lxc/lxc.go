@@ -3,8 +3,8 @@ package lxc
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/axsh/openvdc/handlers"
@@ -13,7 +13,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 )
 
 func init() {
@@ -26,31 +25,59 @@ type LxcHandler struct {
 
 func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
 	tmpl := &model.LxcTemplate{}
-	if err := json.Unmarshal(in, tmpl); err != nil {
-		return nil, err
+
+	type Download struct {
+		Distro  string `json:"distro,omitempty"`
+		Release string `json:"release,omitempty"`
 	}
+
+	type LxcTemplate struct {
+		Download Download `json:"download,omitempty"`
+	}
+
+	type LxcImage struct {
+		DownloadUrl string `json:"download_url,omitempty"`
+		ChksumType  string `json:"chksum_type,omitempty"`
+		Chksum      string `json:"chksum,omitempty"`
+	}
+
+	// if err := json.Unmarshal(in, tmpl); err != nil {
+	// 	return nil, err
+	// }
 
 	// Parse "lxc_template" section if exists.
 	var json_template struct {
-		Template map[string]json.RawMessage `json:"lxc_template,omitempty"`
+		LxcTemplate        LxcTemplate `json:"lxc_template,omitempty"`
+		LxcImage           LxcImage    `json:"lxc_image,omitempty"`
+		AuthenticationType string      `json:"authentication_type,omitempty"`
 	}
 	if err := json.Unmarshal(in, &json_template); err != nil {
 		return nil, err
 	}
-	if json_template.Template != nil {
-		if len(json_template.Template) != 1 {
-			return nil, fmt.Errorf("lxc_template section must contain one JSON object")
+	// return nil, errors.Errorf("!!!!%v", string(in[:]))
+	if json_template.AuthenticationType != "" {
+		format, ok := model.LxcTemplate_AuthenticationType_value[strings.ToUpper(json_template.AuthenticationType)]
+		if !ok {
+			return nil, errors.Errorf("Unknown value at format: %s", json_template.AuthenticationType)
 		}
-		// Take only head item
-		for k, raw := range json_template.Template {
-			tmpl.LxcTemplate = &model.LxcTemplate_Template{
-				Template: k,
-			}
-			if err := json.Unmarshal(raw, tmpl.LxcTemplate); err != nil {
-				return nil, err
-			}
-			break
+		tmpl.AuthenticationType = model.LxcTemplate_AuthenticationType(format)
+
+		// Remove authentication_type field
+		tmp := make(map[string]interface{})
+		var err error
+		if err = json.Unmarshal(in, &tmp); err != nil {
+			return nil, errors.Wrap(err, "Failed json.Unmarshal")
 		}
+		delete(tmp, "authentication_type")
+		// var err error
+		in, err = json.Marshal(tmp)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed json.Marshal")
+		}
+	}
+
+	if err := json.Unmarshal(in, tmpl); err != nil {
+		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.LxcTemplate")
 	}
 
 	// Validation
@@ -58,10 +85,10 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 		return nil, handlers.ErrInvalidTemplate(h, "lxc_image or lxc_template must exist")
 	}
 
-	switch (tmpl.AuthenticationType) {
+	switch tmpl.AuthenticationType {
 	case model.LxcTemplate_NONE:
 	case model.LxcTemplate_PUB_KEY:
-		if (tmpl.SshPublicKey == "") {
+		if tmpl.SshPublicKey == "" {
 			return nil, handlers.ErrInvalidTemplate(h, "ssh_public_key is not set")
 		}
 		key, err := ioutil.ReadFile(tmpl.SshPublicKey)
@@ -75,20 +102,20 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 		}
 
 	default:
-		return nil, handlers.ErrInvalidTemplate(h, "Unknown authentication_type parameter" + tmpl.AuthenticationType.String())
+		return nil, handlers.ErrInvalidTemplate(h, "Unknown authentication_type parameter"+tmpl.AuthenticationType.String())
 	}
 
 	return tmpl, nil
 }
 
-func validatePublicKey (key []byte)(bool){
+func validatePublicKey(key []byte) bool {
 	// Check that the key is in RFC4253 binary format.
 	_, err := ssh.ParsePublicKey(key)
 	if err == nil {
 		return true
 	}
 
-	keyStr := string(key[:]);
+	keyStr := string(key[:])
 	// Check that the key is in OpenSSH format.
 	keyNames := []string{"ssh-rsa", "ssh-dss", "ecdsa-sha2-nistp256", "ssh-ed25519"}
 	firstStr := strings.Fields(keyStr)
@@ -101,8 +128,8 @@ func validatePublicKey (key []byte)(bool){
 	// Check that the key is in SECSH format.
 	keyNames = []string{"SSH2 ", "RSA", ""}
 	for _, name := range keyNames {
-		if ( strings.Contains(keyStr, "---- BEGIN " + name + "PUBLIC KEY ----") &&
-			strings.Contains(keyStr, "---- END " + name + "PUBLIC KEY ----")) {
+		if strings.Contains(keyStr, "---- BEGIN "+name+"PUBLIC KEY ----") &&
+			strings.Contains(keyStr, "---- END "+name+"PUBLIC KEY ----") {
 			return true
 		}
 	}
