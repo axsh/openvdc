@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/axsh/openvdc/handlers"
@@ -91,12 +90,8 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 		if tmpl.SshPublicKey == "" {
 			return nil, handlers.ErrInvalidTemplate(h, "ssh_public_key is not set")
 		}
-		key, err := ioutil.ReadFile(tmpl.SshPublicKey)
-		if err != nil {
-			return nil, handlers.ErrInvalidTemplate(h, "unable to read ssh_public_key key")
-		}
 
-		isValidate := validatePublicKey(key)
+		isValidate := validatePublicKey([]byte(tmpl.SshPublicKey))
 		if !isValidate {
 			return nil, handlers.ErrInvalidTemplate(h, "ssh_public_key is invalid")
 		}
