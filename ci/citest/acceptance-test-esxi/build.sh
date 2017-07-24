@@ -64,8 +64,8 @@ function add_ssh_key () {
 }
 
 function vm_cmd () {
-  PSID=$(govc guest.start -l=${VMUSER}:${VMPASS} -dump=true -vm ${VMNAME} $@)
-  govc guest.ps -l=${VMUSER}:${VMPASS} -vm ${VMNAME} -p $PSID -X=true -x=true
+  PSID=$(govc guest.start -l=${VMUSER}:${VMPASS} -vm ${VMNAME} $@)
+  govc guest.ps -l=${VMUSER}:${VMPASS} -vm ${VMNAME} -p $PSID
 }
 
 function yum_install () {
