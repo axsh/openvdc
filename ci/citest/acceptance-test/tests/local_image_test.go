@@ -11,20 +11,20 @@ import (
 )
 
 func init() {
-        if err := RestoreAssets("/var/tmp", "fixtures"); err != nil {
-                panic(err)
-        }
+	if err := RestoreAssets("/var/tmp", "fixtures"); err != nil {
+		panic(err)
+	}
 }
 
 func TestLocalImage(t *testing.T) {
 
 	stdout, _, err := RunSsh(scheduler_ip, fmt.Sprintf("[ -f /var/www/html/images/centos/7/amd64/meta.tar.xz ] && echo meta.tar.xz found || echo meta.tar.xz not found"))
 
-        if err != nil {
-                t.Error(err)
-        }
+	if err != nil {
+		t.Error(err)
+	}
 
-        t.Log(stdout.String())
+	t.Log(stdout.String())
 
 	// Use custom lxc-template.
 	stdout, _ = RunCmdAndReportFail(t, "openvdc", "run", "/var/tmp/fixtures/lxc2.json", `{"node_groups":["linuxbr"]}`)

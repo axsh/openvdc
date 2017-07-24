@@ -303,13 +303,14 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 		return lastErr
 	}
 
-	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
-	if lastErr != nil {
+	// .LastState must be set to REBOOTING at the API server.
+	if inst.GetLastState().GetState() != model.InstanceState_REBOOTING {
+		lastErr = errors.Errorf("Invalid instance state for reboot operation: %s", inst.GetLastState().GetState())
 		return lastErr
 	}
 
-	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_REBOOTING); lastErr != nil {
-		log.WithError(lastErr).WithField("state", model.InstanceState_REBOOTING).Error("Failed Instances.UpdateState")
+	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if lastErr != nil {
 		return lastErr
 	}
 
