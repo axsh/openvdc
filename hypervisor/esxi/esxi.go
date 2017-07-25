@@ -246,6 +246,8 @@ func (d EsxiHypervisorDriver) NetworkConfig() error {
 		d.log().Errorf("No Interfaces set.")
 	}
 
+	Ipv4Addr := d.template.Interfaces[0].Ipv4Addr		
+
 	if Ipv4Addr == "" {
 		d.log().Errorf("Ipv4Addr not set.")
 	}
