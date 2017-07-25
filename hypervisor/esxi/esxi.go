@@ -257,10 +257,6 @@ func (d EsxiHypervisorDriver) RebootInstance() error {
 	return nil
 }
 
-func (d EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
-	return nil
-}
-
 func (d EsxiHypervisorDriver) RunGuestCmd(cmd string) {
 	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), cmd)
 }
