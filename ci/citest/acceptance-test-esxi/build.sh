@@ -9,9 +9,11 @@ if [[ -n "${BUILD_ENV_PATH}" && ! -f "${BUILD_ENV_PATH}" ]]; then
   exit 1
 fi
 
+set +x
 set -a
 . ${BUILD_ENV_PATH}
 set +a
+set -x
 
 IP_ADDR=$IP_ADDRESS
 NETWORK="VM Network"
