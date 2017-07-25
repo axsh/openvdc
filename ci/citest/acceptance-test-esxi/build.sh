@@ -9,9 +9,11 @@ if [[ -n "${BUILD_ENV_PATH}" && ! -f "${BUILD_ENV_PATH}" ]]; then
   exit 1
 fi
 
+set +x
 set -a
 . ${BUILD_ENV_PATH}
 set +a
+set -x
 
 IP_ADDR=$IP_ADDRESS
 NETWORK="VM Network"
@@ -30,7 +32,8 @@ function ssh_cmd() {
 function clone_base_vm () {
   BASE="base"
   echo "Cloning VM. ${BASE} > ${1}"
-  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$1" --noImageFiles $2$BASE $2
+  set +x;
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$1" --noImageFiles $2$BASE $2; set -x;
 
   govc vm.power -on=true $VMNAME
 
@@ -50,7 +53,8 @@ function clone_base_vm () {
   sleep 30
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
-  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
+  set +x;
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL; set -x+
 }
 
 function add_ssh_key () {
@@ -64,8 +68,8 @@ function add_ssh_key () {
 }
 
 function vm_cmd () {
-  PSID=$(govc guest.start -l=${VMUSER}:${VMPASS} -dump=true -vm ${VMNAME} $@)
-  govc guest.ps -l=${VMUSER}:${VMPASS} -vm ${VMNAME} -p $PSID -X=true -x=true
+  PSID=$(govc guest.start -l=${VMUSER}:${VMPASS} -vm ${VMNAME} $@)
+  govc guest.ps -l=${VMUSER}:${VMPASS} -vm ${VMNAME} -p $PSID
 }
 
 function yum_install () {
@@ -104,6 +108,7 @@ function check_env_variables () {
     echo "The BOX_MEMORY variable needs to be set."
     exit 1
   fi
+  set +x;
   if [[ -z "${VMUSER}" ]] ; then
     echo "The VMUSER variable needs to be set."
     exit 1
@@ -113,11 +118,11 @@ function check_env_variables () {
     echo "The VMPASS variable needs to be set."
     exit 1
   fi
-
   if [[ -z "${GOVC_URL}" ]] ; then
     echo "The GOVC_URL variable needs to be set. Example: https://username:password@ip/sdk"
     exit 1
   fi
+  set -x;
 
   if [[ -z "${GOVC_DATACENTER}" ]] ; then
     echo "The GOVC_DATACENTER variable needs to be set."
@@ -152,10 +157,10 @@ check_env_variables
 
 VMNAME="$BRANCH"
 BACKUPNAME="${VMNAME}_BACKUP"
-
+set +x;
 TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
 FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
-
+set -x;
 YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
 curl -fs --head "${YUM_REPO_URL}" > /dev/null
 if [[ "$?" != "0" ]]; then
@@ -182,7 +187,9 @@ else
 
   if [[ $(govc vm.info $BACKUPNAME) ]]; then
       echo "Creating VM. ${BACKUPNAME} > ${VMNAME} "
+      set +x;
       echo "yes" | ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
+      set -x;
     else
       echo "${BACKUPNAME} not found. Building VM:"
       clone_base_vm $VMNAME $FIXED_URL
