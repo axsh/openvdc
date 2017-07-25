@@ -53,6 +53,8 @@ mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/ssh
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
+mkdir -p "$RPM_BUILD_ROOT"/usr/sbin
+ln -sf /opt/axsh/openvdc/bin/openvdc-executor  "$RPM_BUILD_ROOT"/usr/sbin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
@@ -100,6 +102,7 @@ OpenVDC executor common package.
 /opt/axsh/openvdc/share/qemu-ifdown
 %dir /etc/openvdc
 %dir /etc/openvdc/ssh
+/usr/sbin/openvdc-executor
 
 %post executor
 test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa -f /etc/openvdc/ssh/host_rsa_key -b 4096 -C '' -N '' >&/dev/null;
@@ -155,7 +158,7 @@ Summary: OpenVDC executor (Qemu driver)
 Requires: openvdc-executor
 Requires: qemu-system-x86
 Requires: dosfstools
- 
+
 %description executor-qemu
 Qemu driver configuration package for OpenVDC executor
 
