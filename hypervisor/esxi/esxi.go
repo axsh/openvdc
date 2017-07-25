@@ -5,11 +5,12 @@ package esxi
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/url"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -20,6 +21,7 @@ import (
 	_ "github.com/vmware/govmomi/govc/datastore"
 	_ "github.com/vmware/govmomi/govc/vm"
 	_ "github.com/vmware/govmomi/govc/vm/guest"
+	"golang.org/x/crypto/ssh"
 )
 
 type BridgeType int
@@ -160,16 +162,42 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	// Create new folder
 	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), d.vmName)
 
+	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
+	if err != nil {
+		return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
+	}
+
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		return errors.Errorf("Unable to parse the specified ssh private key: %s", settings.EsxiHostSshkey)
+	}
+
+	conn, err := ssh.Dial("tcp", strings.Join([]string{settings.EsxiIp, "22"}, ":"), &ssh.ClientConfig{
+		User: settings.EsxiUser,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+	})
+	if err != nil {
+		return errors.Errorf("Unable establish ssh connection to %s", settings.EsxiIp)
+	}
+	defer conn.Close()
+
+	session, err := conn.NewSession()
+	if err != nil {
+		return errors.Errorf("Unable to open a session on connection %d", conn)
+	}
+	defer session.Close()
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	session.Stdout = &out
+	session.Stderr = &stderr
+
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
 	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
 		settings.EsxiVmDatastore, "CentOS7", "CentOS7", settings.EsxiVmDatastore, d.vmName, "CentOS7") //Todo: Don't use hardcoded values
-	cmd := exec.Command("ssh", "-i", settings.EsxiHostSshkey, "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=quiet", "-o", "UserKnownHostsFile /dev/null", fmt.Sprintf("root@%s", settings.EsxiIp), vmkfstoolsCmd)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
+	if err := session.Run(vmkfstoolsCmd); err != nil {
 		return errors.Errorf(stderr.String(), "Error cloning vmdk")
 	}
 
