@@ -242,6 +242,14 @@ func (d EsxiHypervisorDriver) NetworkConfig() error {
 		d.log().Errorf("Network interfaces are requested to create but no bridge is configured")
 	}
 
+	if len(d.template.Interfaces) == 0 {
+		d.log().Errorf("No Interfaces set.")
+	}
+
+	if Ipv4Addr == "" {
+		d.log().Errorf("Ipv4Addr not set.")
+	}
+
 	//TODO: Setup multiple interfaces
 	esxiCmd("guest.upload", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), "-perm=1", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), filepath.Join(settings.ScriptPath, "esxi-vm-config.sh"), "/tmp/testscript.sh")
 	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/tmp/testscript.sh", d.template.Interfaces[0].Ipv4Addr)
