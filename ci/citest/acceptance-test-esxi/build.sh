@@ -108,6 +108,7 @@ function check_env_variables () {
     echo "The BOX_MEMORY variable needs to be set."
     exit 1
   fi
+  set +x;
   if [[ -z "${VMUSER}" ]] ; then
     echo "The VMUSER variable needs to be set."
     exit 1
@@ -117,11 +118,11 @@ function check_env_variables () {
     echo "The VMPASS variable needs to be set."
     exit 1
   fi
-
   if [[ -z "${GOVC_URL}" ]] ; then
     echo "The GOVC_URL variable needs to be set. Example: https://username:password@ip/sdk"
     exit 1
   fi
+  set -x;
 
   if [[ -z "${GOVC_DATACENTER}" ]] ; then
     echo "The GOVC_DATACENTER variable needs to be set."
@@ -148,11 +149,6 @@ function check_env_variables () {
     exit 1
   fi
 }
-
-set +x;
-echo $BRANCH
-set -x;
-exit 0
 
 check_dep "ssh"
 check_dep "govc"
@@ -191,7 +187,9 @@ else
 
   if [[ $(govc vm.info $BACKUPNAME) ]]; then
       echo "Creating VM. ${BACKUPNAME} > ${VMNAME} "
+      set +x;
       echo "yes" | ovftool -ds=$VM_DATASTORE -n="$VMNAME" --noImageFiles $FIXED_URL$BACKUPNAME $FIXED_URL
+      set -x;
     else
       echo "${BACKUPNAME} not found. Building VM:"
       clone_base_vm $VMNAME $FIXED_URL
