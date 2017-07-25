@@ -30,7 +30,8 @@ function ssh_cmd() {
 function clone_base_vm () {
   BASE="base"
   echo "Cloning VM. ${BASE} > ${1}"
-  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$1" --noImageFiles $2$BASE $2
+  set +x;
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$1" --noImageFiles $2$BASE $2; set -x;
 
   govc vm.power -on=true $VMNAME
 
@@ -50,7 +51,8 @@ function clone_base_vm () {
   sleep 30
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
-  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL
+  set +x;
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL; set -x+
 }
 
 function add_ssh_key () {
@@ -152,10 +154,10 @@ check_env_variables
 
 VMNAME="$BRANCH"
 BACKUPNAME="${VMNAME}_BACKUP"
-
+set +x;
 TRIMMED_URL=$(echo $GOVC_URL | tr -d ' sdk')
 FIXED_URL=$(sed 's/http/vi/g' <<< $TRIMMED_URL)
-
+set -x;
 YUM_REPO_URL="https://ci.openvdc.org/repos/${BRANCH}/${RELEASE_SUFFIX}/"
 curl -fs --head "${YUM_REPO_URL}" > /dev/null
 if [[ "$?" != "0" ]]; then
