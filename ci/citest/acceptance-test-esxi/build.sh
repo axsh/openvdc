@@ -147,6 +147,11 @@ function check_env_variables () {
   fi
 }
 
+set +x;
+echo $BRANCH
+set -x;
+exit 0
+
 check_dep "ssh"
 check_dep "govc"
 check_dep "ovftool"
