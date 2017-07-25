@@ -8,7 +8,7 @@ RUN yum install -y http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-
 RUN yum install -y git
 RUN curl -L https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz | tar -C /usr/local -xzf -
 ENV GOPATH=/var/tmp/go
-ENV PATH=$PATH:$GOPATH/bin
+ENV PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
 RUN mkdir $GOPATH
 
 RUN mkdir -p $GOPATH/src/github.com/axsh/openvdc
