@@ -59,12 +59,17 @@ func (t BridgeType) String() string {
 	}
 }
 
+type EsxiMachine struct {
+	SerialConsolePort int
+}
+
 type EsxiHypervisorProvider struct {
 }
 
 type EsxiHypervisorDriver struct {
 	hypervisor.Base
 	template  *model.EsxiTemplate
+	machine   *EsxiMachine
 	imageName string
 	hostName  string
 	vmName    string
@@ -126,13 +131,14 @@ func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.WmwareTemplate: %T, template")
 	}
-
+	instanceIdx, _ := strconv.Atoi(strings.TrimPrefix(instance.GetId(), "i-"))
 	driver := &EsxiHypervisorDriver{
 		Base: hypervisor.Base{
 			Log:      log.WithFields(log.Fields{"Hypervisor": "esxi", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
 		template: EsxiTmpl,
+		machine:  &EsxiMachine{SerialConsolePort: (15000 + instanceIdx)},
 		vmName:   instance.GetId(),
 	}
 
@@ -209,6 +215,12 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	//Rename VM
 	esxiCmd("vm.change", fmt.Sprintf("-name=%s", d.vmName), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
+	//Add serial port to vm
+	esxiCmd("device.serial.add", fmt.Sprintf("-vm=%s", d.vmName))
+
+	//Connect serial port, serial port devices starts from 9000 on the current driver
+	esxiCmd("device.serial.connect", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
 
 	//Start VM
 	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
