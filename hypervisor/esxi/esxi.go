@@ -21,6 +21,8 @@ import (
 	_ "github.com/vmware/govmomi/govc/datastore"
 	_ "github.com/vmware/govmomi/govc/vm"
 	_ "github.com/vmware/govmomi/govc/vm/guest"
+	_ "github.com/vmware/govmomi/govc/device"
+	_ "github.com/vmware/govmomi/govc/device/serial"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -184,6 +186,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 			ssh.PublicKeys(signer),
 		},
 	})
+
 	if err != nil {
 		return errors.Errorf("Unable establish ssh connection to %s", settings.EsxiIp)
 	}
@@ -217,10 +220,10 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	esxiCmd("vm.change", fmt.Sprintf("-name=%s", d.vmName), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	//Add serial port to vm
-	esxiCmd("device.serial.add", fmt.Sprintf("-vm=%s", d.vmName))
+	esxiCmd("device.serial.add", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	//Connect serial port, serial port devices starts from 9000 on the current driver
-	esxiCmd("device.serial.connect", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
+	esxiCmd("device.serial.connect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
 
 	//Start VM
 	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
@@ -236,6 +239,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
 	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
 	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	//TODO: Check for errors.
@@ -244,6 +248,9 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
+	//Connect serial port, serial port devices starts from 9000 on the current driver
+	esxiCmd("device.serial.connect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
+
 	esxiCmd("vm.power", "-on=true", "-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	//TODO: Check for errors.
@@ -252,6 +259,8 @@ func (d *EsxiHypervisorDriver) StartInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StopInstance() error {
+	//Disconnect thte serial port
+	esxiCmd("device.serial.disconnect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"))
 	//Suspend to save machine state
 	esxiCmd("vm.power", "-suspend=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
