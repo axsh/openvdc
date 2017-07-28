@@ -24,50 +24,50 @@ func (d *EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
 	}
 }
 
-func (c *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...string) (<-chan hypervisor.Closed, error) {
+func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...string) (<-chan hypervisor.Closed, error) {
 	//TODO: check if machine is running {
 	// return nil, errors.New("esxi instance is not in a running state")
 	//}
 	var err error
 	waitClosed := new(sync.WaitGroup)
 	closeChan := make(chan hypervisor.Closed)
-	c.conChan = make(chan error)
+	con.conChan = make(chan error)
 
 	if len(args) == 0 {
-		c.SerialConn, err = net.Dial("tcp", strings.Join([]string{settings.EsxiIp, strconv.Itoa(c.esxi.machine.SerialConsolePort)}, ":"))
+		con.SerialConn, err = net.Dial("tcp", strings.Join([]string{settings.EsxiIp, strconv.Itoa(con.esxi.machine.SerialConsolePort)}, ":"))
 		if err != nil {
-			return nil, errors.Errorf("Unable to connect to %s on port %d", settings.EsxiIp, c.esxi.machine.SerialConsolePort)
+			return nil, errors.Errorf("Unable to connect to %s on port %d", settings.EsxiIp, con.esxi.machine.SerialConsolePort)
 		}
 		go func() {
 			waitClosed.Wait()
 		}()
-		c.AttachSerialConsole(param, waitClosed, c.conChan)
+		con.AttachSerialConsole(param, waitClosed, con.conChan)
 	} else {
-		c.execCommand(param, waitClosed, args...)
+		con.execCommand(param, waitClosed, args...)
 	}
 
 	defer close(closeChan)
 	return closeChan, nil
 }
 
-func (c *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitDone *sync.WaitGroup, args ...string) {
-	c.conChan <- nil
+func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitDone *sync.WaitGroup, args ...string) {
+	con.conChan <- nil
 }
 
-func (c *esxiConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
-	return c.pipeAttach(param)
+func (con *esxiConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
+	return con.pipeAttach(param)
 }
 
-func (c *esxiConsole) Exec(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
-	return c.pipeAttach(param, args...)
+func (con *esxiConsole) Exec(param *hypervisor.ConsoleParam, args []string) (<-chan hypervisor.Closed, error) {
+	return con.pipeAttach(param, args...)
 }
 
-func (c *esxiConsole) Wait() error {
-	defer c.SerialConn.Close()
-	return <-c.conChan
+func (con *esxiConsole) Wait() error {
+	defer con.SerialConn.Close()
+	return <-con.conChan
 }
 
-func (c *esxiConsole) ForceClose() error {
+func (con *esxiConsole) ForceClose() error {
 	return nil
 }
 
