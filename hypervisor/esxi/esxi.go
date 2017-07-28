@@ -5,11 +5,12 @@ package esxi
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/url"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -20,6 +21,9 @@ import (
 	_ "github.com/vmware/govmomi/govc/datastore"
 	_ "github.com/vmware/govmomi/govc/vm"
 	_ "github.com/vmware/govmomi/govc/vm/guest"
+	_ "github.com/vmware/govmomi/govc/device"
+	_ "github.com/vmware/govmomi/govc/device/serial"
+	"golang.org/x/crypto/ssh"
 )
 
 type BridgeType int
@@ -57,12 +61,17 @@ func (t BridgeType) String() string {
 	}
 }
 
+type EsxiMachine struct {
+	SerialConsolePort int
+}
+
 type EsxiHypervisorProvider struct {
 }
 
 type EsxiHypervisorDriver struct {
 	hypervisor.Base
 	template  *model.EsxiTemplate
+	machine   *EsxiMachine
 	imageName string
 	hostName  string
 	vmName    string
@@ -124,13 +133,14 @@ func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.WmwareTemplate: %T, template")
 	}
-
+	instanceIdx, _ := strconv.Atoi(strings.TrimPrefix(instance.GetId(), "i-"))
 	driver := &EsxiHypervisorDriver{
 		Base: hypervisor.Base{
 			Log:      log.WithFields(log.Fields{"Hypervisor": "esxi", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
 		template: EsxiTmpl,
+		machine:  &EsxiMachine{SerialConsolePort: (15000 + instanceIdx)},
 		vmName:   instance.GetId(),
 	}
 
@@ -160,16 +170,43 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	// Create new folder
 	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), d.vmName)
 
+	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
+	if err != nil {
+		return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
+	}
+
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		return errors.Errorf("Unable to parse the specified ssh private key: %s", settings.EsxiHostSshkey)
+	}
+
+	conn, err := ssh.Dial("tcp", strings.Join([]string{settings.EsxiIp, "22"}, ":"), &ssh.ClientConfig{
+		User: settings.EsxiUser,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+	})
+
+	if err != nil {
+		return errors.Errorf("Unable establish ssh connection to %s", settings.EsxiIp)
+	}
+	defer conn.Close()
+
+	session, err := conn.NewSession()
+	if err != nil {
+		return errors.Errorf("Unable to open a session on connection %d", conn)
+	}
+	defer session.Close()
+
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	session.Stdout = &out
+	session.Stderr = &stderr
+
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
 	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
 		settings.EsxiVmDatastore, "CentOS7", "CentOS7", settings.EsxiVmDatastore, d.vmName, "CentOS7") //Todo: Don't use hardcoded values
-	cmd := exec.Command("ssh", "-i", settings.EsxiHostSshkey, "-o", "StrictHostKeyChecking=no", "-o", "LogLevel=quiet", "-o", "UserKnownHostsFile /dev/null", fmt.Sprintf("root@%s", settings.EsxiIp), vmkfstoolsCmd)
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
+	if err := session.Run(vmkfstoolsCmd); err != nil {
 		return errors.Errorf(stderr.String(), "Error cloning vmdk")
 	}
 
@@ -181,6 +218,12 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	//Rename VM
 	esxiCmd("vm.change", fmt.Sprintf("-name=%s", d.vmName), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
+	//Add serial port to vm
+	esxiCmd("device.serial.add", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
+	//Connect serial port, serial port devices starts from 9000 on the current driver
+	esxiCmd("device.serial.connect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
 
 	//Start VM
 	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
@@ -196,6 +239,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
 	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+
 	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	//TODO: Check for errors.
@@ -204,6 +248,9 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
+	//Connect serial port, serial port devices starts from 9000 on the current driver
+	esxiCmd("device.serial.connect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
+
 	esxiCmd("vm.power", "-on=true", "-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	//TODO: Check for errors.
@@ -212,6 +259,8 @@ func (d *EsxiHypervisorDriver) StartInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StopInstance() error {
+	//Disconnect thte serial port
+	esxiCmd("device.serial.disconnect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"))
 	//Suspend to save machine state
 	esxiCmd("vm.power", "-suspend=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
@@ -226,10 +275,6 @@ func (d EsxiHypervisorDriver) RebootInstance() error {
 
 	//TODO: Check for errors.
 
-	return nil
-}
-
-func (d EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
 	return nil
 }
 

@@ -509,6 +509,18 @@
 			"revisionTime": "2017-07-17T19:46:55Z"
 		},
 		{
+			"checksumSHA1": "cBU+Ud3BbNyXu3yfMpWG8kR2yRI=",
+			"path": "github.com/vmware/govmomi/govc/device",
+			"revision": "8ab1a62d9c0873b8a25404c52928be2358b78963",
+			"revisionTime": "2017-07-20T17:00:38Z"
+		},
+		{
+			"checksumSHA1": "jr2UFXDaZ8Lc3Yx5bEwJ+lSH7AA=",
+			"path": "github.com/vmware/govmomi/govc/device/serial",
+			"revision": "8ab1a62d9c0873b8a25404c52928be2358b78963",
+			"revisionTime": "2017-07-20T17:00:38Z"
+		},
+		{
 			"checksumSHA1": "zs7y8Mk31r+oW3/C3A0JSs+AWSw=",
 			"path": "github.com/vmware/govmomi/govc/flags",
 			"revision": "f647f34332cbfd64cbe1181e92e0407a17b7b6ec",
