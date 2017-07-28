@@ -108,7 +108,7 @@ func schemaV1Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema/v1.json", size: 725, mode: os.FileMode(420), modTime: time.Unix(1498572848, 0)}
+	info := bindataFileInfo{name: "schema/v1.json", size: 725, mode: os.FileMode(420), modTime: time.Unix(1500457433, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -168,7 +168,7 @@ func schemaVmQemuJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema/vm/qemu.json", size: 1970, mode: os.FileMode(420), modTime: time.Unix(1498636999, 0)}
+	info := bindataFileInfo{name: "schema/vm/qemu.json", size: 1970, mode: os.FileMode(420), modTime: time.Unix(1500457433, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
