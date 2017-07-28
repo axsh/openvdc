@@ -223,7 +223,7 @@ func DecompressXz(fileName string, outputPath string) error {
 
 	cmd := exec.Command("tar", "-xf", filePath, "-C", outputPath)
 	cmd.Stdout = &stdout
-	cmd.Stdout = &stderr
+	cmd.Stderr = &stderr
 
 	err := cmd.Run()
 
