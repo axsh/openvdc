@@ -21,10 +21,17 @@ func TestNewMachine(t *testing.T) {
 func TestAddNICs(t *testing.T) {
 	assert := assert.New(t)
 	machine := NewMachine(1, 512)
-	machine.AddNICs([]NetDev{NetDev{IfName: "if0"}, NetDev{IfName: "if1"}})
+	machine.AddNICs([]Nic{Nic{IfName: "if0"}, Nic{IfName: "if1"}})
 
 	assert.Equal(len(machine.Nics), 2)
 	for idx, nic := range machine.Nics {
 		assert.Equal(fmt.Sprintf("if%d", idx), nic.IfName)
 	}
+}
+
+func TestAddDevice(t *testing.T) {
+	assert := assert.New(t)
+	machine := NewMachine(1, 512)
+	machine.AddDevice(NewDevice(DevType))
+	assert.Equal(len(machine.Devices), 1)
 }

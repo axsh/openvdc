@@ -77,7 +77,7 @@ func determineGHRef() string {
 	}
 	SCHEMA_LAST_COMMIT, exists := os.LookupEnv("SCHEMA_LAST_COMMIT")
 	if !exists {
-		SCHEMA_LAST_COMMIT = cmd("git", "log", "-n", "1", "--pretty=format:%H", "--", "schema/", "registry/schema.bindata.go")
+		SCHEMA_LAST_COMMIT = cmd("git", "log", "-n", "1", "--pretty=format:%H", "--", "schema/", "registry/schema.bindata.go", "templates/")
 	}
 
 	found := false
