@@ -141,9 +141,9 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 	instanceId := d.Base.Instance.GetId()
 	instanceDir := filepath.Join(settings.InstancePath, instanceId)
 	imageFormat := strings.ToLower(d.template.QemuImage.GetFormat().String())
-	var netDev []NetDev
+	var netDev []Nic
 	for idx, iface := range d.template.GetInterfaces() {
-		netDev = append(netDev, NetDev{
+		netDev = append(netDev, Nic{
 			IfName:       fmt.Sprintf("%s_%02d", instanceId, idx),
 			Type:         iface.Type,
 			Ipv4Addr:     iface.Ipv4Addr,
@@ -160,7 +160,28 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 	d.machine.MonitorSocketPath = filepath.Join(instanceDir, "monitor.socket")
 	d.machine.SerialSocketPath = filepath.Join(instanceDir, "serial.socket")
 	d.machine.Kvm = d.template.GetUseKvm()
-	d.machine.AddNICs(netDev)
+	for _, dev := range d.machine.AddNICs(netDev) {
+		d.machine.AddDevice(dev)
+	}
+
+	// these devices are required for communication through the qemu guest agent
+	d.machine.AgentSocketPath = filepath.Join(instanceDir, "agent.socket")
+	virtioserialDev := NewDevice(DevType)
+	virtioserialDev.AddDriver("virtio-serial")
+
+	hostDev := NewDevice(CharType)
+	hostDev.AddDriver("socket")
+	hostDev.AddDriverOption("path", fmt.Sprintf("%s,server,nowait", d.machine.AgentSocketPath))
+
+	guestDev := NewDevice(DevType)
+	guestDev.AddDriver("virtserialport")
+	guestDev.AddDriverOption("name", "org.qemu.guest_agent.0")
+
+	hostDev.LinkToGuestDevice(instanceId, guestDev)
+
+	d.machine.AddDevice(virtioserialDev)
+	d.machine.AddDevice(hostDev)
+	d.machine.AddDevice(guestDev)
 }
 
 func (d *QEMUHypervisorDriver) log() *log.Entry {
@@ -353,9 +374,9 @@ func (d *QEMUHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *QEMUHypervisorDriver) StartInstance() error {
-	d.log().Infoln("Starting qemu instnace...")
+	d.log().Infoln("Starting qemu instance...")
 	if err := d.machine.Start(filepath.Join(settings.QemuPath, settings.QemuProvider)); err != nil {
-		return errors.Wrap(err, "Failed machien.Start()")
+		return errors.Wrap(err, "Failed machine.Start()")
 	}
 
 	return d.machine.ScheduleState(RUNNING, 10*time.Minute, func() bool {
@@ -385,6 +406,3 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 	})
 }
 
-func (d QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
-	return nil
-}
