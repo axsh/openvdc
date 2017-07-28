@@ -54,7 +54,7 @@ function clone_base_vm () {
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
   set +x;
-  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL; set -x+
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL; set -x;
 }
 
 function add_ssh_key () {
