@@ -177,6 +177,21 @@ function setup_ssh_key () {
   govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" /tmp/id_rsa /etc/openvdc/esxi/id_rsa
 }
 
+cleanup() {
+    err=$?
+    if [ $err -ne 0 ]; then
+        echo "Script failed."
+    fi
+    #Todo: Check VM status before attempting to shutdown or remove.
+    echo "Powering off VM..."
+    govc vm.power -off=true $VMNAME
+    sleep 30
+    echo "Removing VM..."
+    govc vm.destroy $VMNAME
+    trap '' EXIT INT TERM
+    exit $err
+}
+
 check_dep "ssh"
 check_dep "govc"
 check_dep "ovftool"
@@ -195,6 +210,8 @@ if [[ "$?" != "0" ]]; then
   echo "Are the BRANCH and RELEASE_SUFFIX set correctly?"
   exit 1
 fi
+
+trap cleanup EXIT
 
 if [[ "$REBUILD" == "true" ]]; then
   if [[ $(govc vm.info $VMNAME) ]]; then
@@ -259,9 +276,3 @@ echo "Installation complete."
 
 # TODO: Run Tests
 
-echo "Powering off VM..."
-ssh_cmd "shutdown -h 0"
-sleep 30
-
-echo "Removing VM..."
-govc vm.destroy $VMNAME
