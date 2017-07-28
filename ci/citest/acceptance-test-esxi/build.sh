@@ -151,9 +151,8 @@ function check_env_variables () {
 }
 
 function setup_config () {
-
-set +x;
-ssh_cmd "cat > /etc/openvdc/executor.toml << EOS
+  set +x;
+  ssh_cmd "cat > /etc/openvdc/executor.toml << EOS
 [hypervisor]
 esxi-user = 'root'
 esxi-pass = ''
@@ -169,8 +168,13 @@ esxi-vm-datastore = '${VM_DATASTORE}'
 [console.ssh]
 EOS
 "
-set -x;
+  set -x;
+}
 
+function setup_ssh_key () {
+  govc datastore.download -ds=$VM_DATASTORE key/id_rsa /tmp/
+  ssh_cmd "mkdir -p /etc/openvdc/esxi"
+  govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" /tmp/id_rsa /etc/openvdc/esxi/id_rsa
 }
 
 check_dep "ssh"
