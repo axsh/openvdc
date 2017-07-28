@@ -19,10 +19,10 @@ import (
 	"github.com/spf13/viper"
 	cli "github.com/vmware/govmomi/govc/cli"
 	_ "github.com/vmware/govmomi/govc/datastore"
-	_ "github.com/vmware/govmomi/govc/vm"
-	_ "github.com/vmware/govmomi/govc/vm/guest"
 	_ "github.com/vmware/govmomi/govc/device"
 	_ "github.com/vmware/govmomi/govc/device/serial"
+	_ "github.com/vmware/govmomi/govc/vm"
+	_ "github.com/vmware/govmomi/govc/vm/guest"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -230,7 +230,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
-	d.NetworkConfig()
+	// d.NetworkConfig()
 
 	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
