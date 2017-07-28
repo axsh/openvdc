@@ -201,7 +201,9 @@ if [[ "$REBUILD" == "true" ]]; then
     echo "Old Backup found. Attempting to delete it."
     govc vm.destroy $BACKUPNAME
   fi
-  build_vm
+  set +x
+  clone_base_vm $VMNAME $FIXED_URL
+  set -x
 else
   if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
@@ -215,7 +217,9 @@ else
       set -x;
     else
       echo "${BACKUPNAME} not found. Building VM:"
+      set +x
       clone_base_vm $VMNAME $FIXED_URL
+      set -x
     fi
 fi
 
