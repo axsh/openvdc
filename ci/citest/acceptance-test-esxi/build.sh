@@ -150,6 +150,29 @@ function check_env_variables () {
   fi
 }
 
+function setup_config () {
+
+set +x;
+ssh_cmd "cat > /etc/openvdc/executor.toml << EOS
+[hypervisor]
+esxi-user = 'root'
+esxi-pass = ''
+esxi-ip = ''
+esxi-datacenter = '${GOVC_DATACENTER}'
+esxi-insecure = ${GOVC_INSECURE}
+esxi-host-sshkey = '/etc/openvdc/esxi/id_rsa'
+esxi-vm-user = 'centos7'
+esxi-vm-pass = 'centos7'
+esxi-vm-datastore = '${VM_DATASTORE}'
+[executor-api]
+[console]
+[console.ssh]
+EOS
+"
+set -x;
+
+}
+
 check_dep "ssh"
 check_dep "govc"
 check_dep "ovftool"
@@ -212,6 +235,9 @@ gpgcheck=0
 EOS"
 
 yum_install "openvdc"
+
+setup_config
+
 ssh_cmd "systemctl enable openvdc-scheduler"
 ssh_cmd "systemctl start openvdc-scheduler"
 ssh_cmd "systemctl enable mesos-slave"
@@ -220,7 +246,6 @@ ssh_cmd "systemctl start mesos-slave"
 ssh_cmd "systemctl enable mesos-master"
 ssh_cmd "systemctl start mesos-master"
 ssh_cmd "cp /opt/axsh/openvdc/bin/openvdc-executor /bin/"
-
 
 echo "Installation complete."
 
