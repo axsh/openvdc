@@ -14,7 +14,8 @@ License: LGPLv3
 BuildArch: x86_64
 
 BuildRequires: rpmdevtools lxc-devel git
-BuildRequires: golang >= 1.7
+# CentOS 7.3 does not have official Go 1.8 package.
+#BuildRequires: golang >= 1.8
 
 Requires: mesosphere-zookeeper mesos
 Requires: bridge-utils
