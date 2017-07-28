@@ -134,6 +134,8 @@ Requires: lxc
 # lxc-templates does not resolve its sub dependencies
 Requires: lxc-templates wget gpg sed gawk coreutils rsync debootstrap dropbear
 Requires: iproute
+# Needed for unpacking local images
+Requires: tar xz
 
 %description executor-lxc
 LXC driver configuration package for OpenVDC executor.
