@@ -171,7 +171,7 @@ EOS
 }
 
 function setup_ssh_key () {
-  govc datastore.download -ds=$VM_DATASTORE key/id_rsa /tmp/
+  govc datastore.download -ds=$VM_DATASTORE key/id_rsa /tmp/id_rsa
   ssh_cmd "mkdir -p /etc/openvdc/esxi"
   govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" /tmp/id_rsa /etc/openvdc/esxi/id_rsa
 }
