@@ -275,5 +275,5 @@ ssh_cmd "cp /opt/axsh/openvdc/bin/openvdc-executor /bin/"
 
 echo "Installation complete."
 
-# TODO: Run Tests
+ssh_cmd "cd /opt/axsh/openvdc/bin && ./openvdc-acceptance-test-esxi -test.v"
 
