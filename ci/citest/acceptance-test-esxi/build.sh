@@ -154,15 +154,14 @@ function setup_config () {
   set +x;
   ssh_cmd "cat > /etc/openvdc/executor.toml << EOS
 [hypervisor]
-esxi-user = 'root'
-esxi-pass = ''
-esxi-ip = ''
+esxi-url = '${GOVC_URL}'
 esxi-datacenter = '${GOVC_DATACENTER}'
 esxi-insecure = ${GOVC_INSECURE}
 esxi-host-sshkey = '/etc/openvdc/esxi/id_rsa'
 esxi-vm-user = 'centos7'
 esxi-vm-pass = 'centos7'
 esxi-vm-datastore = '${VM_DATASTORE}'
+esxi-vm-network = '${NETWORK}'
 [executor-api]
 [console]
 [console.ssh]
@@ -262,6 +261,7 @@ EOS"
 yum_install "openvdc"
 
 setup_config
+setup_ssh_key
 
 ssh_cmd "systemctl enable openvdc-scheduler"
 ssh_cmd "systemctl start openvdc-scheduler"
