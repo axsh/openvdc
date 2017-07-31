@@ -154,14 +154,15 @@ function setup_config () {
   set +x;
   ssh_cmd "cat > /etc/openvdc/executor.toml << EOS
 [hypervisor]
-esxi-url = '${GOVC_URL}'
+esxi-user = 'root'
+esxi-pass = '${ESXI_PASS}'
+esxi-ip = '${ESXI_IP}'
 esxi-datacenter = '${GOVC_DATACENTER}'
 esxi-insecure = ${GOVC_INSECURE}
 esxi-host-sshkey = '/etc/openvdc/esxi/id_rsa'
 esxi-vm-user = 'centos7'
 esxi-vm-pass = 'centos7'
 esxi-vm-datastore = '${VM_DATASTORE}'
-esxi-vm-network = '${NETWORK}'
 [executor-api]
 [console]
 [console.ssh]
