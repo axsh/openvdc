@@ -60,6 +60,7 @@ cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp ci/citest/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
+cp ci/citest/acceptance-test-esxi/tests/openvdc-acceptance-test-esxi "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
 cp -r pkg/conf/scripts/ "$RPM_BUILD_ROOT"/etc/openvdc
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
@@ -229,3 +230,15 @@ An acceptance test designed to run on a specifically designed environment. The e
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-acceptance-test
+
+%package acceptance-test-esxi
+Summary: The OpenVDC esxi acceptance test used in its CI process.
+Requires: openvdc-cli
+
+%description acceptance-test-esxi
+An acceptance test designed to run on a specifically designed environment. The environment building scripts can be found in the OpenVDC source code repository. The average OpenVDC user will not need to install this.
+
+%files acceptance-test-esxi
+%dir /opt/axsh/openvdc
+%dir /opt/axsh/openvdc/bin
+/opt/axsh/openvdc/bin/openvdc-acceptance-test-esxi
