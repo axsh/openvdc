@@ -183,11 +183,11 @@ cleanup() {
         echo "Script failed."
     fi
     #Todo: Check VM status before attempting to shutdown or remove.
-    #echo "Powering off VM..."
-    #govc vm.power -off=true $VMNAME
-    #sleep 30
-    #echo "Removing VM..."
-    #govc vm.destroy $VMNAME
+    echo "Powering off VM..."
+    govc vm.power -off=true $VMNAME
+    sleep 30
+    echo "Removing VM..."
+    govc vm.destroy $VMNAME
     trap '' EXIT INT TERM
     exit $err
 }
