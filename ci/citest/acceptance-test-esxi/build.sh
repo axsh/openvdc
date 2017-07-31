@@ -159,7 +159,7 @@ esxi-pass = '${ESXI_PASS}'
 esxi-ip = '${ESXI_IP}'
 esxi-datacenter = '${GOVC_DATACENTER}'
 esxi-insecure = ${GOVC_INSECURE}
-esxi-host-sshkey = '/etc/openvdc/esxi/id_rsa'
+esxi-host-sshkey = '/etc/openvdc/ssh/esxi/id_rsa'
 esxi-vm-user = 'centos7'
 esxi-vm-pass = 'centos7'
 esxi-vm-datastore = '${VM_DATASTORE}'
@@ -173,8 +173,8 @@ EOS
 
 function setup_ssh_key () {
   govc datastore.download -ds=$VM_DATASTORE key/id_rsa /tmp/id_rsa
-  ssh_cmd "mkdir -p /etc/openvdc/esxi"
-  govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" /tmp/id_rsa /etc/openvdc/esxi/id_rsa
+  ssh_cmd "mkdir -p /etc/openvdc/ssh/esxi"
+  govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" /tmp/id_rsa /etc/openvdc/ssh/esxi/id_rsa
 }
 
 cleanup() {
