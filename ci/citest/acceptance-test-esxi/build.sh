@@ -155,8 +155,8 @@ function setup_config () {
   ssh_cmd "cat > /etc/openvdc/executor.toml << EOS
 [hypervisor]
 esxi-user = 'root'
-esxi-pass = ''
-esxi-ip = ''
+esxi-pass = '${ESXI_PASS}'
+esxi-ip = '${ESXI_IP}'
 esxi-datacenter = '${GOVC_DATACENTER}'
 esxi-insecure = ${GOVC_INSECURE}
 esxi-host-sshkey = '/etc/openvdc/esxi/id_rsa'
@@ -172,7 +172,7 @@ EOS
 }
 
 function setup_ssh_key () {
-  govc datastore.download -ds=$VM_DATASTORE key/id_rsa /tmp/
+  govc datastore.download -ds=$VM_DATASTORE key/id_rsa /tmp/id_rsa
   ssh_cmd "mkdir -p /etc/openvdc/esxi"
   govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" /tmp/id_rsa /etc/openvdc/esxi/id_rsa
 }
@@ -262,6 +262,7 @@ EOS"
 yum_install "openvdc"
 
 setup_config
+setup_ssh_key
 
 ssh_cmd "systemctl enable openvdc-scheduler"
 ssh_cmd "systemctl start openvdc-scheduler"
