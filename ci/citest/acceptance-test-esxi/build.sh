@@ -260,7 +260,7 @@ gpgcheck=0
 EOS"
 
 yum_install "openvdc"
-yum_install "acceptance-test-esxi"
+yum_install "openvdc-acceptance-test-esxi"
 
 setup_config
 setup_ssh_key
