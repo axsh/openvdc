@@ -41,6 +41,14 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 		go func() {
 			waitClosed.Wait()
 		}()
+
+		b := make([]byte, 8192)
+		if _, err = con.SerialConn.Write([]byte("\n")); err != nil {
+			return nil, errors.Wrap(err, "\nFailed to write to the serial connection from the buffer\n\n")
+		}
+		if _, err = con.SerialConn.Read(b); err != nil {
+			return nil, errors.Wrap(err, "\nFailed to read the serial connection buffer")
+		}
 		con.AttachSerialConsole(param, waitClosed, con.conChan)
 	} else {
 		con.execCommand(param, waitClosed, args...)
