@@ -69,7 +69,7 @@ mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/lxc-templates
 cp lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
 cp qemu-ifup "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
 cp qemu-ifdown "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
-install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu
+install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu pkg/conf/mesos-slave/attributes.esxi
 
 %package cli
 Summary: OpenVDC cli
@@ -98,6 +98,7 @@ OpenVDC executor common package.
 /opt/axsh/openvdc/share/mesos-slave/attributes.null
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
 /opt/axsh/openvdc/share/mesos-slave/attributes.qemu
+/opt/axsh/openvdc/share/mesos-slave/attributes.esxi
 /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
 /opt/axsh/openvdc/share/qemu-ifup
 /opt/axsh/openvdc/share/qemu-ifdown
@@ -177,6 +178,23 @@ fi
 
 cp /opt/axsh/openvdc/share/qemu-ifup /etc/
 cp /opt/axsh/openvdc/share/qemu-ifdown /etc/
+
+%package executor-esxi
+Summary: OpenVDC executor (Esxi driver)
+Requires: openvdc-executor
+
+%description executor-esxi
+Esxi driver configuration package for OpenVDC executor
+
+%files executor-esxi
+%config(noreplace) /etc/openvdc/executor.toml
+
+%post executor-esxi
+if [ -d /etc/mesos-slave ]; then
+  if [ ! -f /etc/mesos-slave/attributes ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.esxi /etc/mesos-slave/attributes
+  fi
+fi
 
 %package scheduler
 Summary: OpenVDC scheduler
