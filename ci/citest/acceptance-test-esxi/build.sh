@@ -259,7 +259,9 @@ enabled=1
 gpgcheck=0
 EOS"
 
-yum_install "openvdc"
+yum_install "openvdc-cli"
+yum_install "openvdc-scheduler"
+yum_install "openvdc-executor-esxi"
 yum_install "openvdc-acceptance-test-esxi"
 
 setup_config
