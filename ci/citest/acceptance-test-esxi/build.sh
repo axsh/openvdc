@@ -54,7 +54,7 @@ function clone_base_vm () {
 
   echo "Saving VM ${VMNAME} > ${BACKUPNAME}"
   set +x;
-  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL; set -x+
+  echo "yes" | ovftool -ds=$VM_DATASTORE -n="$BACKUPNAME" --noImageFiles $FIXED_URL$VMNAME $FIXED_URL; set -x;
 }
 
 function add_ssh_key () {
@@ -150,6 +150,48 @@ function check_env_variables () {
   fi
 }
 
+function setup_config () {
+  set +x;
+  ssh_cmd "cat > /etc/openvdc/executor.toml << EOS
+[hypervisor]
+esxi-user = 'root'
+esxi-pass = ''
+esxi-ip = ''
+esxi-datacenter = '${GOVC_DATACENTER}'
+esxi-insecure = ${GOVC_INSECURE}
+esxi-host-sshkey = '/etc/openvdc/esxi/id_rsa'
+esxi-vm-user = 'centos7'
+esxi-vm-pass = 'centos7'
+esxi-vm-datastore = '${VM_DATASTORE}'
+[executor-api]
+[console]
+[console.ssh]
+EOS
+"
+  set -x;
+}
+
+function setup_ssh_key () {
+  govc datastore.download -ds=$VM_DATASTORE key/id_rsa /tmp/
+  ssh_cmd "mkdir -p /etc/openvdc/esxi"
+  govc guest.upload -l "${VMUSER}:${VMPASS}" -vm="$VMNAME" /tmp/id_rsa /etc/openvdc/esxi/id_rsa
+}
+
+cleanup() {
+    err=$?
+    if [ $err -ne 0 ]; then
+        echo "Script failed."
+    fi
+    #Todo: Check VM status before attempting to shutdown or remove.
+    echo "Powering off VM..."
+    govc vm.power -off=true $VMNAME
+    sleep 30
+    echo "Removing VM..."
+    govc vm.destroy $VMNAME
+    trap '' EXIT INT TERM
+    exit $err
+}
+
 check_dep "ssh"
 check_dep "govc"
 check_dep "ovftool"
@@ -169,6 +211,8 @@ if [[ "$?" != "0" ]]; then
   exit 1
 fi
 
+trap cleanup EXIT
+
 if [[ "$REBUILD" == "true" ]]; then
   if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
@@ -178,7 +222,9 @@ if [[ "$REBUILD" == "true" ]]; then
     echo "Old Backup found. Attempting to delete it."
     govc vm.destroy $BACKUPNAME
   fi
-  build_vm
+  set +x
+  clone_base_vm $VMNAME $FIXED_URL
+  set -x
 else
   if [[ $(govc vm.info $VMNAME) ]]; then
     echo "Old VM found. Attempting to delete it."
@@ -192,7 +238,9 @@ else
       set -x;
     else
       echo "${BACKUPNAME} not found. Building VM:"
+      set +x
       clone_base_vm $VMNAME $FIXED_URL
+      set -x
     fi
 fi
 
@@ -212,6 +260,9 @@ gpgcheck=0
 EOS"
 
 yum_install "openvdc"
+
+setup_config
+
 ssh_cmd "systemctl enable openvdc-scheduler"
 ssh_cmd "systemctl start openvdc-scheduler"
 ssh_cmd "systemctl enable mesos-slave"
@@ -221,14 +272,7 @@ ssh_cmd "systemctl enable mesos-master"
 ssh_cmd "systemctl start mesos-master"
 ssh_cmd "cp /opt/axsh/openvdc/bin/openvdc-executor /bin/"
 
-
 echo "Installation complete."
 
 # TODO: Run Tests
 
-echo "Powering off VM..."
-ssh_cmd "shutdown -h 0"
-sleep 30
-
-echo "Removing VM..."
-govc vm.destroy $VMNAME
