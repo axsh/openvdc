@@ -22,7 +22,7 @@ type LxcHandler struct {
 	vm.Base
 }
 
-func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
+func (h *LxcHandler) ParseTemplateJSON(in json.RawMessage, cmdJson bool) (model.ResourceTemplate, error) {
 	tmpl := &model.LxcTemplate{}
 
 	type Download struct {
@@ -79,9 +79,11 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.LxcTemplate")
 	}
 
-	// Validation
-	if tmpl.GetLxcImage() == nil && tmpl.GetLxcTemplate() == nil {
-		return nil, handlers.ErrInvalidTemplate(h, "lxc_image or lxc_template must exist")
+	if !cmdJson {
+		// Validation
+		if tmpl.GetLxcImage() == nil && tmpl.GetLxcTemplate() == nil {
+			return nil, handlers.ErrInvalidTemplate(h, "lxc_image or lxc_template must exist")
+		}
 	}
 
 	switch tmpl.AuthenticationType {
@@ -100,6 +102,14 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 		return nil, handlers.ErrInvalidTemplate(h, "Unknown authentication_type parameter"+tmpl.AuthenticationType.String())
 	}
 
+	return tmpl, nil
+}
+
+func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
+	tmpl, err := h.ParseTemplateJSON(in, false)
+	if err != nil {
+		return nil, err
+	}
 	return tmpl, nil
 }
 
@@ -181,7 +191,11 @@ func (h *LxcHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) e
 	// if err := json.Unmarshal(in, minput); err != nil {
 	// 	return errors.WithStack(err)
 	// }
-	tmpl, _ := h.ParseTemplate(in)
+	tmpl, err := h.ParseTemplateJSON(in, true)
+	if err != nil {
+		return err
+	}
+
 	minput, ok := tmpl.(*model.LxcTemplate)
 	if !ok {
 		return handlers.ErrMergeDstType(new(model.LxcTemplate), tmpl)
