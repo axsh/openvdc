@@ -10,7 +10,6 @@
 package registry
 
 import (
-	"github.com/elazarl/go-bindata-assetfs"
 	"bytes"
 	"compress/gzip"
 	"fmt"
@@ -20,6 +19,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/elazarl/go-bindata-assetfs"
 )
 
 func bindataRead(data []byte, name string) ([]byte, error) {
@@ -108,7 +109,7 @@ func schemaV1Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema/v1.json", size: 725, mode: os.FileMode(420), modTime: time.Unix(1499405207, 0)}
+	info := bindataFileInfo{name: "schema/v1.json", size: 725, mode: os.FileMode(420), modTime: time.Unix(1500457433, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -168,7 +169,7 @@ func schemaVmQemuJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema/vm/qemu.json", size: 1970, mode: os.FileMode(420), modTime: time.Unix(1499405207, 0)}
+	info := bindataFileInfo{name: "schema/vm/qemu.json", size: 1970, mode: os.FileMode(420), modTime: time.Unix(1500457433, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -225,9 +226,9 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"schema/none.json": schemaNoneJson,
-	"schema/v1.json": schemaV1Json,
-	"schema/vm/lxc.json": schemaVmLxcJson,
+	"schema/none.json":    schemaNoneJson,
+	"schema/v1.json":      schemaV1Json,
+	"schema/vm/lxc.json":  schemaVmLxcJson,
 	"schema/vm/null.json": schemaVmNullJson,
 	"schema/vm/qemu.json": schemaVmQemuJson,
 }
@@ -271,12 +272,13 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"schema": &bintree{nil, map[string]*bintree{
 		"none.json": &bintree{schemaNoneJson, map[string]*bintree{}},
-		"v1.json": &bintree{schemaV1Json, map[string]*bintree{}},
+		"v1.json":   &bintree{schemaV1Json, map[string]*bintree{}},
 		"vm": &bintree{nil, map[string]*bintree{
-			"lxc.json": &bintree{schemaVmLxcJson, map[string]*bintree{}},
+			"lxc.json":  &bintree{schemaVmLxcJson, map[string]*bintree{}},
 			"null.json": &bintree{schemaVmNullJson, map[string]*bintree{}},
 			"qemu.json": &bintree{schemaVmQemuJson, map[string]*bintree{}},
 		}},
@@ -329,7 +331,6 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-
 
 func assetFS() *assetfs.AssetFS {
 	assetInfo := func(path string) (os.FileInfo, error) {

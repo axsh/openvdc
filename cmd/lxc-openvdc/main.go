@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -9,13 +10,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	logrus_syslog "github.com/Sirupsen/logrus/hooks/syslog"
-	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
 )
 
@@ -215,13 +216,20 @@ func CreateCacheFolder(folderPath string) error {
 }
 
 func DecompressXz(fileName string, outputPath string) error {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
-	err := archiver.TarXZ.Open(filePath, outputPath)
+	cmd := exec.Command("tar", "-xf", filePath, "-C", outputPath)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
 
 	if err != nil {
-		return errors.Wrapf(err, "Failed unpacking file: %s.", filePath)
+		return errors.Wrapf(err, "Failed unpacking file: %s.\nStdout: %s\nStderr: %s\n",
+			filePath, stdout.String(), stderr.String())
 	}
 
 	return nil

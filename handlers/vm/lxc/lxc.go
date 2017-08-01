@@ -177,10 +177,16 @@ func (h *LxcHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) e
 	if !ok {
 		return handlers.ErrMergeDstType(new(model.LxcTemplate), dst)
 	}
-	minput := &model.LxcTemplate{}
-	if err := json.Unmarshal(in, minput); err != nil {
-		return errors.WithStack(err)
+	// minput := &model.LxcTemplate{}
+	// if err := json.Unmarshal(in, minput); err != nil {
+	// 	return errors.WithStack(err)
+	// }
+	tmpl, _ := h.ParseTemplate(in)
+	minput, ok := tmpl.(*model.LxcTemplate)
+	if !ok {
+		return handlers.ErrMergeDstType(new(model.LxcTemplate), tmpl)
 	}
+
 	// Prevent Image & Template attributes from overwriting.
 	minput.LxcImage = nil
 	minput.LxcTemplate = nil

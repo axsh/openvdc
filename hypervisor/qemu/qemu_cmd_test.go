@@ -19,8 +19,36 @@ func TestQemuBootCmd(t *testing.T) {
 		MonitorSocketPath: "monitor",
 		SerialSocketPath:  "serial",
 		Pidfile:           "pidfile",
-		Nics: []NetDev{
-			NetDev{
+		Devices: []*Device{
+			&Device{
+				DeviceType: "netdev",
+				Params: &DeviceParams{
+					Driver: "tap",
+					Options: []DriverOption{
+						DriverOption{key: "ifname", value: "if"},
+						DriverOption{key: "id", value: "if"},
+					},
+				},
+			},
+			&Device{
+				DeviceType: "device",
+				Params: &DeviceParams{
+					Driver: "virtio-net-pci",
+					Options: []DriverOption{
+						DriverOption{key: "netdev", value: "if"},
+						DriverOption{key: "mac", value: "mac"},
+					},
+				},
+			},
+			&Device{
+				DeviceType: "device",
+				Params: &DeviceParams{
+					Driver: "virtio-serial",
+				},
+			},
+		},
+		Nics: []Nic{
+			Nic{
 				IfName:  "if",
 				MacAddr: "mac",
 			},
@@ -38,7 +66,7 @@ func TestQemuBootCmd(t *testing.T) {
 		Display: "none",
 	})
 
-	assert.Equal(strings.Join(cmd, " "), "-smp 1 -m 512 -enable-kvm -serial unix:serial,server,nowait -monitor unix:monitor,server,nowait -pidfile pidfile -drive file=drive,format=raw,if=disk -netdev tap,ifname=if,id=if -device virtio-net-pci,netdev=if,mac=mac -display none -daemonize")
+	assert.Equal(strings.Join(cmd, " "), "-smp 1 -m 512 -enable-kvm -serial unix:serial,server,nowait -monitor unix:monitor,server,nowait -pidfile pidfile -drive file=drive,format=raw,if=disk -netdev tap,ifname=if,id=if -device virtio-net-pci,netdev=if,mac=mac -device virtio-serial -display none -daemonize")
 
 }
 
