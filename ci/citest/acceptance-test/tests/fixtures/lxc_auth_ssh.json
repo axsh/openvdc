@@ -1,0 +1,14 @@
+{
+  "title": "CentOS7",
+  "template": {
+    "type": "vm/lxc",
+    "lxc_template": {
+      "openvdc": {
+        "distro": "centos",
+        "release": "7"
+      }
+    },
+    "authentication_type": "none"
+  }
+}
+
