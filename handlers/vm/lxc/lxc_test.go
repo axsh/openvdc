@@ -85,6 +85,8 @@ const jsonLxcTemplate5 = `{
 }`
 
 const margeJson1 = `{"authentication_type":"none"}`
+const margeJson2 = `{"authentication_type":"pub_key","ssh_public_key":"ssh-rsa AAAA"}`
+const margeJson3 = `{"authentication_type":"pub_key","ssh_public_key":""}`
 
 func TestLxcHandler_ParseTemplate(t *testing.T) {
 	assert := assert.New(t)
@@ -138,11 +140,23 @@ func TestLxcHandler_ParseTemplate(t *testing.T) {
 func TestLxcHandler_MargeJSON(t *testing.T) {
 	assert := assert.New(t)
 	h := &LxcHandler{}
-	lxcTmpl := &model.LxcTemplate{}
-	var dest model.ResourceTemplate = lxcTmpl
+	var dest model.ResourceTemplate = &model.LxcTemplate{}
 
-	//dest = model.LxcTemplate{}
-	err := h.MergeJSON(dest, bytes.NewBufferString(jsonLxcImage1).Bytes()) // instance_id := strings.TrimSpace(stdout.String())
+	err := h.MergeJSON(dest, bytes.NewBufferString(margeJson1).Bytes()) // instance_id := strings.TrimSpace(stdout.String())
+	d := dest.(*model.LxcTemplate)
 	assert.Nil(err)
 	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(d.AuthenticationType, model.LxcTemplate_NONE)
+
+	dest = &model.LxcTemplate{}
+	err = h.MergeJSON(dest, bytes.NewBufferString(margeJson2).Bytes())
+	d = dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(d.AuthenticationType, model.LxcTemplate_PUB_KEY)
+
+	dest = &model.LxcTemplate{}
+	err = h.MergeJSON(dest, bytes.NewBufferString(margeJson3).Bytes())
+	d = dest.(*model.LxcTemplate)
+	assert.EqualError(err, "Invalid template vm/lxc: ssh_public_key is not set")
 }
