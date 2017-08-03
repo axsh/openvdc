@@ -131,7 +131,11 @@ func (con *esxiConsole) Exec(param *hypervisor.ConsoleParam, args []string) (<-c
 }
 
 func (con *esxiConsole) Wait() error {
-	defer con.SerialConn.Close()
+	defer func() {
+		if con.SerialConn != nil {
+			con.SerialConn.Close()
+		}
+	}()
 	return <-con.conChan
 }
 
