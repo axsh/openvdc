@@ -151,7 +151,7 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 	return d.Base.Log
 }
 
-func esxiCmd(args ...string) {
+func esxiCmd(args ...string) int {
 	var a []string
 
 	a = append(a, args[0])
@@ -163,7 +163,7 @@ func esxiCmd(args ...string) {
 		a = append(a, args[i])
 	}
 
-	cli.Run(a)
+	return cli.Run(a)
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
