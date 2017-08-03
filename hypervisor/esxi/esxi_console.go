@@ -144,8 +144,17 @@ func (con *esxiConsole) ForceClose() error {
 }
 
 type consoleWaitError struct {
+	exitCode int
+	err      error
+}
+
+func (e *consoleWaitError) Error() string {
+	return fmt.Sprintf("Process failed with %d", e.exitCode)
 }
 
 func (e *consoleWaitError) ExitCode() int {
+	if e.exitCode != 0 {
+		return 1
+	}
 	return 0
 }
