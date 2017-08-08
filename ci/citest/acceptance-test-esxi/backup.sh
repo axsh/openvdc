@@ -19,18 +19,15 @@ BACKUP_OBJECTS=(
 ssh_esxi() {
     ssh -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}" "${@}"
 }
-scp_esxi() {
-    scp_esxi() {
-        local remote_path="${1}"
 
-        if $(ssh_esxi "bash [ -f ${remote_path} ]"); then
-            scp -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}:${remote_path}" "${BACKUP_PATH}/${2}"
-        elif $(ssh_esxi "bash [ -d ${remote_path} ]"); then
-            scp -r -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}:${remote_path}" "${BACKUP_PATH}/${2}"
-        else
-            echo "Unable to find remote file, ${remote_path}, exiting"
-            exit 1
-        fi
+scp_esxi() {
+    local remote_path="${1}"
+    # we can use recursive ssh copy here since it doesn't make a difference wether its a file or folder.
+    scp -r -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}:${remote_path}" "${BACKUP_PATH}/${2}"
+    [[ $? == 1 ]] && {
+        echo "Unable to find remote file: ${remote_path}, exiting"
+        exit 1
+    }
 }
 
 # backup config files
@@ -42,27 +39,20 @@ scp_esxi "${backup_file#*.}" "${backup_file##*/}"
 ssh_esxi "rm -r ${backup_file}"
 
 # backup datastore
-
-# TODO: filter out the requried images/look into possible tools that will do this automatically
-datastore_volumes=( "$(ssh_esxi ls -la /vmfs/volumes \| grep datastore)" )
 datastore_id=()
+while read -r line ; do
+    datastore_name=$(awk '{ print $9 }' <<< ${line})
+    id=$(awk '{ print $11 }' <<< ${line})
+    mkdir -p "${BACKUP_PATH}/${datastore_name}/${id}"
+    datastore_id+=( "$id" )
+done <<< "$(ssh_esxi ls -la /vmfs/volumes \| grep datastore)"
 
-for token in ${datastore_volumes[@]} ; do
-    [[ "${next_is_id}" == "true" ]] && {
-        datastore_id+=( "${token}" )
-        mkdir -p "${BACKUP_PATH}/${name}/${token}"
-        unset next_is_id
-        unset name
-        continue
-    }
-    [[ "${token}" == *"->"* ]] && next_is_id=true
-    [[ "${token}" == *"datastore"* ]] && name="${token}"
-done
-
+# ssh copy the files we want to backup and store them in their respective store id folder.
 for bo in ${BACKUP_OBJECTS[@]} ; do
     ds="${bo%/*}"
     id="${ds#*datastore}"
-    # scp_esxi "/vmfs/volumes/${bo}" "${datastore_id[$(( id - 1 ))]}"
+    # datastore starts from index #1 while arrays start from 0
+    scp_esxi "/vmfs/volumes/${bo}" "datastore$id/${datastore_id[$(( id - 1 ))]}"
 done
 
 rm -f ${BACKUP_PATH%/*}/latest
