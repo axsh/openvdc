@@ -20,7 +20,17 @@ ssh_esxi() {
     ssh -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}" "${@}"
 }
 scp_esxi() {
-    scp -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}:${1}" "${BACKUP_PATH}/${2}"
+    scp_esxi() {
+        local remote_path="${1}"
+
+        if $(ssh_esxi "bash [ -f ${remote_path} ]"); then
+            scp -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}:${remote_path}" "${BACKUP_PATH}/${2}"
+        elif $(ssh_esxi "bash [ -d ${remote_path} ]"); then
+            scp -r -i "${ESXI_KEY}" "${ESXI_USER}@${ESXI_IP}:${remote_path}" "${BACKUP_PATH}/${2}"
+        else
+            echo "Unable to find remote file, ${remote_path}, exiting"
+            exit 1
+        fi
 }
 
 # backup config files
