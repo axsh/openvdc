@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -25,6 +26,32 @@ type SSHServer struct {
 func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
 		NoClientAuth: true,
+		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			instanceID := conn.User()
+
+			inst, err := model.Instances(ctx).FindByID(instanceID)
+			if err != nil {
+				log.WithError(err).Errorf("Unknown instance: %s", instanceID)
+				// conn.Close()
+				return nil, err
+			}
+			instResource := inst.ResourceTemplate().(model.InstanceResource)
+
+			authType := instResource.GetAuthenticationType()
+			switch authType {
+			case model.AuthenticationType_NONE:
+				return nil, nil
+			case model.AuthenticationType_PUB_KEY:
+				zkPubKey := strings.TrimSpace(instResource.GetSshPublicKey())
+				clientPubkey := strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
+
+				if zkPubKey != clientPubkey {
+					log.Errorf("Private key mismatch with database public key")
+					return nil, fmt.Errorf("Private key mismatch with database public key")
+				}
+			}
+			return nil, fmt.Errorf("Unknown AuthenticationType")
+		},
 	}
 
 	return &SSHServer{
