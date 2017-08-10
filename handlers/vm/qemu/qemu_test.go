@@ -82,8 +82,7 @@ func TestQemuHandler_ParseTemplate(t *testing.T) {
 	assert.NotNil(modelqemu.GetQemuImage())
 	assert.Equal(modelqemu.GetQemuImage().GetDownloadUrl(), "http://example.com/")
 	assert.Equal(modelqemu.GetQemuImage().GetFormat().String(), "RAW")
-	assert.Equal(model.AuthenticationType_PUB_KEY, modelqemu.AuthenticationType, "pub_key")
-	assert.Equal(modelqemu.SshPublicKey, "ssh-rsa AAAA")
+	assert.Equal(model.AuthenticationType_NONE, modelqemu.AuthenticationType, "none")
 }
 
 func TestQemuHandler_MargeJSON(t *testing.T) {
