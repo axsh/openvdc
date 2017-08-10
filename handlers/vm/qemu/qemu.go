@@ -57,6 +57,12 @@ func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		}
 	}
 
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
+	if err != nil {
+		return nil, err
+	}
+	tmpl.AuthenticationType = authType
+
 	if err := json.Unmarshal(in, tmpl); err != nil {
 		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.QemuTemplate")
 	}
@@ -119,10 +125,23 @@ func (h *QemuHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) 
 	if !ok {
 		return handlers.ErrMergeDstType(new(model.QemuTemplate), dst)
 	}
+
 	minput := &model.QemuTemplate{}
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	minput.AuthenticationType = authType
+
 	if err := json.Unmarshal(in, minput); err != nil {
 		return errors.WithStack(err)
 	}
+
+	err = h.Base.ValidatePublicKey(h, minput.AuthenticationType, minput.SshPublicKey)
+	if err != nil {
+		return err
+	}
+
 	// Prevent Image & Template attributes from overwriting.
 	minput.QemuImage = nil
 	proto.Merge(mdst, minput)

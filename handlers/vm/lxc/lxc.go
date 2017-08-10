@@ -5,9 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"strings"
-
-	"golang.org/x/crypto/ssh"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/handlers/vm"
@@ -24,94 +21,18 @@ type LxcHandler struct {
 	vm.Base
 }
 
-func (h *LxcHandler) validateAuthenticationType(in json.RawMessage, tmpl model.LxcTemplate) (json.RawMessage, *model.LxcTemplate, error) {
-	var json_template struct {
-		AuthenticationType string `json:"authentication_type,omitempty"`
-	}
-
-	if err := json.Unmarshal(in, &json_template); err != nil {
-		return nil, &tmpl, err
-	}
-	if json_template.AuthenticationType != "" {
-		format, ok := model.LxcTemplate_AuthenticationType_value[strings.ToUpper(json_template.AuthenticationType)]
-		if !ok {
-			return nil, &tmpl, errors.Errorf("Unknown value at format: %s", json_template.AuthenticationType)
-		}
-		tmpl.AuthenticationType = model.LxcTemplate_AuthenticationType(format)
-
-		// Remove authentication_type field
-		tmp := make(map[string]interface{})
-		var err error
-		if err = json.Unmarshal(in, &tmp); err != nil {
-			return nil, &tmpl, errors.Wrap(err, "Failed json.Unmarshal")
-		}
-		delete(tmp, "authentication_type")
-		in, err = json.Marshal(tmp)
-		if err != nil {
-			return nil, &tmpl, errors.Wrap(err, "Failed json.Marshal")
-		}
-	}
-
-	if err := json.Unmarshal(in, &tmpl); err != nil {
-		return nil, &tmpl, err
-	}
-	return in, &tmpl, nil
-}
-
-func (h *LxcHandler) validatePublicKey(tmpl model.LxcTemplate) error {
-	switch tmpl.AuthenticationType {
-	case model.LxcTemplate_NONE:
-	case model.LxcTemplate_PUB_KEY:
-		if tmpl.SshPublicKey == "" {
-			return handlers.ErrInvalidTemplate(h, "ssh_public_key is not set")
-		}
-
-		isValidate := validatePublicKey([]byte(tmpl.SshPublicKey))
-		if !isValidate {
-			return handlers.ErrInvalidTemplate(h, "ssh_public_key is invalid")
-		}
-
-	default:
-		return handlers.ErrInvalidTemplate(h, "Unknown authentication_type parameter"+tmpl.AuthenticationType.String())
-	}
-	return nil
-}
-
-func validatePublicKey(key []byte) bool {
-	// Check that the key is in RFC4253 binary format.
-	_, err := ssh.ParsePublicKey(key)
-	if err == nil {
-		return true
-	}
-
-	keyStr := string(key[:])
-	// Check that the key is in OpenSSH format.
-	keyNames := []string{"ssh-rsa", "ssh-dss", "ecdsa-sha2-nistp256", "ssh-ed25519"}
-	firstStr := strings.Fields(keyStr)
-	for _, name := range keyNames {
-		if firstStr[0] == name {
-			return true
-		}
-	}
-
-	// Check that the key is in SECSH format.
-	keyNames = []string{"SSH2 ", "RSA", ""}
-	for _, name := range keyNames {
-		if strings.Contains(keyStr, "---- BEGIN "+name+"PUBLIC KEY ----") &&
-			strings.Contains(keyStr, "---- END "+name+"PUBLIC KEY ----") {
-			return true
-		}
-	}
-	return false
-}
-
 func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
 	var template struct {
 		Template map[string]json.RawMessage `json:"lxc_template,omitempty"`
 	}
 	tmpl := &model.LxcTemplate{}
-	in, tmpl, err := h.validateAuthenticationType(in, *tmpl)
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
 	if err != nil {
+		return nil, err
+	}
+	tmpl.AuthenticationType = authType
+
+	if err := json.Unmarshal(in, tmpl); err != nil {
 		return nil, err
 	}
 
@@ -139,7 +60,7 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 		return nil, handlers.ErrInvalidTemplate(h, "lxc_image or lxc_template must exist")
 	}
 
-	err = h.validatePublicKey(*tmpl)
+	err = h.Base.ValidatePublicKey(h, tmpl.AuthenticationType, tmpl.SshPublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -194,12 +115,17 @@ func (h *LxcHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) e
 		return handlers.ErrMergeDstType(new(model.LxcTemplate), dst)
 	}
 	minput := &model.LxcTemplate{}
-	in, minput, err := h.validateAuthenticationType(in, *minput)
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	minput.AuthenticationType = authType
 
-	err = h.validatePublicKey(*minput)
+	if err := json.Unmarshal(in, minput); err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = h.Base.ValidatePublicKey(h, minput.AuthenticationType, minput.SshPublicKey)
 	if err != nil {
 		return err
 	}
