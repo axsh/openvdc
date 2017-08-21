@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/handlers/vm"
@@ -95,13 +96,21 @@ func (h *LxcHandler) MergeArgs(dst model.ResourceTemplate, args []string) error 
 
 	flags := flag.NewFlagSet("lxc template", flag.ContinueOnError)
 	var vcpu, mem int
+	var authType, sshPubkey string
 	flags.IntVar(&vcpu, "vcpu", int(mdst.MinVcpu), "")
 	flags.IntVar(&mem, "memory_gb", int(mdst.MinMemoryGb), "")
+	defAuth := model.AuthenticationType_name[int32(mdst.AuthenticationType)]
+	flags.StringVar(&authType, "authentication_type", defAuth, "")
+	flags.StringVar(&sshPubkey, "ssh_public_key", mdst.SshPublicKey, "")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	mdst.Vcpu = int32(vcpu)
 	mdst.MemoryGb = int32(mem)
+	format := model.AuthenticationType_value[strings.ToUpper(authType)]
+	mdst.AuthenticationType = model.AuthenticationType(format)
+	sshPubkey = strings.Replace(sshPubkey, "\"", "", -1)
+	mdst.SshPublicKey = sshPubkey
 	return nil
 }
 

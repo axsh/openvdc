@@ -125,6 +125,34 @@ func TestLxcHandler_ParseTemplate(t *testing.T) {
 	assert.EqualError(err, "Invalid template vm/lxc: ssh_public_key is invalid")
 }
 
+func TestLxcHandler_MergeArgs(t *testing.T) {
+	assert := assert.New(t)
+	h := &LxcHandler{}
+	var dest model.ResourceTemplate = &model.LxcTemplate{}
+	args := []string{`--authentication_type="none"`}
+	err := h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	d := dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(model.AuthenticationType_NONE, d.AuthenticationType)
+
+	dest = &model.LxcTemplate{}
+	args = []string{"--vcpu=2"}
+	err = h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	d = dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(2, int(d.GetVcpu()))
+
+	dest = &model.LxcTemplate{}
+	args = []string{`--authentication_type=pub_key`, `--ssh_public_key="ssh-rsa AAAA"`}
+	err = h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	d = dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(model.AuthenticationType_PUB_KEY, d.AuthenticationType)
+	assert.Equal("ssh-rsa AAAA", d.SshPublicKey)
+}
 func TestLxcHandler_MargeJSON(t *testing.T) {
 	assert := assert.New(t)
 	h := &LxcHandler{}

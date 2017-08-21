@@ -85,6 +85,35 @@ func TestQemuHandler_ParseTemplate(t *testing.T) {
 	assert.Equal(model.AuthenticationType_NONE, modelqemu.AuthenticationType, "none")
 }
 
+func TestQemuHandler_MergeArgs(t *testing.T) {
+	assert := assert.New(t)
+	h := &QemuHandler{}
+	var dest model.ResourceTemplate = &model.QemuTemplate{}
+	args := []string{`--authentication_type="none"`}
+	err := h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	d := dest.(*model.QemuTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.QemuTemplate)(nil), dest)
+	assert.Equal(model.AuthenticationType_NONE, d.AuthenticationType)
+
+	dest = &model.QemuTemplate{}
+	args = []string{"--vcpu=2"}
+	err = h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	d = dest.(*model.QemuTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.QemuTemplate)(nil), dest)
+	assert.Equal(2, int(d.GetVcpu()))
+
+	dest = &model.QemuTemplate{}
+	args = []string{`--authentication_type=pub_key`, `--ssh_public_key="ssh-rsa AAAA"`}
+	err = h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	d = dest.(*model.QemuTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.QemuTemplate)(nil), dest)
+	assert.Equal(model.AuthenticationType_PUB_KEY, d.AuthenticationType)
+	assert.Equal("ssh-rsa AAAA", d.SshPublicKey)
+}
+
 func TestQemuHandler_MargeJSON(t *testing.T) {
 	assert := assert.New(t)
 	h := &QemuHandler{}
