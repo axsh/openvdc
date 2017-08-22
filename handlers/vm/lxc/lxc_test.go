@@ -122,7 +122,7 @@ func TestLxcHandler_ParseTemplate(t *testing.T) {
 	assert.NotEmpty(modellxc.SshPublicKey)
 
 	m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate4).Bytes())
-	assert.EqualError(err, "Invalid template vm/lxc: ssh_public_key is invalid")
+	assert.Error(err)
 }
 
 func TestLxcHandler_MergeArgs(t *testing.T) {

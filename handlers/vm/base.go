@@ -62,9 +62,9 @@ func (*Base) ValidatePublicKey(h handlers.ResourceHandler, authType model.Authen
 			return handlers.ErrInvalidTemplate(h, "ssh_public_key is not set")
 		}
 
-		isValidate := validatePublicKey([]byte(sshPubKey))
-		if !isValidate {
-			return handlers.ErrInvalidTemplate(h, "ssh_public_key is invalid")
+		err := validatePublicKey([]byte(sshPubKey))
+		if err != nil {
+			return handlers.ErrInvalidTemplate(h, err.Error())
 		}
 
 	default:
@@ -73,32 +73,32 @@ func (*Base) ValidatePublicKey(h handlers.ResourceHandler, authType model.Authen
 	return nil
 }
 
-func validatePublicKey(key []byte) bool {
-	// Check that the key is in RFC4253 binary format.
-	_, err := ssh.ParsePublicKey(key)
-	if err == nil {
-		return true
-	}
-
+func validatePublicKey(key []byte) error {
 	keyStr := string(key[:])
 	// Check that the key is in OpenSSH format.
 	keyNames := []string{"ssh-rsa", "ssh-dss", "ecdsa-sha2-nistp256", "ssh-ed25519"}
 	firstStr := strings.Fields(keyStr)
 	for _, name := range keyNames {
 		if firstStr[0] == name {
-			return true
+			return nil
 		}
 	}
 
-	// Check that the key is in SECSH format.
-	keyNames = []string{"SSH2 ", "RSA", ""}
-	for _, name := range keyNames {
-		if strings.Contains(keyStr, "---- BEGIN "+name+"PUBLIC KEY ----") &&
-			strings.Contains(keyStr, "---- END "+name+"PUBLIC KEY ----") {
-			return true
-		}
+	// // Check that the key is in SECSH format.
+	// keyNames = []string{"SSH2 ", "RSA", ""}
+	// for _, name := range keyNames {
+	// 	if strings.Contains(keyStr, "---- BEGIN "+name+"PUBLIC KEY ----") &&
+	// 		strings.Contains(keyStr, "---- END "+name+"PUBLIC KEY ----") {
+	// 		return nil
+	// 	}
+	// }
+
+	// Check that the key is in RFC4253 binary format.
+	_, err := ssh.ParsePublicKey(key)
+	if err != nil {
+		return err
 	}
-	return false
+	return nil
 }
 
 func (*Base) IsSupportAPI(method string) bool {
