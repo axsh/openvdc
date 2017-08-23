@@ -25,7 +25,6 @@ type SSHServer struct {
 
 func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
-		NoClientAuth: false,
 		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 			instanceID := conn.User()
 
