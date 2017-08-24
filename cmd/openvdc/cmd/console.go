@@ -99,7 +99,7 @@ var consoleCmd = &cobra.Command{
 				}
 			}
 
-			sshcon := console.NewSshConsole(instanceID, nil)
+			sshcon := console.NewSshConsole(instanceID, config)
 			var err error
 			if len(execArgs) > 0 {
 				err = sshcon.Exec(res.GetAddress(), execArgs)
