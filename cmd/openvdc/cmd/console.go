@@ -25,7 +25,7 @@ var indentityFile string
 
 func init() {
 	consoleCmd.Flags().Bool("show", false, "Show console information")
-	consoleCmd.Flags().StringVarP(&indentityFile, "identity_file", "i", "", "Selects a file from which the identity (private key) for public key authentication is read")
+	consoleCmd.Flags().StringVarP(&indentityFile, "identity-file", "i", "", "Selects a file from which the identity (private key) for public key authentication is read")
 }
 
 var consoleCmd = &cobra.Command{
@@ -51,6 +51,10 @@ var consoleCmd = &cobra.Command{
 		}
 
 		var res *api.ConsoleReply
+
+		info, _ := cmd.Flags().GetBool("show")
+		fmt.Printf("show is %v", info)
+
 		err := util.RemoteCall(func(conn *grpc.ClientConn) error {
 			ic := api.NewInstanceClient(conn)
 			var err error
@@ -61,7 +65,8 @@ var consoleCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed request to Instance.Console API")
 		}
 
-		info, err := cmd.Flags().GetBool("show")
+		// info, err := cmd.Flags().GetBool("show")
+		// fmt.Printf("show is %v", info)
 		switch res.Type {
 		case model.Console_SSH:
 			if info {
@@ -77,28 +82,31 @@ var consoleCmd = &cobra.Command{
 				return nil
 			}
 
-			config := &ssh.ClientConfig{
-				Timeout: 5 * time.Second,
-			}
+			var signer ssh.Signer
 
 			// Parse and set indetifyFifle
-			key, err := ioutil.ReadFile(indentityFile)
-			if err != nil {
-				log.Fatalf("unable to read private key: %v", err)
+			if indentityFile != "" {
+				key, err := ioutil.ReadFile(indentityFile)
+				if err != nil {
+					log.Fatalf("unable to read private key: %v", err)
+				}
+
+				// Create the Signer for this private key.
+				signer, err = ssh.ParsePrivateKey(key)
+				if err != nil {
+					log.Fatalf("unable to parse private key: %v", err)
+				}
 			}
 
-			// Create the Signer for this private key.
-			signer, err := ssh.ParsePrivateKey(key)
-			if err != nil {
-				log.Fatalf("unable to parse private key: %v", err)
-			}
-
-			config.Auth = []ssh.AuthMethod{
-				ssh.PublicKeys(signer),
+			config := &ssh.ClientConfig{
+				Timeout: 5 * time.Second,
+				Auth: []ssh.AuthMethod{
+					ssh.PublicKeys(signer),
+				},
 			}
 
 			sshcon := console.NewSshConsole(instanceID, config)
-
+			var err error
 			if len(execArgs) > 0 {
 				err = sshcon.Exec(res.GetAddress(), execArgs)
 			} else {

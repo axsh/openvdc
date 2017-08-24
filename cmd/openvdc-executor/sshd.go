@@ -42,7 +42,10 @@ func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *
 				return nil, nil
 			case model.AuthenticationType_PUB_KEY:
 				zkPubKey := strings.TrimSpace(instResource.GetSshPublicKey())
-				clientPubkey := strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
+				var clientPubkey string
+				if key != nil {
+					clientPubkey = strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
+				}
 
 				if zkPubKey != clientPubkey {
 					log.Errorf("Private key mismatch with database public key")
