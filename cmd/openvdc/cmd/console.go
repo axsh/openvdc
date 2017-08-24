@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/cmd/console"
@@ -19,8 +21,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+var indentityFile string
+
 func init() {
 	consoleCmd.Flags().Bool("show", false, "Show console information")
+	consoleCmd.Flags().StringVarP(&indentityFile, "identity_file", "i", "", "Selects a file from which the identity (private key) for public key authentication is read")
 }
 
 var consoleCmd = &cobra.Command{
@@ -71,6 +76,29 @@ var consoleCmd = &cobra.Command{
 				fmt.Println("")
 				return nil
 			}
+
+			config := &ssh.ClientConfig{
+				Timeout: 5 * time.Second,
+			}
+
+			// Parse and set indetifyFifle
+			if indentityFile != "" {
+				key, err := ioutil.ReadFile(indentityFile)
+				if err != nil {
+					log.Fatalf("unable to read private key: %v", err)
+				}
+
+				// Create the Signer for this private key.
+				signer, err := ssh.ParsePrivateKey(key)
+				if err != nil {
+					log.Fatalf("unable to parse private key: %v", err)
+				}
+
+				config.Auth = []ssh.AuthMethod{
+					ssh.PublicKeys(signer),
+				}
+			}
+
 			sshcon := console.NewSshConsole(instanceID, nil)
 			var err error
 			if len(execArgs) > 0 {
