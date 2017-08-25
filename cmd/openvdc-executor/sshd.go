@@ -23,19 +23,34 @@ type SSHServer struct {
 	ctx      context.Context
 }
 
+func getInstResource(ctx context.Context, userID string) (model.InstanceResource, error) {
+	inst, err := model.Instances(ctx).FindByID(userID)
+	if err != nil {
+		log.WithError(err).Errorf("Unknown instance: %s", userID)
+		// conn.Close()
+		return nil, err
+	}
+	instResource := inst.ResourceTemplate().(model.InstanceResource)
+	return instResource, nil
+}
+
 func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
-		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-			instanceID := conn.User()
-
-			inst, err := model.Instances(ctx).FindByID(instanceID)
+		PasswordCallback: func(conn ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+			instResource, err := getInstResource(ctx, conn.User())
 			if err != nil {
-				log.WithError(err).Errorf("Unknown instance: %s", instanceID)
-				// conn.Close()
 				return nil, err
 			}
-			instResource := inst.ResourceTemplate().(model.InstanceResource)
-
+			if instResource.GetSshPublicKey() != "" {
+				return nil, fmt.Errorf("%s is setted public key", conn.User())
+			}
+			return nil, nil
+		},
+		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			instResource, err := getInstResource(ctx, conn.User())
+			if err != nil {
+				return nil, err
+			}
 			authType := instResource.GetAuthenticationType()
 			switch authType {
 			case model.AuthenticationType_NONE:

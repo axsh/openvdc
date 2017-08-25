@@ -82,8 +82,7 @@ var consoleCmd = &cobra.Command{
 				return nil
 			}
 
-			var signer ssh.Signer
-
+			var config *ssh.ClientConfig
 			// Parse and set indetifyFifle
 			if indentityFile != "" {
 				key, err := ioutil.ReadFile(indentityFile)
@@ -92,21 +91,28 @@ var consoleCmd = &cobra.Command{
 				}
 
 				// Create the Signer for this private key.
-				signer, err = ssh.ParsePrivateKey(key)
+				signer, err := ssh.ParsePrivateKey(key)
 				if err != nil {
 					log.Fatalf("unable to parse private key: %v", err)
 				}
-			}
 
-			config := &ssh.ClientConfig{
-				Timeout: 5 * time.Second,
-				Auth: []ssh.AuthMethod{
-					ssh.PublicKeys(signer),
-				},
+				config = &ssh.ClientConfig{
+					Timeout: 5 * time.Second,
+					Auth: []ssh.AuthMethod{
+						ssh.PublicKeys(signer),
+					},
+				}
+			} else {
+				config = &ssh.ClientConfig{
+					Timeout: 5 * time.Second,
+					Auth: []ssh.AuthMethod{
+						ssh.Password(""),
+					},
+				}
 			}
 
 			sshcon := console.NewSshConsole(instanceID, config)
-			var err error
+			// var err error
 			if len(execArgs) > 0 {
 				err = sshcon.Exec(res.GetAddress(), execArgs)
 			} else {
