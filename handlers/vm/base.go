@@ -84,15 +84,6 @@ func validatePublicKey(key []byte) error {
 		}
 	}
 
-	// // Check that the key is in SECSH format.
-	// keyNames = []string{"SSH2 ", "RSA", ""}
-	// for _, name := range keyNames {
-	// 	if strings.Contains(keyStr, "---- BEGIN "+name+"PUBLIC KEY ----") &&
-	// 		strings.Contains(keyStr, "---- END "+name+"PUBLIC KEY ----") {
-	// 		return nil
-	// 	}
-	// }
-
 	// Check that the key is in RFC4253 binary format.
 	_, err := ssh.ParsePublicKey(key)
 	if err != nil {

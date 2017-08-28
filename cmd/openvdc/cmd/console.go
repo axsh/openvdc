@@ -52,9 +52,6 @@ var consoleCmd = &cobra.Command{
 
 		var res *api.ConsoleReply
 
-		info, _ := cmd.Flags().GetBool("show")
-		fmt.Printf("show is %v", info)
-
 		err := util.RemoteCall(func(conn *grpc.ClientConn) error {
 			ic := api.NewInstanceClient(conn)
 			var err error
@@ -65,8 +62,6 @@ var consoleCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed request to Instance.Console API")
 		}
 
-		// info, err := cmd.Flags().GetBool("show")
-		// fmt.Printf("show is %v", info)
 		switch res.Type {
 		case model.Console_SSH:
 			if info {
@@ -82,33 +77,24 @@ var consoleCmd = &cobra.Command{
 				return nil
 			}
 
-			var config *ssh.ClientConfig
-			// Parse and set indetifyFifle
-			if indentityFile != "" {
+			var config = &ssh.ClientConfig{
+				Timeout: 5 * time.Second,
+			}
+
+			if indentityFile == "" {
+				config.Auth = []ssh.AuthMethod{ssh.Password("")}
+			} else {
+				// Parse and set indetifyFifle
 				key, err := ioutil.ReadFile(indentityFile)
 				if err != nil {
 					log.Fatalf("unable to read private key: %v", err)
 				}
-
 				// Create the Signer for this private key.
 				signer, err := ssh.ParsePrivateKey(key)
 				if err != nil {
 					log.Fatalf("unable to parse private key: %v", err)
 				}
-
-				config = &ssh.ClientConfig{
-					Timeout: 5 * time.Second,
-					Auth: []ssh.AuthMethod{
-						ssh.PublicKeys(signer),
-					},
-				}
-			} else {
-				config = &ssh.ClientConfig{
-					Timeout: 5 * time.Second,
-					Auth: []ssh.AuthMethod{
-						ssh.Password(""),
-					},
-				}
+				config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 			}
 
 			sshcon := console.NewSshConsole(instanceID, config)
