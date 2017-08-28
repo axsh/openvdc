@@ -126,8 +126,8 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return errors.Wrap(err, "Failed model.Instance.FindByID")
 	}
 	// Assert the race for scheduling slave and instance.
-	if inst.GetSlaveId() != taskInfo.GetSlaveId().String() {
-		log.Fatalf("Found mismatch for SlaveID assignment between instance and Mesos message: instance expects %s but Mesos says %s",
+	if inst.GetSlaveId() != taskInfo.GetSlaveId().GetValue() {
+		log.Fatalf("BUGON: Found mismatch for SlaveID assignment between instance and Mesos message: instance expects %s but Mesos says %s",
 			inst.GetSlaveId(),
 			taskInfo.GetSlaveId().String())
 	}
