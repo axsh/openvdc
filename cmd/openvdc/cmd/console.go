@@ -62,6 +62,7 @@ var consoleCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed request to Instance.Console API")
 		}
 
+		info, _ := cmd.Flags().GetBool("show")
 		switch res.Type {
 		case model.Console_SSH:
 			if info {
