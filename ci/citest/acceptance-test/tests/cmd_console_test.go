@@ -5,6 +5,7 @@ package tests
 import (
 	"fmt"
 	"io/ioutil"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -53,7 +54,7 @@ func TestLXCCmdConsole_ShowOption(t *testing.T) {
 func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	// Make key pair by ssh-keygen
 	private_key_path := "./testRsa"
-	RunCmd("ssh-keygen", "-t", "rsa", "-C", `""`, "-N", `""`, "-f", private_key_path)
+	exec.Command("ssh-keygen", "-t", "rsa", "-C", `""`, "-N", `""`, "-f", private_key_path)
 
 	// Read public key
 	data, err := ioutil.ReadFile(private_key_path + ".pub")
