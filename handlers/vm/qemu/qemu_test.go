@@ -90,7 +90,7 @@ func TestQemuHandler_MergeArgs(t *testing.T) {
 	h := &QemuHandler{}
 	var dest model.ResourceTemplate = &model.QemuTemplate{}
 	args := []string{`--authentication_type="none"`}
-	err := h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	err := h.MergeArgs(dest, args)
 	d := dest.(*model.QemuTemplate)
 	assert.Nil(err)
 	assert.IsType((*model.QemuTemplate)(nil), dest)
@@ -98,7 +98,7 @@ func TestQemuHandler_MergeArgs(t *testing.T) {
 
 	dest = &model.QemuTemplate{}
 	args = []string{"--vcpu=2"}
-	err = h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	err = h.MergeArgs(dest, args)
 	d = dest.(*model.QemuTemplate)
 	assert.Nil(err)
 	assert.IsType((*model.QemuTemplate)(nil), dest)
@@ -106,7 +106,7 @@ func TestQemuHandler_MergeArgs(t *testing.T) {
 
 	dest = &model.QemuTemplate{}
 	args = []string{`--authentication_type=pub_key`, `--ssh_public_key="ssh-rsa AAAA"`}
-	err = h.MergeArgs(dest, args) // instance_id := strings.TrimSpace(stdout.String())
+	err = h.MergeArgs(dest, args)
 	d = dest.(*model.QemuTemplate)
 	assert.Nil(err)
 	assert.IsType((*model.QemuTemplate)(nil), dest)
@@ -119,7 +119,7 @@ func TestQemuHandler_MargeJSON(t *testing.T) {
 	h := &QemuHandler{}
 	var dest model.ResourceTemplate = &model.QemuTemplate{}
 
-	err := h.MergeJSON(dest, bytes.NewBufferString(margeJson1).Bytes()) // instance_id := strings.TrimSpace(stdout.String())
+	err := h.MergeJSON(dest, bytes.NewBufferString(margeJson1).Bytes())
 	d := dest.(*model.QemuTemplate)
 	assert.Nil(err)
 	assert.IsType((*model.QemuTemplate)(nil), dest)
