@@ -4,8 +4,6 @@ package tests
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -51,27 +49,27 @@ func TestLXCCmdConsole_ShowOption(t *testing.T) {
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
 
-func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
-	// Make key pair by ssh-keygen
-	private_key_path := "./testRsa"
-	exec.Command("ssh-keygen", "-t", "rsa", "-C", `""`, "-N", `""`, "-f", private_key_path)
+// func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
+// 	// Make key pair by ssh-keygen
+// 	private_key_path := "./testRsa"
+// 	exec.Command("ssh-keygen", "-t", "rsa", "-C", `""`, "-N", `""`, "-f", private_key_path)
 
-	// Read public key
-	data, err := ioutil.ReadFile(private_key_path + ".pub")
-	if err != nil {
-		t.Fatalf("Can not read public key: %s\n", err.Error())
-	}
-	public_key := string(data)
-	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"authentication_type":"pub_key","ssh_public_key":"`+public_key+`"}`)
+// 	// Read public key
+// 	data, err := ioutil.ReadFile(private_key_path + ".pub")
+// 	if err != nil {
+// 		t.Fatalf("Can not read public key: %s\n", err.Error())
+// 	}
+// 	public_key := string(data)
+// 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"authentication_type":"pub_key","ssh_public_key":"`+public_key+`"}`)
 
-	// runConsole()
-	instance_id := strings.TrimSpace(stdout.String())
-	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	runConsoleCmdWithPrivatekey(instance_id, private_key_path, t)
-	//vrunConsoleCmdPiped(instance_id, t)
-	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
-	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
-}
+// 	// runConsole()
+// 	instance_id := strings.TrimSpace(stdout.String())
+// 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+// 	runConsoleCmdWithPrivatekey(instance_id, private_key_path, t)
+// 	//vrunConsoleCmdPiped(instance_id, t)
+// 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+// 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
+// }
 
 func TestQEMUCmdConsole_ShowOption(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/qemu_ga")

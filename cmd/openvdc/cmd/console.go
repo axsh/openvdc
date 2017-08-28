@@ -82,24 +82,28 @@ var consoleCmd = &cobra.Command{
 				Timeout: 5 * time.Second,
 			}
 
-			if indentityFile == "" {
+			switch res.AuthType {
+			case model.AuthenticationType_NONE:
 				config.Auth = []ssh.AuthMethod{ssh.Password("")}
-			} else {
-				// Parse and set indetifyFifle
-				key, err := ioutil.ReadFile(indentityFile)
-				if err != nil {
-					log.Fatalf("unable to read private key: %v", err)
+			case model.AuthenticationType_PUB_KEY:
+				if indentityFile == "" {
+					log.Fatalf("Required private key but not setted")
+				} else {
+					// Parse and set indetifyFifle
+					key, err := ioutil.ReadFile(indentityFile)
+					if err != nil {
+						log.Fatalf("unable to read private key: %v", err)
+					}
+					// Create the Signer for this private key.
+					signer, err := ssh.ParsePrivateKey(key)
+					if err != nil {
+						log.Fatalf("unable to parse private key: %v", err)
+					}
+					config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 				}
-				// Create the Signer for this private key.
-				signer, err := ssh.ParsePrivateKey(key)
-				if err != nil {
-					log.Fatalf("unable to parse private key: %v", err)
-				}
-				config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 			}
 
 			sshcon := console.NewSshConsole(instanceID, config)
-			// var err error
 			if len(execArgs) > 0 {
 				err = sshcon.Exec(res.GetAddress(), execArgs)
 			} else {

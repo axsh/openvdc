@@ -244,11 +244,14 @@ func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*Console
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
+	instResource := inst.ResourceTemplate().(model.InstanceResource)
+	authType := instResource.GetAuthenticationType()
 
 	return &ConsoleReply{
 		InstanceId: instanceID,
 		Type:       node.Console.Type,
 		Address:    node.Console.BindAddr,
+		AuthType:   authType,
 	}, nil
 }
 
