@@ -121,8 +121,11 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
-	u, _ := url.Parse("https://")
-	u.Path = path.Join(u.Path, esxiInfo, "sdk")
+
+	u, err := url.Parse("https://" + esxiInfo + "/sdk")
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse url for ESXi server")
+	}
 	settings.EsxiUrl = u.String()
 
 	return nil
