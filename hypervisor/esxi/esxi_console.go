@@ -56,6 +56,7 @@ func (c *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...string)
 func (c *esxiConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup) error {
 	waitClosed.Add(1)
 	go func() {
+		defer waitClosed.Done()
 		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 		for {
 			select {
@@ -79,11 +80,11 @@ func (c *esxiConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *sy
 				}
 			}
 		}
-		defer waitClosed.Done()
 	}()
 
 	waitClosed.Add(1)
 	go func() {
+		defer waitClosed.Done()
 		b := make([]byte, 8192)
 		for {
 			c.telnetConn.SetDeadline(time.Now().Add(time.Second))
@@ -110,7 +111,6 @@ func (c *esxiConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *sy
 				}
 			}
 		}
-		defer waitClosed.Done()
 	}()
 
 	return nil
