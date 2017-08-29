@@ -151,30 +151,59 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 	return d.Base.Log
 }
 
-func esxiCmd(args ...string) {
-	var a []string
-
-	a = append(a, args[0])
-	a = append(a, fmt.Sprintf("-dc=%s", settings.EsxiDatacenter))
-	a = append(a, fmt.Sprintf("-k=%s", strconv.FormatBool(settings.EsxiInsecure)))
-	a = append(a, fmt.Sprintf("-u=%s", settings.EsxiUrl))
-
-	for i := 1; i < len(args); i++ {
-		a = append(a, args[i])
+func join(separator byte, args ...string) string {
+	var buf bytes.Buffer
+	for _, arg := range args {
+		buf.WriteString(arg)
+		if separator != nil {
+			buf.WriteByte(separator)
+		}
 	}
+	return buf.String()
+}
 
-	cli.Run(a)
+func esxiRunCmd(cmdList ...[]string) error {
+	for _, args := range cmdList {
+		a := []string{
+			args[0],
+			join('=', "-dc", settings.EsxiDatacenter),
+			join('=', "-k", strconv.FormatBool(settings.EsxiInsecure)),
+			join('=', "-u", settings.EsxiUrl),
+		}
+		for _, arg := range args[1:] {
+			a = append(a, arg)
+		}
+		if rc := cli.Run(a); rc != 0 {
+			return errors.Errorf("Failed api request: %s", args[0])
+		}
+	}
+	return nil
+}
+
+// wrappers for esxi api syntax
+func storageImg(imgName string) string {
+	path := join('/', imgName, imgName)
+	return join('.', path, "vmx")
+}
+
+func vmUserDetails() string {
+	userDetails := join(':', settings.EsxiVmUser, settings.EsxiVmPass)
+	return join('=', "-l", userDetails)
+}
+
+func (d *EsxiHypervisorDriver) vmPath() string {
+	join(nil, "-vm.path=[", settings.EsxiVmDatastore, "]", storageImg(d.vmName))
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
 	// Create new folder
-	esxiCmd("datastore.mkdir", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), d.vmName)
-
+	if err := esxiCmd("datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName) err != nil {
+		return err
+	}
 	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
 	if err != nil {
 		return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
 	}
-
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
 		return errors.Errorf("Unable to parse the specified ssh private key: %s", settings.EsxiHostSshkey)
@@ -204,106 +233,84 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	session.Stderr = &stderr
 
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
-	vmkfstoolsCmd := fmt.Sprintf("vmkfstools -i /vmfs/volumes/%s/%s/%s.vmdk /vmfs/volumes/%s/%s/%s.vmdk -d thin",
-		settings.EsxiVmDatastore, "CentOS7", "CentOS7", settings.EsxiVmDatastore, d.vmName, "CentOS7") //Todo: Don't use hardcoded values
-	if err := session.Run(vmkfstoolsCmd); err != nil {
+	basePath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, "CentOS7", "CentOS7", settings.EsxiVmDatastore, d.vmName, "CentOS7")
+	if err := session.Run(join(' ', "vmfstools -i", basePath, "-d thin")); err != nil {
 		return errors.Errorf(stderr.String(), "Error cloning vmdk")
 	}
 
-	//Copy .vmx-file
-	esxiCmd("datastore.cp", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/%s.vmx", "CentOS7", "CentOS7"), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
-
-	//Register new VM
-	esxiCmd("vm.register", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/%s.vmx", d.vmName, d.vmName))
-
-	//Rename VM
-	esxiCmd("vm.change", fmt.Sprintf("-name=%s", d.vmName), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
-	//Add serial port to vm
-	esxiCmd("device.serial.add", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
-	//Connect serial port, serial port devices starts from 9000 on the current driver
-	esxiCmd("device.serial.connect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
-
-	//Start VM
-	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
-	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+	// TODO: don;t hardcode the base image
+	// NOTE: serial port devices starts from 9000 on the current driver, network configurations should possibly be
+	// handled by openvdc-init
+	datastore := join('=', "-ds=", settings.EsxiVmDatastore)
+	err = esxiRunCmd(
+		[]string{"datastore.cp", datastore, storageImg("CentOS7"), storageImg(d.vmName)},
+		[]string{"vm.register", datastore, storageImg(d.vmName)},
+		[]string{"vm.change", join('=', "-name", d.vmName), d.vmPath()},
+		[]string{"device.serial.add", d.vmPath()},
+		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
+		[]string{"vm.power", "-on=true", d.vmPath()},
+		[]string{"vm.ip", "-wait=2m", d.vmPath()},
+	)
+	if err != nil {
+		return err
+	}
 
 	d.NetworkConfig()
 
-	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
+	err = esxiRunCmd([]string{"vm.ip", "-wait=2m", d.vmPath()})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
-	esxiCmd("vm.power", "-on=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
-	esxiCmd("vm.destroy", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
-	//TODO: Check for errors.
-
-	return nil
+	return esxiRunCmd(
+		[]string{"vm.power", "-on=false", d.vmPath()},
+		[]string{"vm.destroy", d.vmPath()},
+	)
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
-	//Connect serial port, serial port devices starts from 9000 on the current driver
-	esxiCmd("device.serial.connect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"), fmt.Sprintf("telnet://:%d", d.machine.SerialConsolePort))
-
-	esxiCmd("vm.power", "-on=true", "-suspend=false", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
-	//TODO: Check for errors.
-
-	return nil
+	return esxiRunCmd(
+		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", d.machine.SerialConsolePort)},
+		[]string{"vm.power", "-on=true", "-suspend=false", d.vmPath()},
+	)
 }
 
 func (d *EsxiHypervisorDriver) StopInstance() error {
-	//Disconnect thte serial port
-	esxiCmd("device.serial.disconnect", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), fmt.Sprintf("-device=serialport-9000"))
-	//Suspend to save machine state
-	esxiCmd("vm.power", "-suspend=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
-
-	//TODO: Check for errors.
-
-	return nil
+	return esxiRunCmd(
+		[]string{"device.serial.disconnect", d.vmPath(), fmt.Sprintf("-device=serialport-9000")},
+		[]string{"vm.power", "-suspend=true", d.vmPath()},
+	)
 }
 
 func (d EsxiHypervisorDriver) RebootInstance() error {
-	//Linux
-	d.RunGuestCmd("/sbin/reboot")
-
-	//TODO: Check for errors.
-
-	return nil
+	// Linux, this should be doable through api call.
+	return d.RunGuestCmd("/sbin/reboot")
 }
 
 func (d EsxiHypervisorDriver) RunGuestCmd(cmd string) {
-	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), cmd)
+	return esxiRunCmd(
+		[]string{"guest.start", vmUserDetails(), d.vmPath(), cmd},
+	)
 }
 
 func (d EsxiHypervisorDriver) NetworkConfig() error {
 	if len(d.template.Interfaces) > 0 && settings.BridgeType == None {
 		d.log().Errorf("Network interfaces are requested to create but no bridge is configured")
 	}
-
 	if len(d.template.Interfaces) == 0 {
 		d.log().Errorf("No Interfaces set.")
 	}
-
-	Ipv4Addr := d.template.Interfaces[0].Ipv4Addr		
-
+	Ipv4Addr := d.template.Interfaces[0].Ipv4Addr
 	if Ipv4Addr == "" {
 		d.log().Errorf("Ipv4Addr not set.")
 	}
-
 	//TODO: Setup multiple interfaces
-	esxiCmd("guest.upload", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), "-perm=1", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), filepath.Join(settings.ScriptPath, "esxi-vm-config.sh"), "/tmp/testscript.sh")
-	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/tmp/testscript.sh", d.template.Interfaces[0].Ipv4Addr)
-
-	esxiCmd("guest.start", fmt.Sprintf("-l=%s:%s", settings.EsxiVmUser, settings.EsxiVmPass), fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName), "/bin/systemctl", "restart", "network")
-
-	//TODO: Check for errors.
-
-	return nil
+	return esxiRunCmd(
+		[]string{"guest.upload", vmUserDetails(), "-perm=1", d.vmPath(), filepath.Join(settings.ScriptPath, "esxi-vm-config.sh"), "/tmp/testscript.sh"},
+		[]string{"guest.start", vmUserDetails(), d.vmPath(), "/tmp/testscript.sh", d.template.Interfaces[0].Ipv4Addr},
+		[]string{"guest.start", vmUserDetails(), d.vmPath(), "/bin/systemctl", "restart", "network"},
+	)
 }
