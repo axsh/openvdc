@@ -109,16 +109,40 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		settings.BridgeType = OVS
 	}
 
-	settings.ScriptPath = sub.GetString("hypervisor.script-path")
+	if sub.GetString("hypervisor.esxi-user") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-user")
+	}
 	settings.EsxiUser = sub.GetString("hypervisor.esxi-user")
+
+	if sub.GetString("hypervisor.esxi-pass") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-pass")
+	}
 	settings.EsxiPass = sub.GetString("hypervisor.esxi-pass")
+
+	if sub.GetString("hypervisor.esxi-ip") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-ip")
+	}
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
+
+	if sub.GetString("hypervisor.esxi-datacenter") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-datacenter")
+	}
 	settings.EsxiDatacenter = sub.GetString("hypervisor.esxi-datacenter")
-	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
+
+	if sub.GetString("hypervisor.esxi-host-sshkey") == "" {
+		return errors.Errorf("Missing configuration hypervisor.esxi-host-sshkey")
+	}
 	settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
+
+	if sub.GetString("hypervisor.esxi-datastore") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-datastore")
+	}
+	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
+
+	settings.ScriptPath = sub.GetString("hypervisor.script-path")
+	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
 	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
-	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
 
