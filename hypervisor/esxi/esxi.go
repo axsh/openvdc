@@ -228,11 +228,11 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	//Start VM
 	esxiCmd("vm.power", "-on=true", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
-	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+	// esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	// d.NetworkConfig()
 
-	esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
+	// esxiCmd("vm.ip", "-wait=2m", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, d.vmName, d.vmName))
 
 	return nil
 }
