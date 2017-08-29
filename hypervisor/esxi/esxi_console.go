@@ -6,6 +6,7 @@ import (
 	"github.com/axsh/openvdc/hypervisor/util"
 	"io"
 	"net"
+	"bytes"
 	"os"
 	"strconv"
 	"strings"
@@ -67,59 +68,51 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) {
 	waitClosed.Add(1)
 	waitError := &consoleWaitError{exitCode: 1}
-
+	output := make(chan string)
 	cmd := []string{"guest.run", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, con.esxi.vmName, con.esxi.vmName)}
+
 	// the exec command from sshd includes /bin/sh -c here, which is not compatible with the guest.run command
 	for _, arg := range strings.Split(args[2], " ") {
 		cmd = append(cmd, arg)
 	}
+
+	rOut, wOut, err := os.Pipe()
+	if err != nil {
+		log.Info("failed os.Pipe for stdout")
+	}
+	stdout := os.Stdout // original stdout
+	os.Stdout = wOut
+
+	rErr, wErr, err := os.Pipe()
+	if err != nil {
+		log.Info("failed os.Pipe for stderr")
+	}
+	stderr := os.Stderr // original stderr
+	os.Stderr = wErr
+
+	waitError.exitCode = esxiCmd(cmd...)
+	waitClosed.Add(1)
 	go func() {
-		rOut, wOut, err := os.Pipe()
-		if err != nil {
-			log.Info("failed os.Pipe for stdout")
+		var buf bytes.Buffer
+		if waitError.ExitCode() == 0 {
+			io.Copy(&buf, rOut)
+		} else {
+			io.Copy(&buf, rErr)
 		}
-		stdout := os.Stdout // save original stdout
-		os.Stdout = wOut
-
-		rErr, wErr, err := os.Pipe()
-		if err != nil {
-			log.Info("failed os.Pipe for stderr")
-		}
-		stderr := os.Stderr // save original stderr
-		os.Stderr = wErr
-
-		waitError.exitCode = esxiCmd(cmd...)
-		waitClosed.Add(1)
-		go func() {
-			if waitError.ExitCode() == 0 {
-				// TODO: find out why rOut is occasionally empty when we get EOL
-				if _, err := io.Copy(param.Stdout, rOut); err != nil {
-					log.Info(err)
-					return
-				}
-			} else {
-				if _, err := io.Copy(param.Stdout, rErr); err != nil {
-					return
-				}
-			}
-
-			defer func() {
-				os.Stdout = stdout
-				os.Stderr = stderr
-				wOut.Close()
-				rOut.Close()
-				wErr.Close()
-				rErr.Close()
-				waitClosed.Done()
-			}()
-		}()
-
-		defer func() {
-			con.conChan <- waitError
-			waitClosed.Done()
-		}()
+		output <- buf.String()
+		defer waitClosed.Done()
+	}()
+	defer func() {
+		con.conChan <- waitError
+		waitClosed.Done()
 	}()
 
+	wOut.Close()
+	wErr.Close()
+	os.Stdout = stdout
+	os.Stderr = stderr
+
+	fmt.Fprint(param.Stdout, <- output)
 }
 
 func (con *esxiConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
