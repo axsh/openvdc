@@ -53,10 +53,7 @@ func TestLXCCmdConsole_ShowOption(t *testing.T) {
 func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	// Make key pair by ssh-keygen
 	private_key_path := "./testRsa"
-	_, stderr, err := RunCmd("ssh-keygen", "-t", "rsa", "-f", private_key_path, "-C", "", "-N", "")
-	if stderr != nil {
-		t.Fatalf("stderr: %s", stderr)
-	}
+	_, _, err := RunCmd("ssh-keygen", "-t", "rsa", "-f", private_key_path, "-C", "", "-N", "")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
