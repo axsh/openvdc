@@ -62,7 +62,9 @@ func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *
 					clientPubkey = strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
 				}
 
-				if zkPubKey != clientPubkey {
+				if zkPubKey == clientPubkey {
+					return nil, nil
+				} else {
 					log.Errorf("Private key mismatch with database public key")
 					return nil, fmt.Errorf("Private key mismatch with database public key")
 				}
