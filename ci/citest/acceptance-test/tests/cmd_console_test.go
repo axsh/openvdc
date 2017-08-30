@@ -63,7 +63,7 @@ func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Can not read public key: %s\n", err.Error())
 	}
-	public_key := string(data)
+	public_key := strings.Replace(string(data), "\n", "", -1)
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"authentication_type":"pub_key","ssh_public_key":"`+public_key+`"}`)
 
 	// runConsole()
