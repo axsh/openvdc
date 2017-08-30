@@ -68,8 +68,9 @@ func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *
 					log.Errorf("Private key mismatch with database public key")
 					return nil, fmt.Errorf("Private key mismatch with database public key")
 				}
+			default:
+				return nil, fmt.Errorf("Unknown AuthenticationType")
 			}
-			return nil, fmt.Errorf("Unknown AuthenticationType")
 		},
 	}
 
