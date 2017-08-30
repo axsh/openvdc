@@ -23,7 +23,6 @@ func runConsoleCmd(instance_id string, t *testing.T) {
 }
 
 func runConsoleCmdWithPrivatekey(instance_id string, private_key_path string, t *testing.T) {
-	RunCmd("ssh-keygen", "-t", "rsa", "-C", `""`, "-N", `""`, "-f", private_key_path)
 	RunCmdAndReportFail(t, "openvdc", "console", instance_id, "-i", private_key_path)
 	RunCmdAndReportFail(t, "sh", "-c", fmt.Sprintf("openvdc console %s -i %s ls", instance_id, private_key_path))
 	RunCmdAndReportFail(t, "sh", "-c", fmt.Sprintf("openvdc console %s -i %s -- ls", instance_id, private_key_path))
