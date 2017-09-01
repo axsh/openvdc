@@ -29,12 +29,12 @@ func runConsoleCmdWithPrivatekey(instance_id string, private_key_path string, t 
 	RunCmdAndExpectFail(t, "sh", "-c", fmt.Sprintf("openvdc console %s -i %s -- false", instance_id, private_key_path))
 }
 
-func TestCmdConsole_AuthenticationNone(t *testing.T) {
+func TestCmdConsole_ShowOptionAuthenticationNone(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"authentication_type":"none"}`)
 	instance_id := strings.TrimSpace(stdout.String())
-
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-
+	runConsoleCmd(instance_id, t)
+	runConsoleCmdPiped(instance_id, t)
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
