@@ -224,7 +224,8 @@ func (d *EsxiHypervisorDriver) vmPath() string {
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
 	// Create new folder
-	if err := esxiCmd("datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName) err != nil {
+	err := esxiRunCmd("datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName)
+	if err != nil {
 		return err
 	}
 	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
