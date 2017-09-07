@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
