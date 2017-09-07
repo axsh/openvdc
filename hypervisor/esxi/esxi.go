@@ -181,7 +181,7 @@ func join(separator byte, args ...string) string {
 	var buf bytes.Buffer
 	for _, arg := range args {
 		buf.WriteString(arg)
-		if separator != nil {
+		if separator > 0 {
 			buf.WriteByte(separator)
 		}
 	}
@@ -218,12 +218,15 @@ func vmUserDetails() string {
 }
 
 func (d *EsxiHypervisorDriver) vmPath() string {
-	join(nil, "-vm.path=[", settings.EsxiVmDatastore, "]", storageImg(d.vmName))
+	return join(0, "-vm.path=[", settings.EsxiVmDatastore, "]", storageImg(d.vmName))
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
 	// Create new folder
-	err := esxiRunCmd("datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName)
+	err := esxiRunCmd(
+		[]string{"datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName},
+	)
+	
 	if err != nil {
 		return err
 	}
@@ -299,8 +302,9 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
+	port := strconv.Itoa(d.machine.SerialConsolePort)
 	return esxiRunCmd(
-		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", d.machine.SerialConsolePort)},
+		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", port)},
 		[]string{"vm.power", "-on=true", "-suspend=false", d.vmPath()},
 	)
 }
@@ -314,13 +318,9 @@ func (d *EsxiHypervisorDriver) StopInstance() error {
 
 func (d EsxiHypervisorDriver) RebootInstance() error {
 	// Linux, this should be doable through api call.
-	return d.RunGuestCmd("/sbin/reboot")
-}
-
-func (d EsxiHypervisorDriver) RunGuestCmd(cmd string) {
 	return esxiRunCmd(
-		[]string{"guest.start", vmUserDetails(), d.vmPath(), cmd},
-	)
+        	[]string{"guest.start", vmUserDetails(), d.vmPath(), "/sbin/reboot"},
+        )
 }
 
 func (d EsxiHypervisorDriver) NetworkConfig() error {
