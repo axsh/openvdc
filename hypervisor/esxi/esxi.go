@@ -133,8 +133,8 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
 
-	if sub.GetString("hypervisor.esxi-datastore") == "" {
-		return errors.Errorf("Missing configuration hypervisor.exsi-datastore")
+	if sub.GetString("hypervisor.esxi-vm-datastore") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-vm-datastore")
 	}
 	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
@@ -178,9 +178,15 @@ func (d *EsxiHypervisorDriver) log() *log.Entry {
 }
 
 func join(separator byte, args ...string) string {
+	argLength := len(args)
+	currentArg := 0
 	var buf bytes.Buffer
 	for _, arg := range args {
+		currentArg = currentArg+1
 		buf.WriteString(arg)
+		if currentArg == argLength {
+			separator=0
+		}
 		if separator > 0 {
 			buf.WriteByte(separator)
 		}
@@ -263,15 +269,17 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	session.Stderr = &stderr
 
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
-	basePath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, "CentOS7", "CentOS7", settings.EsxiVmDatastore, d.vmName, "CentOS7")
-	if err := session.Run(join(' ', "vmfstools -i", basePath, "-d thin")); err != nil {
+	basePath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, "CentOS7", "CentOS7.vmdk")
+	newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, "CentOS7.vmdk")	
+
+	if err := session.Run(join(' ', "vmkfstools -i", basePath, newPath, "-d thin")); err != nil {
 		return errors.Errorf(stderr.String(), "Error cloning vmdk")
 	}
 
 	// TODO: don;t hardcode the base image
 	// NOTE: serial port devices starts from 9000 on the current driver, network configurations should possibly be
 	// handled by openvdc-init
-	datastore := join('=', "-ds=", settings.EsxiVmDatastore)
+	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 	err = esxiRunCmd(
 		[]string{"datastore.cp", datastore, storageImg("CentOS7"), storageImg(d.vmName)},
 		[]string{"vm.register", datastore, storageImg(d.vmName)},
