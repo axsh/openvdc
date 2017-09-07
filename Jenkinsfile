@@ -45,6 +45,7 @@ SHA=${SHA}
 
 def checkout_and_merge() {
     checkout scm
+    sh "git fetch --no-tags --progress origin +refs/heads/master:refs/remotes/origin/master"
     sh "git -c \"user.name=Axsh Bot\" -c \"user.email=dev@axsh.net\" merge origin/master"
 }
 
