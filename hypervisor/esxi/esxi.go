@@ -306,7 +306,6 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
 	return esxiRunCmd(
-		[]string{"vm.power", "-on=false", d.vmPath()},
 		[]string{"vm.destroy", d.vmPath()},
 	)
 }
