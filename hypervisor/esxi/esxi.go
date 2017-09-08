@@ -18,10 +18,10 @@ import (
 	"github.com/spf13/viper"
 	cli "github.com/vmware/govmomi/govc/cli"
 	_ "github.com/vmware/govmomi/govc/datastore"
-	_ "github.com/vmware/govmomi/govc/vm"
-	_ "github.com/vmware/govmomi/govc/vm/guest"
 	_ "github.com/vmware/govmomi/govc/device"
 	_ "github.com/vmware/govmomi/govc/device/serial"
+	_ "github.com/vmware/govmomi/govc/vm"
+	_ "github.com/vmware/govmomi/govc/vm/guest"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -182,10 +182,10 @@ func join(separator byte, args ...string) string {
 	currentArg := 0
 	var buf bytes.Buffer
 	for _, arg := range args {
-		currentArg = currentArg+1
+		currentArg = currentArg + 1
 		buf.WriteString(arg)
 		if currentArg == argLength {
-			separator=0
+			separator = 0
 		}
 		if separator > 0 {
 			buf.WriteByte(separator)
@@ -232,7 +232,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	err := esxiRunCmd(
 		[]string{"datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName},
 	)
-	
+
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
 	basePath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, "CentOS7", "CentOS7.vmdk")
-	newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, "CentOS7.vmdk")	
+	newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, "CentOS7.vmdk")
 
 	if err := session.Run(join(' ', "vmkfstools -i", basePath, newPath, "-d thin")); err != nil {
 		return errors.Errorf(stderr.String(), "Error cloning vmdk")
@@ -295,7 +295,9 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	d.NetworkConfig()
 
-	err = esxiRunCmd([]string{"vm.ip", "-wait=2m", d.vmPath()})
+	err = esxiRunCmd(
+		[]string{"vm.power", "-off=true", d.vmPath()},
+	)
 	if err != nil {
 		return err
 	}
@@ -311,6 +313,7 @@ func (d *EsxiHypervisorDriver) DestroyInstance() error {
 
 func (d *EsxiHypervisorDriver) StartInstance() error {
 	port := strconv.Itoa(d.machine.SerialConsolePort)
+
 	return esxiRunCmd(
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", port)},
 		[]string{"vm.power", "-on=true", "-suspend=false", d.vmPath()},
@@ -327,8 +330,8 @@ func (d *EsxiHypervisorDriver) StopInstance() error {
 func (d EsxiHypervisorDriver) RebootInstance() error {
 	// Linux, this should be doable through api call.
 	return esxiRunCmd(
-        	[]string{"guest.start", vmUserDetails(), d.vmPath(), "/sbin/reboot"},
-        )
+		[]string{"guest.start", vmUserDetails(), d.vmPath(), "/sbin/reboot"},
+	)
 }
 
 func (d EsxiHypervisorDriver) NetworkConfig() error {
