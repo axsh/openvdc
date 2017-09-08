@@ -322,8 +322,8 @@ func (d *EsxiHypervisorDriver) StartInstance() error {
 
 func (d *EsxiHypervisorDriver) StopInstance() error {
 	return esxiRunCmd(
-		[]string{"device.serial.disconnect", d.vmPath(), fmt.Sprintf("-device=serialport-9000")},
 		[]string{"vm.power", "-suspend=true", d.vmPath()},
+		[]string{"device.serial.disconnect", d.vmPath(), fmt.Sprintf("-device=serialport-9000")},
 	)
 }
 
