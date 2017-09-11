@@ -63,6 +63,9 @@ set_vdc_user() {
 
     # set automatic login
     if [[ "${AUTOLOGIN}" == "true" ]] ; then
+        # this creates the service file incase it does not exist
+        [[ -f /etc/systemd/system/getty.target.wants/getty\@ttyS0.service ]] || systemctl enable getty\@ttyS0.service
+
         grep -q "${VDC_USER}" /etc/systemd/system/getty.target.wants/getty\@ttyS0.service || {
             sed -i 's,\/agetty,\/agetty --noissue --skip-login --login-options "-f '${VDC_USER}'",g' /etc/systemd/system/getty.target.wants/getty\@ttyS0.service
             sed -i 's,DefaultInstance=tty1,DefaultInstance=tty0,g' /etc/systemd/system/getty.target.wants/getty\@ttyS0.service

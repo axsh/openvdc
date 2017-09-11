@@ -293,7 +293,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return err
 	}
 
-	d.NetworkConfig()
+	// d.NetworkConfig()
 
 	err = esxiRunCmd(
 		[]string{"vm.power", "-off=true", d.vmPath()},
