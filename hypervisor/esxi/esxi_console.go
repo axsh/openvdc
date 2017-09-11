@@ -90,7 +90,9 @@ func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 	stderr := os.Stderr // original stderr
 	os.Stderr = wErr
 
-	waitError.exitCode = esxiRunCmd(cmd)
+	if err := esxiRunCmd(cmd); err == nil {
+		waitError.exitCode = 0
+	}
 	waitClosed.Add(1)
 	go func() {
 		var buf bytes.Buffer
