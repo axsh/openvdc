@@ -18,6 +18,7 @@ type SerialConnection struct {
 func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, errc chan error) error {
 	waitClosed.Add(1)
 	go func() {
+		defer waitClosed.Done()
 		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 		for {
 			select {
@@ -40,11 +41,11 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 				}
 			}
 		}
-		defer waitClosed.Done()
 	}()
 
 	waitClosed.Add(1)
 	go func() {
+		defer waitClosed.Done()
 		b := make([]byte, 8192)
 		for {
 			sc.SerialConn.SetDeadline(time.Now().Add(time.Second))
@@ -71,7 +72,6 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 				}
 			}
 		}
-		defer waitClosed.Done()
 	}()
 
 	return nil
