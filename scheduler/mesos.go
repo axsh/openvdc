@@ -186,6 +186,10 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	tasks := []*mesos.TaskInfo{}
 	acceptIDs := []*mesos.OfferID{}
 	for _, i := range queued {
+		if i.SlaveId != "" {
+			log.WithField("instance_id", i.GetId()).Warnf("Skipping the instance with QUEUED but SlaveID is assigned: %s", i.SlaveId)
+			continue
+		}
 		found := findMatching(i)
 		for i, _ := range acceptIDs {
 			if acceptIDs[i] == found.Id {
