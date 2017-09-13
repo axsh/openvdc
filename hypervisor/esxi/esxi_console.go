@@ -6,7 +6,6 @@ import (
 	"github.com/axsh/openvdc/hypervisor/util"
 	"io"
 	"net"
-	"bytes"
 	"os"
 	"strconv"
 	"strings"
