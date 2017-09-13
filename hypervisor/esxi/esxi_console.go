@@ -65,56 +65,67 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 	return closeChan, nil
 }
 
-func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) {
-	waitClosed.Add(1)
-	waitError := &consoleWaitError{exitCode: 1}
-	output := make(chan string)
+func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) error {
 	cmd := []string{"guest.run", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, con.esxi.vmName, con.esxi.vmName)}
-
 	// the exec command from sshd includes /bin/sh -c here, which is not compatible with the guest.run command
 	for _, arg := range strings.Split(args[2], " ") {
 		cmd = append(cmd, arg)
 	}
 
-	rOut, wOut, err := os.Pipe()
-	if err != nil {
-		log.Info("failed os.Pipe for stdout")
-	}
-	stdout := os.Stdout // original stdout
-	os.Stdout = wOut
-
-	rErr, wErr, err := os.Pipe()
-	if err != nil {
-		log.Info("failed os.Pipe for stderr")
-	}
-	stderr := os.Stderr // original stderr
-	os.Stderr = wErr
-
-	if err := esxiRunCmd(cmd); err == nil {
-		waitError.exitCode = 0
-	}
 	waitClosed.Add(1)
-	go func() {
-		var buf bytes.Buffer
-		if waitError.ExitCode() == 0 {
-			io.Copy(&buf, rOut)
-		} else {
-			io.Copy(&buf, rErr)
+	go func () {
+		rOut, wOut, err := os.Pipe()
+		if err != nil {
+			log.Info("failed os.Pipe for stdout")
 		}
-		output <- buf.String()
-		defer waitClosed.Done()
-	}()
-	defer func() {
-		con.conChan <- waitError
-		waitClosed.Done()
+		stdout := os.Stdout // save original stdout
+		os.Stdout = wOut
+
+		rErr, wErr, err := os.Pipe()
+		if err != nil {
+			log.Info("failed os.Pipe for stderr")
+		}
+		stderr := os.Stderr // save original stderr
+		os.Stderr = wErr
+
+		var waitError consoleWaitError
+		defer func() {
+			log.Info("close connection")
+			os.Stdout = stdout
+			os.Stderr = stderr
+			rOut.Close()
+			rErr.Close()
+			wOut.Close()
+			wErr.Close()
+			con.conChan <- &waitError
+			waitClosed.Done()
+		}()
+
+		waitClosed.Add(1)
+		go func () {
+			defer waitClosed.Done()
+			_, err := io.Copy(param.Stdout, rOut)
+			if err != nil {
+				waitError.err = err
+				return
+			}
+		}()
+		waitClosed.Add(1)
+		go func () {
+			defer waitClosed.Done()
+			_, err := io.Copy(param.Stderr, rErr)
+			if err != nil {
+				waitError.err = err
+				return
+			}
+		}()
+
+		waitError = consoleWaitError{
+			err: esxiRunCmd(cmd),
+		}
 	}()
 
-	wOut.Close()
-	wErr.Close()
-	os.Stdout = stdout
-	os.Stderr = stderr
-
-	fmt.Fprint(param.Stdout, <- output)
+	return nil
 }
 
 func (con *esxiConsole) Attach(param *hypervisor.ConsoleParam) (<-chan hypervisor.Closed, error) {
@@ -139,16 +150,15 @@ func (con *esxiConsole) ForceClose() error {
 }
 
 type consoleWaitError struct {
-	exitCode int
 	err      error
 }
 
 func (e *consoleWaitError) Error() string {
-	return fmt.Sprintf("Process failed with %d", e.exitCode)
+	return fmt.Sprintf("Process failed with %d", e)
 }
 
 func (e *consoleWaitError) ExitCode() int {
-	if e.exitCode != 0 {
+	if e.err != nil {
 		return 1
 	}
 	return 0
