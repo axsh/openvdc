@@ -31,10 +31,10 @@ func (d *EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
 	}
 }
 
-func (d *EsxiHypervisorDriver) toolboxReady(tries int, retry time.Duration) error {
+func (con *esxiConsole) guestAgentReady(tries int, retry time.Duration) error {
 	var err error
 	for i := 0; i < tries; i++ {
-		err = esxiRunCmd([]string{"guest.run", d.vmPath(), "true"})
+		err = esxiRunCmd([]string{"guest.run", con.esxi.vmPath(), "true"})
 		if err == nil {
 			return nil
 		}
@@ -68,8 +68,8 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 			return nil, err
 		}
 	} else {
-		if err := toolboxReady(10, time.Second*5); err != nil {
-			return nil, err
+		if err = con.guestAgentReady(10, time.Second*5); err != nil {
+			return nil, errors.Wrap(err, "\nUnable to connect to guest agent.")
 		}
 		if err = con.execCommand(param, waitClosed, args...); err != nil {
 			return nil, err
