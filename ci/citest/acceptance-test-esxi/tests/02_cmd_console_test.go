@@ -5,6 +5,7 @@ package tests
 import (
 	"strings"
 	"testing"
+	"time"
 
 	tests "github.com/axsh/openvdc/ci/citest/acceptance-test/tests"
 )
