@@ -85,7 +85,8 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 }
 
 func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) error {
-	cmd := []string{"guest.run", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, con.esxi.vmName, con.esxi.vmName)}
+
+	cmd := []string{"guest.run", con.esxi.vmPath()}
 	// the exec command from sshd includes /bin/sh -c here, which is not compatible with the guest.run command
 	for _, arg := range strings.Split(args[2], " ") {
 		cmd = append(cmd, arg)
