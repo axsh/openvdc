@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -28,6 +29,18 @@ func (d *EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
 	return &esxiConsole{
 		esxi: d,
 	}
+}
+
+func (d *EsxiHypervisorDriver) toolboxReady(tries int, retry time.Duration) error {
+	var err error
+	for i := 0; i < tries; i++ {
+		err = esxiRunCmd([]string{"guest.run", d.vmPath(), "true"})
+		if err == nil {
+			return nil
+		}
+		time.Sleep(retry)
+	}
+	return err
 }
 
 func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...string) (<-chan hypervisor.Closed, error) {
@@ -55,6 +68,9 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 			return nil, err
 		}
 	} else {
+		if err := toolboxReady(10, time.Second*5); err != nil {
+			return nil, err
+		}
 		if err = con.execCommand(param, waitClosed, args...); err != nil {
 			return nil, err
 		}
