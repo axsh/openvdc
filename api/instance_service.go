@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
+	"github.com/golang/protobuf/ptypes"
 	util "github.com/mesos/mesos-go/mesosutil"
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 )
 
 type InstanceAPI struct {
@@ -16,32 +22,27 @@ type InstanceAPI struct {
 }
 
 func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateReply, error) {
-	if in.GetResourceId() == "" {
-		return nil, fmt.Errorf("Invalid Resource ID")
-	}
-	r, err := model.Resources(ctx).FindByID(in.GetResourceId())
-	if err != nil {
-		log.WithError(err).Error()
-		return nil, err
-	}
-
-	if r.GetState() == model.Resource_UNREGISTERED {
-		log.WithFields(log.Fields{
-			"resource_id": in.GetResourceId(),
-			"state":       r.GetState().String(),
-		}).Error("Cannot use unregistered resource")
-
-		return nil, fmt.Errorf("Cannot use unregistered resource")
-	}
-
 	inst, err := model.Instances(ctx).Create(&model.Instance{
-		ResourceId: r.GetId(),
+		Template: in.GetTemplate(),
 	})
 	if err != nil {
 		log.WithError(err).Error()
 		return nil, err
 	}
 	return &CreateReply{InstanceId: inst.Id}, nil
+}
+
+func checkSupportAPI(t *model.Template, ctx context.Context) error {
+	rt := t.ResourceTemplate()
+	h, ok := handlers.FindByType(rt.ResourceName())
+	if !ok {
+		return errors.Errorf("Unknown resource name: %s", rt.ResourceName())
+	}
+	md, _ := metadata.FromContext(ctx)
+	if !h.IsSupportAPI(md["fullmethod"][0]) {
+		return errors.Errorf("%s is not supported: %T", md["fullmethod"][0], t.Item)
+	}
+	return nil
 }
 
 func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {
@@ -51,6 +52,9 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
 	if err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
 	lastState := inst.GetLastState()
@@ -86,15 +90,11 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 	return &StartReply{InstanceId: in.GetInstanceId()}, nil
 }
 
-func (s *InstanceAPI) Run(ctx context.Context, in *ResourceRequest) (*RunReply, error) {
-	resourceAPI := &ResourceAPI{api: s.api}
-	res0, err := resourceAPI.Register(ctx, in)
-	if err != nil {
-		log.WithError(err).Error("Failed InstanceAPI.Run at ResourceAPI.Register")
+func (s *InstanceAPI) Run(ctx context.Context, in *CreateRequest) (*RunReply, error) {
+	if err := checkSupportAPI(in.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
-	resourceID := res0.GetID()
-	res1, err := s.Create(ctx, &CreateRequest{ResourceId: resourceID})
+	res1, err := s.Create(ctx, &CreateRequest{Template: in.GetTemplate()})
 	if err != nil {
 		log.WithError(err).Error("Failed InstanceAPI.Run at Create")
 		return nil, err
@@ -104,7 +104,7 @@ func (s *InstanceAPI) Run(ctx context.Context, in *ResourceRequest) (*RunReply, 
 		log.WithError(err).Error("Failed InstanceAPI.Run at Start")
 		return nil, err
 	}
-	return &RunReply{InstanceId: res2.GetInstanceId(), ResourceId: resourceID}, nil
+	return &RunReply{InstanceId: res2.GetInstanceId()}, nil
 }
 
 func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, error) {
@@ -116,6 +116,9 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
 	if err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
 		return nil, err
 	}
 
@@ -135,6 +138,42 @@ func (s *InstanceAPI) Stop(ctx context.Context, in *StopRequest) (*StopReply, er
 	}
 
 	return &StopReply{InstanceId: instanceID}, nil
+}
+
+func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootReply, error) {
+
+	if in.GetInstanceId() == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+	log := log.WithField("instance_id", in.GetInstanceId())
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).Error("Failed to find the instance")
+		return nil, err
+	}
+	log = log.WithField("state", inst.GetLastState().GetState())
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
+		return nil, err
+	}
+	if err := inst.GetLastState().ValidateNextState(model.InstanceState_REBOOTING); err != nil {
+		log.WithError(err).Error("Failed state validation")
+		return nil, err
+	}
+	// Update instance state when the API method is call. RUNNING -> REBOOTING has no intermediate states
+	// so the client is hard to detect if the reboot request is being processed or not right after
+	// making the API call .
+	if err := model.Instances(ctx).UpdateState(inst.GetId(), model.InstanceState_REBOOTING); err != nil {
+		log.WithError(err).Error("Failed to update instance state")
+		return nil, err
+	}
+
+	if err := s.sendCommand(ctx, "reboot", inst.GetId()); err != nil {
+		log.WithError(err).Error("Failed sendCommand(reboot)")
+		return nil, err
+	}
+
+	return &RebootReply{InstanceId: inst.GetId()}, nil
 }
 
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
@@ -180,21 +219,41 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*ConsoleReply, error) {
 
 	instanceID := in.InstanceId
-	if err := s.sendCommand(ctx, "console", instanceID); err != nil {
-		log.WithError(err).Error("Failed sendCommand(console)")
+	if instanceID == "" {
+		return nil, fmt.Errorf("Invalid Instance ID")
+	}
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+	if err := checkSupportAPI(inst.GetTemplate(), ctx); err != nil {
+		return nil, err
+	}
+	lastState := inst.GetLastState()
+	if err := lastState.ReadyForConsole(); err != nil {
+		log.WithFields(log.Fields{
+			"instance_id": in.GetInstanceId(),
+			"state":       lastState.String(),
+		}).Error(err)
+		return nil, err
+	}
+	node := &model.ExecutorNode{}
+	if err := model.Cluster(ctx).Find(inst.GetSlaveId(), node); err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
 		return nil, err
 	}
 
-	return &ConsoleReply{InstanceId: instanceID}, nil
+	return &ConsoleReply{
+		InstanceId: instanceID,
+		Type:       node.Console.Type,
+		Address:    node.Console.BindAddr,
+	}, nil
 }
 
 func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID string) error {
 	inst, err := model.Instances(ctx).FindByID(instanceID)
-	if err != nil {
-		return err
-	}
-	// Fetch associated resource to the instance
-	res, err := inst.Resource(ctx)
 	if err != nil {
 		return err
 	}
@@ -205,7 +264,7 @@ func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID st
 		slaveID = inst.SlaveId
 	}
 
-	hypervisorName := strings.TrimPrefix(res.ResourceTemplate().ResourceName(), "vm/")
+	hypervisorName := strings.TrimPrefix(inst.ResourceTemplate().ResourceName(), "vm/")
 	_, err = s.api.scheduler.SendFrameworkMessage(
 		util.NewExecutorID(fmt.Sprintf("vdc-hypervisor-%s", hypervisorName)),
 		util.NewSlaveID(slaveID),
@@ -267,4 +326,102 @@ func (s *InstanceAPI) List(ctx context.Context, in *InstanceListRequest) (*Insta
 		},
 		Items: results,
 	}, nil
+}
+
+func (s *InstanceAPI) Log(in *InstanceLogRequest, stream Instance_LogServer) error {
+	inst, err := model.Instances(stream.Context()).FindByID(in.Target.GetID())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.Target.GetID()).Error("Failed to find the instance")
+		return err
+	}
+	if err := checkSupportAPI(inst.GetTemplate(), stream.Context()); err != nil {
+		return err
+	}
+	masterAddr := s.api.GetMesosMasterAddr()
+	if masterAddr == nil {
+		return errors.New("Mesos master address is not detected")
+	}
+	cl, err := mlog.NewMesosClientWithOptions(
+		masterAddr.GetIp(),
+		int(masterAddr.GetPort()),
+		&mlog.MesosClientOptions{SearchCompletedTasks: false, ShowLatestOnly: true})
+	if err != nil {
+		log.WithError(err).Error("Couldn't connect to Mesos master: ", masterAddr)
+		return errors.Wrap(err, "mlog.NewMesosClientWithOptions")
+	}
+
+	taskID := fmt.Sprintf("VDC_%s", in.Target.GetID())
+	result, err := cl.GetLog(taskID, mlog.STDERR, "")
+	if err != nil {
+		log.WithError(err).Error("Error fetching log")
+		return errors.Wrap(err, "cl.GetLog")
+	}
+
+	for _, log := range result {
+		err := stream.Send(&InstanceLogReply{
+			Line: []string{log.Log},
+		})
+		if err != nil {
+			return errors.Wrap(err, "stream.Send")
+		}
+	}
+	return nil
+}
+
+func (s *InstanceAPI) Event(in *InstanceEventRequest, stream Instance_EventServer) error {
+	// in.Key takes nil possibly.
+	if in.GetTarget() == nil || in.GetTarget().GetKey() == nil {
+		log.Error("Invalid instance identifier")
+		return fmt.Errorf("Invalid instance identifier")
+	}
+
+	// TODO: handle the case for in.GetName() is received.
+	_, err := model.Instances(stream.Context()).FindByID(in.GetTarget().GetID())
+	if err != nil {
+		log.WithError(err).WithField("key", in.GetTarget().GetID()).Error("Failed Instances.FindByID")
+		return err
+	}
+
+	for {
+		lastState, err := model.Instances(stream.Context()).WaitStateUpdate(in.GetTarget().GetID())
+		if err != nil {
+			return errors.Wrap(err, "model.Instances.WaitStateUpdate")
+		}
+		pnow, err := ptypes.TimestampProto(time.Now())
+		if err != nil {
+			return errors.Wrap(err, "ptypes.TimestampProto")
+		}
+		err = stream.Send(&InstanceEventReply{
+			EventType: InstanceEventReply_EventState,
+			EventAt:   pnow,
+			Body: &InstanceEventReply_State{
+				State: lastState,
+			},
+		})
+		if err != nil {
+			return errors.Wrap(err, "stream.Send")
+		}
+	}
+	return nil
+}
+
+type InstanceConsoleAPI struct {
+	api *APIServer
+}
+
+func (i *InstanceConsoleAPI) Attach(stream InstanceConsole_AttachServer) error {
+	in, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+	instanceID := in.GetInstanceId()
+	if instanceID == "" {
+		// Return error if no instance ID is set to the first request.
+		return fmt.Errorf("instance_id not found")
+	}
+	_, err = model.Instances(stream.Context()).FindByID(instanceID)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package registry
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -33,6 +35,7 @@ type GithubRegistry struct {
 	RepoSlug                string
 	TreePath                string
 	ForceCheckToRemoteAfter time.Duration
+	FetchRetry              int
 }
 
 func NewGithubRegistry(confDir string) *GithubRegistry {
@@ -42,6 +45,7 @@ func NewGithubRegistry(confDir string) *GithubRegistry {
 		RepoSlug:                githubRepoSlug,
 		TreePath:                defaultPath,
 		ForceCheckToRemoteAfter: 1 * time.Hour,
+		FetchRetry:              3,
 	}
 }
 
@@ -74,6 +78,38 @@ func (r *GithubRegistry) localCachePath() string {
 
 // Find queries resource template details from local registry cache.
 func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
+	f, err := r.openCached(templateName)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	tmpl, err := parseResourceTemplate(f)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to parse template %s", templateName)
+	}
+	rt := &RegistryTemplate{
+		Name:     templateName,
+		source:   r,
+		Template: tmpl,
+	}
+	return rt, nil
+}
+
+func (r *GithubRegistry) LoadRaw(templateName string) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	f, err := r.openCached(templateName)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if _, err := io.Copy(buf, f); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (r *GithubRegistry) openCached(templateName string) (*os.File, error) {
 	if !r.ValidateCache() {
 		return nil, ErrLocalCacheNotReady
 	}
@@ -84,18 +120,7 @@ func (r *GithubRegistry) Find(templateName string) (*RegistryTemplate, error) {
 		}
 		return nil, err
 	}
-	defer f.Close()
-
-	tmpl, err := parseResourceTemplate(f)
-	if err != nil {
-		return nil, err
-	}
-	rt := &RegistryTemplate{
-		Name:     templateName,
-		source:   r,
-		Template: tmpl,
-	}
-	return rt, nil
+	return f, nil
 }
 
 // ValidateCache validates the local cache folder items.
@@ -180,7 +205,14 @@ func (r *GithubRegistry) Fetch() error {
 		os.Remove(tmpzip.Name())
 	}()
 
-	res, err := http.Get(zipLinkURI)
+	var res *http.Response
+	for i := 0; i < r.FetchRetry; i++ {
+		res, err = http.Get(zipLinkURI)
+		if err == nil {
+			break
+		}
+		log.WithError(err).Warnf("http.Get failed retrying... %d/%d", i+1, r.FetchRetry)
+	}
 	if err != nil {
 		return err
 	}

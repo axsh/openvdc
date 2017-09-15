@@ -1,5 +1,29 @@
 [hypervisor]
-# driver = null
+# driver = "null"
+# script-path = "/etc/openvdc/scripts/"
+# image-server-uri = "http://127.0.0.1/images"
+# cache-path = "/var/cache/lxc/"
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"
+
+[bridges]
+name = "br0"
+type = "linux"
+	[bridges.linux]
+	# up-script = "linux-bridge-up.sh.tmpl"
+	# down-script = "linux-bridge-down.sh.tmpl"
+
+	[bridges.ovs]
+	# up-script = "ovs-up.sh.tmpl"
+	# down-script = "ovs-down.sh.tmpl"
+
+[executor-api]
+# listen = "0.0.0.0:19372"
+# advertise-ip = "192.168.56.150"
+
+[console]
+
+[console.ssh]
+# listen = ""
+# advertise-ip = "192.168.56.150"

@@ -18,8 +18,7 @@ type ConnectionAddress interface {
 }
 
 type ModelBackend interface {
-	Connect(dest ConnectionAddress) error
-	Close() error
+	BackendConnection
 	Create(key string, value []byte) error
 	CreateWithID(key string, value []byte) (string, error)
 	Update(key string, value []byte) error
@@ -29,10 +28,48 @@ type ModelBackend interface {
 	FindLastKey(prefixKey string) (string, error)
 }
 
+type WatchEvent int
+
+const (
+	EventErr WatchEvent = iota
+	EventUnknown
+	EventCreated
+	EventDeleted
+	EventModified
+)
+
+var eventToName = map[WatchEvent]string{
+	EventErr:      "Error",
+	EventUnknown:  "Unknown",
+	EventCreated:  "Created",
+	EventDeleted:  "Deleted",
+	EventModified: "Modified",
+}
+
+func (e WatchEvent) String() string {
+	return eventToName[e]
+}
+
+type ModelWatcher interface {
+	Watch(key string) (WatchEvent, error)
+}
+
 type ModelSchema interface {
 	Schema() SchemaHandler
 }
 
 type SchemaHandler interface {
 	Install(subkeys []string) error
+}
+
+type ClusterBackend interface {
+	BackendConnection
+	Register(nodeID string, value []byte) error
+	Find(nodeID string) ([]byte, error)
+	UnRegister(nodeID string) error
+}
+
+type BackendConnection interface {
+	Connect(dest ConnectionAddress) error
+	Close() error
 }

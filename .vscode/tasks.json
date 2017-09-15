@@ -1,18 +1,26 @@
 {
-  "version": "0.1.0",
-  "command": "go",
-  "args": [
-    "run", "./build.go"
-  ],
-  "isShellCommand": false,
-  "echoCommand": true,
+  "version": "2.0.0",
   "showOutput": "silent",
   "tasks": [
     {
-      "taskName": "Build",
-      "suppressTaskName": true,
+      "taskName": "build",
       "problemMatcher": "$go",
-      "isBuildCommand": true
+      "isBuildCommand": true,
+      "command": "go",
+      "args": [
+        "run",
+        "./build.go"
+      ],
+      "isShellCommand": false
+    },
+    {
+      "taskName": "gen",
+      "command": "go",
+      "args": [
+        "run", "./build.go", "-with-gogen"
+      ],
+      "problemMatcher": "$go",
+      "isShellCommand": false
     }
   ]
 }

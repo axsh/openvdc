@@ -1,0 +1,112 @@
+#!/bin/bash
+
+
+function cache_qemu_image () {
+    : "${LOCAL_STORAGE_PATH:?"Needs to be set."}"
+
+    local img_url="${1}"
+    local path="${img_url#*//}"
+    local img_file="${img_url##*/}"
+    local path="${path%/*}"
+
+    (
+        $starting_step "Downloading image"
+        [ -f "${IMG_DIR}/${path}/${img_file}" ]
+        $skip_step_if_already_done; set -ex
+        [[ -z "${img_url%://*}" || -z "${path}" ]] && { echo "Needs to be a valid url" ; exit 255 ; }
+        mkdir -p "${IMG_DIR}/${path}/"
+        curl -o "${IMG_DIR}/${path}/${img_file}" -O "${1}"
+    ) ; prev_cmd_failed
+
+    (
+        $starting_step "Move to storage path"
+        [[ -f "${LOCAL_STORAGE_PATH}/${path}/${img_file}" ]]
+        $skip_step_if_already_done ; set -ex
+        mkdir -p "${LOCAL_STORAGE_PATH}/${path}/"
+        cp "${IMG_DIR}/${path}/${img_file}" "${LOCAL_STORAGE_PATH}/${path}/"
+    ) ; prev_cmd_failed
+}
+
+function cache_lxc_image () {
+    local img="${1}"
+
+    meta="meta.tar.xz"
+    rootfs="rootfs.tar.xz"
+    imgHost="https://uk.images.linuxcontainers.org"
+    imgHostIndex="https://uk.images.linuxcontainers.org/meta/1.0/index-system"
+    imgIndex=$(curl -s "$imgHostIndex")
+
+    item=$(grep "$img" <<< "$imgIndex")
+    IFS=';' read -a parts <<< "$item"
+    IFS=';' eval 'folders=($item)'
+    imgRemoteDir="${parts[-1]}"
+
+    prepare_lxc_image "${img}" "${folders[0]}/${folders[1]}/${folders[2]}" "$imgRemoteDir"
+    add_lxc_image "${img}" "${folders[0]}/${folders[1]}/${folders[2]}"
+}
+
+function prepare_lxc_image () {
+    local img="${1}"
+    local imgSpec="${2}"
+    local remoteDir="${3}"
+
+    (
+        $starting_group "Preparing to download image: $img"
+        [ -f "$IMG_DIR/$imgSpec/$rootfs" ]
+        $skip_group_if_unnecessary; set -x
+        (
+            $starting_step "Create image dir"
+            [ -d "$IMG_DIR/$imgSpec" ];
+            $skip_step_if_already_done ; set -ex
+            mkdir -p "$IMG_DIR/$imgSpec"
+        ) ; prev_cmd_failed
+
+        (
+            $starting_step "Downloading file: $imgHost$meta"
+            [ -f "$IMG_DIR/$imgSpec/$meta" ]
+            $skip_step_if_already_done;
+            curl -o "$IMG_DIR/$imgSpec/$meta" "$imgHost$remoteDir/$meta"
+        ) ; prev_cmd_failed
+
+        (
+            $starting_step "Downloading file: $imgHost$rootfs"
+            [ -f "$IMG_DIR/$imgSpec/$rootfs" ]
+            $skip_step_if_already_done ; set -ex
+            curl -o "$IMG_DIR/$imgSpec/$rootfs" "$imgHost$remoteDir/$rootfs"
+        ) ; prev_cmd_failed
+    ) ; prev_cmd_failed
+}
+
+
+function add_lxc_image () {
+    local img="${1}"
+    local imgSpec="${2}"
+    (
+        $starting_group "Preparing to download image: $img"
+        [[ -f "${LOCAL_STORAGE_PATH}/$imgSpec/$rootfs" && "${LOCAL_STORAGE_PATH}/$imgSpec/$meta" ]]
+        $skip_group_if_unnecessary; set -x
+
+        (
+            $starting_step "Creating folder ${LOCAL_STORAGE_PATH}/$imgSpec"
+            [ -d "${LOCAL_STORAGE_PATH}/$imgSpec" ]
+            $skip_step_if_already_done ; set -ex
+            mkdir -p "${LOCAL_STORAGE_PATH}/$imgSpec"
+        ) ; prev_cmd_failed
+
+        (
+            $starting_step "Copying file: $IMG_DIR/$imgSpec/$meta"
+            [ -f "${LOCAL_STORAGE_PATH}/$imgSpec/$meta" ]
+            $skip_step_if_already_done ; set -ex
+            [ -f "$IMG_DIR/$imgSpec/$meta" ] || reportfailed "File not found: $IMG_DIR/$imgSpec/$meta"
+            cp "$IMG_DIR/$imgSpec/$meta" "${LOCAL_STORAGE_PATH}/$imgSpec"
+        ) ; prev_cmd_failed
+
+        (
+            $starting_step "Copying file: $IMG_DIR/$imgSpec/$rootfs"
+            [ -f "${LOCAL_STORAGE_PATH}/$imgSpec/$rootfs" ]
+            $skip_step_if_already_done ; set -ex
+            [ -f "$IMG_DIR/$imgSpec/$rootfs" ] || reportfailed "File not found: $IMG_DIR/$imgSpec/$rootfs"
+            cp "$IMG_DIR/$imgSpec/$rootfs" "${LOCAL_STORAGE_PATH}/$imgSpec"
+        ) ; prev_cmd_failed
+    ); prev_cmd_failed
+}

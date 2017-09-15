@@ -1,6 +1,8 @@
-// Build script for OpenVDC
+// +build ignore
 
 package main
+
+// Build script for OpenVDC
 
 import (
 	"bufio"
@@ -11,10 +13,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
+const ProtocVersion = "libprotoc 3.2.0"
 var verbose = true
 
 // Similar to "$()" or "``" in sh
@@ -30,7 +34,7 @@ func cmd(cmd string, args ...string) string {
 		io.Copy(os.Stdout, outbuf)
 	}()
 	if err := run.Run(); err != nil {
-		log.Fatal("ERROR: ", err, ": ", cmd, strings.Join(args, " "))
+		log.Fatalf("ERROR: %s: %s %s", err, cmd, strings.Join(args, " "))
 	}
 	return strings.TrimSpace(outbuf.String())
 }
@@ -73,7 +77,7 @@ func determineGHRef() string {
 	}
 	SCHEMA_LAST_COMMIT, exists := os.LookupEnv("SCHEMA_LAST_COMMIT")
 	if !exists {
-		SCHEMA_LAST_COMMIT = cmd("git", "log", "-n", "1", "--pretty=format:%H", "--", "schema/", "registry/schema.bindata.go")
+		SCHEMA_LAST_COMMIT = cmd("git", "log", "-n", "1", "--pretty=format:%H", "--", "schema/", "registry/schema.bindata.go", "templates/")
 	}
 
 	found := false
@@ -101,6 +105,13 @@ func determineGHRef() string {
 }
 
 func main() {
+	// Apppend $GOBIN and $GOPATH/bin to $PATH
+	if dir, ok := os.LookupEnv("GOBIN"); ok {
+		os.Setenv("PATH", os.Getenv("PATH") + string(filepath.ListSeparator) + dir)
+	}
+	for _, dir := range filepath.SplitList(os.Getenv("GOPATH")) {
+		os.Setenv("PATH", os.Getenv("PATH") + string(filepath.ListSeparator) + filepath.Join(dir, "bin"))
+	}
 	var with_gogen bool
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of build.go:\n")
@@ -141,17 +152,30 @@ Environment Variables:
 		determineGHRef(),
 	)
 
+	if_not_exists("go-bindata", func() {
+		cmd("go", "get", "-u", "github.com/jteeuwen/go-bindata/...")
+	})
+	if_not_exists("go-bindata-assetfs", func() {
+		cmd("go", "get", "-u", "github.com/elazarl/go-bindata-assetfs/...")
+	})
+
 	if with_gogen {
 		if_not_exists("protoc", func() {
 			log.Fatal("Unable to find protoc. Download pre-compiled binary from https://github.com/google/protobuf/releases")
 		})
+		// Check protoc version
+		ver, err := exec.Command("protoc", "--version").Output()
+		if err != nil {
+			log.Fatalf("Failed to check protoc version: %v", err)
+		}
+		ver_str := strings.TrimSpace(string(ver))
+		if ver_str != ProtocVersion {
+			log.Fatalf("Unexpected protoc version: %s (expected: %s)", ver_str, ProtocVersion)
+		}
 		if_not_exists("protoc-gen-go", func() {
 			cmd("go", "get", "-u", "-v", "github.com/golang/protobuf/protoc-gen-go")
 		})
-		if_not_exists("go-bindata", func() {
-			cmd("go", "get", "-u", "github.com/jteeuwen/go-bindata/...")
-		})
-		cmd("go", "generate", "-v", "./api", "./model", "./registry")
+		cmd("go", "generate", "-v", "./api/...", "./model", "./registry")
 	}
 
 	if_not_exists("govendor", func() {
@@ -159,8 +183,26 @@ Environment Variables:
 	})
 	cmd("govendor", "sync")
 
+	// Build main binaries
 	cmd("go", "build", "-i", "./vendor/...")
 	cmd("go", "build", "-ldflags", LDFLAGS, "-v", "./cmd/openvdc")
-	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "./cmd/openvdc-executor")
+	cmd("go", "build", "-ldflags", LDFLAGS+
+		" -X 'main.HostRsaKeyPath=/etc/openvdc/ssh/host_rsa_key'" +
+		" -X 'main.HostEcdsaKeyPath=/etc/openvdc/ssh/host_ecdsa_key'" +
+		" -X 'main.HostEd25519KeyPath=/etc/openvdc/ssh/host_ed25519_key'" +
+		" -X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "./cmd/openvdc-executor")
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'", "-v", "./cmd/openvdc-scheduler")
+
+	//Build lxc-template
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.lxcPath=/usr/share/lxc/'", "-v", "-o", "./lxc-openvdc", "./cmd/lxc-openvdc/")
+
+	//Build qemu-ifup/qemi-ifdown
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "-o", "./qemu-ifup", "./cmd/qemu-ifup")
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "-o", "./qemu-ifdown", "./cmd/qemu-ifdown")
+
+	// Build Acceptance Test binary
+	os.Chdir("./ci/citest/acceptance-test/tests")
+	cmd("govendor", "sync")
+	cmd("go", "generate", "-v", "-tags=acceptance", ".")
+	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test")
 }

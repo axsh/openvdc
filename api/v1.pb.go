@@ -9,6 +9,8 @@ It is generated from these files:
 	v1.proto
 
 It has these top-level messages:
+	ConsoleIn
+	ConsoleOut
 	RunReply
 	StopRequest
 	StopReply
@@ -20,13 +22,16 @@ It has these top-level messages:
 	CreateReply
 	StartRequest
 	StartReply
+	RebootRequest
+	RebootReply
 	InstanceIDRequest
 	InstanceReply
 	InstanceListRequest
 	InstanceListReply
-	ResourceRequest
-	ResourceReply
-	ResourceIDRequest
+	InstanceLogRequest
+	InstanceLogReply
+	InstanceEventRequest
+	InstanceEventReply
 */
 package api
 
@@ -34,6 +39,8 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import model "github.com/axsh/openvdc/model"
+import model1 "github.com/axsh/openvdc/model"
+import google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 
 import (
 	context "golang.org/x/net/context"
@@ -51,15 +58,106 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type ConsoleOut_Channel int32
+
+const (
+	ConsoleOut_stdout ConsoleOut_Channel = 0
+	ConsoleOut_stderr ConsoleOut_Channel = 1
+)
+
+var ConsoleOut_Channel_name = map[int32]string{
+	0: "stdout",
+	1: "stderr",
+}
+var ConsoleOut_Channel_value = map[string]int32{
+	"stdout": 0,
+	"stderr": 1,
+}
+
+func (x ConsoleOut_Channel) String() string {
+	return proto.EnumName(ConsoleOut_Channel_name, int32(x))
+}
+func (ConsoleOut_Channel) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 0} }
+
+type InstanceEventReply_EventType int32
+
+const (
+	InstanceEventReply_EventNone  InstanceEventReply_EventType = 0
+	InstanceEventReply_EventState InstanceEventReply_EventType = 1
+)
+
+var InstanceEventReply_EventType_name = map[int32]string{
+	0: "EventNone",
+	1: "EventState",
+}
+var InstanceEventReply_EventType_value = map[string]int32{
+	"EventNone":  0,
+	"EventState": 1,
+}
+
+func (x InstanceEventReply_EventType) String() string {
+	return proto.EnumName(InstanceEventReply_EventType_name, int32(x))
+}
+func (InstanceEventReply_EventType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{22, 0}
+}
+
+type ConsoleIn struct {
+	Buf        string `protobuf:"bytes,1,opt,name=buf" json:"buf,omitempty"`
+	InstanceId string `protobuf:"bytes,2,opt,name=instance_id" json:"instance_id,omitempty"`
+}
+
+func (m *ConsoleIn) Reset()                    { *m = ConsoleIn{} }
+func (m *ConsoleIn) String() string            { return proto.CompactTextString(m) }
+func (*ConsoleIn) ProtoMessage()               {}
+func (*ConsoleIn) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *ConsoleIn) GetBuf() string {
+	if m != nil {
+		return m.Buf
+	}
+	return ""
+}
+
+func (m *ConsoleIn) GetInstanceId() string {
+	if m != nil {
+		return m.InstanceId
+	}
+	return ""
+}
+
+type ConsoleOut struct {
+	Ch  ConsoleOut_Channel `protobuf:"varint,1,opt,name=ch,enum=api.ConsoleOut_Channel" json:"ch,omitempty"`
+	Buf string             `protobuf:"bytes,2,opt,name=buf" json:"buf,omitempty"`
+}
+
+func (m *ConsoleOut) Reset()                    { *m = ConsoleOut{} }
+func (m *ConsoleOut) String() string            { return proto.CompactTextString(m) }
+func (*ConsoleOut) ProtoMessage()               {}
+func (*ConsoleOut) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *ConsoleOut) GetCh() ConsoleOut_Channel {
+	if m != nil {
+		return m.Ch
+	}
+	return ConsoleOut_stdout
+}
+
+func (m *ConsoleOut) GetBuf() string {
+	if m != nil {
+		return m.Buf
+	}
+	return ""
+}
+
 type RunReply struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
-	ResourceId string `protobuf:"bytes,2,opt,name=resource_id,json=resourceId" json:"resource_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *RunReply) Reset()                    { *m = RunReply{} }
 func (m *RunReply) String() string            { return proto.CompactTextString(m) }
 func (*RunReply) ProtoMessage()               {}
-func (*RunReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*RunReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *RunReply) GetInstanceId() string {
 	if m != nil {
@@ -68,21 +166,14 @@ func (m *RunReply) GetInstanceId() string {
 	return ""
 }
 
-func (m *RunReply) GetResourceId() string {
-	if m != nil {
-		return m.ResourceId
-	}
-	return ""
-}
-
 type StopRequest struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *StopRequest) Reset()                    { *m = StopRequest{} }
 func (m *StopRequest) String() string            { return proto.CompactTextString(m) }
 func (*StopRequest) ProtoMessage()               {}
-func (*StopRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*StopRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *StopRequest) GetInstanceId() string {
 	if m != nil {
@@ -92,13 +183,13 @@ func (m *StopRequest) GetInstanceId() string {
 }
 
 type StopReply struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *StopReply) Reset()                    { *m = StopReply{} }
 func (m *StopReply) String() string            { return proto.CompactTextString(m) }
 func (*StopReply) ProtoMessage()               {}
-func (*StopReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*StopReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *StopReply) GetInstanceId() string {
 	if m != nil {
@@ -108,13 +199,13 @@ func (m *StopReply) GetInstanceId() string {
 }
 
 type DestroyRequest struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *DestroyRequest) Reset()                    { *m = DestroyRequest{} }
 func (m *DestroyRequest) String() string            { return proto.CompactTextString(m) }
 func (*DestroyRequest) ProtoMessage()               {}
-func (*DestroyRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*DestroyRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *DestroyRequest) GetInstanceId() string {
 	if m != nil {
@@ -124,13 +215,13 @@ func (m *DestroyRequest) GetInstanceId() string {
 }
 
 type DestroyReply struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *DestroyReply) Reset()                    { *m = DestroyReply{} }
 func (m *DestroyReply) String() string            { return proto.CompactTextString(m) }
 func (*DestroyReply) ProtoMessage()               {}
-func (*DestroyReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*DestroyReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 func (m *DestroyReply) GetInstanceId() string {
 	if m != nil {
@@ -140,13 +231,13 @@ func (m *DestroyReply) GetInstanceId() string {
 }
 
 type ConsoleRequest struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *ConsoleRequest) Reset()                    { *m = ConsoleRequest{} }
 func (m *ConsoleRequest) String() string            { return proto.CompactTextString(m) }
 func (*ConsoleRequest) ProtoMessage()               {}
-func (*ConsoleRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*ConsoleRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 func (m *ConsoleRequest) GetInstanceId() string {
 	if m != nil {
@@ -156,13 +247,15 @@ func (m *ConsoleRequest) GetInstanceId() string {
 }
 
 type ConsoleReply struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string                   `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
+	Type       model1.Console_Transport `protobuf:"varint,2,opt,name=type,enum=model.Console_Transport" json:"type,omitempty"`
+	Address    string                   `protobuf:"bytes,3,opt,name=address" json:"address,omitempty"`
 }
 
 func (m *ConsoleReply) Reset()                    { *m = ConsoleReply{} }
 func (m *ConsoleReply) String() string            { return proto.CompactTextString(m) }
 func (*ConsoleReply) ProtoMessage()               {}
-func (*ConsoleReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (*ConsoleReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
 func (m *ConsoleReply) GetInstanceId() string {
 	if m != nil {
@@ -171,30 +264,45 @@ func (m *ConsoleReply) GetInstanceId() string {
 	return ""
 }
 
+func (m *ConsoleReply) GetType() model1.Console_Transport {
+	if m != nil {
+		return m.Type
+	}
+	return model1.Console_SSH
+}
+
+func (m *ConsoleReply) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
+}
+
 type CreateRequest struct {
-	ResourceId string `protobuf:"bytes,1,opt,name=resource_id,json=resourceId" json:"resource_id,omitempty"`
+	// string resource_id = 1; // Obsolete
+	Template *model.Template `protobuf:"bytes,2,opt,name=template" json:"template,omitempty"`
 }
 
 func (m *CreateRequest) Reset()                    { *m = CreateRequest{} }
 func (m *CreateRequest) String() string            { return proto.CompactTextString(m) }
 func (*CreateRequest) ProtoMessage()               {}
-func (*CreateRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+func (*CreateRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
-func (m *CreateRequest) GetResourceId() string {
+func (m *CreateRequest) GetTemplate() *model.Template {
 	if m != nil {
-		return m.ResourceId
+		return m.Template
 	}
-	return ""
+	return nil
 }
 
 type CreateReply struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *CreateReply) Reset()                    { *m = CreateReply{} }
 func (m *CreateReply) String() string            { return proto.CompactTextString(m) }
 func (*CreateReply) ProtoMessage()               {}
-func (*CreateReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+func (*CreateReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
 func (m *CreateReply) GetInstanceId() string {
 	if m != nil {
@@ -204,13 +312,13 @@ func (m *CreateReply) GetInstanceId() string {
 }
 
 type StartRequest struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *StartRequest) Reset()                    { *m = StartRequest{} }
 func (m *StartRequest) String() string            { return proto.CompactTextString(m) }
 func (*StartRequest) ProtoMessage()               {}
-func (*StartRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+func (*StartRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
 func (m *StartRequest) GetInstanceId() string {
 	if m != nil {
@@ -220,15 +328,47 @@ func (m *StartRequest) GetInstanceId() string {
 }
 
 type StartReply struct {
-	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId" json:"instance_id,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 }
 
 func (m *StartReply) Reset()                    { *m = StartReply{} }
 func (m *StartReply) String() string            { return proto.CompactTextString(m) }
 func (*StartReply) ProtoMessage()               {}
-func (*StartReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+func (*StartReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
 
 func (m *StartReply) GetInstanceId() string {
+	if m != nil {
+		return m.InstanceId
+	}
+	return ""
+}
+
+type RebootRequest struct {
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
+}
+
+func (m *RebootRequest) Reset()                    { *m = RebootRequest{} }
+func (m *RebootRequest) String() string            { return proto.CompactTextString(m) }
+func (*RebootRequest) ProtoMessage()               {}
+func (*RebootRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+
+func (m *RebootRequest) GetInstanceId() string {
+	if m != nil {
+		return m.InstanceId
+	}
+	return ""
+}
+
+type RebootReply struct {
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
+}
+
+func (m *RebootReply) Reset()                    { *m = RebootReply{} }
+func (m *RebootReply) String() string            { return proto.CompactTextString(m) }
+func (*RebootReply) ProtoMessage()               {}
+func (*RebootReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+
+func (m *RebootReply) GetInstanceId() string {
 	if m != nil {
 		return m.InstanceId
 	}
@@ -245,7 +385,7 @@ type InstanceIDRequest struct {
 func (m *InstanceIDRequest) Reset()                    { *m = InstanceIDRequest{} }
 func (m *InstanceIDRequest) String() string            { return proto.CompactTextString(m) }
 func (*InstanceIDRequest) ProtoMessage()               {}
-func (*InstanceIDRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+func (*InstanceIDRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
 
 type isInstanceIDRequest_Key interface {
 	isInstanceIDRequest_Key()
@@ -356,7 +496,7 @@ type InstanceReply struct {
 func (m *InstanceReply) Reset()                    { *m = InstanceReply{} }
 func (m *InstanceReply) String() string            { return proto.CompactTextString(m) }
 func (*InstanceReply) ProtoMessage()               {}
-func (*InstanceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
+func (*InstanceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
 
 func (m *InstanceReply) GetID() string {
 	if m != nil {
@@ -380,7 +520,7 @@ type InstanceListRequest struct {
 func (m *InstanceListRequest) Reset()                    { *m = InstanceListRequest{} }
 func (m *InstanceListRequest) String() string            { return proto.CompactTextString(m) }
 func (*InstanceListRequest) ProtoMessage()               {}
-func (*InstanceListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
+func (*InstanceListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17} }
 
 func (m *InstanceListRequest) GetPage() *InstanceListRequest_PageRequest {
 	if m != nil {
@@ -405,7 +545,7 @@ func (m *InstanceListRequest_PageRequest) Reset()         { *m = InstanceListReq
 func (m *InstanceListRequest_PageRequest) String() string { return proto.CompactTextString(m) }
 func (*InstanceListRequest_PageRequest) ProtoMessage()    {}
 func (*InstanceListRequest_PageRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{13, 0}
+	return fileDescriptor0, []int{17, 0}
 }
 
 func (m *InstanceListRequest_PageRequest) GetOffset() int32 {
@@ -429,7 +569,7 @@ type InstanceListRequest_Filter struct {
 func (m *InstanceListRequest_Filter) Reset()                    { *m = InstanceListRequest_Filter{} }
 func (m *InstanceListRequest_Filter) String() string            { return proto.CompactTextString(m) }
 func (*InstanceListRequest_Filter) ProtoMessage()               {}
-func (*InstanceListRequest_Filter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13, 1} }
+func (*InstanceListRequest_Filter) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17, 1} }
 
 func (m *InstanceListRequest_Filter) GetState() model.InstanceState_State {
 	if m != nil {
@@ -446,7 +586,7 @@ type InstanceListReply struct {
 func (m *InstanceListReply) Reset()                    { *m = InstanceListReply{} }
 func (m *InstanceListReply) String() string            { return proto.CompactTextString(m) }
 func (*InstanceListReply) ProtoMessage()               {}
-func (*InstanceListReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
+func (*InstanceListReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{18} }
 
 func (m *InstanceListReply) GetPage() *InstanceListReply_PageReply {
 	if m != nil {
@@ -471,7 +611,7 @@ type InstanceListReply_PageReply struct {
 func (m *InstanceListReply_PageReply) Reset()                    { *m = InstanceListReply_PageReply{} }
 func (m *InstanceListReply_PageReply) String() string            { return proto.CompactTextString(m) }
 func (*InstanceListReply_PageReply) ProtoMessage()               {}
-func (*InstanceListReply_PageReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14, 0} }
+func (*InstanceListReply_PageReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{18, 0} }
 
 func (m *InstanceListReply_PageReply) GetTotal() int32 {
 	if m != nil {
@@ -503,7 +643,7 @@ func (m *InstanceListReply_InstanceListItem) Reset()         { *m = InstanceList
 func (m *InstanceListReply_InstanceListItem) String() string { return proto.CompactTextString(m) }
 func (*InstanceListReply_InstanceListItem) ProtoMessage()    {}
 func (*InstanceListReply_InstanceListItem) Descriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{14, 1}
+	return fileDescriptor0, []int{18, 1}
 }
 
 func (m *InstanceListReply_InstanceListItem) GetId() string {
@@ -520,152 +660,153 @@ func (m *InstanceListReply_InstanceListItem) GetState() model.InstanceState_Stat
 	return model.InstanceState_REGISTERED
 }
 
-type ResourceRequest struct {
-	Template *model.Template `protobuf:"bytes,1,opt,name=template" json:"template,omitempty"`
+type InstanceLogRequest struct {
+	Target *InstanceIDRequest `protobuf:"bytes,1,opt,name=Target" json:"Target,omitempty"`
 }
 
-func (m *ResourceRequest) Reset()                    { *m = ResourceRequest{} }
-func (m *ResourceRequest) String() string            { return proto.CompactTextString(m) }
-func (*ResourceRequest) ProtoMessage()               {}
-func (*ResourceRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
+func (m *InstanceLogRequest) Reset()                    { *m = InstanceLogRequest{} }
+func (m *InstanceLogRequest) String() string            { return proto.CompactTextString(m) }
+func (*InstanceLogRequest) ProtoMessage()               {}
+func (*InstanceLogRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{19} }
 
-func (m *ResourceRequest) GetTemplate() *model.Template {
+func (m *InstanceLogRequest) GetTarget() *InstanceIDRequest {
 	if m != nil {
-		return m.Template
+		return m.Target
 	}
 	return nil
 }
 
-type ResourceReply struct {
-	ID       string          `protobuf:"bytes,1,opt,name=ID" json:"ID,omitempty"`
-	Resource *model.Resource `protobuf:"bytes,2,opt,name=resource" json:"resource,omitempty"`
+type InstanceLogReply struct {
+	Line []string `protobuf:"bytes,1,rep,name=Line" json:"Line,omitempty"`
 }
 
-func (m *ResourceReply) Reset()                    { *m = ResourceReply{} }
-func (m *ResourceReply) String() string            { return proto.CompactTextString(m) }
-func (*ResourceReply) ProtoMessage()               {}
-func (*ResourceReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
+func (m *InstanceLogReply) Reset()                    { *m = InstanceLogReply{} }
+func (m *InstanceLogReply) String() string            { return proto.CompactTextString(m) }
+func (*InstanceLogReply) ProtoMessage()               {}
+func (*InstanceLogReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{20} }
 
-func (m *ResourceReply) GetID() string {
+func (m *InstanceLogReply) GetLine() []string {
 	if m != nil {
-		return m.ID
-	}
-	return ""
-}
-
-func (m *ResourceReply) GetResource() *model.Resource {
-	if m != nil {
-		return m.Resource
+		return m.Line
 	}
 	return nil
 }
 
-type ResourceIDRequest struct {
-	// Types that are valid to be assigned to Key:
-	//	*ResourceIDRequest_ID
-	//	*ResourceIDRequest_Name
-	Key isResourceIDRequest_Key `protobuf_oneof:"Key"`
+type InstanceEventRequest struct {
+	Target *InstanceIDRequest `protobuf:"bytes,1,opt,name=Target" json:"Target,omitempty"`
 }
 
-func (m *ResourceIDRequest) Reset()                    { *m = ResourceIDRequest{} }
-func (m *ResourceIDRequest) String() string            { return proto.CompactTextString(m) }
-func (*ResourceIDRequest) ProtoMessage()               {}
-func (*ResourceIDRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17} }
+func (m *InstanceEventRequest) Reset()                    { *m = InstanceEventRequest{} }
+func (m *InstanceEventRequest) String() string            { return proto.CompactTextString(m) }
+func (*InstanceEventRequest) ProtoMessage()               {}
+func (*InstanceEventRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{21} }
 
-type isResourceIDRequest_Key interface {
-	isResourceIDRequest_Key()
-}
-
-type ResourceIDRequest_ID struct {
-	ID string `protobuf:"bytes,1,opt,name=ID,oneof"`
-}
-type ResourceIDRequest_Name struct {
-	Name string `protobuf:"bytes,2,opt,name=Name,oneof"`
-}
-
-func (*ResourceIDRequest_ID) isResourceIDRequest_Key()   {}
-func (*ResourceIDRequest_Name) isResourceIDRequest_Key() {}
-
-func (m *ResourceIDRequest) GetKey() isResourceIDRequest_Key {
+func (m *InstanceEventRequest) GetTarget() *InstanceIDRequest {
 	if m != nil {
-		return m.Key
+		return m.Target
 	}
 	return nil
 }
 
-func (m *ResourceIDRequest) GetID() string {
-	if x, ok := m.GetKey().(*ResourceIDRequest_ID); ok {
-		return x.ID
-	}
-	return ""
+type InstanceEventReply struct {
+	EventType InstanceEventReply_EventType `protobuf:"varint,1,opt,name=event_type,enum=api.InstanceEventReply_EventType" json:"event_type,omitempty"`
+	EventAt   *google_protobuf.Timestamp   `protobuf:"bytes,2,opt,name=event_at" json:"event_at,omitempty"`
+	// Types that are valid to be assigned to Body:
+	//	*InstanceEventReply_State
+	Body isInstanceEventReply_Body `protobuf_oneof:"Body"`
 }
 
-func (m *ResourceIDRequest) GetName() string {
-	if x, ok := m.GetKey().(*ResourceIDRequest_Name); ok {
-		return x.Name
+func (m *InstanceEventReply) Reset()                    { *m = InstanceEventReply{} }
+func (m *InstanceEventReply) String() string            { return proto.CompactTextString(m) }
+func (*InstanceEventReply) ProtoMessage()               {}
+func (*InstanceEventReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{22} }
+
+type isInstanceEventReply_Body interface {
+	isInstanceEventReply_Body()
+}
+
+type InstanceEventReply_State struct {
+	State *model.InstanceState `protobuf:"bytes,3,opt,name=state,oneof"`
+}
+
+func (*InstanceEventReply_State) isInstanceEventReply_Body() {}
+
+func (m *InstanceEventReply) GetBody() isInstanceEventReply_Body {
+	if m != nil {
+		return m.Body
 	}
-	return ""
+	return nil
+}
+
+func (m *InstanceEventReply) GetEventType() InstanceEventReply_EventType {
+	if m != nil {
+		return m.EventType
+	}
+	return InstanceEventReply_EventNone
+}
+
+func (m *InstanceEventReply) GetEventAt() *google_protobuf.Timestamp {
+	if m != nil {
+		return m.EventAt
+	}
+	return nil
+}
+
+func (m *InstanceEventReply) GetState() *model.InstanceState {
+	if x, ok := m.GetBody().(*InstanceEventReply_State); ok {
+		return x.State
+	}
+	return nil
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*ResourceIDRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _ResourceIDRequest_OneofMarshaler, _ResourceIDRequest_OneofUnmarshaler, _ResourceIDRequest_OneofSizer, []interface{}{
-		(*ResourceIDRequest_ID)(nil),
-		(*ResourceIDRequest_Name)(nil),
+func (*InstanceEventReply) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _InstanceEventReply_OneofMarshaler, _InstanceEventReply_OneofUnmarshaler, _InstanceEventReply_OneofSizer, []interface{}{
+		(*InstanceEventReply_State)(nil),
 	}
 }
 
-func _ResourceIDRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*ResourceIDRequest)
-	// Key
-	switch x := m.Key.(type) {
-	case *ResourceIDRequest_ID:
-		b.EncodeVarint(1<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.ID)
-	case *ResourceIDRequest_Name:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Name)
+func _InstanceEventReply_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*InstanceEventReply)
+	// Body
+	switch x := m.Body.(type) {
+	case *InstanceEventReply_State:
+		b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.State); err != nil {
+			return err
+		}
 	case nil:
 	default:
-		return fmt.Errorf("ResourceIDRequest.Key has unexpected type %T", x)
+		return fmt.Errorf("InstanceEventReply.Body has unexpected type %T", x)
 	}
 	return nil
 }
 
-func _ResourceIDRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*ResourceIDRequest)
+func _InstanceEventReply_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*InstanceEventReply)
 	switch tag {
-	case 1: // Key.ID
+	case 3: // Body.state
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		x, err := b.DecodeStringBytes()
-		m.Key = &ResourceIDRequest_ID{x}
-		return true, err
-	case 2: // Key.Name
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeStringBytes()
-		m.Key = &ResourceIDRequest_Name{x}
+		msg := new(model.InstanceState)
+		err := b.DecodeMessage(msg)
+		m.Body = &InstanceEventReply_State{msg}
 		return true, err
 	default:
 		return false, nil
 	}
 }
 
-func _ResourceIDRequest_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*ResourceIDRequest)
-	// Key
-	switch x := m.Key.(type) {
-	case *ResourceIDRequest_ID:
-		n += proto.SizeVarint(1<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.ID)))
-		n += len(x.ID)
-	case *ResourceIDRequest_Name:
-		n += proto.SizeVarint(2<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.Name)))
-		n += len(x.Name)
+func _InstanceEventReply_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*InstanceEventReply)
+	// Body
+	switch x := m.Body.(type) {
+	case *InstanceEventReply_State:
+		s := proto.Size(x.State)
+		n += proto.SizeVarint(3<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -674,6 +815,8 @@ func _ResourceIDRequest_OneofSizer(msg proto.Message) (n int) {
 }
 
 func init() {
+	proto.RegisterType((*ConsoleIn)(nil), "api.ConsoleIn")
+	proto.RegisterType((*ConsoleOut)(nil), "api.ConsoleOut")
 	proto.RegisterType((*RunReply)(nil), "api.RunReply")
 	proto.RegisterType((*StopRequest)(nil), "api.StopRequest")
 	proto.RegisterType((*StopReply)(nil), "api.StopReply")
@@ -685,6 +828,8 @@ func init() {
 	proto.RegisterType((*CreateReply)(nil), "api.CreateReply")
 	proto.RegisterType((*StartRequest)(nil), "api.StartRequest")
 	proto.RegisterType((*StartReply)(nil), "api.StartReply")
+	proto.RegisterType((*RebootRequest)(nil), "api.RebootRequest")
+	proto.RegisterType((*RebootReply)(nil), "api.RebootReply")
 	proto.RegisterType((*InstanceIDRequest)(nil), "api.InstanceIDRequest")
 	proto.RegisterType((*InstanceReply)(nil), "api.InstanceReply")
 	proto.RegisterType((*InstanceListRequest)(nil), "api.InstanceListRequest")
@@ -693,9 +838,12 @@ func init() {
 	proto.RegisterType((*InstanceListReply)(nil), "api.InstanceListReply")
 	proto.RegisterType((*InstanceListReply_PageReply)(nil), "api.InstanceListReply.PageReply")
 	proto.RegisterType((*InstanceListReply_InstanceListItem)(nil), "api.InstanceListReply.InstanceListItem")
-	proto.RegisterType((*ResourceRequest)(nil), "api.ResourceRequest")
-	proto.RegisterType((*ResourceReply)(nil), "api.ResourceReply")
-	proto.RegisterType((*ResourceIDRequest)(nil), "api.ResourceIDRequest")
+	proto.RegisterType((*InstanceLogRequest)(nil), "api.InstanceLogRequest")
+	proto.RegisterType((*InstanceLogReply)(nil), "api.InstanceLogReply")
+	proto.RegisterType((*InstanceEventRequest)(nil), "api.InstanceEventRequest")
+	proto.RegisterType((*InstanceEventReply)(nil), "api.InstanceEventReply")
+	proto.RegisterEnum("api.ConsoleOut_Channel", ConsoleOut_Channel_name, ConsoleOut_Channel_value)
+	proto.RegisterEnum("api.InstanceEventReply_EventType", InstanceEventReply_EventType_name, InstanceEventReply_EventType_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -706,17 +854,116 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// Client API for InstanceConsole service
+
+type InstanceConsoleClient interface {
+	Attach(ctx context.Context, opts ...grpc.CallOption) (InstanceConsole_AttachClient, error)
+}
+
+type instanceConsoleClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewInstanceConsoleClient(cc *grpc.ClientConn) InstanceConsoleClient {
+	return &instanceConsoleClient{cc}
+}
+
+func (c *instanceConsoleClient) Attach(ctx context.Context, opts ...grpc.CallOption) (InstanceConsole_AttachClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_InstanceConsole_serviceDesc.Streams[0], c.cc, "/api.InstanceConsole/Attach", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &instanceConsoleAttachClient{stream}
+	return x, nil
+}
+
+type InstanceConsole_AttachClient interface {
+	Send(*ConsoleIn) error
+	Recv() (*ConsoleOut, error)
+	grpc.ClientStream
+}
+
+type instanceConsoleAttachClient struct {
+	grpc.ClientStream
+}
+
+func (x *instanceConsoleAttachClient) Send(m *ConsoleIn) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *instanceConsoleAttachClient) Recv() (*ConsoleOut, error) {
+	m := new(ConsoleOut)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for InstanceConsole service
+
+type InstanceConsoleServer interface {
+	Attach(InstanceConsole_AttachServer) error
+}
+
+func RegisterInstanceConsoleServer(s *grpc.Server, srv InstanceConsoleServer) {
+	s.RegisterService(&_InstanceConsole_serviceDesc, srv)
+}
+
+func _InstanceConsole_Attach_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(InstanceConsoleServer).Attach(&instanceConsoleAttachServer{stream})
+}
+
+type InstanceConsole_AttachServer interface {
+	Send(*ConsoleOut) error
+	Recv() (*ConsoleIn, error)
+	grpc.ServerStream
+}
+
+type instanceConsoleAttachServer struct {
+	grpc.ServerStream
+}
+
+func (x *instanceConsoleAttachServer) Send(m *ConsoleOut) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *instanceConsoleAttachServer) Recv() (*ConsoleIn, error) {
+	m := new(ConsoleIn)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _InstanceConsole_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "api.InstanceConsole",
+	HandlerType: (*InstanceConsoleServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Attach",
+			Handler:       _InstanceConsole_Attach_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
+	Metadata: "v1.proto",
+}
+
 // Client API for Instance service
 
 type InstanceClient interface {
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateReply, error)
 	Start(ctx context.Context, in *StartRequest, opts ...grpc.CallOption) (*StartReply, error)
-	Run(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*RunReply, error)
+	Run(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*RunReply, error)
 	Stop(ctx context.Context, in *StopRequest, opts ...grpc.CallOption) (*StopReply, error)
 	Destroy(ctx context.Context, in *DestroyRequest, opts ...grpc.CallOption) (*DestroyReply, error)
+	Reboot(ctx context.Context, in *RebootRequest, opts ...grpc.CallOption) (*RebootReply, error)
 	Console(ctx context.Context, in *ConsoleRequest, opts ...grpc.CallOption) (*ConsoleReply, error)
 	Show(ctx context.Context, in *InstanceIDRequest, opts ...grpc.CallOption) (*InstanceReply, error)
 	List(ctx context.Context, in *InstanceListRequest, opts ...grpc.CallOption) (*InstanceListReply, error)
+	Log(ctx context.Context, in *InstanceLogRequest, opts ...grpc.CallOption) (Instance_LogClient, error)
+	Event(ctx context.Context, in *InstanceEventRequest, opts ...grpc.CallOption) (Instance_EventClient, error)
 }
 
 type instanceClient struct {
@@ -745,7 +992,7 @@ func (c *instanceClient) Start(ctx context.Context, in *StartRequest, opts ...gr
 	return out, nil
 }
 
-func (c *instanceClient) Run(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*RunReply, error) {
+func (c *instanceClient) Run(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*RunReply, error) {
 	out := new(RunReply)
 	err := grpc.Invoke(ctx, "/api.Instance/Run", in, out, c.cc, opts...)
 	if err != nil {
@@ -766,6 +1013,15 @@ func (c *instanceClient) Stop(ctx context.Context, in *StopRequest, opts ...grpc
 func (c *instanceClient) Destroy(ctx context.Context, in *DestroyRequest, opts ...grpc.CallOption) (*DestroyReply, error) {
 	out := new(DestroyReply)
 	err := grpc.Invoke(ctx, "/api.Instance/Destroy", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *instanceClient) Reboot(ctx context.Context, in *RebootRequest, opts ...grpc.CallOption) (*RebootReply, error) {
+	out := new(RebootReply)
+	err := grpc.Invoke(ctx, "/api.Instance/Reboot", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -799,17 +1055,84 @@ func (c *instanceClient) List(ctx context.Context, in *InstanceListRequest, opts
 	return out, nil
 }
 
+func (c *instanceClient) Log(ctx context.Context, in *InstanceLogRequest, opts ...grpc.CallOption) (Instance_LogClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_Instance_serviceDesc.Streams[0], c.cc, "/api.Instance/Log", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &instanceLogClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Instance_LogClient interface {
+	Recv() (*InstanceLogReply, error)
+	grpc.ClientStream
+}
+
+type instanceLogClient struct {
+	grpc.ClientStream
+}
+
+func (x *instanceLogClient) Recv() (*InstanceLogReply, error) {
+	m := new(InstanceLogReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *instanceClient) Event(ctx context.Context, in *InstanceEventRequest, opts ...grpc.CallOption) (Instance_EventClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_Instance_serviceDesc.Streams[1], c.cc, "/api.Instance/Event", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &instanceEventClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Instance_EventClient interface {
+	Recv() (*InstanceEventReply, error)
+	grpc.ClientStream
+}
+
+type instanceEventClient struct {
+	grpc.ClientStream
+}
+
+func (x *instanceEventClient) Recv() (*InstanceEventReply, error) {
+	m := new(InstanceEventReply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Server API for Instance service
 
 type InstanceServer interface {
 	Create(context.Context, *CreateRequest) (*CreateReply, error)
 	Start(context.Context, *StartRequest) (*StartReply, error)
-	Run(context.Context, *ResourceRequest) (*RunReply, error)
+	Run(context.Context, *CreateRequest) (*RunReply, error)
 	Stop(context.Context, *StopRequest) (*StopReply, error)
 	Destroy(context.Context, *DestroyRequest) (*DestroyReply, error)
+	Reboot(context.Context, *RebootRequest) (*RebootReply, error)
 	Console(context.Context, *ConsoleRequest) (*ConsoleReply, error)
 	Show(context.Context, *InstanceIDRequest) (*InstanceReply, error)
 	List(context.Context, *InstanceListRequest) (*InstanceListReply, error)
+	Log(*InstanceLogRequest, Instance_LogServer) error
+	Event(*InstanceEventRequest, Instance_EventServer) error
 }
 
 func RegisterInstanceServer(s *grpc.Server, srv InstanceServer) {
@@ -853,7 +1176,7 @@ func _Instance_Start_Handler(srv interface{}, ctx context.Context, dec func(inte
 }
 
 func _Instance_Run_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResourceRequest)
+	in := new(CreateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -865,7 +1188,7 @@ func _Instance_Run_Handler(srv interface{}, ctx context.Context, dec func(interf
 		FullMethod: "/api.Instance/Run",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServer).Run(ctx, req.(*ResourceRequest))
+		return srv.(InstanceServer).Run(ctx, req.(*CreateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -902,6 +1225,24 @@ func _Instance_Destroy_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InstanceServer).Destroy(ctx, req.(*DestroyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Instance_Reboot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RebootRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InstanceServer).Reboot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.Instance/Reboot",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InstanceServer).Reboot(ctx, req.(*RebootRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -960,6 +1301,48 @@ func _Instance_List_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Instance_Log_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(InstanceLogRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(InstanceServer).Log(m, &instanceLogServer{stream})
+}
+
+type Instance_LogServer interface {
+	Send(*InstanceLogReply) error
+	grpc.ServerStream
+}
+
+type instanceLogServer struct {
+	grpc.ServerStream
+}
+
+func (x *instanceLogServer) Send(m *InstanceLogReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _Instance_Event_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(InstanceEventRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(InstanceServer).Event(m, &instanceEventServer{stream})
+}
+
+type Instance_EventServer interface {
+	Send(*InstanceEventReply) error
+	grpc.ServerStream
+}
+
+type instanceEventServer struct {
+	grpc.ServerStream
+}
+
+func (x *instanceEventServer) Send(m *InstanceEventReply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _Instance_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "api.Instance",
 	HandlerType: (*InstanceServer)(nil),
@@ -985,6 +1368,10 @@ var _Instance_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Instance_Destroy_Handler,
 		},
 		{
+			MethodName: "Reboot",
+			Handler:    _Instance_Reboot_Handler,
+		},
+		{
 			MethodName: "Console",
 			Handler:    _Instance_Console_Handler,
 		},
@@ -997,189 +1384,89 @@ var _Instance_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Instance_List_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1.proto",
-}
-
-// Client API for Resource service
-
-type ResourceClient interface {
-	Register(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*ResourceReply, error)
-	Unregister(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error)
-	Show(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error)
-}
-
-type resourceClient struct {
-	cc *grpc.ClientConn
-}
-
-func NewResourceClient(cc *grpc.ClientConn) ResourceClient {
-	return &resourceClient{cc}
-}
-
-func (c *resourceClient) Register(ctx context.Context, in *ResourceRequest, opts ...grpc.CallOption) (*ResourceReply, error) {
-	out := new(ResourceReply)
-	err := grpc.Invoke(ctx, "/api.Resource/Register", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *resourceClient) Unregister(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error) {
-	out := new(ResourceReply)
-	err := grpc.Invoke(ctx, "/api.Resource/Unregister", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *resourceClient) Show(ctx context.Context, in *ResourceIDRequest, opts ...grpc.CallOption) (*ResourceReply, error) {
-	out := new(ResourceReply)
-	err := grpc.Invoke(ctx, "/api.Resource/Show", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Server API for Resource service
-
-type ResourceServer interface {
-	Register(context.Context, *ResourceRequest) (*ResourceReply, error)
-	Unregister(context.Context, *ResourceIDRequest) (*ResourceReply, error)
-	Show(context.Context, *ResourceIDRequest) (*ResourceReply, error)
-}
-
-func RegisterResourceServer(s *grpc.Server, srv ResourceServer) {
-	s.RegisterService(&_Resource_serviceDesc, srv)
-}
-
-func _Resource_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResourceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ResourceServer).Register(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.Resource/Register",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceServer).Register(ctx, req.(*ResourceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Resource_Unregister_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResourceIDRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ResourceServer).Unregister(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.Resource/Unregister",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceServer).Unregister(ctx, req.(*ResourceIDRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Resource_Show_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResourceIDRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ResourceServer).Show(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.Resource/Show",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceServer).Show(ctx, req.(*ResourceIDRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _Resource_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "api.Resource",
-	HandlerType: (*ResourceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Register",
-			Handler:    _Resource_Register_Handler,
+			StreamName:    "Log",
+			Handler:       _Instance_Log_Handler,
+			ServerStreams: true,
 		},
 		{
-			MethodName: "Unregister",
-			Handler:    _Resource_Unregister_Handler,
-		},
-		{
-			MethodName: "Show",
-			Handler:    _Resource_Show_Handler,
+			StreamName:    "Event",
+			Handler:       _Instance_Event_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "v1.proto",
 }
 
 func init() { proto.RegisterFile("v1.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 743 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x56, 0xdd, 0x6e, 0xd3, 0x4c,
-	0x10, 0x4d, 0x9c, 0x38, 0x4d, 0xc7, 0x6d, 0x9a, 0x6e, 0xab, 0x28, 0xf2, 0xa7, 0x4f, 0xad, 0x2c,
-	0x24, 0x2a, 0xda, 0x3a, 0x6d, 0x8a, 0x00, 0x15, 0xc1, 0x45, 0x1b, 0xa1, 0x46, 0x54, 0x08, 0x36,
-	0xe5, 0x86, 0x1b, 0xe4, 0x26, 0xdb, 0xd4, 0x92, 0xff, 0xb0, 0x37, 0x85, 0x5c, 0xf2, 0x28, 0x3c,
-	0x02, 0x12, 0x0f, 0x88, 0xbc, 0x7f, 0xb1, 0xad, 0x44, 0x18, 0x6e, 0xaa, 0xee, 0xd9, 0x73, 0x66,
-	0x76, 0xce, 0xce, 0x8e, 0x03, 0xcd, 0x87, 0x53, 0x3b, 0x8a, 0x43, 0x1a, 0xa2, 0x9a, 0x13, 0xb9,
-	0xa6, 0xe1, 0x87, 0x13, 0xe2, 0x71, 0xc4, 0xba, 0x86, 0x26, 0x9e, 0x05, 0x98, 0x44, 0xde, 0x1c,
-	0xed, 0x81, 0xe1, 0x06, 0x09, 0x75, 0x82, 0x31, 0xf9, 0xec, 0x4e, 0xba, 0xd5, 0xfd, 0xea, 0xc1,
-	0x3a, 0x06, 0x09, 0x0d, 0x27, 0x29, 0x21, 0x26, 0x49, 0x38, 0x8b, 0x39, 0x41, 0xe3, 0x04, 0x09,
-	0x0d, 0x27, 0x96, 0x0d, 0xc6, 0x88, 0x86, 0x11, 0x26, 0x5f, 0x66, 0x24, 0xa1, 0x7f, 0x0c, 0x68,
-	0x1d, 0xc1, 0x3a, 0xe7, 0x97, 0x49, 0x6f, 0x9d, 0x42, 0x6b, 0x40, 0x12, 0x1a, 0x87, 0xf3, 0xd2,
-	0x09, 0x7a, 0xb0, 0xa1, 0x24, 0x65, 0x73, 0x5c, 0x86, 0x41, 0x12, 0x7a, 0xe4, 0x6f, 0x72, 0x28,
-	0x49, 0xa9, 0x1c, 0x27, 0xb0, 0x79, 0x19, 0x13, 0x87, 0x66, 0x53, 0x64, 0x7d, 0xad, 0x2e, 0xf3,
-	0x55, 0x2a, 0x4a, 0x65, 0xe8, 0xc1, 0xc6, 0x88, 0x3a, 0x31, 0x2d, 0x5d, 0xc3, 0x31, 0x80, 0x10,
-	0x94, 0x8a, 0x7f, 0x01, 0xdb, 0x43, 0xb9, 0x1a, 0xc8, 0x24, 0x6d, 0xd0, 0x86, 0x03, 0x4e, 0xbe,
-	0xaa, 0x60, 0x6d, 0x38, 0x40, 0xbb, 0x50, 0x7f, 0xe7, 0xf8, 0x84, 0x37, 0xca, 0x55, 0x05, 0xb3,
-	0xd5, 0x85, 0x0e, 0xb5, 0xb7, 0x64, 0x6e, 0x5d, 0xc3, 0xa6, 0x8c, 0xc1, 0xb3, 0xb6, 0x16, 0x7a,
-	0xa6, 0x3e, 0x84, 0xa6, 0x4c, 0xc9, 0x22, 0x18, 0xfd, 0x2d, 0x9b, 0xb7, 0xae, 0xd2, 0x29, 0x82,
-	0xf5, 0x5d, 0x83, 0x1d, 0x09, 0x5f, 0xbb, 0x89, 0xaa, 0xfc, 0x05, 0xd4, 0x23, 0x67, 0x4a, 0x58,
-	0x58, 0xa3, 0xff, 0xc8, 0x76, 0x22, 0xd7, 0x5e, 0xc2, 0xb3, 0xdf, 0x3b, 0x53, 0x79, 0x1d, 0x98,
-	0x29, 0xd0, 0x73, 0x68, 0xdc, 0xb9, 0x1e, 0x25, 0xb1, 0x48, 0xbe, 0xb7, 0x52, 0xfb, 0x86, 0xd1,
-	0xb0, 0xa0, 0x9b, 0x2f, 0xc1, 0xc8, 0x44, 0x43, 0x1d, 0x68, 0x84, 0x77, 0x77, 0x09, 0xa1, 0xec,
-	0x0c, 0x3a, 0x16, 0x2b, 0xb4, 0x0b, 0xba, 0xe7, 0xfa, 0x2e, 0x65, 0xe1, 0x75, 0xcc, 0x17, 0xe6,
-	0x39, 0x34, 0x78, 0x38, 0x74, 0x02, 0x7a, 0x42, 0x1d, 0xca, 0x8f, 0xde, 0xea, 0x9b, 0x85, 0xda,
-	0x47, 0xe9, 0x9e, 0xcd, 0xfe, 0x62, 0x4e, 0xb4, 0x7e, 0x6a, 0x8b, 0x6b, 0xe1, 0xe7, 0x4b, 0x6d,
-	0x7d, 0x9a, 0x73, 0x60, 0x7f, 0x49, 0x15, 0x91, 0x37, 0x17, 0xf5, 0x47, 0xde, 0x5c, 0x54, 0xff,
-	0x0a, 0x74, 0x97, 0x12, 0x3f, 0xe9, 0x6a, 0xfb, 0xb5, 0x03, 0xa3, 0xff, 0x78, 0x85, 0x2c, 0x8b,
-	0x0c, 0x29, 0xf1, 0x31, 0x57, 0x99, 0x1f, 0x60, 0x5d, 0x45, 0x4c, 0x2b, 0xa5, 0x21, 0x75, 0x3c,
-	0x61, 0x00, 0x5f, 0xa0, 0x2e, 0xac, 0x8d, 0x67, 0x71, 0x4c, 0x02, 0xe9, 0x80, 0x5c, 0x2e, 0x9c,
-	0xa9, 0x65, 0x9d, 0xb9, 0x81, 0x76, 0x31, 0x5b, 0xda, 0x32, 0xaa, 0x3f, 0x35, 0x77, 0xb2, 0xf0,
-	0x4c, 0x2b, 0xeb, 0xd9, 0x6b, 0xd8, 0xc2, 0xe2, 0x9d, 0xc9, 0x0b, 0x3b, 0x84, 0x26, 0x25, 0x7e,
-	0xe4, 0x49, 0xef, 0x17, 0x7d, 0x77, 0x23, 0x60, 0xac, 0x08, 0x69, 0x17, 0x2f, 0xf4, 0x2b, 0xba,
-	0x58, 0x3e, 0xe4, 0x42, 0x17, 0x2b, 0x9d, 0x22, 0xa4, 0xef, 0x4a, 0xa2, 0xff, 0xfa, 0xae, 0xfa,
-	0x3f, 0x6a, 0xd0, 0x94, 0x05, 0xa3, 0x13, 0x68, 0xf0, 0xc1, 0x81, 0x10, 0xbb, 0xc1, 0xdc, 0xdc,
-	0x31, 0xdb, 0x39, 0x2c, 0xf2, 0xe6, 0x56, 0x05, 0x1d, 0x83, 0xce, 0x26, 0x01, 0xda, 0x66, 0x9b,
-	0xd9, 0x31, 0x62, 0x6e, 0x65, 0x21, 0x4e, 0x3f, 0x82, 0x1a, 0x9e, 0x05, 0x68, 0x97, 0xed, 0x14,
-	0x9c, 0x34, 0x37, 0x39, 0x2a, 0xbe, 0x2f, 0x56, 0x05, 0x3d, 0x81, 0x7a, 0x3a, 0xef, 0x51, 0x5b,
-	0x04, 0x52, 0x9f, 0x0a, 0xb3, 0x95, 0x41, 0x38, 0xf7, 0x0c, 0xd6, 0xc4, 0xe8, 0x46, 0x3b, 0x6c,
-	0x33, 0x3f, 0xfb, 0xcd, 0xed, 0x3c, 0xa8, 0x44, 0x62, 0x16, 0x0b, 0x51, 0x7e, 0x98, 0x0b, 0x51,
-	0x76, 0x5c, 0x5b, 0x95, 0xf4, 0x85, 0x8c, 0xee, 0xc3, 0xaf, 0xa8, 0x93, 0x6b, 0x72, 0x75, 0x01,
-	0x26, 0xca, 0xe1, 0x52, 0x75, 0x0e, 0xf5, 0xb4, 0x0f, 0x51, 0x77, 0xd5, 0x5c, 0x30, 0x3b, 0xcb,
-	0x1f, 0x8d, 0x55, 0xe9, 0xff, 0xaa, 0x42, 0x53, 0x9a, 0x85, 0x9e, 0xa5, 0xff, 0x4f, 0xdd, 0x24,
-	0x7d, 0xf4, 0xcb, 0x7d, 0x44, 0x05, 0x54, 0x1e, 0x00, 0x3e, 0x06, 0xb1, 0x54, 0x76, 0x72, 0x9c,
-	0xe2, 0xe1, 0x8b, 0xda, 0x7c, 0xc9, 0x25, 0x55, 0x17, 0xff, 0x7f, 0xfa, 0x6f, 0xea, 0xd2, 0xfb,
-	0xd9, 0xad, 0x3d, 0x0e, 0xfd, 0x9e, 0xf3, 0x2d, 0xb9, 0xef, 0x85, 0x11, 0x09, 0x1e, 0x26, 0xe3,
-	0x9e, 0x13, 0xb9, 0xb7, 0x0d, 0xf6, 0x93, 0xe2, 0xec, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0x05,
-	0xa8, 0xe7, 0x2c, 0x70, 0x08, 0x00, 0x00,
+	// 1048 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0xdb, 0x6e, 0xdb, 0x46,
+	0x10, 0x95, 0x48, 0x89, 0x96, 0x46, 0x96, 0x2c, 0xaf, 0x5d, 0x5b, 0x65, 0x51, 0xd4, 0x21, 0x8a,
+	0xc6, 0x48, 0x1c, 0x4a, 0x51, 0x8a, 0x5e, 0x92, 0x16, 0x41, 0x64, 0x37, 0x88, 0x50, 0x23, 0x6d,
+	0xd7, 0x7a, 0xea, 0x4b, 0xb0, 0x96, 0xd6, 0x14, 0x0b, 0x8a, 0xcb, 0x92, 0x4b, 0x37, 0x7a, 0xec,
+	0x27, 0xf5, 0x43, 0xfa, 0x31, 0xfd, 0x83, 0x82, 0x7b, 0xa1, 0x48, 0x47, 0x06, 0xd8, 0xbe, 0x08,
+	0x9c, 0xd9, 0x39, 0xe7, 0xec, 0xce, 0xce, 0xce, 0x08, 0x5a, 0xb7, 0x4f, 0xdd, 0x28, 0x66, 0x9c,
+	0x21, 0x93, 0x44, 0xbe, 0xdd, 0x59, 0xb1, 0x05, 0x0d, 0xa4, 0xc7, 0xee, 0xce, 0x83, 0x34, 0xe1,
+	0x34, 0x56, 0xe6, 0x0b, 0xcf, 0xe7, 0xcb, 0xf4, 0xda, 0x9d, 0xb3, 0xd5, 0xd0, 0x63, 0x01, 0x09,
+	0xbd, 0xa1, 0x58, 0xb8, 0x4e, 0x6f, 0x86, 0x11, 0x5f, 0x47, 0x34, 0x19, 0x72, 0x7f, 0x45, 0x13,
+	0x4e, 0x56, 0xd1, 0xe6, 0x4b, 0x82, 0x9d, 0x97, 0xd0, 0x3e, 0x67, 0x61, 0xc2, 0x02, 0x3a, 0x0d,
+	0x51, 0x1f, 0xcc, 0xeb, 0xf4, 0x66, 0x50, 0x3f, 0xa9, 0x9f, 0xb6, 0x71, 0xf6, 0x89, 0x4e, 0xa0,
+	0xe3, 0x87, 0x09, 0x27, 0xe1, 0x9c, 0xbe, 0xf3, 0x17, 0x03, 0x43, 0xac, 0x14, 0x5d, 0xce, 0x6f,
+	0x00, 0x8a, 0xe0, 0xa7, 0x94, 0xa3, 0x87, 0x60, 0xcc, 0x97, 0x82, 0xa0, 0x37, 0x3e, 0x76, 0x49,
+	0xe4, 0xbb, 0x9b, 0x45, 0xf7, 0x7c, 0x49, 0xc2, 0x90, 0x06, 0xd8, 0x98, 0x2f, 0xb5, 0x94, 0x91,
+	0x4b, 0x39, 0x0f, 0x60, 0x47, 0x05, 0x20, 0x00, 0x2b, 0xe1, 0x0b, 0x96, 0xf2, 0x7e, 0x4d, 0x7d,
+	0xd3, 0x38, 0xee, 0xd7, 0x9d, 0x33, 0x68, 0xe1, 0x34, 0xc4, 0x34, 0x0a, 0xd6, 0x77, 0x77, 0x56,
+	0xff, 0x70, 0x67, 0x43, 0xe8, 0x5c, 0x71, 0x16, 0x61, 0xfa, 0x7b, 0x4a, 0x13, 0x5e, 0x01, 0xf0,
+	0x04, 0xda, 0x12, 0x50, 0x8d, 0x7f, 0x0c, 0xbd, 0x0b, 0x9a, 0xf0, 0x98, 0xad, 0xab, 0x4b, 0x8c,
+	0x60, 0x37, 0xc7, 0x54, 0x56, 0x51, 0x29, 0xac, 0xae, 0xf2, 0x1e, 0x76, 0x73, 0x4c, 0x25, 0x15,
+	0x74, 0x06, 0x8d, 0xac, 0x52, 0xc4, 0x7d, 0xf4, 0xc6, 0x03, 0x57, 0x96, 0x9b, 0x22, 0x71, 0x67,
+	0x31, 0x09, 0x93, 0x88, 0xc5, 0x1c, 0x8b, 0x28, 0x34, 0x80, 0x1d, 0xb2, 0x58, 0xc4, 0x34, 0x49,
+	0x06, 0xa6, 0xe0, 0xd2, 0xa6, 0xf3, 0x1d, 0x74, 0xcf, 0x63, 0x4a, 0x78, 0xbe, 0xd9, 0xc7, 0xd0,
+	0xe2, 0x74, 0x15, 0x05, 0x84, 0x4b, 0xf2, 0xce, 0x78, 0x4f, 0x91, 0xcf, 0x94, 0x1b, 0xe7, 0x01,
+	0xd9, 0x8d, 0x69, 0x74, 0xb5, 0xe4, 0x8c, 0x60, 0xf7, 0x8a, 0x93, 0x98, 0x57, 0x4f, 0x8d, 0x0b,
+	0xa0, 0x10, 0xd5, 0x14, 0x9e, 0x42, 0x17, 0xd3, 0x6b, 0xc6, 0xfe, 0x83, 0xc4, 0x10, 0x3a, 0x1a,
+	0x52, 0x4d, 0x63, 0x02, 0xfb, 0x53, 0x65, 0x4e, 0x2f, 0xb4, 0x4e, 0x1f, 0x8c, 0xe9, 0x85, 0x8c,
+	0x7e, 0x53, 0xc3, 0xc6, 0xf4, 0x02, 0x1d, 0x42, 0xe3, 0x2d, 0x59, 0xc9, 0x34, 0x66, 0x3e, 0x61,
+	0x4d, 0x9a, 0x60, 0xfe, 0x48, 0xd7, 0xce, 0x25, 0x74, 0x35, 0x87, 0x94, 0xed, 0x6d, 0xf0, 0x02,
+	0xfd, 0x18, 0x5a, 0x5a, 0xf3, 0xce, 0x45, 0xe4, 0xb8, 0x3c, 0xc0, 0xf9, 0xd3, 0x80, 0x03, 0xed,
+	0xbe, 0xf4, 0x93, 0xfc, 0xf0, 0xdf, 0x40, 0x23, 0x22, 0x1e, 0x15, 0xb4, 0x9d, 0xf1, 0xe7, 0xe2,
+	0x81, 0x6f, 0x89, 0x73, 0x7f, 0x26, 0x9e, 0xae, 0x00, 0x2c, 0x10, 0xe8, 0x6b, 0xb0, 0x6e, 0xfc,
+	0x80, 0xd3, 0x58, 0x89, 0x7f, 0x76, 0x2f, 0xf6, 0xb5, 0x08, 0xc3, 0x2a, 0xdc, 0x7e, 0x01, 0x9d,
+	0x02, 0x1b, 0x3a, 0x02, 0x8b, 0xdd, 0xdc, 0x24, 0x94, 0x8b, 0x3d, 0x34, 0xb1, 0xb2, 0xd0, 0x21,
+	0x34, 0x03, 0x7f, 0xe5, 0x73, 0x41, 0xdf, 0xc4, 0xd2, 0xb0, 0x9f, 0x83, 0x25, 0xe9, 0xd0, 0x08,
+	0x9a, 0x09, 0xcf, 0x8a, 0x50, 0xf6, 0x26, 0xfb, 0xce, 0xd9, 0xaf, 0xb2, 0x35, 0x57, 0xfc, 0x62,
+	0x19, 0xe8, 0xfc, 0x65, 0x6c, 0xae, 0x45, 0xee, 0x2f, 0x4b, 0xeb, 0x97, 0xa5, 0x0c, 0x9c, 0x6c,
+	0x39, 0x45, 0x14, 0xac, 0xd5, 0xf9, 0xa3, 0x60, 0xad, 0x4e, 0xff, 0x3d, 0x34, 0x7d, 0x4e, 0x57,
+	0xc9, 0xc0, 0x38, 0x31, 0x4f, 0x3b, 0xe3, 0x87, 0xf7, 0xc0, 0x8a, 0x9e, 0x29, 0xa7, 0x2b, 0x2c,
+	0x51, 0xf6, 0x2f, 0xd0, 0xce, 0x19, 0xb3, 0x93, 0x72, 0xc6, 0x49, 0xa0, 0x12, 0x20, 0x8d, 0xec,
+	0x49, 0xce, 0xd3, 0x38, 0xa6, 0xa1, 0xce, 0x80, 0x36, 0x37, 0x99, 0x31, 0x8b, 0x99, 0x99, 0x41,
+	0xff, 0xae, 0x5a, 0x56, 0x32, 0x79, 0x81, 0x1a, 0xfe, 0x62, 0x93, 0x33, 0xa3, 0x6a, 0xce, 0x2e,
+	0x00, 0xe5, 0xac, 0xcc, 0xd3, 0x77, 0xe6, 0x82, 0x35, 0x23, 0xb1, 0xa7, 0xee, 0xac, 0x33, 0x3e,
+	0x2a, 0x1d, 0x3f, 0x2f, 0x79, 0xac, 0xa2, 0x9c, 0x2f, 0x0a, 0x7b, 0xcb, 0x58, 0xb2, 0x53, 0x23,
+	0x68, 0x5c, 0xfa, 0x61, 0x96, 0x77, 0xf3, 0xb4, 0x8d, 0xc5, 0xb7, 0xf3, 0x1a, 0x0e, 0x75, 0xdc,
+	0x0f, 0xb7, 0x34, 0xe4, 0xff, 0x57, 0xef, 0x9f, 0xfa, 0x66, 0xdb, 0x8a, 0x28, 0x93, 0x7c, 0x05,
+	0x40, 0x33, 0xeb, 0x9d, 0xe8, 0x8c, 0xb2, 0x6e, 0x1e, 0x94, 0xa8, 0x36, 0xc1, 0xae, 0xf8, 0x9c,
+	0xad, 0x23, 0x8a, 0x0b, 0x20, 0xf4, 0x15, 0xb4, 0xa4, 0x45, 0xb8, 0xaa, 0x7b, 0xdb, 0xf5, 0x18,
+	0xf3, 0x02, 0xea, 0xea, 0x11, 0xed, 0xce, 0xf4, 0x44, 0xc6, 0x79, 0x2c, 0x3a, 0xd3, 0x99, 0x37,
+	0x05, 0xe8, 0x70, 0x5b, 0xe6, 0xdf, 0xd4, 0x74, 0xd6, 0x1f, 0x41, 0x3b, 0x97, 0x47, 0x5d, 0x65,
+	0xbc, 0x65, 0x21, 0xed, 0xd7, 0x50, 0x0f, 0x40, 0x98, 0x02, 0xd2, 0xaf, 0x4f, 0x2c, 0x68, 0x4c,
+	0xd8, 0x62, 0x3d, 0x9e, 0xc0, 0x9e, 0x66, 0x53, 0x5d, 0x1e, 0x0d, 0xc1, 0x7a, 0xc5, 0x39, 0x99,
+	0x2f, 0x51, 0xaf, 0x38, 0xb9, 0xa7, 0xa1, 0xbd, 0x77, 0x67, 0x92, 0x3b, 0xb5, 0xd3, 0xfa, 0xa8,
+	0x3e, 0xfe, 0xbb, 0x01, 0x2d, 0x4d, 0x82, 0x46, 0x60, 0xc9, 0xde, 0x8d, 0x90, 0x8c, 0x2e, 0x8e,
+	0x01, 0xbb, 0x5f, 0xf2, 0x45, 0xc1, 0xda, 0xa9, 0xa1, 0x27, 0xd0, 0x14, 0xad, 0x18, 0xed, 0x8b,
+	0xc5, 0x62, 0x23, 0x57, 0x8a, 0x9b, 0x4e, 0xed, 0xd4, 0xd0, 0x23, 0x30, 0x71, 0x1a, 0x6e, 0x65,
+	0xef, 0x0a, 0x9f, 0xfe, 0x6b, 0x20, 0x62, 0x1b, 0xd9, 0x24, 0x47, 0x7d, 0x45, 0x93, 0xff, 0x0b,
+	0xb0, 0x7b, 0x05, 0x8f, 0x8c, 0x7d, 0x06, 0x3b, 0x6a, 0x24, 0xa3, 0x03, 0xb1, 0x58, 0x1e, 0xea,
+	0xf6, 0x7e, 0xd9, 0x29, 0x41, 0x23, 0xb0, 0x64, 0x8f, 0x57, 0xfb, 0x29, 0xcd, 0x08, 0x75, 0xda,
+	0xc2, 0x10, 0x90, 0x32, 0x3a, 0xd1, 0x07, 0xc5, 0x74, 0x96, 0x65, 0x8a, 0x63, 0xdb, 0xa9, 0x65,
+	0xdd, 0xe6, 0x6a, 0xc9, 0xfe, 0x40, 0xf7, 0x54, 0xb0, 0x8d, 0x4a, 0x7e, 0x8d, 0x7a, 0x9e, 0xbd,
+	0x95, 0x84, 0xa3, 0xc1, 0x7d, 0x3d, 0xd6, 0x3e, 0xda, 0xde, 0x80, 0x9c, 0x1a, 0xfa, 0x16, 0xcc,
+	0x4b, 0xe6, 0xa1, 0xe3, 0x72, 0x40, 0xfe, 0x96, 0xed, 0x8f, 0x3e, 0x5c, 0x10, 0xc0, 0x51, 0x1d,
+	0xbd, 0x84, 0xa6, 0x28, 0x35, 0xf4, 0xf1, 0xb6, 0x47, 0x22, 0xe1, 0xc7, 0xf7, 0xbc, 0x9f, 0x8c,
+	0x60, 0xf2, 0xe9, 0xaf, 0x9f, 0x14, 0xfe, 0xca, 0x92, 0xf7, 0xc9, 0x72, 0xc8, 0x22, 0x1a, 0xde,
+	0x2e, 0xe6, 0x43, 0x12, 0xf9, 0xd7, 0x96, 0x78, 0x32, 0xcf, 0xfe, 0x0d, 0x00, 0x00, 0xff, 0xff,
+	0xed, 0x7c, 0xc9, 0xf5, 0x1b, 0x0b, 0x00, 0x00,
 }

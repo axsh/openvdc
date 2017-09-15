@@ -3,6 +3,7 @@ package template
 import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
+	"github.com/axsh/openvdc/registry"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -24,12 +25,24 @@ var ValidateCmd = &cobra.Command{
 			return pflag.ErrHelp
 		}
 		templateSlug := args[0]
-		rt, err := util.FetchTemplate(templateSlug)
+
+		finder, err := util.TemplateFinder(templateSlug)
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal("Failed util.TemplateFinder")
+		}
+		buf, err := finder.LoadRaw(templateSlug)
+		if err != nil {
+			log.WithError(err).Fatal("Failed finder.LoadRaw")
+		}
+		if err, ok := registry.ValidateTemplate(buf).(*registry.ErrInvalidTemplate); ok && err != nil {
+			log.Fatal(err.Errors)
 		}
 
 		if len(args) > 1 {
+			rt, err := util.FetchTemplate(templateSlug)
+			if err != nil {
+				log.WithError(err).Fatal("util.FetchTemplate")
+			}
 			util.MergeTemplateParams(rt, args[1:])
 		}
 		return nil

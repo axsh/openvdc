@@ -36,10 +36,12 @@ type ResourceHandler interface {
 	// Ugly method... due to the "oneof" protobuf type implementation in Go.
 	// https://developers.google.com/protocol-buffers/docs/reference/go-generated#oneof
 	SetTemplateItem(t *model.Template, m model.ResourceTemplate)
+	IsSupportAPI(m string) bool
 }
 
 type CLIHandler interface {
 	MergeArgs(src model.ResourceTemplate, args []string) error
+	MergeJSON(dst model.ResourceTemplate, in json.RawMessage) error
 	Usage(out io.Writer) error
 }
 

@@ -1,5 +1,0 @@
-DEVICE=virbr0
-TYPE=Bridge
-BOOTPROTO=none
-ONBOOT=yes
-NM_CONTROLLED=no

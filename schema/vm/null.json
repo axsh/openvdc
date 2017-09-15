@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "OpenVDC Resource Template: vm/null (For testing only)",
+  "type": "object",
+  "required": [
+    "type"
+  ],
+  "properties": {
+    "_comment": {
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "vm/null"
+      ]
+    },
+    "min_vcpu": {
+      "type": "integer",
+      "default": 1
+    },
+    "min_memory_gb": {
+      "type": "integer",
+      "default": 1
+    },
+    "vcpu": {
+      "type": "integer",
+      "default": 1
+    },
+    "memory_gb": {
+      "type": "integer",
+      "default": 1
+    },
+    "node_groups": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": [
+        {"type": "string"}
+      ]
+    },
+    "crash_stage": {
+      "type": "string",
+      "enum": [
+        "none",
+        "start",
+        "stop",
+        "create",
+        "destroy",
+        "reboot"
+      ],
+      "default": "none"
+    }
+  }
+}

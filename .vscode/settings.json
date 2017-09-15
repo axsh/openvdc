@@ -3,6 +3,12 @@
     "vendor/**": true,
     "vendor/vendor.json": false
   },
+  "protoc": {
+    "options": [
+      "--proto_path=${workspaceRoot}/proto",
+      "--proto_path=${env.GOPATH}/src"
+    ]
+  },
   "json.schemas": [
     {
       "fileMatch": [
@@ -10,5 +16,7 @@
       ],
       "url": "./schema/v1.json"
     }
-  ]
+  ],
+  // go formatter/lint called by vscode fails sources under ci/*.
+  "go.buildTags": "acceptance"
 }

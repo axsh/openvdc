@@ -2,12 +2,12 @@ package registry
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -48,7 +48,7 @@ func (t *TemplateRoot) parseTemplate() error {
 	var err error
 	t.Template, err = hnd.ParseTemplate(t.RawTemplate)
 	if err != nil {
-		return fmt.Errorf("Failed to parse template section in %s", t.Title)
+		return errors.Wrapf(err, "%T found parse error", hnd)
 	}
 
 	return nil
@@ -76,6 +76,7 @@ func (r *RegistryTemplate) ToModel() *model.Template {
 type TemplateFinder interface {
 	Find(templateName string) (*RegistryTemplate, error)
 	LocateURI(templateName string) string
+	LoadRaw(templateName string) ([]byte, error)
 }
 
 type CachedRegistry interface {
