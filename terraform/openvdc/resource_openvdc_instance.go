@@ -22,8 +22,9 @@ func OpenVdcInstance() *schema.Resource {
 				Required: true,
 			},
 
-			"interface": &schema.Schema{
-				Type:     schema.TypeSet,
+			"interfaces": &schema.Schema{
+				Type:     schema.TypeList,
+				ForceNew: true,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -61,8 +62,8 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 
 	cmdOpts.WriteString("{\"interfaces\":[")
 	newElement := false
-	if x := d.Get("interface"); x != nil {
-		for _, y := range x.(*schema.Set).List() {
+	if x := d.Get("interfaces"); x != nil {
+		for _, y := range x.([]interface{}) {
 			if newElement {
 				cmdOpts.WriteString(",")
 			}
