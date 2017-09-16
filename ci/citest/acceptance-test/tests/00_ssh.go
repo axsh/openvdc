@@ -4,10 +4,12 @@ package tests
 
 import (
 	"bytes"
-	"golang.org/x/crypto/ssh"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 )
+
 const zookeeper_ip = "10.0.100.10"
 const mesos_master_ip = "10.0.100.11"
 const scheduler_ip = "10.0.100.12"
@@ -26,6 +28,7 @@ func RunSsh(ip string, cmd string) (*bytes.Buffer, *bytes.Buffer, error) {
 		Auth: []ssh.AuthMethod{
 			ssh.Password("kemumaki"),
 		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	connection, err := ssh.Dial("tcp", ip+":22", sshConfig)
