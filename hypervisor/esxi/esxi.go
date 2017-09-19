@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,6 +21,7 @@ import (
 	cli "github.com/vmware/govmomi/govc/cli"
 	_ "github.com/vmware/govmomi/govc/datastore"
 	_ "github.com/vmware/govmomi/govc/device"
+	_ "github.com/vmware/govmomi/govc/device/floppy"
 	_ "github.com/vmware/govmomi/govc/device/serial"
 	_ "github.com/vmware/govmomi/govc/vm"
 	_ "github.com/vmware/govmomi/govc/vm/guest"
@@ -62,6 +65,18 @@ func (t BridgeType) String() string {
 
 type EsxiMachine struct {
 	SerialConsolePort int
+	Nics 		  []Nic
+}
+
+
+type Nic struct {
+	IfName       string
+	Index        string
+	Ipv4Addr     string
+	MacAddr      string
+	Bridge       string
+	BridgeHelper string
+	Type         string
 }
 
 type EsxiHypervisorProvider struct {
@@ -194,6 +209,14 @@ func join(separator byte, args ...string) string {
 	return buf.String()
 }
 
+func runCmd(cmd string, args []string) error {
+	c := exec.Command(cmd, args...)
+	if err := c.Run(); err != nil {
+		return errors.Errorf("failed to execute command :%s %s", cmd, args)
+	}
+	return nil
+}
+
 func esxiRunCmd(cmdList ...[]string) error {
 	for _, args := range cmdList {
 		a := []string{
@@ -227,15 +250,121 @@ func (d *EsxiHypervisorDriver) vmPath() string {
 	return join(0, "-vm.path=[", settings.EsxiVmDatastore, "]", storageImg(d.vmName))
 }
 
+func renderData(keyPath string, key string, value interface{}) error {
+	switch value.(type) {
+	case string:
+		ioutil.WriteFile(filepath.Join(keyPath, key), []byte(value.(string)), 0644)
+		return nil
+	default:
+		kp := filepath.Join(keyPath, key)
+		if err := os.MkdirAll(kp, os.ModePerm); err != nil {
+			return errors.Errorf("Unable to create folder: %s", kp)
+		}
+		for key, value := range value.(map[string]interface{}) {
+			if err := renderData(kp, key, value); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type Image struct {
+	Path      string
+	Format    string
+	Size      int
+	baseImage string
+}
+
+func (d *EsxiHypervisorDriver) addMetadata(metadriveImgPath string, datamap func(machine *EsxiMachine) map[string]interface{}) error {
+
+	mountPath := "/media/metadrive/"
+
+	if err := os.MkdirAll(mountPath, os.ModePerm); err != nil {
+		return errors.Errorf("Unable to create folder: %s", mountPath)
+	}
+
+	if err := runCmd("mount", []string{metadriveImgPath, mountPath}); err != nil {
+		return errors.Errorf("Error: %s", err)
+	}
+
+	for key, value := range datamap(d.machine) {
+		// ioutil.WriteFile(filepath.Join(mountPath, key), []byte(value), 0644)
+		if err := renderData(mountPath, key, value); err != nil {
+			return err
+		}
+	}
+	if err := runCmd("umount", []string{mountPath}); err != nil {
+		return errors.Errorf("Error: %s", err)
+	}
+	if err := os.RemoveAll(mountPath); err != nil {
+		return errors.Errorf("Unable remove path: %s", mountPath)
+	}
+	return nil
+}
+
+func (d *EsxiHypervisorDriver) buildMetadriveBase(metadriveImgPath string) error {
+	d.log().Infoln("Preparing metadrive image...")
+	
+	if err := runCmd("mkfs.msdos",[]string{"-C", metadriveImgPath, "1440"}); err != nil {
+		return errors.Errorf("Error: %s", err)
+	}
+
+	return d.addMetadata(metadriveImgPath, func(machine *EsxiMachine) map[string]interface{} {
+		metadataMap := make(map[string]interface{})
+		for idx, nic := range machine.Nics {
+			if nic.Type == "veth" {
+				iface := make(map[string]interface{})
+				iface["ifname"] = nic.IfName
+				iface["ipv4"] = nic.Ipv4Addr
+				iface["mac"] = nic.MacAddr
+				metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
+			}
+		}
+		return metadataMap
+	})
+}
+
+func (m *EsxiMachine) AddNICs(nics []Nic) {
+	for _, nic := range nics {
+		m.Nics = append(m.Nics, nic)
+	}
+}
+
 func (d *EsxiHypervisorDriver) CreateInstance() error {
+
+	var nics []Nic
+	for idx, iface := range d.template.GetInterfaces() {
+		nics = append(nics, Nic{
+		IfName:       fmt.Sprintf("%s_%02d", d.vmName, idx),
+		Type:         iface.Type,
+		Ipv4Addr:     iface.Ipv4Addr,
+		MacAddr:      iface.Macaddr,
+		Bridge:       settings.BridgeName,
+		})
+	}
+
+	d.machine.AddNICs(nics)
+
+	metadriveImgPath := "/tmp/metadrive.img"
+
+	d.buildMetadriveBase(metadriveImgPath)
+
 	// Create new folder
 	err := esxiRunCmd(
 		[]string{"datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName},
 	)
-
 	if err != nil {
 		return err
 	}
+
+        err = esxiRunCmd(
+        	[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), metadriveImgPath, fmt.Sprintf("%s/metadrive.img", d.vmName)},
+        )
+        if err != nil {
+        	return err
+        }		
+
 	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
 	if err != nil {
 		return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
@@ -276,14 +405,16 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return errors.Errorf(stderr.String(), "Error cloning vmdk")
 	}
 
-	// TODO: don;t hardcode the base image
+	// TODO: don't hardcode the base image
 	// NOTE: serial port devices starts from 9000 on the current driver, network configurations should possibly be
 	// handled by openvdc-init
+
 	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 	err = esxiRunCmd(
 		[]string{"datastore.cp", datastore, storageImg("CentOS7"), storageImg(d.vmName)},
 		[]string{"vm.register", datastore, storageImg(d.vmName)},
 		[]string{"vm.change", join('=', "-name", d.vmName), d.vmPath()},
+		[]string{"device.floppy.insert", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"device.serial.add", d.vmPath()},
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
 		[]string{"vm.power", "-on=true", d.vmPath()},
@@ -292,8 +423,6 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	if err != nil {
 		return err
 	}
-
-	// d.NetworkConfig()
 
 	err = esxiRunCmd(
 		[]string{"vm.power", "-off=true", d.vmPath()},
@@ -330,24 +459,5 @@ func (d EsxiHypervisorDriver) RebootInstance() error {
 	// Linux, this should be doable through api call.
 	return esxiRunCmd(
 		[]string{"guest.start", vmUserDetails(), d.vmPath(), "/sbin/reboot"},
-	)
-}
-
-func (d EsxiHypervisorDriver) NetworkConfig() error {
-	if len(d.template.Interfaces) > 0 && settings.BridgeType == None {
-		d.log().Errorf("Network interfaces are requested to create but no bridge is configured")
-	}
-	if len(d.template.Interfaces) == 0 {
-		d.log().Errorf("No Interfaces set.")
-	}
-	Ipv4Addr := d.template.Interfaces[0].Ipv4Addr
-	if Ipv4Addr == "" {
-		d.log().Errorf("Ipv4Addr not set.")
-	}
-	//TODO: Setup multiple interfaces
-	return esxiRunCmd(
-		[]string{"guest.upload", vmUserDetails(), "-perm=1", d.vmPath(), filepath.Join(settings.ScriptPath, "esxi-vm-config.sh"), "/tmp/testscript.sh"},
-		[]string{"guest.start", vmUserDetails(), d.vmPath(), "/tmp/testscript.sh", d.template.Interfaces[0].Ipv4Addr},
-		[]string{"guest.start", vmUserDetails(), d.vmPath(), "/bin/systemctl", "restart", "network"},
 	)
 }
