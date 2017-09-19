@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -28,6 +29,18 @@ func (d *EsxiHypervisorDriver) InstanceConsole() hypervisor.Console {
 	return &esxiConsole{
 		esxi: d,
 	}
+}
+
+func (con *esxiConsole) guestAgentReady(tries int, retry time.Duration) error {
+	var err error
+	for i := 0; i < tries; i++ {
+		err = esxiRunCmd([]string{"guest.run", con.esxi.vmPath(), "true"})
+		if err == nil {
+			return nil
+		}
+		time.Sleep(retry)
+	}
+	return err
 }
 
 func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...string) (<-chan hypervisor.Closed, error) {
@@ -55,6 +68,9 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 			return nil, err
 		}
 	} else {
+		if err = con.guestAgentReady(10, time.Second*5); err != nil {
+			return nil, errors.Wrap(err, "\nUnable to connect to guest agent.")
+		}
 		if err = con.execCommand(param, waitClosed, args...); err != nil {
 			return nil, err
 		}
@@ -69,7 +85,8 @@ func (con *esxiConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 }
 
 func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, args ...string) error {
-	cmd := []string{"guest.run", fmt.Sprintf("-vm.path=[%s]%s/%s.vmx", settings.EsxiVmDatastore, con.esxi.vmName, con.esxi.vmName)}
+
+	cmd := []string{"guest.run", con.esxi.vmPath()}
 	// the exec command from sshd includes /bin/sh -c here, which is not compatible with the guest.run command
 	for _, arg := range strings.Split(args[2], " ") {
 		cmd = append(cmd, arg)
