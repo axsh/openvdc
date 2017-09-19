@@ -80,9 +80,9 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 	}
 	cmdOpts.WriteString("]}")
 
-	stdout, _, err := RunCmd("openvdc", "run", d.Get("template").(string), cmdOpts.String())
+	stdout, stderr, err := RunCmd("openvdc", "run", d.Get("template").(string), cmdOpts.String())
 	if err != nil {
-		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s", err, d.Get("template").(string), cmdOpts.String())
+		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s\nSTDOUT: %s\nSTDERR: %s", err, d.Get("template").(string), cmdOpts.String(), stdout, stderr)
 	}
 
 	d.SetId(strings.TrimSpace(stdout.String()))
@@ -91,10 +91,10 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
-	_, _, err := RunCmd("openvdc", "destroy", d.Id())
+	stdout, stderr, err := RunCmd("openvdc", "destroy", d.Id())
 
 	if err != nil {
-		return fmt.Errorf("The following command returned error:%v\nopenvdc destroy %s", err, d.Id())
+		return fmt.Errorf("The following command returned error:%v\nopenvdc destroy %s\nSTDOUT: %s\nSTDERR: %s", err, d.Id(), stdout, stderr)
 	}
 
 	return nil
