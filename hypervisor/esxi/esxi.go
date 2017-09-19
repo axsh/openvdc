@@ -65,9 +65,8 @@ func (t BridgeType) String() string {
 
 type EsxiMachine struct {
 	SerialConsolePort int
-	Nics 		  []Nic
+	Nics              []Nic
 }
-
 
 type Nic struct {
 	IfName       string
@@ -305,8 +304,8 @@ func (d *EsxiHypervisorDriver) addMetadata(metadriveImgPath string, datamap func
 
 func (d *EsxiHypervisorDriver) buildMetadriveBase(metadriveImgPath string) error {
 	d.log().Infoln("Preparing metadrive image...")
-	
-	if err := runCmd("mkfs.msdos",[]string{"-C", metadriveImgPath, "1440"}); err != nil {
+
+	if err := runCmd("mkfs.msdos", []string{"-C", metadriveImgPath, "1440"}); err != nil {
 		return errors.Errorf("Error: %s", err)
 	}
 
@@ -336,11 +335,11 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	var nics []Nic
 	for idx, iface := range d.template.GetInterfaces() {
 		nics = append(nics, Nic{
-		IfName:       fmt.Sprintf("%s_%02d", d.vmName, idx),
-		Type:         iface.Type,
-		Ipv4Addr:     iface.Ipv4Addr,
-		MacAddr:      iface.Macaddr,
-		Bridge:       settings.BridgeName,
+			IfName:   fmt.Sprintf("%s_%02d", d.vmName, idx),
+			Type:     iface.Type,
+			Ipv4Addr: iface.Ipv4Addr,
+			MacAddr:  iface.Macaddr,
+			Bridge:   settings.BridgeName,
 		})
 	}
 
@@ -358,12 +357,12 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return err
 	}
 
-        err = esxiRunCmd(
-        	[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), metadriveImgPath, fmt.Sprintf("%s/metadrive.img", d.vmName)},
-        )
-        if err != nil {
-        	return err
-        }		
+	err = esxiRunCmd(
+		[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), metadriveImgPath, fmt.Sprintf("%s/metadrive.img", d.vmName)},
+	)
+	if err != nil {
+		return err
+	}
 
 	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
 	if err != nil {
