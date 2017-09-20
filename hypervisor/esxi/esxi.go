@@ -438,6 +438,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
 	return esxiRunCmd(
+		[]string{"datastore.rm", fmt.Sprintf("-ds=%s", settings.EsxiVmDatastore), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"vm.destroy", d.vmPath()},
 	)
 }
