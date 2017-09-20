@@ -183,6 +183,7 @@ cp /opt/axsh/openvdc/share/qemu-ifdown /etc/
 %package executor-esxi
 Summary: OpenVDC executor (Esxi driver)
 Requires: openvdc-executor
+Requires: dosfstools
 
 %description executor-esxi
 Esxi driver configuration package for OpenVDC executor
