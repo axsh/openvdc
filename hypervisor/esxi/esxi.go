@@ -364,6 +364,10 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return err
 	}
 
+	if err := os.Remove(metadriveImgPath); err != nil {
+                return errors.Errorf("Unable to remove metadrive: %s", metadriveImgPath)
+        }
+
 	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
 	if err != nil {
 		return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
