@@ -95,8 +95,9 @@ set_network_interfaces() {
     [[ -n "${nics[@]}" ]] || return
 
     (
-        for(( i=0; i < ${#nics[@]}; i++)) ; do
-            ip_addr="$(get_metadata ${nics[$i]}/ipv4)"
+        i=0
+	for nic in ${nics[*]} ; do
+            ip_addr="$(get_metadata ${nic}/ipv4)"
             [[ $? -eq 0 ]] || continue
 
             cat <<EOF > "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
@@ -106,9 +107,10 @@ IPV6INIT=yes
 ONBOOT=yes
 TYPE=Ethernet
 IPADDR=${ip_addr}
-NETMASk=255.255.255.0
+NETMASK=255.255.255.0
 EOF
             echo "Creating ifcfg-eth${i}"
+            i=$((i+1))
         done
     )
 }
