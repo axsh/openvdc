@@ -311,6 +311,7 @@ func (d *EsxiHypervisorDriver) buildMetadriveBase(metadriveImgPath string) error
 
 	return d.addMetadata(metadriveImgPath, func(machine *EsxiMachine) map[string]interface{} {
 		metadataMap := make(map[string]interface{})
+		metadataMap["hostname"] = d.vmName
 		for idx, nic := range machine.Nics {
 			if nic.Type == "veth" {
 				iface := make(map[string]interface{})
