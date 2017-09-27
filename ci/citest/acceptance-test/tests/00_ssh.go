@@ -14,6 +14,8 @@ const scheduler_ip = "10.0.100.12"
 const executor_null_ip = "10.0.100.13"
 const executor_lxc_ip = "10.0.100.14"
 const executor_lxc_ovs_ip = "10.0.100.15"
+const executor_qemu_ip = "10.0.100.16"
+const executor_qemu_ovs_ip = "10.0.100.17"
 
 func RunSsh(ip string, cmd string) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdout bytes.Buffer

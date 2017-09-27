@@ -310,6 +310,12 @@ func (d *LXCHypervisorDriver) CreateInstance() error {
 		template.Release = lxcTmpl.Release
 		template.Arch = lxcTmpl.Arch
 
+		// LXC only passes the --dist argument to the download template. That template exists to make
+		// unprivileged containers and can be used to download multiple distros. Hence the argument.
+		// https://linuxcontainers.org/lxc/getting-started/#creating-unprivileged-containers-as-a-user
+		//
+		// Since our openvdc template can also be used to download multiple distros, the argument makes sense here too.
+		template.ExtraArgs = append(template.ExtraArgs, fmt.Sprintf("--dist=%s", lxcTmpl.Distro))
 		template.ExtraArgs = append(template.ExtraArgs, fmt.Sprintf("--img-path=%s", settings.ImageServerUri))
 		template.ExtraArgs = append(template.ExtraArgs, fmt.Sprintf("--cache-path=%s", settings.CachePath))
 	default:

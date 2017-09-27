@@ -280,22 +280,16 @@ func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers 
 		return errors.WithStack(err)
 	}
 
-	if len(queued) == 0 {
-		log.Infoln("Skip offers since no allocation requests.")
-		for _, offer := range offers {
-			_, err := driver.DeclineOffer(offer.Id, &mesos.Filters{RefuseSeconds: proto.Float64(5)})
-			if err != nil {
-				log.WithError(err).Error("Failed to response DeclineOffer.")
-			}
-		}
-		return nil
-	}
-
 	tasks := []*mesos.TaskInfo{}
 	acceptIDs := []*mesos.OfferID{}
 
 	for _, i := range queued {
+		if i.SlaveId != "" {
+			log.WithField("instance_id", i.GetId()).Warnf("Skipping the instance with QUEUED but SlaveID is assigned: %s", i.SlaveId)
+			continue
+		}
 		found := findMatching(i, offers, ctx)
+
 		for i, _ := range acceptIDs {
 			if acceptIDs[i] == found.Id {
 				found = nil
@@ -314,6 +308,7 @@ func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers 
 
 		task := sched.NewTask(i, found.SlaveId, ctx, sched.NewExecutor(hypervisorName))
 		tasks = append(tasks, task)
+
 		acceptIDs = append(acceptIDs, found.Id)
 
 		i.SlaveId = found.SlaveId.GetValue()
@@ -413,6 +408,14 @@ func findMatching(i *model.Instance, offers []*mesos.Offer, ctx context.Context)
 			}
 		case *model.Template_Null:
 			if agentAttrs.Hypervisor == "null" {
+				return offer
+			}
+		case *model.Template_Qemu:
+			if agentAttrs.Hypervisor == "qemu" {
+				qemu := i.GetTemplate().GetQemu()
+				if !model.IsMatchingNodeGroups(qemu, agentAttrs.NodeGroups) {
+					return nil
+				}
 				return offer
 			}
 		default:

@@ -155,6 +155,17 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return err
 	}
 
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		return errors.Wrap(err, "Failed model.Instance.FindByID")
+	}
+	// Assert the race for scheduling slave and instance.
+	if inst.GetSlaveId() != taskInfo.GetSlaveId().GetValue() {
+		log.Fatalf("BUGON: Found mismatch for SlaveID assignment between instance and Mesos message: instance expects %s but Mesos says %s",
+			inst.GetSlaveId(),
+			taskInfo.GetSlaveId().String())
+	}
+
 	// Apply FAILED terminal state in case of error.
 	finState := model.InstanceState_FAILED
 	var lastErr error
@@ -175,7 +186,8 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 		return lastErr
 	}
 
-	inst, lastErr := model.Instances(ctx).FindByID(instanceID)
+	// Reload instance object from datastore.x
+	inst, lastErr = model.Instances(ctx).FindByID(instanceID)
 	if lastErr != nil {
 		log.WithError(lastErr).Error("Failed Instances.FindyByID")
 		return lastErr
@@ -351,13 +363,14 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 		return lastErr
 	}
 
-	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
-	if lastErr != nil {
+	// .LastState must be set to REBOOTING at the API server.
+	if inst.GetLastState().GetState() != model.InstanceState_REBOOTING {
+		lastErr = errors.Errorf("Invalid instance state for reboot operation: %s", inst.GetLastState().GetState())
 		return lastErr
 	}
 
-	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_REBOOTING); lastErr != nil {
-		log.WithError(lastErr).WithField("state", model.InstanceState_REBOOTING).Error("Failed Instances.UpdateState")
+	hv, lastErr := exec.hypervisorProvider.CreateDriver(inst, inst.ResourceTemplate())
+	if lastErr != nil {
 		return lastErr
 	}
 

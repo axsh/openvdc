@@ -1,19 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log/syslog"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/mholt/archiver"
+	logrus_syslog "github.com/Sirupsen/logrus/hooks/syslog"
 	"github.com/pkg/errors"
 )
 
@@ -26,6 +29,14 @@ var imgPath string
 var dist string
 var release string
 var arch string
+
+func init() {
+	hook, err := logrus_syslog.NewSyslogHook("", "", syslog.LOG_DEBUG, "lxc-openvdc")
+	if err != nil {
+		log.Fatal("Failed to initialize syslog hook: ", err)
+	}
+	log.AddHook(hook)
+}
 
 func main() {
 
@@ -117,8 +128,8 @@ func PrepareCache() error {
 
 func GenerateConfig() error {
 	if lxcPath == "" {
-                return errors.New("lxcPath not set.")
-        }
+		return errors.New("lxcPath not set.")
+	}
 
 	lxcCfgPath := filepath.Join(lxcPath, "config")
 	cfgPath := filepath.Join(containerPath, "config")
@@ -169,7 +180,7 @@ func GetFile(fileName string) error {
 	}
 
 	if res.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("Http status code: %s", res.StatusCode))
+		return errors.Errorf("Url: %s Http status code: %s", downloadUrl, res.StatusCode)
 	}
 
 	defer res.Body.Close()
@@ -205,13 +216,20 @@ func CreateCacheFolder(folderPath string) error {
 }
 
 func DecompressXz(fileName string, outputPath string) error {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 
 	filePath := filepath.Join(cacheFolderPath, fileName)
 
-	err := archiver.TarXZ.Open(filePath, outputPath)
+	cmd := exec.Command("tar", "-xf", filePath, "-C", outputPath)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
 
 	if err != nil {
-		return errors.Wrapf(err, "Failed unpacking file: %s.", filePath)
+		return errors.Wrapf(err, "Failed unpacking file: %s.\nStdout: %s\nStderr: %s\n",
+			filePath, stdout.String(), stderr.String())
 	}
 
 	return nil

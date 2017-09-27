@@ -77,7 +77,7 @@ func determineGHRef() string {
 	}
 	SCHEMA_LAST_COMMIT, exists := os.LookupEnv("SCHEMA_LAST_COMMIT")
 	if !exists {
-		SCHEMA_LAST_COMMIT = cmd("git", "log", "-n", "1", "--pretty=format:%H", "--", "schema/", "registry/schema.bindata.go")
+		SCHEMA_LAST_COMMIT = cmd("git", "log", "-n", "1", "--pretty=format:%H", "--", "schema/", "registry/schema.bindata.go", "templates/")
 	}
 
 	found := false
@@ -195,6 +195,10 @@ Environment Variables:
 
 	//Build lxc-template
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.lxcPath=/usr/share/lxc/'", "-v", "-o", "./lxc-openvdc", "./cmd/lxc-openvdc/")
+
+	//Build qemu-ifup/qemi-ifdown
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "-o", "./qemu-ifup", "./cmd/qemu-ifup")
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "-o", "./qemu-ifdown", "./cmd/qemu-ifdown")
 
 	// Build Acceptance Test binary
 	os.Chdir("./ci/citest/acceptance-test/tests")

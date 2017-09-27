@@ -1,12 +1,23 @@
 #!/bin/bash
 
-for img in "${IMAGES[@]}" ; do
-    item=$(grep "$img" <<< "$imgIndex")
-    IFS=';' read -a parts <<< "$item"
-    IFS=';' eval 'folders=($item)'
-    imgRemoteDir="${parts[-1]}"
+: "${image_type:?"should be set"}"
 
-    prepare_container_image "${img}" "${folders[0]}/${folders[1]}/${folders[2]}" "$imgRemoteDir"
-    add_container_image "${img}" "${folders[0]}/${folders[1]}/${folders[2]}"
+case "${image_type}" in
+    qemu) # stores directly in cache until we can use compressed files
+        IMAGES=( "${QEMU_IMAGES[@]}" )
+        LOCAL_STORAGE_PATH="${NODE_DIR}/guestroot/var/cache/qemu"
+        ;;
+    lxc) # stores on local image server
+        IMAGES=( "${LXC_IMAGES[@]}" )
+        LOCAL_STORAGE_PATH="${NODE_DIR}/guestroot/var/www/html/images"
+        ;;
+    *)
+        echo "Unknown image type: ${image_type}."
+		exit 255
+        ;;
+esac
+
+for img in "${IMAGES[@]}" ; do
+   cache_${image_type}_image  "${img}"
 done
 

@@ -14,7 +14,8 @@ License: LGPLv3
 BuildArch: x86_64
 
 BuildRequires: rpmdevtools lxc-devel git
-BuildRequires: golang >= 1.7
+# CentOS 7.3 does not have official Go 1.8 package.
+#BuildRequires: golang >= 1.8
 
 Requires: mesosphere-zookeeper mesos
 Requires: bridge-utils
@@ -53,6 +54,8 @@ mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/scripts
 mkdir -p "$RPM_BUILD_ROOT"/etc/openvdc/ssh
 mkdir -p "$RPM_BUILD_ROOT"/usr/bin
 ln -sf /opt/axsh/openvdc/bin/openvdc  "$RPM_BUILD_ROOT"/usr/bin
+mkdir -p "$RPM_BUILD_ROOT"/usr/sbin
+ln -sf /opt/axsh/openvdc/bin/openvdc-executor  "$RPM_BUILD_ROOT"/usr/sbin
 cp openvdc "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-executor "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
@@ -64,7 +67,9 @@ cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave
 mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/lxc-templates
 cp lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
-install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc
+cp qemu-ifup "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
+cp qemu-ifdown "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
+install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu
 
 %package cli
 Summary: OpenVDC cli
@@ -92,9 +97,13 @@ OpenVDC executor common package.
 %dir /opt/axsh/openvdc/share/mesos-slave
 /opt/axsh/openvdc/share/mesos-slave/attributes.null
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
+/opt/axsh/openvdc/share/mesos-slave/attributes.qemu
 /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
+/opt/axsh/openvdc/share/qemu-ifup
+/opt/axsh/openvdc/share/qemu-ifdown
 %dir /etc/openvdc
 %dir /etc/openvdc/ssh
+/usr/sbin/openvdc-executor
 
 %post executor
 test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa -f /etc/openvdc/ssh/host_rsa_key -b 4096 -C '' -N '' >&/dev/null;
@@ -126,6 +135,8 @@ Requires: lxc
 # lxc-templates does not resolve its sub dependencies
 Requires: lxc-templates wget gpg sed gawk coreutils rsync debootstrap dropbear
 Requires: iproute
+# Needed for unpacking local images
+Requires: tar xz
 
 %description executor-lxc
 LXC driver configuration package for OpenVDC executor.
@@ -145,6 +156,27 @@ fi
 
 cp /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc /usr/share/lxc/templates/lxc-openvdc
 
+%package executor-qemu
+Summary: OpenVDC executor (Qemu driver)
+Requires: openvdc-executor
+Requires: qemu-system-x86
+Requires: dosfstools
+
+%description executor-qemu
+Qemu driver configuration package for OpenVDC executor
+
+%files executor-qemu
+%config(noreplace) /etc/openvdc/executor.toml
+
+%post executor-qemu
+if [ -d /etc/mesos-slave ]; then
+  if [ ! -f /etc/mesos-slave/attributes ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.qemu /etc/mesos-slave/attributes
+  fi
+fi
+
+cp /opt/axsh/openvdc/share/qemu-ifup /etc/
+cp /opt/axsh/openvdc/share/qemu-ifdown /etc/
 
 %package scheduler
 Summary: OpenVDC scheduler
