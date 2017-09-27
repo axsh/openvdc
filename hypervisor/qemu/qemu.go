@@ -317,6 +317,11 @@ func (d *QEMUHypervisorDriver) buildMetadriveBase(metadrive *Image) error {
 	})
 }
 
+func (d *QEMUHypervisorDriver) Recover(instanceState model.InstanceState) error {
+	//Todo: handle recovery
+	return nil
+}
+
 func (d *QEMUHypervisorDriver) CreateInstance() error {
 	d.log().Infoln("Create instance...")
 	instanceDir := filepath.Join(settings.InstancePath, d.Base.Instance.GetId())
