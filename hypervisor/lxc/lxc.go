@@ -265,27 +265,130 @@ var lxcArch = map[string]string{
 func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
 
 	switch instanceState.State {
-	case model.InstanceState_RUNNING:
-		if d.container.State() == lxc.STOPPED {
-			err := d.StartInstance()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to start instance:  %s", d.container.Name())
-			}
-		}
 
-	case model.InstanceState_STOPPED:
-		if d.container.State() == lxc.STOPPED {
-			err := d.StartInstance()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to start instance:  %s", d.container.Name())
+		case model.InstanceState_STARTING:
+
+			switch d.container.State() {
+
+				case lxc.STARTING:
+					//Do nothing.
+
+				case lxc.RUNNING:
+					//Do nothing.
+
+				case lxc.STOPPED:
+					err := d.StartInstance()
+					if err != nil {
+						return errors.Wrapf(err, "Recovery failed - Failed to start instance: %s", d.container.Name())
+					}
+
+				default:
+					return errors.New(fmt.Sprintf("Recovery failed - unexpected state: %s %s", d.container.Name(), d.container.State()))
+
 			}
-			err = d.StopInstance()
-			if err != nil {
-				return errors.Wrapf(err, "Failed to stop instance:  %s", d.container.Name())
+	
+		case model.InstanceState_RUNNING:
+
+			switch d.container.State() {
+
+                                case lxc.RUNNING:
+					//Do nothing.
+
+                                case lxc.STOPPED:
+					err := d.StartInstance()
+					if err != nil {
+						return errors.Wrapf(err, "Recovery failed - Failed to start instance: %s", d.container.Name())
+					}
+
+                                default:
+					return errors.New(fmt.Sprintf("Recovery failed - unexpected state: %s %s", d.container.Name(), d.container.State()))
+
+                        }
+
+		case model.InstanceState_STOPPING:
+
+			switch d.container.State() {
+
+                                case lxc.RUNNING:
+					err := d.StopInstance()
+					if err != nil {
+						return errors.Wrapf(err, "Recovery failed - Failed to start instance: %s", d.container.Name())
+					}
+
+                                case lxc.STOPPING:
+					//Do nothing.
+				
+				case lxc.STOPPED:
+					//Do nothing.
+
+                                default:
+					return errors.New(fmt.Sprintf("Recovery failed - unexpected state: %s %s", d.container.Name(), d.container.State()))
+
+                        }
+
+		case model.InstanceState_STOPPED:
+			
+			switch d.container.State() {
+				
+				case lxc.STOPPED:
+					err := d.StartInstance()
+                                	if err != nil {
+                                        	return errors.Wrapf(err, "Recovery failed - Failed to start instance:  %s", d.container.Name())
+                                	}
+                                	err = d.StopInstance()
+                                	if err != nil {
+                                        	return errors.Wrapf(err, "Recovery failed - Failed to stop instance:  %s", d.container.Name())
+                                	}
+
+				default:
+					return errors.New(fmt.Sprintf("Recovery failed - unexpected state: %s %s", d.container.Name(), d.container.State()))
 			}
+
+		case model.InstanceState_REBOOTING:
+
+			switch d.container.State() {
+
+                                case lxc.STARTING:
+					//Do nothing.
+
+                                case lxc.RUNNING:
+					err := d.RebootInstance()
+					if err != nil {
+						return errors.Wrapf(err, "Recovery failed - Failed to reboot instance: %s", d.container.Name())
+					}
+
+                                case lxc.STOPPED:
+					err := d.StartInstance()
+					if err != nil {
+						return errors.Wrapf(err, "Recovery failed - Failed to start instance: %s", d.container.Name())
+					}
+
+                                default:
+					return errors.New(fmt.Sprintf("Recovery failed - unexpected state: %s %s", d.container.Name(), d.container.State()))
+                        }
+
+		case model.InstanceState_SHUTTINGDOWN:
+
+			switch d.container.State() {
+
+                                case lxc.RUNNING:
+					err := d.StopInstance()
+					if err != nil {
+						return errors.Wrapf(err, "Recovery failed - Failed to stop instance: %s", d.container.Name())
+					}
+
+                                case lxc.STOPPING:
+					//Do nothing.
+
+                                case lxc.STOPPED:
+					//Do nothing.
+
+                                default:
+					return errors.New(fmt.Sprintf("Recovery failed - unexpected state: %s %s", d.container.Name(), d.container.State()))
+                        }
+
+		default:
 		}
-	default:
-	}
 
 	return nil
 }
