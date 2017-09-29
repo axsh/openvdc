@@ -410,8 +410,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	// TODO: don't hardcode the base image
-	// NOTE: serial port devices starts from 9000 on the current driver, network configurations should possibly be
-	// handled by openvdc-init
+	// NOTE: serial port devices starts from 9000 on the current driver.
 
 	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 	err = esxiRunCmd(
@@ -421,19 +420,11 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		[]string{"device.floppy.insert", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"device.serial.add", d.vmPath()},
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
-		[]string{"vm.power", "-on=true", d.vmPath()},
-		[]string{"vm.ip", "-wait=2m", d.vmPath()},
 	)
 	if err != nil {
 		return err
 	}
 
-	err = esxiRunCmd(
-		[]string{"vm.power", "-off=true", d.vmPath()},
-	)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
