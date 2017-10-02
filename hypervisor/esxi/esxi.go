@@ -9,12 +9,12 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/hypervisor/util"
 	"github.com/axsh/openvdc/model"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -249,25 +249,6 @@ func (d *EsxiHypervisorDriver) vmPath() string {
 	return join(0, "-vm.path=[", settings.EsxiVmDatastore, "]", storageImg(d.vmName))
 }
 
-func renderData(keyPath string, key string, value interface{}) error {
-	switch value.(type) {
-	case string:
-		ioutil.WriteFile(filepath.Join(keyPath, key), []byte(value.(string)), 0644)
-		return nil
-	default:
-		kp := filepath.Join(keyPath, key)
-		if err := os.MkdirAll(kp, os.ModePerm); err != nil {
-			return errors.Errorf("Unable to create folder: %s", kp)
-		}
-		for key, value := range value.(map[string]interface{}) {
-			if err := renderData(kp, key, value); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 type Image struct {
 	Path      string
 	Format    string
@@ -275,54 +256,23 @@ type Image struct {
 	baseImage string
 }
 
-func (d *EsxiHypervisorDriver) addMetadata(metadriveImgPath string, datamap func(machine *EsxiMachine) map[string]interface{}) error {
-
-	mountPath := "/media/metadrive/"
-
-	if err := os.MkdirAll(mountPath, os.ModePerm); err != nil {
-		return errors.Errorf("Unable to create folder: %s", mountPath)
-	}
-
-	if err := runCmd("mount", []string{metadriveImgPath, mountPath}); err != nil {
-		return errors.Errorf("Error: %s", err)
-	}
-
-	for key, value := range datamap(d.machine) {
-		// ioutil.WriteFile(filepath.Join(mountPath, key), []byte(value), 0644)
-		if err := renderData(mountPath, key, value); err != nil {
-			return err
-		}
-	}
-	if err := runCmd("umount", []string{mountPath}); err != nil {
-		return errors.Errorf("Error: %s", err)
-	}
-	if err := os.RemoveAll(mountPath); err != nil {
-		return errors.Errorf("Unable remove path: %s", mountPath)
-	}
-	return nil
+func (d *EsxiHypervisorDriver) MetadataDrivePath() string {
+	return "/tmp/metadrive.img"
 }
 
-func (d *EsxiHypervisorDriver) buildMetadriveBase(metadriveImgPath string) error {
-	d.log().Infoln("Preparing metadrive image...")
-
-	if err := runCmd("mkfs.msdos", []string{"-C", metadriveImgPath, "1440"}); err != nil {
-		return errors.Errorf("Error: %s", err)
-	}
-
-	return d.addMetadata(metadriveImgPath, func(machine *EsxiMachine) map[string]interface{} {
-		metadataMap := make(map[string]interface{})
-		metadataMap["hostname"] = d.vmName
-		for idx, nic := range machine.Nics {
-			if nic.Type == "veth" {
-				iface := make(map[string]interface{})
-				iface["ifname"] = nic.IfName
-				iface["ipv4"] = nic.Ipv4Addr
-				iface["mac"] = nic.MacAddr
-				metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
-			}
+func (d * EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
+	metadataMap := make(map[string]interface{})
+	metadataMap["hostname"] = d.vmName
+	for idx, nic := range d.machine.Nics {
+		if nic.Type == "veth" {
+			iface := make(map[string]interface{})
+			iface["ifname"] = nic.IfName
+			iface["ipv4"] = nic.Ipv4Addr
+			iface["mac"] = nic.MacAddr
+			metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 		}
-		return metadataMap
-	})
+	}
+	return metadataMap
 }
 
 func (m *EsxiMachine) AddNICs(nics []Nic) {
@@ -346,9 +296,12 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	d.machine.AddNICs(nics)
 
-	metadriveImgPath := "/tmp/metadrive.img"
-
-	d.buildMetadriveBase(metadriveImgPath)
+	if err := util.CreateMetadataDisk(d); err != nil {
+		return err
+	}
+	if err := util.WriteMetadata(d); err != nil {
+		return err
+	}
 
 	// Create new folder
 	err := esxiRunCmd(
@@ -359,14 +312,14 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	err = esxiRunCmd(
-		[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), metadriveImgPath, fmt.Sprintf("%s/metadrive.img", d.vmName)},
+		[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 	)
 	if err != nil {
 		return err
 	}
 
-	if err := os.Remove(metadriveImgPath); err != nil {
-                return errors.Errorf("Unable to remove metadrive: %s", metadriveImgPath)
+	if err := os.Remove(d.MetadataDrivePath()); err != nil {
+                return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
         }
 
 	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
