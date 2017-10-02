@@ -71,9 +71,16 @@ func WriteMetadata(md MetadataDrive) error {
 func CreateMetadataDisk(md MetadataDrive) error {
 	log.Infoln("Preparing metadrive image...")
 
-	if err := runCmd("mkfs.msdos", []string{"-s", "1", md.MetadataDrivePath()}); err != nil {
-		return errors.Errorf("Error: %s", err)
+	if _, err := os.Stat(md.MetadataDrivePath()); err != nil {
+		if err := runCmd("mkfs.msdos", []string{"-C", "-s", "1", md.MetadataDrivePath(), "1440"}); err != nil {
+			return errors.Errorf("Error: %s", err)
+		}
+	} else {
+		if err := runCmd("mkfs.msdos", []string{"-s", "1", md.MetadataDrivePath()}); err != nil {
+			return errors.Errorf("Error: %s", err)
+		}
 	}
+
 	return nil
 }
 
