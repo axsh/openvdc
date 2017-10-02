@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	// log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
@@ -69,7 +69,7 @@ func WriteMetadata(md MetadataDrive) error {
 }
 
 func CreateMetadataDisk(md MetadataDrive) error {
-	// d.log().Infoln("Preparing metadrive image...")
+	log.Infoln("Preparing metadrive image...")
 
 	if err := runCmd("mkfs.msdos", []string{"-s", "1", md.MetadataDrivePath()}); err != nil {
 		return errors.Errorf("Error: %s", err)
