@@ -29,8 +29,9 @@ func TestCrashRecovery(t *testing.T) {
 	t.Log("Waiting for instance "+instance_id+" to recover...")
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
-	t.Log("Attempting to destroy instance"+instance_id+"...")
-	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	time.Sleep(10 * time.Second)
+	t.Log("Attempting to destroy instance "+instance_id+"...")
+	_, _ = RunCmdAndReportFail(t, "openvdc", "destroy", instance_id)
 
 	t.Log("Waiting for instance "+instance_id+" to become TERMINATED...")
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
