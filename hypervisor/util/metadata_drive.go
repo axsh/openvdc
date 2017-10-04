@@ -56,7 +56,7 @@ func MountMetadataDisk(md MetadataDrive) error {
 	return nil
 }
 
-func UmountMetdataDisk(md MetadataDrive) error {
+func UmountMetadataDisk(md MetadataDrive) error {
 	mountPath := filepath.Join(filepath.Dir(md.MetadataDrivePath()), "meta-data")
 
 	if err := runCmd("umount", []string{mountPath}); err != nil {
