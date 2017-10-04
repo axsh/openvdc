@@ -44,7 +44,7 @@ func renderData(keyPath string, key string, value interface{}) error {
 	return nil
 }
 
-func WriteMetadata(md MetadataDrive) error {
+func MountMetadataDisk(md MetadataDrive) error {
 	mountPath := filepath.Join(filepath.Dir(md.MetadataDrivePath()), "meta-data")
 
 	if err := os.MkdirAll(mountPath, os.ModePerm); err != nil {
@@ -53,16 +53,26 @@ func WriteMetadata(md MetadataDrive) error {
 	if err := runCmd("mount", []string{md.MetadataDrivePath(), mountPath}); err != nil {
 		return errors.Wrap(err, "failed to mount metadrive image")
 	}
-	for key, value := range md.MetadataDriveDatamap() {
-		if err := renderData(mountPath, key, value); err != nil {
-			return err
-		}
-	}
+	return nil
+}
+
+func UmountMetdataDisk(md MetadataDrive) error {
+	mountPath := filepath.Join(filepath.Dir(md.MetadataDrivePath()), "meta-data")
+
 	if err := runCmd("umount", []string{mountPath}); err != nil {
 		return errors.Wrap(err, "failed to umount metadrive image")
 	}
 	if err := os.RemoveAll(mountPath); err != nil {
 		return errors.Wrapf(err, "falied to remove folder: %s", mountPath)
+	}
+	return nil
+}
+
+func WriteMetadata(md MetadataDrive) error {
+	for key, value := range md.MetadataDriveDatamap() {
+		if err := renderData(filepath.Join(filepath.Dir(md.MetadataDrivePath()), "meta-data"), key, value); err != nil {
+			return err
+		}
 	}
 	return nil
 }
