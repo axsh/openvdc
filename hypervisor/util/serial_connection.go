@@ -28,7 +28,11 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 			default:
 				n, err := param.Stdin.Read(b)
 				if err != nil {
-					errc <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
+					if err == io.EOF {
+						errc <- errors.Wrap(nil, "\nConsole exited by EOF\n\n")
+					} else {
+						errc <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
+					}
 				}
 
 				if bytes.Contains(b[0:n], []byte{0x11}) {
