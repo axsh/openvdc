@@ -296,7 +296,13 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 		if err := util.CreateMetadataDisk(d); err != nil {
 			return err
 		}
+		if err := util.MountMetadataDisk(d); err != nil {
+			return err
+		}
 		if err := util.WriteMetadata(d); err != nil {
+			return err
+		}
+		if err := util.UmountMetadataDisk(d); err != nil {
 			return err
 		}
 	}
