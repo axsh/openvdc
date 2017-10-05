@@ -5,6 +5,8 @@ import (
 	"time"
 	"sync"
 	"bytes"
+	"os"
+	"io"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -69,6 +71,12 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 				// exit on ctrl + q
 				if bytes.Contains(b[0:n], []byte{0x11}) {
 					errc <- nil
+				}
+
+				if synchable, ok := param.Stdout.(*os.File); ok {
+					if err := synchable.Sync(); err != nil {
+						log.Warn("Failed %v to flush %s", param.Stdout, err)
+					}
 				}
 				_, err = param.Stdout.Write(b[0:n])
 				if err != nil {
