@@ -96,14 +96,14 @@ func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 	go func () {
 		rOut, wOut, err := os.Pipe()
 		if err != nil {
-			log.Warn("failed os.Pipe for stdout")
+			log.Warn(err, "failed os.Pipe for stdout")
 		}
 		stdout := os.Stdout // save original stdout
 		os.Stdout = wOut
 
 		rErr, wErr, err := os.Pipe()
 		if err != nil {
-			log.Warn("failed os.Pipe for stderr")
+			log.Warn(err, "failed os.Pipe for stderr")
 		}
 		stderr := os.Stderr // save original stderr
 		os.Stderr = wErr
