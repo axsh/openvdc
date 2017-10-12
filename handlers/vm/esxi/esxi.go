@@ -31,13 +31,13 @@ func (h *EsxiHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		EsxiImage EsxiImage `json:"esxi_image,omitempty"`
 	}
 	if err := json.Unmarshal(in, &json_template); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed json.Unmarshal EsxiImage")
 	}
 
 	if err := json.Unmarshal(in, tmpl); err != nil {
 		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.EsxiTemplate")
 	}
-	
+
 	if tmpl.GetEsxiImage() == nil {
 		return nil, handlers.ErrInvalidTemplate(h, "esxi_image must exist")
 	}
@@ -79,7 +79,7 @@ func (h *EsxiHandler) MergeArgs(dst model.ResourceTemplate, args []string) error
 	flags.IntVar(&vcpu, "vcpu", int(mdst.MinVcpu), "")
 	flags.IntVar(&mem, "memory_gb", int(mdst.MinMemoryGb), "")
 	if err := flags.Parse(args); err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse %v", args)
 	}
 	mdst.Vcpu = int32(vcpu)
 	mdst.MemoryGb = int32(mem)
@@ -99,7 +99,7 @@ func (h *EsxiHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) 
 	if err := json.Unmarshal(in, minput); err != nil {
 		return errors.WithStack(err)
 	}
-	
+
 	minput.EsxiImage = nil
 	proto.Merge(mdst, minput)
 	return nil
