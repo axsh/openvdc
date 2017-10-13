@@ -52,7 +52,13 @@ func TestLXCCmdConsole_ShowOption(t *testing.T) {
 func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	// Make key pair by ssh-keygen
 	private_key_path := "./testRsa"
+	private_key_path2 := "./testRsa2"
 	_, _, err := RunCmd("ssh-keygen", "-t", "rsa", "-f", private_key_path, "-C", "", "-N", "")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	_, _, err = RunCmd("ssh-keygen", "-t", "rsa", "-f", private_key_path2, "-C", "", "-N", "")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -69,6 +75,7 @@ func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 	runConsoleCmdWithPrivatekey(instance_id, private_key_path, t)
+	runConsoleCmdWithPrivatekey(instance_id, private_key_path2, t) // This can not be authenticated.
 	//vrunConsoleCmdPiped(instance_id, t)
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
