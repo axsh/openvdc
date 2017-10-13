@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+
+package model;
+
+option go_package = "github.com/axsh/openvdc/model";
+
+message Resource {
+  int64 total = 1 [json_name="total"];
+  int64 available = 2 [json_name="available"];
+  double used_percent = 3 [json_name="used_percent"];
+}
+
+message LoadAvg {
+  float load1 = 1 [json_name="load1"];
+  float load5 = 2 [json_name="load5"];
+  float load15 = 3 [json_name="load15"];
+}
+
+message ComputingResources {
+  Resource cpu = 1 [json_name="cpu"];
+  Resource memory = 2 [json_name="memory"];
+  repeated Resource storage = 3 [json_name="disk"];
+  LoadAvg load = 4 [json_name="load"];
+}

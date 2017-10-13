@@ -8,7 +8,7 @@ import (
 )
 
 // TODO: move cluster.proto
-//go:generate protoc -I../proto -I${GOPATH}/src --go_out=${GOPATH}/src ../proto/model.proto ../proto/cluster.proto
+//go:generate protoc -I../proto -I${GOPATH}/src --go_out=${GOPATH}/src ../proto/model.proto ../proto/cluster.proto ../proto/resource.proto
 
 type base struct {
 	ctx context.Context
