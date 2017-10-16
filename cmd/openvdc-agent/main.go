@@ -4,79 +4,44 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"strings"
 
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/resources"
 )
 
-type ResourceCollector interface {
-	GetCpu()     (*model.Resource, error)
-	GetMem()     (*model.Resource, error)
-	GetDisk()    ([]*model.Resource, error)
-	GetLoadAvg() (*model.LoadAvg, error)
-}
-
 type VDCAgent struct {
-	collector ResourceCollector
+	collector resources.ResourceCollector
 	resources *model.ComputingResources
 	AgentId   string
 }
 
 var (
 	updateInteval time.Duration = 5
-	collectors = make(map[string]collectorType)
-	// to be received from configuration file or as flag
-	tmpCollectorType = "esxi"
+	// TODO: receive from configuration file or as flag
+	tmpCollectorType = "local"
 )
 
-type collectorType func () (ResourceCollector, error)
-
-func newCollector(name string) (ResourceCollector, error) {
-	collector, exists := collectors[name]
-	if !exists {
-		knownCollecotrs := make([]string, len(collectors))
-		for c, _ := range collectors {
-			knownCollecotrs = append(knownCollecotrs, c)
-		}
-		return nil, fmt.Errorf("Failed getCollector() Must be one of: %s",
-			strings.Join(knownCollecotrs, ", "))
-	}
-
-	return collector()
-}
-
-func registerCollector(name string, collectorType collectorType) error {
-	if collectorType == nil {
-		return fmt.Errorf("Unknown resource collector: %s", name)
-	}
-	if _, exists := collectors[name]; exists {
-		return fmt.Errorf("Duplicate resource collector registration: %s", name)
-	}
-	collectors[name] = collectorType
-	return nil
-}
-
-func init() {
-	registerCollector("esxi", NewEsxiResourceCollector)
-	registerCollector("local", NewLocalResourceCollector)
-}
-
 func main() {
-	c, err := newCollector(tmpCollectorType);
-	if err != nil {
+	var agent *VDCAgent
+
+	if c, err := resources.NewCollector(tmpCollectorType);err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
-	}
-
-	agent := VDCAgent{
-		collector: c,
-		resources: &model.ComputingResources{},
+	} else {
+		agent = newVDCAgent(c)
 	}
 	agent.GetResources()
 
 	if err := agent.Run(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
+	}
+}
+
+func newVDCAgent(c resources.ResourceCollector) *VDCAgent {
+	return &VDCAgent{
+		collector: c,
+		resources:  &model.ComputingResources{},
 	}
 }
 

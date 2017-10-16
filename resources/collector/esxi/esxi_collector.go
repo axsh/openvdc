@@ -1,9 +1,10 @@
-package main
+package esxi
 
 import (
 	"fmt"
 
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/resources"
 )
 
 type esxiResourceCollector struct {
@@ -12,11 +13,15 @@ type esxiResourceCollector struct {
 	hostPwd  string
 }
 
+func init() {
+	resources.RegisterCollector("esxi", NewEsxiResourceCollector)
+}
+
 func initConfig() {
 	fmt.Println("init esxi config")
 }
 
-func NewEsxiResourceCollector() (ResourceCollector, error) {
+func NewEsxiResourceCollector() (resources.ResourceCollector, error) {
 	initConfig()
 	return &esxiResourceCollector{}, nil
 }

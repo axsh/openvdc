@@ -1,7 +1,8 @@
-package main
+package local
 
 import (
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/resources"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/disk"
@@ -10,7 +11,11 @@ import (
 
 type localResourceCollector struct {}
 
-func NewLocalResourceCollector() (ResourceCollector, error) {
+func init() {
+	resources.RegisterCollector("local", NewLocalResourceCollector)
+}
+
+func NewLocalResourceCollector() (resources.ResourceCollector, error) {
 	return &localResourceCollector{}, nil
 }
 
