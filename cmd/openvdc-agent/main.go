@@ -24,7 +24,7 @@ var (
 func main() {
 	var agent *VDCAgent
 
-	if c, err := resources.NewCollector(tmpCollectorType);err != nil {
+	if c, err := resources.NewCollector(tmpCollectorType); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
 	} else {
@@ -41,7 +41,7 @@ func main() {
 func newVDCAgent(c resources.ResourceCollector) *VDCAgent {
 	return &VDCAgent{
 		collector: c,
-		resources:  &model.ComputingResources{},
+		resources: &model.ComputingResources{},
 	}
 }
 

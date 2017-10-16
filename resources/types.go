@@ -8,13 +8,13 @@ import (
 )
 
 type ResourceCollector interface {
-	GetCpu()     (*model.Resource, error)
-	GetMem()     (*model.Resource, error)
-	GetDisk()    ([]*model.Resource, error)
+	GetCpu() (*model.Resource, error)
+	GetMem() (*model.Resource, error)
+	GetDisk() ([]*model.Resource, error)
 	GetLoadAvg() (*model.LoadAvg, error)
 }
 
-type collectorType func () (ResourceCollector, error)
+type collectorType func() (ResourceCollector, error)
 
 var (
 	collectors = make(map[string]collectorType)
@@ -44,4 +44,3 @@ func RegisterCollector(name string, collectorType collectorType) error {
 	collectors[name] = collectorType
 	return nil
 }
-

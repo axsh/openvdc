@@ -30,7 +30,7 @@ func (rm *esxiResourceCollector) GetCpu() (*model.Resource, error) {
 	return &model.Resource{}, nil
 }
 
-func (rm *esxiResourceCollector) GetMem() (*model.Resource,error) {
+func (rm *esxiResourceCollector) GetMem() (*model.Resource, error) {
 	return &model.Resource{}, nil
 }
 

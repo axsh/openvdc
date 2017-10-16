@@ -4,12 +4,12 @@ import (
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/resources"
 	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/mem"
 )
 
-type localResourceCollector struct {}
+type localResourceCollector struct{}
 
 func init() {
 	resources.RegisterCollector("local", NewLocalResourceCollector)
@@ -20,17 +20,17 @@ func NewLocalResourceCollector() (resources.ResourceCollector, error) {
 }
 
 func (rc *localResourceCollector) GetCpu() (*model.Resource, error) {
-	cpu,_  := cpu.Info()
+	cpu, _ := cpu.Info()
 	return &model.Resource{
 		Total: int64(len(cpu)),
-	},nil
+	}, nil
 }
 
-func (rc *localResourceCollector) GetMem() (*model.Resource,error) {
+func (rc *localResourceCollector) GetMem() (*model.Resource, error) {
 	mem, _ := mem.VirtualMemory()
 	return &model.Resource{
-		Total:  int64(mem.Total),
-		Available: int64(mem.Available),
+		Total:       int64(mem.Total),
+		Available:   int64(mem.Available),
 		UsedPercent: mem.UsedPercent,
 	}, nil
 }
@@ -42,8 +42,8 @@ func (rc *localResourceCollector) GetDisk() ([]*model.Resource, error) {
 	for _, part := range dp {
 		d, _ := disk.Usage(part.Mountpoint)
 		disks = append(disks, &model.Resource{
-			Total: int64(d.Total),
-			Available: int64(d.Free),
+			Total:       int64(d.Total),
+			Available:   int64(d.Free),
 			UsedPercent: d.UsedPercent,
 		})
 	}
@@ -54,8 +54,8 @@ func (rc *localResourceCollector) GetDisk() ([]*model.Resource, error) {
 func (rc *localResourceCollector) GetLoadAvg() (*model.LoadAvg, error) {
 	l, _ := load.Avg()
 	return &model.LoadAvg{
-		Load1: float32(l.Load1),
-		Load5: float32(l.Load15),
+		Load1:  float32(l.Load1),
+		Load5:  float32(l.Load15),
 		Load15: float32(l.Load15),
 	}, nil
 }
