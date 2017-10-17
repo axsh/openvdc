@@ -168,6 +168,14 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 					}
 					return offer
 				}
+			case *model.Template_Esxi:
+				if agentAttrs.Hypervisor == "esxi" {
+					esxi := i.GetTemplate().GetEsxi()
+					if !model.IsMatchingNodeGroups(esxi, agentAttrs.NodeGroups) {
+						return nil
+					}
+					return offer
+				}
 			default:
 				log.Warnf("Unknown template type: %T", t)
 			}

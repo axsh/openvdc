@@ -168,7 +168,7 @@ func (r *GithubRegistry) Fetch() error {
 		return err
 	}
 	if ref == nil {
-		return fmt.Errorf("Counld not find the branch: %s", r.Branch)
+		return fmt.Errorf("Could not find the branch: %s", r.Branch)
 	}
 
 	tmpDest, err := ioutil.TempDir("", "gh-images-reg")
