@@ -452,6 +452,12 @@
 			"revisionTime": "2017-10-08T11:41:15Z"
 		},
 		{
+			"checksumSHA1": "AjHUX2jUJ2lET9C0MvtBN6obhRM=",
+			"path": "github.com/shirou/gopsutil/load",
+			"revision": "8f7dc4e5a173502ed79ccadf35925ad15764b177",
+			"revisionTime": "2017-10-08T11:41:15Z"
+		},
+		{
 			"checksumSHA1": "D4RSbimsKy7p2YEkM2T99FbqzPE=",
 			"path": "github.com/shirou/gopsutil/mem",
 			"revision": "8f7dc4e5a173502ed79ccadf35925ad15764b177",
@@ -560,22 +566,28 @@
 			"revisionTime": "2017-07-20T17:00:38Z"
 		},
 		{
+			"checksumSHA1": "CDCNKlvOlAaguPUu8gbe7T4awZo=",
+			"path": "github.com/vmware/govmomi/govc/device/floppy",
+			"revision": "17b8c9ccb7f8c7b015d44c4ea39305c970a7bf31",
+			"revisionTime": "2017-09-05T23:36:42Z"
+		},
+		{
 			"checksumSHA1": "jr2UFXDaZ8Lc3Yx5bEwJ+lSH7AA=",
 			"path": "github.com/vmware/govmomi/govc/device/serial",
 			"revision": "8ab1a62d9c0873b8a25404c52928be2358b78963",
 			"revisionTime": "2017-07-20T17:00:38Z"
 		},
 		{
-                        "checksumSHA1": "CDCNKlvOlAaguPUu8gbe7T4awZo=",
-                        "path": "github.com/vmware/govmomi/govc/device/floppy",
-                        "revision": "17b8c9ccb7f8c7b015d44c4ea39305c970a7bf31",
-                        "revisionTime": "2017-09-05T23:36:42Z"
-                },
-		{
 			"checksumSHA1": "zs7y8Mk31r+oW3/C3A0JSs+AWSw=",
 			"path": "github.com/vmware/govmomi/govc/flags",
 			"revision": "f647f34332cbfd64cbe1181e92e0407a17b7b6ec",
 			"revisionTime": "2017-07-17T19:46:55Z"
+		},
+		{
+			"checksumSHA1": "m6gwRdnN8dtku0rGqoi9qQI9pic=",
+			"path": "github.com/vmware/govmomi/govc/host",
+			"revision": "dee49fa3694c5aff05e4b340b0686772f65c1fe1",
+			"revisionTime": "2017-10-13T23:12:11Z"
 		},
 		{
 			"checksumSHA1": "QncboHM9XrFjfEu50mUMnmS3zIw=",
@@ -612,6 +624,12 @@
 			"path": "github.com/vmware/govmomi/list",
 			"revision": "f647f34332cbfd64cbe1181e92e0407a17b7b6ec",
 			"revisionTime": "2017-07-17T19:46:55Z"
+		},
+		{
+			"checksumSHA1": "3DMyDgBgftGFH1kjIxNVURCilo8=",
+			"path": "github.com/vmware/govmomi/nfc",
+			"revision": "dee49fa3694c5aff05e4b340b0686772f65c1fe1",
+			"revisionTime": "2017-10-13T23:12:11Z"
 		},
 		{
 			"checksumSHA1": "HRFkkb9FGVD2GtZw9UgYxkSR2aM=",
