@@ -31,15 +31,16 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 				n, err := param.Stdin.Read(b)
 				if err != nil {
 					if err == io.EOF {
-						errc <- errors.Wrap(nil, "\nConsole exited by EOF\n\n")
+						log.Info("\nConsole exited by EOF\n\n")
+						errc <- nil
 					} else {
 						errc <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
 					}
 				}
 
 				if bytes.Contains(b[0:n], []byte{0x11}) {
-					log.Info("Received exit from stdin")
-					errc <- errors.Wrap(err, "\nConsole exited by ctrl-q\n\n")
+					log.Info("\nConsole exited by ctrl-q\n\n")
+					errc <- nil
 				}
 				_, err = sc.SerialConn.Write(b[0:n])
 				if err != nil {
