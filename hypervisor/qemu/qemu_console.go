@@ -3,23 +3,23 @@
 package qemu
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/hypervisor/util"
 	"github.com/pkg/errors"
 )
 
 type qemuConsole struct {
+	util.SerialConnection
+
 	qemu       *QEMUHypervisorDriver
 	attached   *os.Process // this should be removed in favor of a channel as below
-	socketConn net.Conn
 	socketPath string
 	conChan    chan error
 	fds        []*os.File
@@ -55,24 +55,25 @@ func (con *qemuConsole) pipeAttach(param *hypervisor.ConsoleParam, args ...strin
 	waitClosed := new(sync.WaitGroup)
 	closeChan := make(chan hypervisor.Closed)
 	con.conChan = make(chan error, 1)
-	if con.socketConn, err = net.Dial("unix", con.socketPath); err != nil {
+
+	if con.SerialConn, err = net.Dial("unix", con.socketPath); err != nil {
 		return nil, errors.Wrap(err, join(" ", "\nFailed to connect to socket", con.socketPath))
 	}
 
 	if len(args) == 0 {
 		b := make([]byte, 8192)
-		if _, err = con.socketConn.Write([]byte("\n")); err != nil {
+		if _, err = con.SerialConn.Write([]byte("\n")); err != nil {
 			return nil, errors.Wrap(err, join(" ", "\nFailed to write to the qemu socket", con.socketPath, "from the buffer\n\n"))
 		}
-		if _, err = con.socketConn.Read(b); err != nil {
+		if _, err = con.SerialConn.Read(b); err != nil {
 			return nil, errors.Wrap(err, join(" ", "\nFailed to read the qemu socket buffer from socket", con.socketPath))
 		}
 		log.Info("Received prompt")
-		if err = con.attachShell(param, waitClosed); err != nil {
+		if err = con.AttachSerialConsole(param, waitClosed, con.conChan); err != nil {
 			return nil, err
 		}
 	} else {
-		defer con.socketConn.Close()
+		defer con.SerialConn.Close()
 		if err = con.execCommand(param, waitClosed, args...); err != nil {
 			return nil, err
 		}
@@ -90,10 +91,10 @@ func (con *qemuConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 	var execResp GuestAgentResponse
 	var statusResp GuestAgentResponse
 
-	if err = NewGuestAgentExecRequest(args, true).SendRequest(con.socketConn, &execResp); err != nil {
+	if err = NewGuestAgentExecRequest(args, true).SendRequest(con.SerialConn, &execResp); err != nil {
 		return err
 	}
-	if err = NewGuestAgentExecStatusRequest(execResp.Return.(*ExecResponse).Pid).SendRequest(con.socketConn, &statusResp); err != nil {
+	if err = NewGuestAgentExecStatusRequest(execResp.Return.(*ExecResponse).Pid).SendRequest(con.SerialConn, &statusResp); err != nil {
 		return err
 	}
 
@@ -130,69 +131,6 @@ func (c *consoleWaitError) ExitCode() int {
 	return 0
 }
 
-func (con *qemuConsole) attachShell(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup) error {
-	waitClosed.Add(1)
-	go func() {
-		b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
-		for {
-			select {
-			case err := <-con.conChan:
-				con.conChan <- err
-				break
-			default:
-				n, err := param.Stdin.Read(b)
-				if err != nil {
-					con.conChan <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
-				}
-				fmt.Println(join("", string(b[0:n]), " - from stdin"))
-
-				if bytes.Contains(b[0:n], []byte{0x11}) {
-					log.Info("Received exit from stdin")
-					con.conChan <- errors.Wrap(err, "\nConsole exited by ctrl-q\n\n")
-				}
-				_, err = con.socketConn.Write(b[0:n])
-				if err != nil {
-					con.conChan <- errors.Wrap(err, "\nFailed to write to the qemu socket from the buffer\n\n")
-				}
-			}
-		}
-		defer waitClosed.Done()
-	}()
-
-	waitClosed.Add(1)
-	go func() {
-		b := make([]byte, 8192)
-		for {
-			con.socketConn.SetDeadline(time.Now().Add(time.Second))
-			n, err := con.socketConn.Read(b)
-			select {
-			case err := <-con.conChan:
-				if _, e := param.Stdout.Write([]byte{0x0A}); e != nil {
-					con.conChan <- errors.Wrap(e, "\nFailed to write the linefeed character on exit\n\n")
-				} else {
-					con.conChan <- err
-				}
-				break
-			default:
-				if err != nil && !err.(net.Error).Timeout() {
-					con.conChan <- errors.Wrap(err, "\nFailed to read the qemu socket buffer from socket ")
-				}
-				// exit on ctrl + q
-				if bytes.Contains(b[0:n], []byte{0x11}) {
-					con.conChan <- nil
-				}
-				_, err = param.Stdout.Write(b[0:n])
-				if err != nil {
-					con.conChan <- errors.Wrap(err, "\nFailed to write to the console stdout buffer\n\n")
-				}
-			}
-		}
-		defer waitClosed.Done()
-	}()
-
-	return nil
-}
-
 func (d *QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
 	return &qemuConsole{
 		qemu: d,
@@ -202,8 +140,8 @@ func (d *QEMUHypervisorDriver) InstanceConsole() hypervisor.Console {
 func (con *qemuConsole) Wait() error {
 	// this should return when the user escapes the console.
 	defer func() {
-		con.socketConn.Close()
-		con.socketConn = nil
+		con.SerialConn.Close()
+		con.SerialConn = nil
 		con.socketPath = ""
 		con.fds = nil
 		con.attached = nil
