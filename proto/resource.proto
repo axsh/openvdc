@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
-
 package model;
 
 option go_package = "github.com/axsh/openvdc/model";
