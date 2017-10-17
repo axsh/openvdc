@@ -39,6 +39,17 @@ GIT_BRANCH=${env.BRANCH_NAME}
 BRANCH_NAME=${env.BRANCH_NAME}
 BRANCH=${env.BRANCH_NAME}
 SHA=${SHA}
+BOX_DISKSPACE=${env.BOX_DISKSPACE}
+BOX_MEMORY=${env.BOX_MEMORY}
+GOVC_DATACENTER=${env.GOVC_DATACENTER}
+GOVC_INSECURE=${env.GOVC_INSECURE}
+ESXI_IP=${env.ESXI_IP}
+ESXI_PASS=${env.ESXI_PASS}
+GOVC_URL=${env.GOVC_URL}
+ISO=${env.ISO}
+ISO_DATASTORE=${env.ISO_DATASTORE}
+IP_ADDRESS=${env.IP_ADDRESS}
+OS=${env.OS}
 """
   writeFile(file: "build.env", text: build_env)
 }
@@ -79,6 +90,15 @@ def stage_acceptance(label) {
   }
 }
 
+def stage_acceptance_esxi(label) {
+  node("esxi") {
+    stage "Acceptance Test Esxi ${label}"
+    checkout_and_merge()
+    write_build_env(label)
+    sh "./ci/citest/acceptance-test-esxi/build.sh ./build.env"
+  }
+}
+
 node() {
     stage "Checkout"
     try {
@@ -106,4 +126,5 @@ for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
   stage_acceptance(label)
+  stage_acceptance_esxi(label)
 }

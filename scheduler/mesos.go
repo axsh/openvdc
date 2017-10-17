@@ -418,6 +418,15 @@ func findMatching(i *model.Instance, offers []*mesos.Offer, ctx context.Context)
 				}
 				return offer
 			}
+		case *model.Template_Esxi:
+				if agentAttrs.Hypervisor == "esxi" {
+					esxi := i.GetTemplate().GetEsxi()
+					if !model.IsMatchingNodeGroups(esxi, agentAttrs.NodeGroups) {
+						return nil
+					}
+			return offer
+		}
+	
 		default:
 			log.Warnf("Unknown template type: %T", t)
 		}
