@@ -7,6 +7,7 @@ import (
 
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/resources"
+	"github.com/golang/protobuf/proto"
 	"github.com/spf13/viper"
 )
 
@@ -64,7 +65,12 @@ func (a *VDCAgent) Run() error {
 		if err := a.GetResources(); err != nil {
 			return err
 		}
-		fmt.Println(a.resources)
+		message, err := proto.Marshal(a.resources)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(message)
 		time.Sleep(time.Second * updateInteval)
 	}
 }
