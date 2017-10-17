@@ -39,7 +39,7 @@ func (rc *localResourceCollector) GetMem() (*model.Resource, error) {
 
 func (rc *localResourceCollector) GetDisk() ([]*model.Resource, error) {
 	dp, _ := disk.Partitions(true)
-	disks := make([]*model.Resource, len(dp))
+	disks := make([]*model.Resource, 0)
 
 	for _, part := range dp {
 		d, _ := disk.Usage(part.Mountpoint)
@@ -49,7 +49,6 @@ func (rc *localResourceCollector) GetDisk() ([]*model.Resource, error) {
 			UsedPercent: d.UsedPercent,
 		})
 	}
-
 	return disks, nil
 }
 
