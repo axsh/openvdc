@@ -1,29 +1,31 @@
 package esxi
 
 import (
-	"fmt"
-
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/resources"
+	"github.com/spf13/viper"
 )
 
 type esxiResourceCollector struct {
-	hostIp   string
-	hostUser string
-	hostPwd  string
+	hostIp       string
+	hostUser     string
+	hostPwd      string
+	hostInsecure bool
 }
 
 func init() {
 	resources.RegisterCollector("esxi", NewEsxiResourceCollector)
 }
 
-func initConfig() {
-	fmt.Println("init esxi config")
-}
+func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, error) {
+	viper.SetDefault("hypervisor.esxi-insecure", true)
 
-func NewEsxiResourceCollector() (resources.ResourceCollector, error) {
-	initConfig()
-	return &esxiResourceCollector{}, nil
+	return &esxiResourceCollector{
+		hostIp:       conf.GetString("hypervisor.esxi-ip"),
+		hostUser:     conf.GetString("hypervisor.esxi-user"),
+		hostPwd:      conf.GetString("hypervisor.esxi-pass"),
+		hostInsecure: conf.GetBool("hypervisor.esxi-insecure"),
+	}, nil
 }
 
 func (rm *esxiResourceCollector) GetCpu() (*model.Resource, error) {

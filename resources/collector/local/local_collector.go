@@ -3,6 +3,7 @@ package local
 import (
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/resources"
+	"github.com/spf13/viper"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/load"
@@ -15,7 +16,8 @@ func init() {
 	resources.RegisterCollector("local", NewLocalResourceCollector)
 }
 
-func NewLocalResourceCollector() (resources.ResourceCollector, error) {
+
+func NewLocalResourceCollector(conf *viper.Viper) (resources.ResourceCollector, error) {
 	return &localResourceCollector{}, nil
 }
 

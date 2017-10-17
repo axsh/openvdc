@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/viper"
 	"github.com/axsh/openvdc/model"
 )
 
@@ -14,24 +15,24 @@ type ResourceCollector interface {
 	GetLoadAvg() (*model.LoadAvg, error)
 }
 
-type collectorType func() (ResourceCollector, error)
+type collectorType func(conf *viper.Viper) (ResourceCollector, error)
 
 var (
 	collectors = make(map[string]collectorType)
 )
 
-func NewCollector(name string) (ResourceCollector, error) {
+func NewCollector(name string, conf *viper.Viper) (ResourceCollector, error) {
 	collector, exists := collectors[name]
 	if !exists {
 		knownCollecotrs := make([]string, len(collectors))
 		for c, _ := range collectors {
 			knownCollecotrs = append(knownCollecotrs, c)
 		}
-		return nil, fmt.Errorf("Failed getCollector() Must be one of: %s",
+		return nil, fmt.Errorf("Failed NewCollector(), Must be one of: %s",
 			strings.Join(knownCollecotrs, ", "))
 	}
 
-	return collector()
+	return collector(conf)
 }
 
 func RegisterCollector(name string, collectorType collectorType) error {

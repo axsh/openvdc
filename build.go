@@ -186,6 +186,7 @@ Environment Variables:
 	// Build main binaries
 	cmd("go", "build", "-i", "./vendor/...")
 	cmd("go", "build", "-ldflags", LDFLAGS, "-v", "./cmd/openvdc")
+	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "./cmd/openvdc-agent")
 	cmd("go", "build", "-ldflags", LDFLAGS+
 		" -X 'main.HostRsaKeyPath=/etc/openvdc/ssh/host_rsa_key'" +
 		" -X 'main.HostEcdsaKeyPath=/etc/openvdc/ssh/host_ecdsa_key'" +

@@ -7,6 +7,7 @@ import (
 
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/resources"
+	"github.com/spf13/viper"
 )
 
 type VDCAgent struct {
@@ -16,29 +17,42 @@ type VDCAgent struct {
 }
 
 var (
+	DefaultConfPath string
 	updateInteval time.Duration = 5
 	// TODO: receive from configuration file or as flag
 	tmpCollectorType = "local"
 )
 
-func main() {
-	var agent *VDCAgent
-
-	if c, err := resources.NewCollector(tmpCollectorType); err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	} else {
-		agent = newVDCAgent(c)
+func initConfig() error {
+	viper.SetConfigFile(DefaultConfPath)
+	viper.SetConfigType("toml")
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		if viper.ConfigFileUsed() == DefaultConfPath && os.IsNotExist(err) {
+			// Ignore default conf file does not exist.
+			return nil
+		}
+		return err
 	}
-	agent.GetResources()
-
-	if err := agent.Run(); err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
+	return nil
 }
 
-func newVDCAgent(c resources.ResourceCollector) *VDCAgent {
+func main() {
+	exitOnErr := func(err error) {
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
+	}
+	exitOnErr(initConfig())
+	exitOnErr(newVDCAgent(exitOnErr).Run())
+}
+
+func newVDCAgent(exitCallback func(err error)) *VDCAgent {
+	c, err := resources.NewCollector(tmpCollectorType, viper.GetViper());
+	exitCallback(err)
+
 	return &VDCAgent{
 		collector: c,
 		resources: &model.ComputingResources{},
