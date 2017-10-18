@@ -32,6 +32,83 @@ func init() {
 	resources.RegisterCollector("esxi", NewEsxiResourceCollector)
 }
 
+func initConfig(conf *viper.Viper) error {
+	viper.SetDefault("hypervisor.esxi-insecure", true)
+
+	if conf.GetString("hypervisor.esxi-user") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-user")
+	}
+	if conf.GetString("hypervisor.esxi-pass") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-pass")
+	}
+	if conf.GetString("hypervisor.esxi-ip") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-ip")
+	}
+	if conf.GetString("hypervisor.esxi-datacenter") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-datacenter")
+	}
+	return nil
+}
+
+func captureStdout(collector *esxiResourceCollector, cmd []string) ([]byte, error) {
+	stdout := os.Stdout
+	outputChan := make(chan []byte)
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	os.Stdout = w
+	restoreStdout := func() {
+		w.Close()
+		os.Stdout = stdout
+	}
+
+	go func() {
+		b := make([]byte, 8192)
+		var buf bytes.Buffer
+
+		for {
+			n, err := r.Read(b);
+			if n == 0 {
+				if err == io.EOF || err == nil {
+					outputChan <-buf.Bytes()
+					return
+				}
+			}
+			buf.Write(b)
+		}
+	}()
+
+	if err := collector.esxiRunCmd(cmd); err != nil {
+		restoreStdout()
+		return nil, err
+	}
+	restoreStdout()
+	o := <-outputChan
+	return o, nil
+}
+
+func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, error) {
+	if err := initConfig(conf); err != nil {
+		return nil, errors.Wrap(err, "Failed to initialize config")
+	}
+	var err error
+	c := &esxiResourceCollector{
+		hostIp:       conf.GetString("hypervisor.esxi-ip"),
+		hostUser:     conf.GetString("hypervisor.esxi-user"),
+		hostPass:     conf.GetString("hypervisor.esxi-pass"),
+		hostInsecure: conf.GetBool("hypervisor.esxi-insecure"),
+		datacenter:   conf.GetString("hypervisor.esxi-datacenter"),
+	}
+
+	uri := fmt.Sprintf("%s:%s@%s", c.hostUser, c.hostPass, c.hostIp)
+	if c.esxiAPIEndpoint, err = url.Parse("https://" + uri + "/sdk"); err != nil {
+		return nil, errors.Wrap(err, "Failed to parse url for ESXi server")
+	}
+	return c, nil
+}
+
 // TODO: these functions were copy-pasted from the esxi driver and can
 // probably be refactored into some util.
 func join(separator byte, args ...string) string {
@@ -67,64 +144,6 @@ func (rm *esxiResourceCollector) esxiRunCmd(cmdList ...[]string) error {
 		}
 	}
 	return nil
-}
-
-func captureStdout(collector *esxiResourceCollector, cmd []string) ([]byte, error) {
-	stdout := os.Stdout
-	outputChan := make(chan []byte)
-
-	r, w, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-	os.Stdout = w
-	restoreStdout := func() {
-		w.Close()
-		os.Stdout = stdout
-	}
-
-
-	go func() {
-		b := make([]byte, 8192)
-		var buf bytes.Buffer
-
-		for {
-			n, err := r.Read(b);
-			if n == 0 {
-				if err == io.EOF || err == nil {
-					outputChan <-buf.Bytes()
-					return
-				}
-			}
-			buf.Write(b)
-		}
-	}()
-	if err := collector.esxiRunCmd(cmd); err != nil {
-		restoreStdout()
-		return nil, err
-	}
-
-	restoreStdout()
-	o := <-outputChan
-	return o, nil
-}
-
-func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, error) {
-	initConfig(conf)
-	var err error
-	c := &esxiResourceCollector{
-		hostIp:       conf.GetString("hypervisor.esxi-ip"),
-		hostUser:     conf.GetString("hypervisor.esxi-user"),
-		hostPass:     conf.GetString("hypervisor.esxi-pass"),
-		hostInsecure: conf.GetBool("hypervisor.esxi-insecure"),
-		datacenter:   conf.GetString("hypervisor.esxi-datacenter"),
-	}
-
-	uri := fmt.Sprintf("%s:%s@%s", c.hostUser, c.hostPass, c.hostIp)
-	if c.esxiAPIEndpoint, err = url.Parse("https://" + uri + "/sdk"); err != nil {
-		return nil, errors.Wrap(err, "Failed to parse url for ESXi server")
-	}
-	return c, nil
 }
 
 func (rm *esxiResourceCollector) GetCpu() (*model.Resource, error) {
