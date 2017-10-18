@@ -30,7 +30,7 @@ func TestCrashRecovery(t *testing.T) {
 	time.Sleep(30 * time.Second)
 
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "stop", instance_id)
-	t.Log("Waiting for instance to become RUNNING...")
+	t.Log("Waiting for instance to become STOPPED...")
 	WaitInstance(t, 5*time.Minute, instance_id, "STOPPED", []string{"RUNNING", "STOPPING"})
 
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
