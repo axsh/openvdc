@@ -22,9 +22,11 @@ func NewLocalResourceCollector(conf *viper.Viper) (resources.ResourceCollector, 
 }
 
 func (rc *localResourceCollector) GetCpu() (*model.Resource, error) {
-	cpu, _ := cpu.Info()
+	c, _ := cpu.Info()
+	percent, _ := cpu.Percent(0, false)
 	return &model.Resource{
-		Total: int64(len(cpu)),
+		Total:       int64(len(c)),
+		UsedPercent: percent[0],
 	}, nil
 }
 
