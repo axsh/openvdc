@@ -152,7 +152,7 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 
 			err := model.Nodes(ctx).UpdateAgentMesosID(agentID, *offer.SlaveId.Value)
 			if err != nil {
-				log.WithError(err).Error("Failed to update node agentMesosID. node: '%s'", agentID)
+				log.WithError(err).Error(fmt.Sprintf("Failed to update node agentMesosID. node: '%s'", agentID))
 			}
 
 			err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
@@ -165,7 +165,7 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 				return errors.Wrapf(err, "Failed to add '%s' to lost of crashed agents.", agentID)
 			}
 
-			log.Infoln("Added '%s' to list of crashed agents", agentID)
+			log.Infoln(fmt.Sprintf("Added '%s' to list of crashed agents", agentID))
 
 			instances, err := model.Instances(ctx).FilterByAgentMesosID(*offer.SlaveId.Value)
 
@@ -556,10 +556,10 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 		})
 
 		if err != nil {
-			log.WithError(err).Error("Failed to add '%s' to list of crashed agents", agentID)
+			log.WithError(err).Error(fmt.Sprintf("Failed to add '%s' to list of crashed agents", agentID))
 		}
 
-		log.Infoln("Added '%s' to list of crashed agents", agentID)
+		log.Infoln(fmt.Sprintf("Added '%s' to list of crashed agents", agentID))
 	}
 }
 
