@@ -27,6 +27,12 @@
 			"revisionTime": "2016-12-20T06:29:07Z"
 		},
 		{
+			"checksumSHA1": "0wdHgfg/Zj50H6FMbN2MnuR6YXA=",
+			"path": "github.com/Jeffail/gabs",
+			"revision": "44cbc27138518b15305cb3eef220d04f2d641b9b",
+			"revisionTime": "2017-10-15T11:14:30Z"
+		},
+		{
 			"checksumSHA1": "yRNw/uu/4N7XHVe1PHtKPl6xtDg=",
 			"path": "github.com/Sirupsen/logrus",
 			"revision": "1445b7a38228c041834afc69231b7966b9943397",
