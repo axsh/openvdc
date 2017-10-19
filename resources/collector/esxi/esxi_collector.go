@@ -58,31 +58,24 @@ func initConfig(conf *viper.Viper) error {
 	return nil
 }
 
-func captureStdout(collector *esxiResourceCollector, cmd []string) ([]byte, error) {
+func captureStdout(fn func() error) ([]byte, error) {
 	r, w, err := os.Pipe()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed os.Pipe()")
 	}
-
 	stdout := os.Stdout
 	os.Stdout = w
-	restoreStdout := func() {
-		w.Close()
-		os.Stdout = stdout
-	}
 
-	returnChan := make(chan func() ([]byte, error))
+	outputChan := make(chan func() ([]byte, error))
 	go func() {
-		defer close(returnChan)
-
 		var buf bytes.Buffer
 		if n, err := io.Copy(&buf, r); n > 0 {
 			if err == nil || err == io.EOF {
-				returnChan <- func() ([]byte, error) {
+				outputChan <- func() ([]byte, error) {
 					return buf.Bytes(), nil
 				}
 			} else {
-				returnChan <- func() ([]byte, error) {
+				outputChan <- func() ([]byte, error) {
 					return nil, errors.Wrap(err, "Failed io.Copy()")
 				}
 			}
@@ -90,12 +83,63 @@ func captureStdout(collector *esxiResourceCollector, cmd []string) ([]byte, erro
 		}
 	}()
 
-	if err := collector.esxiRunCmd(cmd); err != nil {
-		restoreStdout()
+	if err := fn(); err != nil {
 		return nil, err
 	}
-	restoreStdout()
-	return (<-returnChan)()
+	w.Close()
+	os.Stdout = stdout
+	return (<-outputChan)()
+}
+
+func join(separator byte, args ...string) string {
+	argLength := len(args)
+	currentArg := 0
+	var buf bytes.Buffer
+	for _, arg := range args {
+		currentArg = currentArg + 1
+		buf.WriteString(arg)
+		if currentArg == argLength {
+			separator = 0
+		}
+		if separator > 0 {
+			buf.WriteByte(separator)
+		}
+	}
+	return buf.String()
+}
+
+func (rm *esxiResourceCollector) esxiRunCmd(args []string) ([]byte, error) {
+	return captureStdout(func() error {
+		a := []string{
+			args[0],
+			join('=', "-dc", rm.datacenter),
+			join('=', "-k", strconv.FormatBool(rm.hostInsecure)),
+			join('=', "-u", rm.esxiAPIEndpoint.String()),
+		}
+		for _, arg := range args[1:] {
+			a = append(a, arg)
+		}
+		if rc := cli.Run(a); rc != 0 {
+			return errors.Errorf("Failed api request: %s", args[0])
+		}
+		return nil
+	})
+}
+
+// workaround to reach the actual 'interface{}' because the esxi
+// returns everything as slices, and sometimes nested slices
+func typeAssert(object *gabs.Container) interface{} {
+	newObject := object.Data().([]interface{})[0]
+	for {
+		t := reflect.TypeOf(newObject)
+		switch t.Kind() {
+		case reflect.Slice, reflect.Array:
+			newObject = newObject.([]interface{})[0]
+		default:
+			return newObject
+		}
+	}
+	return nil
 }
 
 func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, error) {
@@ -119,62 +163,9 @@ func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, e
 	return c, nil
 }
 
-// TODO: these functions were copy-pasted from the esxi driver and can
-// probably be refactored into some util.
-func join(separator byte, args ...string) string {
-	argLength := len(args)
-	currentArg := 0
-	var buf bytes.Buffer
-	for _, arg := range args {
-		currentArg = currentArg + 1
-		buf.WriteString(arg)
-		if currentArg == argLength {
-			separator = 0
-		}
-		if separator > 0 {
-			buf.WriteByte(separator)
-		}
-	}
-	return buf.String()
-}
-
-func (rm *esxiResourceCollector) esxiRunCmd(cmdList ...[]string) error {
-	for _, args := range cmdList {
-		a := []string{
-			args[0],
-			join('=', "-dc", rm.datacenter),
-			join('=', "-k", strconv.FormatBool(rm.hostInsecure)),
-			join('=', "-u", rm.esxiAPIEndpoint.String()),
-		}
-		for _, arg := range args[1:] {
-			a = append(a, arg)
-		}
-		if rc := cli.Run(a); rc != 0 {
-			return errors.Errorf("Failed api request: %s", args[0])
-		}
-	}
-	return nil
-}
-
-// work around to reach the actual 'interface{}' because the esxi
-// returns everything as slices, and sometimes nested slices
-func typeAssert(object *gabs.Container) interface{} {
-	newObject := object.Data().([]interface{})[0]
-	for {
-		t := reflect.TypeOf(newObject)
-		switch t.Kind() {
-		case reflect.Slice, reflect.Array:
-			newObject = newObject.([]interface{})[0]
-		default:
-			return newObject
-		}
-	}
-	return nil
-}
-
 func (rm *esxiResourceCollector) GetCpu() (*model.Resource, error) {
 	cmd := []string{"host.esxcli", "-json", "hardware", "cpu", "global", "get"}
-	output, err := captureStdout(rm, cmd)
+	output, err := rm.esxiRunCmd(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Faield to capture stdout")
 	}
@@ -193,7 +184,7 @@ func (rm *esxiResourceCollector) GetCpu() (*model.Resource, error) {
 
 func (rm *esxiResourceCollector) GetMem() (*model.Resource, error) {
 	cmd := []string{"host.info", "-json"}
-	output, err := captureStdout(rm, cmd)
+	output, err := rm.esxiRunCmd(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Faield to capture stdout")
 	}
@@ -217,7 +208,7 @@ func (rm *esxiResourceCollector) GetMem() (*model.Resource, error) {
 
 func (rm *esxiResourceCollector) GetDisk() ([]*model.Resource, error) {
 	cmd := []string{"host.esxcli", "-json", "storage", "filesystem", "list"}
-	output, err := captureStdout(rm, cmd)
+	output, err := rm.esxiRunCmd(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Faield to capture stdout")
 	}
@@ -247,7 +238,7 @@ func (rm *esxiResourceCollector) GetDisk() ([]*model.Resource, error) {
 
 func (rm *esxiResourceCollector) GetLoadAvg() (*model.LoadAvg, error) {
 	cmd := []string{"host.esxcli", "-json", "system", "process", "stats", "load", "get"}
-	output, err := captureStdout(rm, cmd)
+	output, err := rm.esxiRunCmd(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "Faield to capture stdout")
 	}
