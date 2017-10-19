@@ -1,17 +1,20 @@
 package esxi
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"bytes"
 	"strconv"
 	"io"
+	"reflect"
 	"os"
 
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/resources"
 	"github.com/spf13/viper"
 	"github.com/pkg/errors"
+	"github.com/Jeffail/gabs"
 	cli "github.com/vmware/govmomi/govc/cli"
 	_ "github.com/vmware/govmomi/govc/host"
 	_ "github.com/vmware/govmomi/govc/host/esxcli"
@@ -23,6 +26,8 @@ type esxiResourceCollector struct {
 	hostPass        string
 	hostInsecure    bool
 	datacenter      string
+	datastore       string
+
 	esxiAPIEndpoint *url.URL
 }
 
@@ -46,6 +51,9 @@ func initConfig(conf *viper.Viper) error {
 	}
 	if conf.GetString("hypervisor.esxi-datacenter") == "" {
 		return errors.Errorf("Missing configuration hypervisor.exsi-datacenter")
+	}
+	if conf.GetString("hypervisor.esxi-datastore") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-datastore")
 	}
 	return nil
 }
@@ -101,6 +109,7 @@ func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, e
 		hostPass:     conf.GetString("hypervisor.esxi-pass"),
 		hostInsecure: conf.GetBool("hypervisor.esxi-insecure"),
 		datacenter:   conf.GetString("hypervisor.esxi-datacenter"),
+		datastore:    conf.GetString("hypervisor.esxi-datastore"),
 	}
 
 	uri := fmt.Sprintf("%s:%s@%s", c.hostUser, c.hostPass, c.hostIp)
@@ -147,53 +156,114 @@ func (rm *esxiResourceCollector) esxiRunCmd(cmdList ...[]string) error {
 	return nil
 }
 
+// work around to reach the actual 'interface{}' because the esxi
+// returns everything as slices, and sometimes nested slices
+func typeAssert(object *gabs.Container) interface{} {
+	newObject := object.Data().([]interface{})[0]
+	for {
+		t := reflect.TypeOf(newObject)
+		switch t.Kind() {
+		case reflect.Slice, reflect.Array:
+			newObject = newObject.([]interface{})[0]
+		default:
+			return newObject
+		}
+	}
+	return nil
+}
+
 func (rm *esxiResourceCollector) GetCpu() (*model.Resource, error) {
-	// get in use:
-	// ./govc host.info -host vmware -json | jq -r .HostSystems[].Summary.QuickStats.OverallCpuUsage
 	cmd := []string{"host.esxcli", "-json", "hardware", "cpu", "global", "get"}
 	output, err := captureStdout(rm, cmd)
 	if err != nil {
+		return nil, errors.Wrap(err, "Faield to capture stdout")
+	}
+
+	parsedJson, err := gabs.ParseJSON(output)
+	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(output))
-	return &model.Resource{}, nil
+	v := parsedJson.Path("Values")
+	cores, _ := strconv.ParseInt(typeAssert(v.Path("CPUCores")).(string), 10, 64)
+	// pkgs, _ := strconv.ParseInt(typeAssert(v.Path("CPUPackages")).(string),10, 64)
+	return &model.Resource{
+		Total: cores,
+	}, nil
 }
 
 func (rm *esxiResourceCollector) GetMem() (*model.Resource, error) {
-	// get total ./govc host.info -host vmware -json | jq -r .HostSystems[].Summary.Hardware.MemorySize
-	// get in use ./govc host.info -host vmware -json | jq -r .HostSystems[].Summary.QuickStats.OverallMemoryUsage
-	// available = total - used
-	// convert used into bytes
-	// percent =  ((used << 2e) * 100
 	cmd := []string{"host.info", "-json"}
 	output, err := captureStdout(rm, cmd)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Faield to capture stdout")
 	}
-	fmt.Println(string(output))
-	return &model.Resource{}, nil
-}
 
-func (rm *esxiResourceCollector) GetDisk() ([]*model.Resource, error) {
-	// ./govc host.esxcli -json storage filesystem list | jq .Values
-	cmd := []string{"host.esxcli", "-json", "storage", "filesystem", "list"}
-	output, err := captureStdout(rm, cmd)
+	decoder := json.NewDecoder(bytes.NewReader(output))
+	decoder.UseNumber()
+	parsedJson, err := gabs.ParseJSONDecoder(decoder)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(output))
+	s := parsedJson.Path("HostSystems.Summary")
+	total, _ := typeAssert(s.Path("Hardware.MemorySize")).(json.Number).Int64()
+	used, _ := typeAssert(s.Path("QuickStats.OverallMemoryUsage")).(json.Number).Int64()
+
+	return &model.Resource{
+		Total: total,
+		Available: (total - (used << 20)),
+		UsedPercent: ((float64(used << 20) / float64(total)) * 100),
+	}, nil
+}
+
+func (rm *esxiResourceCollector) GetDisk() ([]*model.Resource, error) {
+	cmd := []string{"host.esxcli", "-json", "storage", "filesystem", "list"}
+	output, err := captureStdout(rm, cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "Faield to capture stdout")
+	}
+
 	disks := make([]*model.Resource, 0)
+	parsedJson, err := gabs.ParseJSON(output)
+	if err != nil {
+		return nil, err
+	}
+	v, _ := parsedJson.Path("Values").Children()
+	for _, child := range v {
+		storageDisk := typeAssert(child.Path("VolumeName")).(string)
+		if storageDisk != rm.datastore {
+			continue
+		}
+		free, _ := strconv.ParseInt(typeAssert(child.Path("Free")).(string), 10, 64)
+		size, _ := strconv.ParseInt(typeAssert(child.Path("Size")).(string), 10, 64)
+		disks = append(disks, &model.Resource{
+			Total: size,
+			Available: free,
+			UsedPercent: ((float64(size - free) / float64(size)) * 100),
+		})
+	}
+
 	return disks, nil
 }
 
 func (rm *esxiResourceCollector) GetLoadAvg() (*model.LoadAvg, error) {
-	// ./govc host.esxcli -json system process stats load get | jq -r .Values
-
 	cmd := []string{"host.esxcli", "-json", "system", "process", "stats", "load", "get"}
 	output, err := captureStdout(rm, cmd)
 	if err != nil {
+		return nil, errors.Wrap(err, "Faield to capture stdout")
+	}
+
+	parsedJson, err := gabs.ParseJSON(output)
+	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(output))
-	return &model.LoadAvg{}, nil
+	v := parsedJson.Path("Values")
+	load1, _ := strconv.ParseFloat(typeAssert(v.Path("Load1Minute")).(string), 32)
+	load5, _ := strconv.ParseFloat(typeAssert(v.Path("Load5Minutes")).(string), 32)
+	load15, _ := strconv.ParseFloat(typeAssert(v.Path("Load15Minutes")).(string), 32)
+
+	return &model.LoadAvg{
+		Load1:  float32(load1),
+		Load5:  float32(load5),
+		Load15: float32(load15),
+	}, nil
 }
