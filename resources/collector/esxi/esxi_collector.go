@@ -51,32 +51,34 @@ func initConfig(conf *viper.Viper) error {
 }
 
 func captureStdout(collector *esxiResourceCollector, cmd []string) ([]byte, error) {
-	stdout := os.Stdout
-	outputChan := make(chan []byte)
-
 	r, w, err := os.Pipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed os.Pipe()")
 	}
+
+	stdout := os.Stdout
 	os.Stdout = w
 	restoreStdout := func() {
 		w.Close()
 		os.Stdout = stdout
 	}
 
+	returnChan := make(chan func() ([]byte, error))
 	go func() {
-		b := make([]byte, 8192)
-		var buf bytes.Buffer
+		defer close(returnChan)
 
-		for {
-			n, err := r.Read(b);
-			if n == 0 {
-				if err == io.EOF || err == nil {
-					outputChan <-buf.Bytes()
-					return
+		var buf bytes.Buffer
+		if n, err := io.Copy(&buf, r); n > 0 {
+			if err == nil || err == io.EOF {
+				returnChan <- func() ([]byte, error) {
+					return buf.Bytes(), nil
+				}
+			} else {
+				returnChan <- func() ([]byte, error) {
+					return nil, errors.Wrap(err, "Failed io.Copy()")
 				}
 			}
-			buf.Write(b)
+			return
 		}
 	}()
 
@@ -85,8 +87,7 @@ func captureStdout(collector *esxiResourceCollector, cmd []string) ([]byte, erro
 		return nil, err
 	}
 	restoreStdout()
-	o := <-outputChan
-	return o, nil
+	return (<-returnChan)()
 }
 
 func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, error) {
