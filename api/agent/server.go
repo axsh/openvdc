@@ -16,11 +16,11 @@ type AgentAPIServer struct {
 	server    *grpc.Server
 }
 
-func NewAgentAPIServer() *AgentAPIServer {
+func NewAgentAPIServer(r *model.ComputingResources) *AgentAPIServer {
 	s := &AgentAPIServer{
 		server: grpc.NewServer(),
 	}
-	RegisterResourceCollectorServer(s.server, &AgentAPI{api: s})
+	RegisterResourceCollectorServer(s.server, &AgentAPI{api: s, resources: r})
 
 	return s
 }
@@ -46,10 +46,11 @@ func (s *AgentAPIServer) Listener() net.Listener {
 }
 
 type AgentAPI struct {
-	api *AgentAPIServer
+	api       *AgentAPIServer
+	resources *model.ComputingResources
 }
 
 
 func (api *AgentAPI) GetResources(ctx context.Context, e *empty.Empty) (*model.ComputingResources, error) {
-	return nil, nil
+	return api.resources, nil
 }

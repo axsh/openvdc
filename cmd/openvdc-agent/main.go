@@ -78,7 +78,7 @@ func newVDCAgent() *VDCAgent {
 }
 
 func (a *VDCAgent) startAgentAPIServer() *agent.AgentAPIServer {
-	s := agent.NewAgentAPIServer()
+	s := agent.NewAgentAPIServer(a.resources)
 	go s.Serve(a.listener)
 	return s
 }
