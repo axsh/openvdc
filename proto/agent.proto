@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package agent;
+
+option go_package = "github.com/axsh/openvdc/api/agent";
+
+import "v1.proto";
