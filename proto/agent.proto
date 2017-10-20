@@ -4,4 +4,9 @@ package agent;
 
 option go_package = "github.com/axsh/openvdc/api/agent";
 
-import "v1.proto";
+import "resource.proto";
+import "github.com/golang/protobuf/ptypes/empty/empty.proto";
+
+service ResourceCollector {
+  rpc GetResources(google.protobuf.Empty) returns(model.ComputingResources){}
+}
