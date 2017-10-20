@@ -21,8 +21,8 @@ var (
 	collectors = make(map[string]collectorType)
 )
 
-func NewCollector(name string, conf *viper.Viper) (ResourceCollector, error) {
-	collector, exists := collectors[name]
+func NewCollector(conf *viper.Viper) (ResourceCollector, error) {
+	collector, exists := collectors[conf.GetString("resource-collector.mode")]
 	if !exists {
 		knownCollecotrs := make([]string, len(collectors))
 		for c, _ := range collectors {
