@@ -35,6 +35,11 @@ type = "linux"
 # listen = "0.0.0.0:19372"
 # advertise-ip = "192.168.56.150"
 
+[resource-collector]
+# listen = 0.0.0.0:9091
+# advertise-ip = 192.168.56.150
+# mode = "local"
+
 [console]
 
 [console.ssh]
