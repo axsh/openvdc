@@ -7,14 +7,14 @@ import (
 	"net"
 
 	"github.com/axsh/openvdc/model"
-	"github.com/axsh/openvdc/resources"
+	"github.com/axsh/openvdc/resource"
 	"github.com/axsh/openvdc/api/agent"
 	"github.com/golang/protobuf/proto"
 	"github.com/spf13/viper"
 )
 
 type VDCAgent struct {
-	collector resources.ResourceCollector
+	collector resource.ResourceCollector
 	resources *model.ComputingResources
 	AgentId   string
 	listener  net.Listener
@@ -64,7 +64,7 @@ func main() {
 }
 
 func newVDCAgent() *VDCAgent {
-	c, err := resources.NewCollector(viper.GetViper());
+	c, err := resource.NewCollector(viper.GetViper());
 	exitOnErr(err)
 
 	l, err := net.Listen("tcp", viper.GetString("resource-collector.listen"))

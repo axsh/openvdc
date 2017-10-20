@@ -1,6 +1,6 @@
 package main
 
 import (
-	_ "github.com/axsh/openvdc/resources/collector/esxi"
-	_ "github.com/axsh/openvdc/resources/collector/local"
+	_ "github.com/axsh/openvdc/resource/collector/esxi"
+	_ "github.com/axsh/openvdc/resource/collector/local"
 )

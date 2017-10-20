@@ -11,7 +11,7 @@ import (
 	"os"
 
 	"github.com/axsh/openvdc/model"
-	"github.com/axsh/openvdc/resources"
+	"github.com/axsh/openvdc/resource"
 	"github.com/spf13/viper"
 	"github.com/pkg/errors"
 	"github.com/Jeffail/gabs"
@@ -34,7 +34,7 @@ type esxiResourceCollector struct {
 type esxiCmd func (cmd ...[]string) error
 
 func init() {
-	resources.RegisterCollector("esxi", NewEsxiResourceCollector)
+	resource.RegisterCollector("esxi", NewEsxiResourceCollector)
 }
 
 func initConfig(conf *viper.Viper) error {
@@ -142,7 +142,7 @@ func typeAssert(object *gabs.Container) interface{} {
 	return nil
 }
 
-func NewEsxiResourceCollector(conf *viper.Viper) (resources.ResourceCollector, error) {
+func NewEsxiResourceCollector(conf *viper.Viper) (resource.ResourceCollector, error) {
 	if err := initConfig(conf); err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize config")
 	}
