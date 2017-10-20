@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/api/agent"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
@@ -19,6 +20,8 @@ import (
 	util "github.com/mesos/mesos-go/mesosutil"
 	sched "github.com/mesos/mesos-go/scheduler"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
 var ExecutorPath string
@@ -38,6 +41,14 @@ type VDCScheduler struct {
 	listenAddr    string
 	zkAddr        backend.ZkEndpoint
 	ctx           context.Context
+	agentNode     map[string]*agentNode
+}
+
+type agentNode struct {
+	resources *model.ComputingResources
+	conn      *grpc.ClientConn
+	ip        string
+	port      int32
 }
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
@@ -83,10 +94,43 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 		log.WithError(err).Error("Failed to connect to datasource")
 	} else {
 		defer model.Close(ctx)
+		// possibly start resource collection from main entry point and recieve
+		// offers in channel
+		sched.collectResources(offers)
 		err = sched.processOffers(driver, offers, ctx)
 		if err != nil {
 			log.WithError(err).Error("Failed to process offers")
 		}
+	}
+}
+
+func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
+	for _, offer := range offers {
+		slaveId := offer.GetSlaveId().String()
+		if _, exists := sched.agentNode[slaveId]; exists {
+			ip := offer.GetUrl().GetAddress().GetIp()
+			// TODO: get proper port from somewhere (attribute?)
+			port := (offer.GetUrl().GetAddress().GetPort() + 9500)
+			slaveAddr := fmt.Sprintf("%s:%v", ip, port)
+			// these connections should close if scheduler dies
+			conn, err := grpc.Dial(slaveAddr, grpc.WithInsecure())
+			if err != nil {
+				log.WithError(err).Warn("Failed connection to OpenVDC agent: ", slaveId)
+				continue
+			}
+			sched.agentNode[slaveId] = &agentNode{
+				conn: conn,
+				ip: ip,
+				port: port,
+			}
+		}
+		c := agent.NewResourceCollectorClient(sched.agentNode[slaveId].conn)
+		resp, err := c.GetResources(context.Background(), &empty.Empty{})
+		if err != nil {
+			log.WithError(err).Warn("Failed api request to OpenVDC agent: ", slaveId)
+			continue
+		}
+		sched.agentNode[slaveId].resources = resp
 	}
 }
 

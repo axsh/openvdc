@@ -21,7 +21,6 @@ func NewAgentAPIServer(r *model.ComputingResources) *AgentAPIServer {
 		server: grpc.NewServer(),
 	}
 	RegisterResourceCollectorServer(s.server, &AgentAPI{api: s, resources: r})
-
 	return s
 }
 
