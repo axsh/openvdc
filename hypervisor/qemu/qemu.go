@@ -5,11 +5,9 @@ package qemu
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,6 +15,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/asaskevich/govalidator"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/hypervisor/util"
 	"github.com/axsh/openvdc/model"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -240,81 +239,23 @@ func (d *QEMUHypervisorDriver) getImage() (string, error) {
 	return imageCachePath, nil
 }
 
-func runCmd(cmd string, args []string) error {
-	c := exec.Command(cmd, args...)
-	if err := c.Run(); err != nil {
-		return errors.Errorf("failed to execute command :%s %s", cmd, args)
-	}
-	return nil
+func (d *QEMUHypervisorDriver) MetadataDrivePath() string {
+	return d.machine.Drives["meta"].Image.Path
 }
 
-func renderData(keyPath string, key string, value interface{}) error {
-	switch value.(type) {
-	case string:
-		ioutil.WriteFile(filepath.Join(keyPath, key), []byte(value.(string)), 0644)
-		return nil
-	default:
-		kp := filepath.Join(keyPath, key)
-		if err := os.MkdirAll(kp, os.ModePerm); err != nil {
-			return errors.Errorf("Unable to create folder: %s", kp)
-		}
-		for key, value := range value.(map[string]interface{}) {
-			if err := renderData(kp, key, value); err != nil {
-				return err
-			}
+func (d *QEMUHypervisorDriver) MetadataDriveDatamap() map[string]interface{}{
+	metadataMap := make(map[string]interface{})
+	metadataMap["hostname"] = d.machine.Name
+	for idx, nic := range d.machine.Nics {
+		if nic.Type == "veth" {
+			iface := make(map[string]interface{})
+			iface["ifname"] = nic.IfName
+			iface["ipv4"] = nic.Ipv4Addr
+			iface["mac"] = nic.MacAddr
+			metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 		}
 	}
-
-	return nil
-}
-
-func (d *QEMUHypervisorDriver) addMetadata(metadataDrive *Image, datamap func(machine *Machine) map[string]interface{}) error {
-	mountPath := filepath.Join(filepath.Dir(metadataDrive.Path), "meta-data")
-
-	if err := os.MkdirAll(mountPath, os.ModePerm); err != nil {
-		return errors.Errorf("Unable to create folder: %s", mountPath)
-	}
-	if err := runCmd("mount", []string{metadataDrive.Path, mountPath}); err != nil {
-		return errors.Errorf("Error: %s", err)
-	}
-
-	for key, value := range datamap(d.machine) {
-		// ioutil.WriteFile(filepath.Join(mountPath, key), []byte(value), 0644)
-		if err := renderData(mountPath, key, value); err != nil {
-			return err
-		}
-	}
-
-	if err := runCmd("umount", []string{mountPath}); err != nil {
-		return errors.Errorf("Error: %s", err)
-	}
-	if err := os.RemoveAll(mountPath); err != nil {
-		return errors.Errorf("Unable remove path: %s", mountPath)
-	}
-	return nil
-}
-
-func (d *QEMUHypervisorDriver) buildMetadriveBase(metadrive *Image) error {
-	d.log().Infoln("Preparing metadrive image...")
-
-	if err := runCmd("mkfs.msdos", []string{"-s", "1", metadrive.Path}); err != nil {
-		return errors.Errorf("Error: %s", err)
-	}
-
-	return d.addMetadata(metadrive, func(machine *Machine) map[string]interface{} {
-		metadataMap := make(map[string]interface{})
-		metadataMap["hostname"] = machine.Name
-		for idx, nic := range machine.Nics {
-			if nic.Type == "veth" {
-				iface := make(map[string]interface{})
-				iface["ifname"] = nic.IfName
-				iface["ipv4"] = nic.Ipv4Addr
-				iface["mac"] = nic.MacAddr
-				metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
-			}
-		}
-		return metadataMap
-	})
+	return metadataMap
 }
 
 func (d *QEMUHypervisorDriver) CreateInstance() error {
@@ -346,15 +287,23 @@ func (d *QEMUHypervisorDriver) CreateInstance() error {
 		return errors.Errorf("Failed to assing metadrive image")
 	}
 	metadriveImage := d.machine.Drives["meta"].Image
-	if _, err := os.Stat(metadriveImage.Path); err != nil {
+	if _, err := os.Stat(d.MetadataDrivePath()); err != nil {
 		d.log().Infoln("Create metadrive image...")
 		metadriveImage.SetSize(1440)
 		if err := metadriveImage.CreateImage(); err != nil {
 			return err
 		}
-		if err := d.buildMetadriveBase(metadriveImage); err != nil {
+		if err := util.CreateMetadataDisk(d); err != nil {
 			return err
-			// todo remove metadrive image since it failed
+		}
+		if err := util.MountMetadataDisk(d); err != nil {
+			return err
+		}
+		if err := util.WriteMetadata(d); err != nil {
+			return err
+		}
+		if err := util.UmountMetadataDisk(d); err != nil {
+			return err
 		}
 	}
 	return nil
