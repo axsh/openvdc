@@ -15,8 +15,8 @@ func init() {
 
 type Node interface {
 	proto.Message
-	GetAgentID() string
-	GetAgentMesosID() string
+	GetAgentId() string
+	GetAgentMesosId() string
 }
 
 type NodeOps interface {
@@ -36,11 +36,11 @@ func Nodes(ctx context.Context) NodeOps {
 }
 
 func (i *nodes) Add(n Node) error {
-	if n.GetAgentID() == "" {
+	if n.GetAgentId() == "" {
 		return fmt.Errorf("ID is not set")
 	}
 
-	agentNode, _ := i.FindByAgentID(n.GetAgentID())
+	agentNode, _ := i.FindByAgentID(n.GetAgentId())
 
 	if agentNode != nil {
 		return nil
@@ -56,7 +56,7 @@ func (i *nodes) Add(n Node) error {
 		return err
 	}
 
-	if err = bk.Backend().Create(fmt.Sprintf("%s/%s", nodesBaseKey, n.GetAgentID()), buf); err != nil {
+	if err = bk.Backend().Create(fmt.Sprintf("%s/%s", nodesBaseKey, n.GetAgentId()), buf); err != nil {
 		return nil
 	}
 
@@ -79,7 +79,7 @@ func (i *nodes) FindByAgentID(agentID string) (*AgentNode, error) {
 func (i *nodes) FindByAgentMesosID(agentMesosID string) (*AgentNode, error) {
 	res := []*AgentNode{}
 	err := i.Filter(1, func(node *AgentNode) int {
-		if node.GetAgentMesosID() == agentMesosID {
+		if node.GetAgentMesosId() == agentMesosID {
 			res = append(res, node)
 		}
 		return len(res)
@@ -124,14 +124,14 @@ func (i *nodes) UpdateAgentMesosID(agentID string, agentMesosID string) error {
 		return err
 	}
 
-	node.Agentmesosid = agentMesosID
+	node.AgentMesosId = agentMesosID
 
 	bk, err := i.connection()
 	if err != nil {
 		return err
 	}
 
-	err = bk.Update(fmt.Sprintf("/%s/%s/", nodesBaseKey, node.Agentid), node)
+	err = bk.Update(fmt.Sprintf("/%s/%s/", nodesBaseKey, node.AgentId), node)
 	if err != nil {
 		return err
 	}

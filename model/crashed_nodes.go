@@ -18,8 +18,8 @@ func init() {
 type CrashedAgentNode interface {
 	proto.Message
 	GetReconnected() bool
-	GetAgentID() string
-	GetUUID() string
+	GetAgentId() string
+	GetUuid() string
 }
 
 type CrashedNodesOps interface {
@@ -40,7 +40,7 @@ func CrashedNodes(ctx context.Context) CrashedNodesOps {
 }
 
 func (i *crashedNodes) Add(n *CrashedNode) error {
-	if n.GetAgentID() == "" {
+	if n.GetAgentId() == "" {
 		return fmt.Errorf("ID is not set")
 	}
 
@@ -77,9 +77,9 @@ func (i *crashedNodes) SetReconnected(node *CrashedNode) error {
 	reconnectedAt, _ := ptypes.TimestampProto(time.Now())
 
 	updatedNode := &CrashedNode{
-		Uuid:          node.GetUUID(),
-		Agentid:       node.GetAgentID(),
-		Agentmesosid:  node.GetAgentMesosID(),
+		Uuid:          node.GetUuid(),
+		AgentId:       node.GetAgentId(),
+		AgentMesosId:  node.GetAgentMesosId(),
 		Reconnected:   true,
 		CreatedAt:     node.GetCreatedAt(),
 		ReconnectedAt: reconnectedAt,
@@ -90,7 +90,7 @@ func (i *crashedNodes) SetReconnected(node *CrashedNode) error {
 func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, error) {
 	res := []*CrashedNode{}
 	err := i.Filter(1, func(node *CrashedNode) int {
-		if node.GetAgentMesosID() == agentMesosID {
+		if node.GetAgentMesosId() == agentMesosID {
 			res = append(res, node)
 		}
 		return len(res)
@@ -108,7 +108,7 @@ func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, er
 func (i *crashedNodes) FindByAgentID(agentID string) (*CrashedNode, error) {
 	res := []*CrashedNode{}
 	err := i.Filter(1, func(node *CrashedNode) int {
-		if node.GetAgentID() == agentID && node.GetReconnected() == false {
+		if node.GetAgentId() == agentID && node.GetReconnected() == false {
 			res = append(res, node)
 		}
 		return len(res)

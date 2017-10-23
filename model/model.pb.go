@@ -22,6 +22,8 @@ It has these top-level messages:
 	Console
 	ExecutorNode
 	SchedulerNode
+	AgentNode
+	CrashedNode
 	NodeState
 */
 package model

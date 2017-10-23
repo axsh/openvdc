@@ -118,7 +118,7 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 			continue
 		}
 
-		instances, err := model.Instances(ctx).FilterByAgentMesosID(node.GetAgentMesosID())
+		instances, err := model.Instances(ctx).FilterByAgentMesosID(node.GetAgentMesosId())
 
 		if err != nil {
 			return errors.Wrapf(err, "Failed to retrieve instances.")
@@ -156,8 +156,8 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 			}
 
 			err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
-				Agentid:      agentID,
-				Agentmesosid: *offer.SlaveId.Value,
+				AgentId:      agentID,
+				AgentMesosId: *offer.SlaveId.Value,
 				Reconnected:  false,
 			})
 
@@ -202,7 +202,7 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 
 		if disconnectedAgent != nil {
 			if disconnectedAgent.GetReconnected() == false {
-				instances, err := model.Instances(ctx).FilterByAgentMesosID(disconnectedAgent.GetAgentMesosID())
+				instances, err := model.Instances(ctx).FilterByAgentMesosID(disconnectedAgent.GetAgentMesosId())
 
 				if err != nil {
 					log.WithError(err).Error("Failed to retrieve disconnected instances.")
@@ -225,7 +225,7 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 
 				if len(disconnectedInstances) == 0 {
 					model.CrashedNodes(ctx).SetReconnected(disconnectedAgent)
-					agentID := disconnectedAgent.GetAgentID()
+					agentID := disconnectedAgent.GetAgentId()
 					log.Infoln(fmt.Sprintf("Node '%s' reconnected.", agentID))
 
 					err := model.Nodes(ctx).UpdateAgentMesosID(agentID, *offer.SlaveId.Value)
@@ -461,8 +461,8 @@ func checkAgents(offers []*mesos.Offer, ctx context.Context) error {
 		agentID := getAgentID(offer)
 
 		err := model.Nodes(ctx).Add(&model.AgentNode{
-			Agentmesosid: slaveID,
-			Agentid:      agentID,
+			AgentMesosId: slaveID,
+			AgentId:      agentID,
 		})
 		if err != nil {
 			return err
@@ -548,11 +548,11 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 
 	if res != nil {
 
-		agentID := res.Agentid
+		agentID := res.AgentId
 
 		err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
-			Agentid:      agentID,
-			Agentmesosid: agentMesosID,
+			AgentId:      agentID,
+			AgentMesosId: agentMesosID,
 			Reconnected:  false,
 		})
 

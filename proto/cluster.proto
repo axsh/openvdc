@@ -28,6 +28,21 @@ message SchedulerNode {
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
 
+message AgentNode {
+  string agent_mesos_id = 1;
+  string agent_id = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message CrashedNode {
+  string uuid = 1;
+  string agent_id = 2;
+  string agent_mesos_id = 3;
+  bool reconnected = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp reconnected_at = 6;
+}
+
 message NodeState {
   enum State {
     REGISTERED = 0;
