@@ -2,7 +2,9 @@
 
 (
     $starting_step "Import ssh key"
-    [ -f ${NODE_DIR}/sshkey ]
+    # If we had built another branch before, its ssh key will still be in place.
+    # That's why we always do this step even if there's a key already.
+    false
     $skip_step_if_already_done
     cp ${CACHE_DIR}/${BRANCH}/sshkey_${vm_name} ${NODE_DIR}/sshkey
     chown ${USER}:${USER} ${NODE_DIR}/sshkey
