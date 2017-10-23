@@ -47,6 +47,11 @@ func (h *NullHypervisorDriver) log() *log.Entry {
 	return h.Base.Log
 }
 
+func (h *NullHypervisorDriver) Recover(instanceState model.InstanceState) error {
+	log.WithFields(log.Fields{"hypervisor": "null"}).Infoln("Recover")
+	return nil
+}
+
 func (h *NullHypervisorDriver) StartInstance() error {
 	h.log().Infoln("StartInstance")
 	if h.template.CrashStage == model.NullTemplate_START {
