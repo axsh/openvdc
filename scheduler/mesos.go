@@ -39,14 +39,13 @@ type VDCScheduler struct {
 	listenAddr    string
 	zkAddr        backend.ZkEndpoint
 	ctx           context.Context
-	agentNode     map[string]*agentNode
+	nodeInfo      map[string]*nodeInfo
 }
 
-type agentNode struct {
+type nodeInfo struct {
 	resources *model.ComputingResources
-	conn      *grpc.ClientConn
 	ip        string
-	port      int32
+	port      int
 }
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
@@ -54,6 +53,7 @@ func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEn
 		listenAddr: listenAddr,
 		zkAddr:     zkAddr,
 		ctx:        ctx,
+		nodeInfo:   make(map[string]*nodeInfo),
 	}
 }
 
@@ -92,9 +92,6 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 		log.WithError(err).Error("Failed to connect to datasource")
 	} else {
 		defer model.Close(ctx)
-		// possibly start resource collection from main entry point and recieve
-		// offers in channel
-		sched.collectResources(offers)
 		err = sched.processOffers(driver, offers, ctx)
 		if err != nil {
 			log.WithError(err).Error("Failed to process offers")
@@ -103,43 +100,49 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 }
 
 func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
-	for _, offer := range offers {
-		slaveId := offer.GetSlaveId().String()
-		if _, exists := sched.agentNode[slaveId]; exists {
+	getResource := func(offer *mesos.Offer) {
+		agentId := getAgentID(offer) 
+
+		if _, exists := sched.nodeInfo[agentId]; !exists {
 			ip := offer.GetUrl().GetAddress().GetIp()
 			// TODO: get proper port from somewhere (attribute?)
-			port := (offer.GetUrl().GetAddress().GetPort() + 9500)
-			slaveAddr := fmt.Sprintf("%s:%v", ip, port)
-			// these connections should close if scheduler dies
-			conn, err := grpc.Dial(slaveAddr, grpc.WithInsecure())
-			if err != nil {
-				log.WithError(err).Warn("Failed connection to OpenVDC agent: ", slaveId)
-				continue
-			}
-			sched.agentNode[slaveId] = &agentNode{
-				conn: conn,
+			port := 9092
+			sched.nodeInfo[agentId] = &nodeInfo{
 				ip: ip,
 				port: port,
 			}
 		}
-		c := agent.NewResourceCollectorClient(sched.agentNode[slaveId].conn)
+		slaveAddr := fmt.Sprintf("%s:%d", sched.nodeInfo[agentId].ip, sched.nodeInfo[agentId].port)
+		conn, err := grpc.Dial(slaveAddr, grpc.WithInsecure())
+		if err != nil {
+			log.WithError(err).Warnf("Failed connection to OpenVDC agent: %s", agentId)
+			return
+		}
+		defer func() {
+			conn.Close()
+		}()
+
+		c := agent.NewResourceCollectorClient(conn)
 		resp, err := c.GetResources(context.Background(), &empty.Empty{})
 		if err != nil {
-			log.WithError(err).Warn("Failed api request to OpenVDC agent: ", slaveId)
-			continue
+			log.WithError(err).Warnf("Failed api request to OpenVDC agent: %s", agentId)
+			return
 		}
-		sched.agentNode[slaveId].resources = resp
+		sched.nodeInfo[agentId].resources = resp
+	}
+
+	for _, offer := range offers {
+		getResource(offer)
 	}
 }
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
-
 	checkAgents(offers, ctx)
+	sched.collectResources(offers)
 
 	if sched.tasksLaunched == 0 {
 		sched.CheckForCrashedNodes(offers, ctx)
 	}
-
 	disconnected := getDisconnectedInstances(offers, ctx, driver)
 
 	if len(disconnected) > 0 {
