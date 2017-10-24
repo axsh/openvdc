@@ -1,0 +1,9 @@
+[Unit]
+Description=OpenVDC agent
+After=network.target
+
+[Service]
+ExecStart=/opt/axsh/openvdc/bin/openvdc-agent 
+
+[Install]
+WantedBy=multi-user.target

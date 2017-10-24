@@ -62,6 +62,7 @@ cp openvdc-scheduler "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp ci/citest/acceptance-test/tests/openvdc-acceptance-test "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp ci/citest/acceptance-test-esxi/tests/openvdc-acceptance-test-esxi "$RPM_BUILD_ROOT"/opt/axsh/openvdc/bin
 cp pkg/rhel/openvdc-scheduler.service "$RPM_BUILD_ROOT"%{_unitdir}
+cp pkg/rhel/openvdc-agent.service "$RPM_BUILD_ROOT"%{_unitdir}
 cp -r pkg/conf/scripts/ "$RPM_BUILD_ROOT"/etc/openvdc
 cp pkg/conf/executor.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
 cp pkg/conf/scheduler.toml "${RPM_BUILD_ROOT}/etc/openvdc/"
@@ -91,6 +92,7 @@ Summary: OpenVDC executor
 OpenVDC executor common package.
 
 %files executor
+%{_unitdir}/openvdc-agent.service
 %dir /opt/axsh/openvdc
 %dir /opt/axsh/openvdc/bin
 /opt/axsh/openvdc/bin/openvdc-executor
@@ -106,6 +108,15 @@ OpenVDC executor common package.
 %dir /etc/openvdc
 %dir /etc/openvdc/ssh
 /usr/sbin/openvdc-executor
+
+%post executor
+%{systemd_post openvdc-agent.service}
+
+%postrun executor
+%{systemd_postun openvdc-agent.service}
+
+%preun executor
+%{systemd_preun openvdc-agent.service}
 
 %post executor
 test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa -f /etc/openvdc/ssh/host_rsa_key -b 4096 -C '' -N '' >&/dev/null;
