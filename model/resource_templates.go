@@ -32,6 +32,9 @@ type InstanceResource interface {
 	GetVcpu() int32
 	GetMemoryGb() int32
 	GetNodeGroups() []string
+}
+
+type ConsoleAuthAttributes interface {
 	GetAuthenticationType() AuthenticationType
 	GetSshPublicKey() string
 }
