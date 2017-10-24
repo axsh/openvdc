@@ -45,6 +45,9 @@ func (rc *localResourceCollector) GetDisk() ([]*model.Resource, error) {
 
 	for _, part := range dp {
 		d, _ := disk.Usage(part.Mountpoint)
+		if int64(d.Total) == 0 {
+			continue
+		}
 		disks = append(disks, &model.Resource{
 			Total:       int64(d.Total),
 			Available:   int64(d.Free),
