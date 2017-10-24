@@ -12,6 +12,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+func init() {
+	runCmd.Flags().Bool("auto-recovery", true, "Set auto recovery flag")
+}
+
 var runCmd = &cobra.Command{
 	Use:   "run [ResourceTemplate ID/URI]",
 	Short: "Run an instance",
@@ -45,7 +49,7 @@ var runCmd = &cobra.Command{
 				break
 			}
 		}
-		req := prepareCreateAPICall(templateSlug, left)
+		req := prepareCreateAPICall(templateSlug, left, cmd.Flags())
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 			res, err := c.Run(context.Background(), req)

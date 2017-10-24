@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+type ContainerState int
+
 type HypervisorProvider interface {
 	Name() string
 	CreateDriver(instance *model.Instance, template model.ResourceTemplate) (HypervisorDriver, error)
@@ -16,6 +18,7 @@ type HypervisorProvider interface {
 }
 
 type HypervisorDriver interface {
+	Recover(model.InstanceState) error
 	CreateInstance() error
 	DestroyInstance() error
 	StartInstance() error

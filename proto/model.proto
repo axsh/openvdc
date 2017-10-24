@@ -13,7 +13,17 @@ message Instance {
   InstanceState last_state = 4 [json_name="last_state"];
   google.protobuf.Timestamp created_at = 5 [json_name="created_at"];
   Template template = 6;
-  FailureMessage latest_failure = 7;
+  FailureMessage latest_failure = 7 [json_name="latest_failure"];
+  bool auto_recovery = 8 [json_name="auto_recovery"];
+  ConnectionStatus connection_status = 9 [json_name="connection_status"];
+}
+
+message ConnectionStatus {
+  enum Status {
+    CONNECTED = 0;
+    NOT_CONNECTED = 1;
+  }
+  Status status = 1;
 }
 
 enum AuthenticationType {
@@ -46,8 +56,8 @@ message FailureMessage {
     FAILED_REBOOT = 3;
     FAILED_TERMINATE = 4;
   }
-  ErrorType error_type = 1;
-  google.protobuf.Timestamp failed_at = 2;
+  ErrorType error_type = 1 [json_name="error_type"];
+  google.protobuf.Timestamp failed_at = 2 [json_name="failed_at"];
 }
 
 message Template {

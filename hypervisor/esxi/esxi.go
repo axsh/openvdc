@@ -416,3 +416,8 @@ func (d EsxiHypervisorDriver) RebootInstance() error {
 		[]string{"guest.start", vmUserDetails(), d.vmPath(), "/sbin/reboot"},
 	)
 }
+
+func (d *EsxiHypervisorDriver) Recover(instanceState model.InstanceState) error {
+        //Todo: handle recovery
+        return nil
+}
