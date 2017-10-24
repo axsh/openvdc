@@ -23,40 +23,41 @@ type SSHServer struct {
 	ctx      context.Context
 }
 
-func getInstResource(ctx context.Context, userID string) (model.InstanceResource, error) {
-	inst, err := model.Instances(ctx).FindByID(userID)
+func getAuthAttrsFromInstance(ctx context.Context, instanceID string) (model.ConsoleAuthAttributes, error) {
+	inst, err := model.Instances(ctx).FindByID(instanceID)
 	if err != nil {
-		log.WithError(err).Errorf("Unknown instance: %s", userID)
-		// conn.Close()
+		log.WithError(err).Errorf("Unknown instance: %s", instanceID)
 		return nil, err
 	}
-	instResource := inst.ResourceTemplate().(model.InstanceResource)
+	instResource, ok := inst.ResourceTemplate().(model.ConsoleAuthAttributes)
+	if !ok {
+		return nil, errors.Errorf("%T does not support model.ConsoleAuthAttributes", inst.ResourceTemplate())
+	}
 	return instResource, nil
 }
 
 func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
 		PasswordCallback: func(conn ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-			instResource, err := getInstResource(ctx, conn.User())
+			authAttrs, err := getAuthAttrsFromInstance(ctx, conn.User())
 			if err != nil {
 				return nil, err
 			}
-			if instResource.GetSshPublicKey() != "" {
+			if authAttrs.GetSshPublicKey() != "" {
 				return nil, fmt.Errorf("%s is setted public key", conn.User())
 			}
 			return nil, nil
 		},
 		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
-			instResource, err := getInstResource(ctx, conn.User())
+			authAttrs, err := getAuthAttrsFromInstance(ctx, conn.User())
 			if err != nil {
 				return nil, err
 			}
-			authType := instResource.GetAuthenticationType()
-			switch authType {
+			switch authAttrs.GetAuthenticationType() {
 			case model.AuthenticationType_NONE:
 				return nil, nil
 			case model.AuthenticationType_PUB_KEY:
-				zkPubKey := strings.TrimSpace(instResource.GetSshPublicKey())
+				zkPubKey := strings.TrimSpace(authAttrs.GetSshPublicKey())
 				var clientPubkey string
 				if key != nil {
 					clientPubkey = strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
