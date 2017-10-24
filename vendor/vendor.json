@@ -46,10 +46,9 @@
 		},
 		{
 			"checksumSHA1": "qtjd74+bErubh+qyv3s+lWmn9wc=",
-			"origin": "github.com/shirou/gopsutil/vendor/github.com/StackExchange/wmi",
 			"path": "github.com/StackExchange/wmi",
-			"revision": "48fc5612898a1213aa5d6a0fb2d4f7b968e898fb",
-			"revisionTime": "2017-10-18T15:04:09Z"
+			"revision": "ea383cf3ba6ec950874b8486cd72356d007c768f",
+			"revisionTime": "2017-04-10T19:29:09Z"
 		},
 		{
 			"checksumSHA1": "FDV1HT/HwDJ1G2LPEJG2o/gsWz4=",
@@ -113,18 +112,16 @@
 			"revisionTime": "2016-10-26T20:31:22Z"
 		},
 		{
-			"checksumSHA1": "LDQVsQdmxoP7bmAMuPNXR+8a3/k=",
-			"origin": "github.com/shirou/gopsutil/vendor/github.com/go-ole/go-ole",
+			"checksumSHA1": "426QwAtMxIcLiThPsii/l55tP64=",
 			"path": "github.com/go-ole/go-ole",
-			"revision": "48fc5612898a1213aa5d6a0fb2d4f7b968e898fb",
-			"revisionTime": "2017-10-18T15:04:09Z"
+			"revision": "2ecd927eaf828c4fc088fae349b28eed1480ff56",
+			"revisionTime": "2017-10-11T07:02:43Z"
 		},
 		{
 			"checksumSHA1": "Q0ZOcJW0fqOefDzEdn+PJHOeSgI=",
-			"origin": "github.com/shirou/gopsutil/vendor/github.com/go-ole/go-ole/oleutil",
 			"path": "github.com/go-ole/go-ole/oleutil",
-			"revision": "48fc5612898a1213aa5d6a0fb2d4f7b968e898fb",
-			"revisionTime": "2017-10-18T15:04:09Z"
+			"revision": "2ecd927eaf828c4fc088fae349b28eed1480ff56",
+			"revisionTime": "2017-10-11T07:02:43Z"
 		},
 		{
 			"checksumSHA1": "oDNpaVF/BHUyme8A7RoBAH2q6is=",
@@ -818,11 +815,10 @@
 			"revisionTime": "2016-12-14T18:38:57Z"
 		},
 		{
-			"checksumSHA1": "YrmkaQcOrEn2MfAvp+F8Mu56EMc=",
-			"origin": "github.com/shirou/gopsutil/vendor/golang.org/x/sys/windows",
+			"checksumSHA1": "pBPFzDGt3AVSRffB7ffiUnruFUk=",
 			"path": "golang.org/x/sys/windows",
-			"revision": "48fc5612898a1213aa5d6a0fb2d4f7b968e898fb",
-			"revisionTime": "2017-10-18T15:04:09Z"
+			"revision": "ebfc5b4631820b793c9010c87fd8fef0f39eb082",
+			"revisionTime": "2017-10-06T15:06:24Z"
 		},
 		{
 			"checksumSHA1": "ziMb9+ANGRJSSIuxYdRbA+cDRBQ=",
