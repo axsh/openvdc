@@ -138,6 +138,7 @@ func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 			return
 		}
 		sched.nodeInfo[agentId].resources = resp
+		log.Infoln("Update resources information on agent:", agentId)
 	}
 
 	for _, offer := range offers {
