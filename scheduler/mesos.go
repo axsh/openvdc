@@ -40,6 +40,7 @@ type VDCScheduler struct {
 	zkAddr        backend.ZkEndpoint
 	ctx           context.Context
 	nodeInfo      map[string]*nodeInfo
+	grpcConn      *grpc.ClientConn
 }
 
 type nodeInfo struct {
@@ -54,6 +55,7 @@ func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEn
 		zkAddr:     zkAddr,
 		ctx:        ctx,
 		nodeInfo:   make(map[string]*nodeInfo),
+		grpcConn:   &grpc.ClientConn{},
 	}
 }
 
@@ -113,16 +115,14 @@ func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 			}
 		}
 		slaveAddr := fmt.Sprintf("%s:%d", sched.nodeInfo[agentId].ip, sched.nodeInfo[agentId].port)
-		conn, err := grpc.Dial(slaveAddr, grpc.WithInsecure())
+		sched.grpcConn, err = grpc.Dial(slaveAddr, grpc.WithInsecure())
 		if err != nil {
 			log.WithError(err).Warnf("Failed connection to OpenVDC agent: %s", agentId)
 			return
 		}
-		defer func() {
-			conn.Close()
-		}()
+		defer sched.grpcConn.Close()
 
-		c := agent.NewResourceCollectorClient(conn)
+		c := agent.NewResourceCollectorClient(sched.grpcConn)
 		resp, err := c.GetResources(context.Background(), &empty.Empty{})
 		if err != nil {
 			log.WithError(err).Warnf("Failed api request to OpenVDC agent: %s", agentId)
