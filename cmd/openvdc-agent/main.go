@@ -22,8 +22,7 @@ type VDCAgent struct {
 var (
 	vdcAgent *VDCAgent
 	DefaultConfPath string
-	updateInteval time.Duration = 5
-	// TODO: receive from configuration file or as flag
+	updateInterval time.Duration = 5
 )
 
 func initConfig() error {
@@ -87,7 +86,7 @@ func (a *VDCAgent) Run() error {
 		if err := a.GetResources(); err != nil {
 			return err
 		}
-		time.Sleep(time.Second * updateInteval)
+		time.Sleep(time.Second * updateInterval)
 	}
 }
 
