@@ -50,11 +50,8 @@ func exitOnErr(err error) {
 
 func init() {
 	viper.SetDefault("resource-collector.listen", "0.0.0.0:9092")
-	viper.SetDefault("resource-collector.advertise-ip", "")
 	viper.SetDefault("resource-collector.mode", "local")
-
 	exitOnErr(initConfig())
-
 }
 
 func main() {
