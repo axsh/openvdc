@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 	"net"
+	"time"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -102,6 +103,10 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 }
 
 func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
+	copts := []grpc.DialOption{
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	}
 	getResource := func(offer *mesos.Offer) {
 		var err error
 		var agentId string
@@ -119,9 +124,9 @@ func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 			}
 		}
 		slaveAddr := fmt.Sprintf("%s:%d", sched.nodeInfo[agentId].ip, sched.nodeInfo[agentId].port)
-		sched.grpcConn, err = grpc.Dial(slaveAddr, grpc.WithInsecure())
-		if err != nil {
-			log.WithError(err).Warnf("Failed connection to OpenVDC agent: %s", agentId)
+		ctx, _ := context.WithTimeout(context.Background(), time.Second * 1)
+		if sched.grpcConn, err = grpc.DialContext(ctx, slaveAddr, copts...); err != nil {
+			log.WithError(err).Warnf("Failed to connect OpenVDC agent on: %s", agentId)
 			return
 		}
 		defer sched.grpcConn.Close()
