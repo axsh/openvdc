@@ -103,8 +103,12 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 
 func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 	getResource := func(offer *mesos.Offer) {
-		agentId := getAgentID(offer) 
+		var err error
+		var agentId string
 
+		if agentId = getAgentID(offer); agentId == "" {
+			agentId = offer.SlaveId.GetValue()
+		}
 		if _, exists := sched.nodeInfo[agentId]; !exists {
 			ip := offer.GetUrl().GetAddress().GetIp()
 			// TODO: get proper port from somewhere (attribute?)
