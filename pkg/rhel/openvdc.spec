@@ -110,6 +110,9 @@ OpenVDC executor common package.
 /usr/sbin/openvdc-executor
 
 %post executor
+test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa -f /etc/openvdc/ssh/host_rsa_key -b 4096 -C '' -N '' >&/dev/null;
+test ! -f /etc/openvdc/ssh/host_ecdsa_key && /usr/bin/ssh-keygen -q -t ecdsa -f /etc/openvdc/ssh/host_ecdsa_key -C '' -N '' >&/dev/null;
+test ! -f /etc/openvdc/ssh/host_ed25519_key && /usr/bin/ssh-keygen -q -t ed25519 -f /etc/openvdc/ssh/host_ed25519_key -C '' -N '' >&/dev/null;
 %{systemd_post openvdc-agent.service}
 
 %postrun executor
@@ -118,10 +121,7 @@ OpenVDC executor common package.
 %preun executor
 %{systemd_preun openvdc-agent.service}
 
-%post executor
-test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa -f /etc/openvdc/ssh/host_rsa_key -b 4096 -C '' -N '' >&/dev/null;
-test ! -f /etc/openvdc/ssh/host_ecdsa_key && /usr/bin/ssh-keygen -q -t ecdsa -f /etc/openvdc/ssh/host_ecdsa_key -C '' -N '' >&/dev/null;
-test ! -f /etc/openvdc/ssh/host_ed25519_key && /usr/bin/ssh-keygen -q -t ed25519 -f /etc/openvdc/ssh/host_ed25519_key -C '' -N '' >&/dev/null;
+
 
 %package executor-null
 Summary: OpenVDC executor (null driver)
