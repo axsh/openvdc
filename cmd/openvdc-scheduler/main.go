@@ -50,6 +50,8 @@ func init() {
 	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
 	viper.SetDefault("scheduler.executor-path", "openvdc-executor")
 
+	viper.SetDefault("scheduler.scheduling-method", "round-robin")
+
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
 	pfs.String("config", DefaultConfPath, "Load config file from the path")
@@ -74,6 +76,9 @@ func init() {
 
 	pfs.String("executor-path", viper.GetString("scheduler.executor-path"), "Executor path")
 	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
+
+	pfs.String("scheduling-method", viper.GetString("scheduler.scheduling-method"), "Scheduling method")
+	viper.BindPFlag("scheduler.scheduling-method", pfs.Lookup("scheduling-method"))
 }
 
 func setupDatabaseSchema() {
