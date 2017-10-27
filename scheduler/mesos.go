@@ -142,6 +142,8 @@ func (n *nodeInfo) updateResources() error {
 }
 
 func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
+	activeAgents := make(map[string]bool)
+
 	getResource := func(offer *mesos.Offer) {
 		var agentId string
 
@@ -151,6 +153,9 @@ func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 		if _, exists := sched.nodeInfo[agentId]; !exists {
 			addResourceCollector(sched, agentId, offer)
 		}
+		// dummy value to mark that the node is active
+		activeAgents[agentId] = true
+
 		if sched.nodeInfo[agentId].grpcConn == nil {
 			if err := sched.nodeInfo[agentId].connectResourceCollector(); err != nil {
 				log.WithError(err).Warnf("Failed to connect OpenVDC agent on: %s", agentId)
@@ -161,9 +166,21 @@ func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 			log.WithError(err).Warnf("Failed api request to OpenVDC agent: %s", agentId)
 			return
 		}
-
 		log.Infoln("Updated resources information on agent:", agentId)
 	}
+
+	defer func() {
+		for _, n := range sched.nodeInfo {
+			if _, exists := activeAgents[n.id]; exists {
+				continue
+			}
+			if n.grpcConn != nil {
+				n.grpcConn.Close()
+				n.grpcConn = nil
+			}
+			delete(sched.nodeInfo, n.id)
+		}
+	}()
 
 	for _, offer := range offers {
 		getResource(offer)
