@@ -58,9 +58,7 @@ func init() {
 func main() {
 	agent := newVDCAgent()
 	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
-	{
-		exitOnErr(agent.Run())
-	}
+	exitOnErr(agent.Run())
 }
 
 func newVDCAgent() *VDCAgent {

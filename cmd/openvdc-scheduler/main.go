@@ -174,7 +174,6 @@ func execute(cmd *cobra.Command, args []string) {
 	}()
 	defer resourceCollectorServer.GracefulStop()
 
-
 	mesosDriver, err := scheduler.NewMesosScheduler(
 		ctx,
 		viper.GetString("mesos.listen"),
