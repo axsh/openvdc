@@ -8,6 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
+	"github.com/axsh/openvdc/api/agent"
 	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
@@ -37,6 +38,18 @@ var rootCmd = &cobra.Command{
 	% openvdc-scheduler --master=localhost:5050 --zk=localhost:2181
 	`,
 	Run: execute,
+}
+
+type resourceCollectorAgent struct {
+	listener     net.Listener
+	monitorNodes map[string]*model.MonitorNode
+}
+
+func newResourceCollectorAgent(listener net.Listener) *resourceCollectorAgent {
+	return &resourceCollectorAgent{
+		listener:     listener,
+		monitorNodes: make(map[string]*model.MonitorNode),
+	}
 }
 
 func init() {
@@ -126,6 +139,7 @@ func execute(cmd *cobra.Command, args []string) {
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
 	}
 
+
 	detector, err := detector.New(viper.GetString("mesos.master"))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create mesos detector")
@@ -142,12 +156,28 @@ func execute(cmd *cobra.Command, args []string) {
 		}
 	}()
 
+	resourceCollectorListener, err := net.Listen("tcp", viper.GetString("resource-collector.endpoint"))
+	if err != nil {
+		log.Fatalln("Faild to bind address for collector API: ", viper.GetString("resource-collector.endpoint"))
+	}
+	log.Info("Listening collector API on: ", viper.GetString("resource-collector.endpoint"))
+	resourceCollectorAgent := newResourceCollectorAgent(resourceCollectorListener)
+	resourceCollectorServer := agent.NewResourceCollectorAPIServer(ctx, &zkAddr, resourceCollectorAgent.monitorNodes)
+	go func() {
+		if err := resourceCollectorServer.Serve(resourceCollectorAgent.listener); err != nil{
+			log.WithError(err).Fatal("Failed")
+		}
+	}()
+	defer resourceCollectorServer.GracefulStop()
+
+
 	mesosDriver, err := scheduler.NewMesosScheduler(
 		ctx,
 		viper.GetString("mesos.listen"),
 		viper.GetString("mesos.master"),
 		zkAddr,
 		settings,
+		resourceCollectorAgent.monitorNodes,
 	)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create mesos driver")

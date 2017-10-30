@@ -13,3 +13,6 @@
 # name = "openvdc"
 # failover-timeout = 604800 #1 week
 # executor-path = "openvdc-executor"
+
+[resource-collector]
+# endpoint = "0.0.0.0:9092"

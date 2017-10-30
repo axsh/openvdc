@@ -24,6 +24,7 @@ type ClusterNode interface {
 
 func (ExecutorNode) isClusterNode()  {}
 func (SchedulerNode) isClusterNode() {}
+func (MonitorNode) isClusterNode()   {}
 
 type ClusterOps interface {
 	Register(node ClusterNode) error

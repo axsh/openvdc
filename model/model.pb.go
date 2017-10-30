@@ -25,6 +25,7 @@ It has these top-level messages:
 	SchedulerNode
 	AgentNode
 	CrashedNode
+	MonitorNode
 	NodeState
 	Resource
 	LoadAvg

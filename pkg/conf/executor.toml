@@ -32,12 +32,11 @@ type = "linux"
 	# down-script = "ovs-down.sh.tmpl"
 
 [executor-api]
-# listen = "0.0.0.0:19372"
+# listen = "0.0.0.0:9092"
 # advertise-ip = "192.168.56.150"
 
 [resource-collector]
-# listen = 0.0.0.0:9091
-# advertise-ip = 192.168.56.150
+# endpoint = 0.0.0.0:9091
 # mode = "local"
 
 [console]

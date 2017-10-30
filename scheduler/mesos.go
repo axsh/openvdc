@@ -36,15 +36,15 @@ type VDCScheduler struct {
 	listenAddr    string
 	zkAddr        backend.ZkEndpoint
 	ctx           context.Context
-	collector     map[string]*resourceCollector
+	monitorNodes  map[string]*model.MonitorNode
 }
 
-func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
+func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint, monitorNodes map[string]*model.MonitorNode) *VDCScheduler {
 	return &VDCScheduler{
-		listenAddr: listenAddr,
-		zkAddr:     zkAddr,
-		ctx:        ctx,
-		collector:   make(map[string]*resourceCollector),
+		listenAddr:   listenAddr,
+		zkAddr:       zkAddr,
+		ctx:          ctx,
+		monitorNodes: monitorNodes,
 	}
 }
 
@@ -90,55 +90,55 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
-	activeAgents := make(map[string]bool)
+// func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
+// 	activeAgents := make(map[string]bool)
 
-	getResource := func(offer *mesos.Offer) {
-		var agentId string
+// 	getResource := func(offer *mesos.Offer) {
+// 		var agentId string
 
-		if agentId = getAgentID(offer); agentId == "" {
-			agentId = offer.SlaveId.GetValue()
-		}
-		if _, exists := sched.collector[agentId]; !exists {
-			sched.collector[agentId] = newResourceCollector(agentId, offer)
-		}
-		// dummy value to mark that the node is active
-		activeAgents[agentId] = true
+// 		if agentId = getAgentID(offer); agentId == "" {
+// 			agentId = offer.SlaveId.GetValue()
+// 		}
+// 		if _, exists := sched.collector[agentId]; !exists {
+// 			sched.collector[agentId] = newResourceCollector(agentId, offer)
+// 		}
+// 		// dummy value to mark that the node is active
+// 		activeAgents[agentId] = true
 
-		if sched.collector[agentId].grpcConn == nil {
-			if err := sched.collector[agentId].connectResourceCollector(); err != nil {
-				log.WithError(err).Warnf("Failed to connect OpenVDC agent on: %s", agentId)
-				return
-			}
-		}
-		if err := sched.collector[agentId].updateResources(); err != nil {
-			log.WithError(err).Warnf("Failed api request to OpenVDC agent: %s", agentId)
-			return
-		}
-		log.Infoln("Updated resources information on agent:", agentId)
-	}
+// 		if sched.collector[agentId].grpcConn == nil {
+// 			if err := sched.collector[agentId].connectResourceCollector(); err != nil {
+// 				log.WithError(err).Warnf("Failed to connect OpenVDC agent on: %s", agentId)
+// 				return
+// 			}
+// 		}
+// 		if err := sched.collector[agentId].updateResources(); err != nil {
+// 			log.WithError(err).Warnf("Failed api request to OpenVDC agent: %s", agentId)
+// 			return
+// 		}
+// 		log.Infoln("Updated resources information on agent:", agentId)
+// 	}
 
-	defer func() {
-		for _, rc := range sched.collector {
-			if _, exists := activeAgents[rc.id]; exists {
-				continue
-			}
-			if rc.grpcConn != nil {
-				rc.grpcConn.Close()
-				rc.grpcConn = nil
-			}
-			delete(sched.collector, rc.id)
-		}
-	}()
+// 	defer func() {
+// 		for _, rc := range sched.collector {
+// 			if _, exists := activeAgents[rc.id]; exists {
+// 				continue
+// 			}
+// 			if rc.grpcConn != nil {
+// 				rc.grpcConn.Close()
+// 				rc.grpcConn = nil
+// 			}
+// 			delete(sched.collector, rc.id)
+// 		}
+// 	}()
 
-	for _, offer := range offers {
-		getResource(offer)
-	}
-}
+// 	for _, offer := range offers {
+// 		getResource(offer)
+// 	}
+// }
 
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
 	checkAgents(offers, ctx)
-	sched.collectResources(offers)
+	// sched.collectResources(offers)
 
 	if sched.tasksLaunched == 0 {
 		sched.CheckForCrashedNodes(offers, ctx)
@@ -619,7 +619,7 @@ func (sched *VDCScheduler) Error(_ sched.SchedulerDriver, err string) {
 	log.Errorln("Scheduler received error: %v", err)
 }
 
-func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint, settings SchedulerSettings) (*sched.MesosSchedulerDriver, error) {
+func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr string, zkAddr backend.ZkEndpoint, settings SchedulerSettings, monitorNodes map[string]*model.MonitorNode) (*sched.MesosSchedulerDriver, error) {
 	cred := &mesos.Credential{
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
@@ -641,7 +641,7 @@ func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr s
 	}
 
 	config := sched.DriverConfig{
-		Scheduler:      newVDCScheduler(ctx, listenAddr, zkAddr),
+		Scheduler:      newVDCScheduler(ctx, listenAddr, zkAddr, monitorNodes),
 		Framework:      FrameworkInfo,
 		Master:         mesosMasterAddr,
 		Credential:     cred,
