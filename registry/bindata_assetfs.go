@@ -109,7 +109,7 @@ func schemaV1Json() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema/v1.json", size: 761, mode: os.FileMode(420), modTime: time.Unix(1508232342, 0)}
+	info := bindataFileInfo{name: "schema/v1.json", size: 761, mode: os.FileMode(420), modTime: time.Unix(1508315265, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -129,7 +129,7 @@ func schemaVmEsxiJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema/vm/esxi.json", size: 1342, mode: os.FileMode(420), modTime: time.Unix(1508232342, 0)}
+	info := bindataFileInfo{name: "schema/vm/esxi.json", size: 1342, mode: os.FileMode(420), modTime: time.Unix(1508315265, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
