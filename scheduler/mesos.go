@@ -34,20 +34,21 @@ type SchedulerSettings struct {
 }
 
 type VDCScheduler struct {
-	tasksLaunched   int
-	tasksFinished   int
-	tasksErrored    int
-	totalTasks      int
-	listenAddr      string
-	zkAddr          backend.ZkEndpoint
-	ctx             context.Context
-	nodeInfo        map[string]*nodeInfo
+	tasksLaunched 	int
+	tasksFinished 	int
+	tasksErrored  	int
+	totalTasks    	int
+	listenAddr    	string
+	zkAddr        	backend.ZkEndpoint
+	ctx           	context.Context
+	collector     	map[string]*resourceCollector
 	agentIDQueue    []string
-	method          SchedulingMethod
-	grpcConn        *grpc.ClientConn
+        method          SchedulingMethod
 }
 
-type nodeInfo struct {
+type resourceCollector struct {
+	id        string 
+	grpcConn  *grpc.ClientConn
 	resources *model.ComputingResources
 	ip        string
 	port      int
@@ -55,13 +56,12 @@ type nodeInfo struct {
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint, method SchedulingMethod) *VDCScheduler {
 	return &VDCScheduler{
-		listenAddr:   listenAddr,
-		zkAddr:       zkAddr,
-		ctx:          ctx,
-		nodeInfo:     make(map[string]*nodeInfo),
+		listenAddr: listenAddr,
+		zkAddr:     zkAddr,
+		ctx:        ctx,
+		collector:   make(map[string]*resourceCollector),
 		agentIDQueue: make([]string, 0, 100),
-		method:	      method,
-		grpcConn:     &grpc.ClientConn{},
+                method:       method,
 	}
 }
 
@@ -107,46 +107,88 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
+func addResourceCollector(sched *VDCScheduler, id string, offer *mesos.Offer) {
+	ip := offer.GetUrl().GetAddress().GetIp()
+	// todo: get proper port from somewhere (attribute?)
+	port := 9092
+	sched.collector[id] = &resourceCollector{
+		ip:   ip,
+		port: port,
+		id:   id,
+	}
+}
+
+func (rc *resourceCollector) connectResourceCollector() error {
 	copts := []grpc.DialOption{
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	}
+
+	slaveAddr := fmt.Sprintf("%s:%d", rc.ip, rc.port)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second * 1)
+	conn, err := grpc.DialContext(ctx, slaveAddr, copts...)
+	if err != nil {
+		return err
+	}
+	rc.grpcConn = conn
+
+	return nil
+}
+
+func (rc *resourceCollector) updateResources() error {
+	c := agent.NewResourceCollectorClient(rc.grpcConn)
+	resp, err := c.GetResources(context.Background(), &empty.Empty{})
+	if err != nil {
+		return err
+	}
+	rc.resources = resp
+
+	return nil
+}
+
+func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
+	activeAgents := make(map[string]bool)
+
 	getResource := func(offer *mesos.Offer) {
-		var err error
 		var agentId string
 
 		if agentId = getAgentID(offer); agentId == "" {
 			agentId = offer.SlaveId.GetValue()
 		}
-		if _, exists := sched.nodeInfo[agentId]; !exists {
-			ip := offer.GetUrl().GetAddress().GetIp()
-			// TODO: get proper port from somewhere (attribute?)
-			port := 9092
-			sched.nodeInfo[agentId] = &nodeInfo{
-				ip: ip,
-				port: port,
+
+		if _, exists := sched.collector[agentId]; !exists {
+			addResourceCollector(sched, agentId, offer)
+		}
+		// dummy value to mark that the node is active
+		activeAgents[agentId] = true
+
+		sched.agentIDQueue = append(sched.agentIDQueue, agentId)
+
+		if sched.collector[agentId].grpcConn == nil {
+			if err := sched.collector[agentId].connectResourceCollector(); err != nil {
+				log.WithError(err).Warnf("Failed to connect OpenVDC agent on: %s", agentId)
+				return
 			}
-
-			sched.agentIDQueue = append(sched.agentIDQueue, agentId)
 		}
-		slaveAddr := fmt.Sprintf("%s:%d", sched.nodeInfo[agentId].ip, sched.nodeInfo[agentId].port)
-		ctx, _ := context.WithTimeout(context.Background(), time.Second * 1)
-		if sched.grpcConn, err = grpc.DialContext(ctx, slaveAddr, copts...); err != nil {
-			log.WithError(err).Warnf("Failed to connect OpenVDC agent on: %s", agentId)
-			return
-		}
-		defer sched.grpcConn.Close()
-
-		c := agent.NewResourceCollectorClient(sched.grpcConn)
-		resp, err := c.GetResources(context.Background(), &empty.Empty{})
-		if err != nil {
+		if err := sched.collector[agentId].updateResources(); err != nil {
 			log.WithError(err).Warnf("Failed api request to OpenVDC agent: %s", agentId)
 			return
 		}
-		sched.nodeInfo[agentId].resources = resp
-		log.Infoln("Update resources information on agent:", agentId)
+		log.Infoln("Updated resources information on agent:", agentId)
 	}
+
+	defer func() {
+		for _, rc := range sched.collector {
+			if _, exists := activeAgents[rc.id]; exists {
+				continue
+			}
+			if rc.grpcConn != nil {
+				rc.grpcConn.Close()
+				rc.grpcConn = nil
+			}
+			delete(sched.collector, rc.id)
+		}
+	}()
 
 	for _, offer := range offers {
 		getResource(offer)
@@ -352,7 +394,6 @@ func (sched *VDCScheduler) InstancesQueued(driver sched.SchedulerDriver, offers 
 			continue
 		}
 		found := findMatching(i, offers, ctx)
-
 		for i, _ := range acceptIDs {
 			if acceptIDs[i] == found.Id {
 				found = nil

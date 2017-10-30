@@ -176,7 +176,6 @@ func (rm *esxiResourceCollector) GetCpu() (*model.Resource, error) {
 	}
 	v := parsedJson.Path("Values")
 	cores, _ := strconv.ParseInt(typeAssert(v.Path("CPUCores")).(string), 10, 64)
-	// pkgs, _ := strconv.ParseInt(typeAssert(v.Path("CPUPackages")).(string),10, 64)
 	return &model.Resource{
 		Total: cores,
 	}, nil
