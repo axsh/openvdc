@@ -3,12 +3,10 @@ package scheduler
 import (
 	"fmt"
 	"net"
-	"time"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
-	"github.com/axsh/openvdc/api/agent"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mesos/mesos-go/auth"
@@ -19,8 +17,6 @@ import (
 	sched "github.com/mesos/mesos-go/scheduler"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
 var ExecutorPath string
@@ -41,14 +37,6 @@ type VDCScheduler struct {
 	zkAddr        backend.ZkEndpoint
 	ctx           context.Context
 	collector     map[string]*resourceCollector
-}
-
-type resourceCollector struct {
-	id        string 
-	grpcConn  *grpc.ClientConn
-	resources *model.ComputingResources
-	ip        string
-	port      int
 }
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
@@ -102,45 +90,6 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-func addResourceCollector(sched *VDCScheduler, id string, offer *mesos.Offer) {
-	ip := offer.GetUrl().GetAddress().GetIp()
-	// todo: get proper port from somewhere (attribute?)
-	port := 9092
-	sched.collector[id] = &resourceCollector{
-		ip:   ip,
-		port: port,
-		id:   id,
-	}
-}
-
-func (rc *resourceCollector) connectResourceCollector() error {
-	copts := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-	}
-
-	slaveAddr := fmt.Sprintf("%s:%d", rc.ip, rc.port)
-	ctx, _ := context.WithTimeout(context.Background(), time.Second * 1)
-	conn, err := grpc.DialContext(ctx, slaveAddr, copts...)
-	if err != nil {
-		return err
-	}
-	rc.grpcConn = conn
-
-	return nil
-}
-
-func (rc *resourceCollector) updateResources() error {
-	c := agent.NewResourceCollectorClient(rc.grpcConn)
-	resp, err := c.GetResources(context.Background(), &empty.Empty{})
-	if err != nil {
-		return err
-	}
-	rc.resources = resp
-
-	return nil
-}
-
 func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 	activeAgents := make(map[string]bool)
 
@@ -151,7 +100,7 @@ func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 			agentId = offer.SlaveId.GetValue()
 		}
 		if _, exists := sched.collector[agentId]; !exists {
-			addResourceCollector(sched, agentId, offer)
+			sched.collector[agentId] = newResourceCollector(agentId, offer)
 		}
 		// dummy value to mark that the node is active
 		activeAgents[agentId] = true
