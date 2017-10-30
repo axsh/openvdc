@@ -30,18 +30,21 @@ type SchedulerSettings struct {
 	ID              string
 	FailoverTimeout float64
 	ExecutorPath    string
+	Method          SchedulingMethod
 }
 
 type VDCScheduler struct {
-	tasksLaunched int
-	tasksFinished int
-	tasksErrored  int
-	totalTasks    int
-	listenAddr    string
-	zkAddr        backend.ZkEndpoint
-	ctx           context.Context
-	nodeInfo      map[string]*nodeInfo
-	grpcConn      *grpc.ClientConn
+	tasksLaunched   int
+	tasksFinished   int
+	tasksErrored    int
+	totalTasks      int
+	listenAddr      string
+	zkAddr          backend.ZkEndpoint
+	ctx             context.Context
+	nodeInfo        map[string]*nodeInfo
+	agentIDQueue    []string
+	method          SchedulingMethod
+	grpcConn        *grpc.ClientConn
 }
 
 type nodeInfo struct {
@@ -50,13 +53,15 @@ type nodeInfo struct {
 	port      int
 }
 
-func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
+func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint, method SchedulingMethod) *VDCScheduler {
 	return &VDCScheduler{
-		listenAddr: listenAddr,
-		zkAddr:     zkAddr,
-		ctx:        ctx,
-		nodeInfo:   make(map[string]*nodeInfo),
-		grpcConn:   &grpc.ClientConn{},
+		listenAddr:   listenAddr,
+		zkAddr:       zkAddr,
+		ctx:          ctx,
+		nodeInfo:     make(map[string]*nodeInfo),
+		agentIDQueue: make([]string, 0, 100),
+		method:	      method,
+		grpcConn:     &grpc.ClientConn{},
 	}
 }
 
@@ -122,6 +127,8 @@ func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
 				ip: ip,
 				port: port,
 			}
+
+			sched.agentIDQueue = append(sched.agentIDQueue, agentId)
 		}
 		slaveAddr := fmt.Sprintf("%s:%d", sched.nodeInfo[agentId].ip, sched.nodeInfo[agentId].port)
 		ctx, _ := context.WithTimeout(context.Background(), time.Second * 1)
@@ -160,7 +167,6 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	} else {
 		sched.InstancesQueued(driver, offers, ctx)
 	}
-
 	return nil
 }
 
@@ -418,6 +424,9 @@ func (sched *VDCScheduler) LaunchTasks(driver sched.SchedulerDriver, tasks []*me
 }
 
 func findMatching(i *model.Instance, offers []*mesos.Offer, ctx context.Context) *mesos.Offer {
+	
+	//Todo: prioritize agents depending on scheduling method
+
 	for _, offer := range offers {
 		log := log.WithField("agent", offer.SlaveId.String())
 		var agentAttrs struct {
@@ -652,7 +661,7 @@ func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr s
 	}
 
 	config := sched.DriverConfig{
-		Scheduler:      newVDCScheduler(ctx, listenAddr, zkAddr),
+		Scheduler:      newVDCScheduler(ctx, listenAddr, zkAddr, settings.Method),
 		Framework:      FrameworkInfo,
 		Master:         mesosMasterAddr,
 		Credential:     cred,

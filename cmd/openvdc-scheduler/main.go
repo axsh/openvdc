@@ -49,8 +49,7 @@ func init() {
 	viper.SetDefault("scheduler.id", "openvdc")
 	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
 	viper.SetDefault("scheduler.executor-path", "openvdc-executor")
-
-	viper.SetDefault("scheduler.scheduling-method", "round-robin")
+	viper.SetDefault("scheduler.scheduling-method", "")
 
 	cobra.OnInitialize(initConfig)
 	pfs := rootCmd.PersistentFlags()
@@ -124,11 +123,22 @@ func execute(cmd *cobra.Command, args []string) {
 	var zkAddr backend.ZkEndpoint
 	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
 
+	var method scheduler.SchedulingMethod;
+	
+	switch(viper.GetString("scheduler.scheduling-method")) {
+		case "round-robin": 
+			method = scheduler.RoundRobin;
+		default:
+			method = scheduler.None;
+	}		
+
+
 	settings := scheduler.SchedulerSettings{
 		Name:            viper.GetString("scheduler.id"),
 		ID:              viper.GetString("scheduler.name"),
 		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
+		Method:          method,
 	}
 
 	detector, err := detector.New(viper.GetString("mesos.master"))
