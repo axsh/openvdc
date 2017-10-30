@@ -7,6 +7,11 @@ option go_package = "github.com/axsh/openvdc/api";
 import "model.proto";
 import "cluster.proto";
 import "github.com/golang/protobuf/ptypes/timestamp/timestamp.proto";
+import "github.com/golang/protobuf/ptypes/empty/empty.proto";
+
+service ResourceCollector {
+  rpc ReportResources(model.MonitorNode) returns(google.protobuf.Empty){}
+}
 
 service InstanceConsole {
   rpc Attach(stream ConsoleIn) returns (stream ConsoleOut){}

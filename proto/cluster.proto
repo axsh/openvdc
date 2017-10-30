@@ -47,8 +47,9 @@ message CrashedNode {
 
 message MonitorNode {
   string id = 1;
-  model.ComputingResources resources = 4;
-  google.protobuf.Timestamp created_at = 5;
+  string grpc_addr = 2;
+  model.ComputingResources resources = 3;
+  google.protobuf.Timestamp created_at = 4;
 }
 
 message NodeState {

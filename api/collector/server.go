@@ -1,4 +1,4 @@
-package agent
+package collector
 
 import (
 	"net"
@@ -10,7 +10,7 @@ import (
 	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
-//go:generate protoc -I../../proto -I${GOPATH}/src --go_out=plugins=grpc:${GOPATH}/src ../../proto/agent.proto
+//go:generate protoc -I../../proto -I${GOPATH}/src --go_out=plugins=grpc:${GOPATH}/src ../../proto/collector.proto
 
 type ResourceCollectorAPIServer struct {
 	listener  net.Listener

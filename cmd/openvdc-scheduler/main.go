@@ -8,7 +8,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
-	"github.com/axsh/openvdc/api/agent"
+	"github.com/axsh/openvdc/api/collector"
 	"github.com/axsh/openvdc/cmd"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
@@ -162,7 +162,11 @@ func execute(cmd *cobra.Command, args []string) {
 	}
 	log.Info("Listening collector API on: ", viper.GetString("resource-collector.endpoint"))
 	resourceCollectorAgent := newResourceCollectorAgent(resourceCollectorListener)
-	resourceCollectorServer := agent.NewResourceCollectorAPIServer(ctx, &zkAddr, resourceCollectorAgent.monitorNodes)
+	resourceCollectorServer := collector.NewResourceCollectorAPIServer(
+		ctx,
+		&zkAddr,
+		resourceCollectorAgent.monitorNodes,
+	)
 	go func() {
 		if err := resourceCollectorServer.Serve(resourceCollectorAgent.listener); err != nil{
 			log.WithError(err).Fatal("Failed")

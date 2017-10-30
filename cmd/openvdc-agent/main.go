@@ -5,14 +5,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/axsh/openvdc/api/agent"
-	"google.golang.org/grpc"
-	"golang.org/x/net/context"
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/api/collector"
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/model/backend"
 	"github.com/axsh/openvdc/resource"
 	"github.com/spf13/viper"
-	"github.com/axsh/openvdc/model/backend"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 type VDCAgent struct {
@@ -22,10 +22,9 @@ type VDCAgent struct {
 }
 
 var (
-// 	vdcAgent *VDCAgent
 	DefaultConfPath string
-	updateInterval time.Duration = 5
-	zkAddr backend.ZkEndpoint
+	updateInterval  time.Duration = 5
+	zkAddr          backend.ZkEndpoint
 )
 
 func initConfig() error {
@@ -58,21 +57,22 @@ func init() {
 
 func main() {
 	agent := newVDCAgent()
-	zkAddr.Set(viper.GetString("zookeeper.endpoint")); {
-	exitOnErr(agent.Run())
+	zkAddr.Set(viper.GetString("zookeeper.endpoint"))
+	{
+		exitOnErr(agent.Run())
 	}
 }
 
 func newVDCAgent() *VDCAgent {
-	c, err := resource.NewCollector(viper.GetViper());
+	c, err := resource.NewCollector(viper.GetViper())
 	exitOnErr(err)
 	node := &model.MonitorNode{
-		Id: "test-monitor2",
+		Id:        "test-monitor2",
 		Resources: &model.ComputingResources{},
 	}
 	return &VDCAgent{
 		collector: c,
-		nodeInfo: node,
+		nodeInfo:  node,
 	}
 }
 
@@ -92,12 +92,12 @@ func (a *VDCAgent) updateResources() {
 		grpc.WithBlock(),
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second * 1)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*1)
 	if a.conn, err = grpc.DialContext(ctx, viper.GetString("resource-collector.endpoint"), copts...); err != nil {
 		fmt.Println("failed conn")
 	}
 	defer a.conn.Close()
-	c := agent.NewResourceCollectorClient(a.conn)
+	c := collector.NewResourceCollectorClient(a.conn)
 	if _, err := c.ReportResources(context.Background(), a.nodeInfo); err != nil {
 		fmt.Println("fail api req")
 	}
@@ -124,7 +124,7 @@ func (a *VDCAgent) Run() error {
 		}
 	}()
 	a.Register(ctx)
-	
+
 	for {
 		if err := a.GetResources(); err != nil {
 			return err

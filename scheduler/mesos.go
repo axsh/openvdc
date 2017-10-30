@@ -90,55 +90,8 @@ func (sched *VDCScheduler) ResourceOffers(driver sched.SchedulerDriver, offers [
 	}
 }
 
-// func (sched *VDCScheduler) collectResources(offers []*mesos.Offer) {
-// 	activeAgents := make(map[string]bool)
-
-// 	getResource := func(offer *mesos.Offer) {
-// 		var agentId string
-
-// 		if agentId = getAgentID(offer); agentId == "" {
-// 			agentId = offer.SlaveId.GetValue()
-// 		}
-// 		if _, exists := sched.collector[agentId]; !exists {
-// 			sched.collector[agentId] = newResourceCollector(agentId, offer)
-// 		}
-// 		// dummy value to mark that the node is active
-// 		activeAgents[agentId] = true
-
-// 		if sched.collector[agentId].grpcConn == nil {
-// 			if err := sched.collector[agentId].connectResourceCollector(); err != nil {
-// 				log.WithError(err).Warnf("Failed to connect OpenVDC agent on: %s", agentId)
-// 				return
-// 			}
-// 		}
-// 		if err := sched.collector[agentId].updateResources(); err != nil {
-// 			log.WithError(err).Warnf("Failed api request to OpenVDC agent: %s", agentId)
-// 			return
-// 		}
-// 		log.Infoln("Updated resources information on agent:", agentId)
-// 	}
-
-// 	defer func() {
-// 		for _, rc := range sched.collector {
-// 			if _, exists := activeAgents[rc.id]; exists {
-// 				continue
-// 			}
-// 			if rc.grpcConn != nil {
-// 				rc.grpcConn.Close()
-// 				rc.grpcConn = nil
-// 			}
-// 			delete(sched.collector, rc.id)
-// 		}
-// 	}()
-
-// 	for _, offer := range offers {
-// 		getResource(offer)
-// 	}
-// }
-
 func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []*mesos.Offer, ctx context.Context) error {
 	checkAgents(offers, ctx)
-	// sched.collectResources(offers)
 
 	if sched.tasksLaunched == 0 {
 		sched.CheckForCrashedNodes(offers, ctx)
