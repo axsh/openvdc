@@ -1,0 +1,23 @@
+[
+  {
+    "name": "cpus",
+    "type": "SCALAR",
+    "scalar": {
+      "value": 20
+    }
+  },
+  {
+    "name": "mem",
+    "type": "SCALAR",
+    "scalar": {
+      "value": 20480
+    }
+  },
+  {
+    "name": "disk",
+    "type": "SCALAR",
+    "scalar": {
+      "value": 409600
+    }
+  }
+]
