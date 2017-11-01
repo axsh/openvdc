@@ -174,6 +174,9 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		if finState == model.InstanceState_FAILED {
+			if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+				log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+			}
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_BOOT, lastErr)
 		}
 		log.WithField("fin_state", finState).Info("Proceeded defer func() at bootInstance()")
@@ -238,6 +241,9 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	var lastErr error
 	defer func() {
 		if finState == model.InstanceState_FAILED {
+			if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+				log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+			}
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_START, lastErr)
 		}
 		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
@@ -297,9 +303,13 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 	var lastErr error
 	defer func() {
 		if finState == model.InstanceState_FAILED {
+			if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+				log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+			}
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_STOP, lastErr)
 		}
 		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
+
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
@@ -402,6 +412,9 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 	finState := model.InstanceState_FAILED
 	var lastErr error
 	defer func() {
+		if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+			log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+		}
 		if finState == model.InstanceState_FAILED {
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_TERMINATE, lastErr)
 		}
