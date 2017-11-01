@@ -7,6 +7,8 @@ package model;
 option go_package = "github.com/axsh/openvdc/model";
 
 message Instance {
+  reserved 3;
+
   string id = 1;
   string slave_id = 2 [json_name="slave_id"];
   //string resource_id = 3; // Obsolete
@@ -20,8 +22,9 @@ message Instance {
 
 message ConnectionStatus {
   enum Status {
-    CONNECTED = 0;
-    NOT_CONNECTED = 1;
+    NONE = 0;
+    CONNECTED = 1;
+    NOT_CONNECTED = 2;
   }
   Status status = 1;
 }
@@ -81,6 +84,8 @@ message LxcTemplate {
   }
   Image lxc_image = 5 [json_name="lxc_image"];
   message Interface {
+    reserved 4;
+
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
@@ -148,6 +153,8 @@ message QemuTemplate {
   }
   Image qemu_image = 5 [json_name="qemu_image"];
   message Interface {
+    reserved 4;
+
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
