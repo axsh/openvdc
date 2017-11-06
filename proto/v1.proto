@@ -28,6 +28,7 @@ message ConsoleOut {
 
 
 service Instance {
+  rpc Copy (CopyRequest) returns (CopyReply){}
   rpc Create (CreateRequest) returns (CreateReply){}
   rpc Start (StartRequest) returns (StartReply){}
   rpc Run (CreateRequest) returns (RunReply){}
@@ -42,6 +43,8 @@ service Instance {
 }
 
 message RunReply {
+  reserved 2;
+
   string instance_id = 1 [json_name="instance_id"];
   //string resource_id = 2; // Obsolete
 }
@@ -60,6 +63,15 @@ message DestroyReply {
   string instance_id = 1 [json_name="instance_id"];
 }
 
+message CopyRequest{
+  string  src = 1 [json_name="src"];
+  string  dest = 2 [json_name="dest"];
+}
+
+message CopyReply{
+  string instance_id = 1 [json_name="instance_id"];
+}
+
 message ConsoleRequest{
   string instance_id = 1 [json_name="instance_id"];
 }
@@ -70,6 +82,8 @@ message ConsoleReply {
 }
 
 message CreateRequest{
+  reserved 1;
+
   //string resource_id = 1; // Obsolete
   model.Template template = 2;
   bool auto_recovery = 3;

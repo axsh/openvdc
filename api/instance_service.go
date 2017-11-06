@@ -21,6 +21,11 @@ type InstanceAPI struct {
 	api *APIServer
 }
 
+func (s *InstanceAPI) Copy(ctx context.Context, in *CopyRequest) (*CopyReply, error) {
+
+        return &CopyReply{InstanceId: ""}, nil
+}
+
 func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateReply, error) {
 	inst, err := model.Instances(ctx).Create(&model.Instance{
 		Template:     in.GetTemplate(),
