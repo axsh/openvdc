@@ -19,10 +19,10 @@ var copyCmd = &cobra.Command{
 	% openvdc copy 1.txt i-xxxxxxx:/tmp/1.txt
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) <= 1 {
+		if len(args) == 0 {
 			log.Fatalf("Please provide a source path.")
 		}
-		if len(args) < 2 {
+		if len(args) == 1 {
 			log.Fatalf("Please provide a destination path.")
 		}
 
