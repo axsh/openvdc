@@ -64,12 +64,12 @@ message DestroyReply {
 }
 
 message CopyRequest{
-  string  src = 1 [json_name="src"];
-  string  dest = 2 [json_name="dest"];
+  string  instance_id = 1 [json_name="instance_id"];
 }
 
 message CopyReply{
   string instance_id = 1 [json_name="instance_id"];
+  string address = 2;
 }
 
 message ConsoleRequest{

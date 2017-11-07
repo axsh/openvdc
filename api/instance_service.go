@@ -21,9 +21,28 @@ type InstanceAPI struct {
 	api *APIServer
 }
 
-func (s *InstanceAPI) Copy(ctx context.Context, in *CopyRequest) (*CopyReply, error) {
+func (s *InstanceAPI) Copy(ctx context.Context, in *CopyRequest) (*CopyReply, error) {	
+	instanceID := in.InstanceId
+        if instanceID == "" {
+                return nil, fmt.Errorf("Invalid Instance ID")
+        }
 
-        return &CopyReply{InstanceId: ""}, nil
+        inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+        if err != nil {
+                log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+                return nil, err
+        }
+
+        node := &model.ExecutorNode{}
+        if err := model.Cluster(ctx).Find(inst.GetSlaveId(), node); err != nil {
+                log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+                return nil, err
+        }
+
+        return &CopyReply{
+                InstanceId: instanceID,
+                Address:    node.Console.BindAddr,
+        }, nil
 }
 
 func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateReply, error) {
