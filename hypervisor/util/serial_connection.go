@@ -1,16 +1,16 @@
 package util
 
 import (
-	"net"
-	"time"
-	"sync"
 	"bytes"
-	"os"
 	"io"
+	"net"
+	"os"
+	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/pkg/errors"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/pkg/errors"
 )
 
 type SerialConnection struct {
@@ -21,14 +21,21 @@ type serialConsoleParam struct {
 	remoteConsole *hypervisor.ConsoleParam
 	waitClosed    *sync.WaitGroup
 	errc          chan error
+	closeChan     chan bool
 }
 
-func (sc *SerialConnection) stdinToConn(param *serialConsoleParam) {
+func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-chan struct{}) {
 	param.waitClosed.Add(1)
-	defer param.waitClosed.Done()
+	defer func() {
+		param.closeChan <-true
+		param.waitClosed.Done()
+	}()
+
 	b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 	for {
 		select {
+		case <-finished:
+			return
 		case err := <-param.errc:
 			param.errc <- err
 			break
@@ -55,14 +62,21 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam) {
 	}
 }
 
-func (sc *SerialConnection) connToStdout(param *serialConsoleParam) {
+func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-chan struct{}) {
 	param.waitClosed.Add(1)
-	defer param.waitClosed.Done()
+	defer func() {
+		param.closeChan <-true
+		param.waitClosed.Done()
+	}()
+
 	b := make([]byte, 8192)
 	for {
 		sc.SerialConn.SetDeadline(time.Now().Add(time.Second))
 		n, err := sc.SerialConn.Read(b)
+
 		select {
+		case <-finished:
+			return
 		case err := <-param.errc:
 			if _, e := param.remoteConsole.Stdout.Write([]byte{0x0A}); e != nil {
 				param.errc <- errors.Wrap(e, "\nFailed to write the linefeed character on exit\n\n")
@@ -93,13 +107,19 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam) {
 }
 
 func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, errc chan error) error {
+	finished := make(chan struct{})
 	serialConsoleParam := serialConsoleParam{
 		remoteConsole: param,
 		waitClosed:    waitClosed,
 		errc:          errc,
+		closeChan:     make(chan bool),
 	}
-	go sc.stdinToConn(&serialConsoleParam)
-	go sc.connToStdout(&serialConsoleParam)
 
+	go sc.stdinToConn(&serialConsoleParam, finished)
+	go sc.connToStdout(&serialConsoleParam, finished)
+	go func() {
+		<-serialConsoleParam.closeChan
+		close(finished)
+	}()
 	return nil
 }
