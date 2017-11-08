@@ -38,13 +38,14 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-ch
 			return
 		case err := <-param.errc:
 			param.errc <- err
-			break
+			return
 		default:
 			n, err := param.remoteConsole.Stdin.Read(b)
 			if err != nil {
 				if err == io.EOF {
 					log.Info("\nConsole exited by EOF\n\n")
 					param.errc <- nil
+					return
 				} else {
 					param.errc <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
 				}
@@ -53,6 +54,7 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-ch
 			if bytes.Contains(b[0:n], []byte{0x11}) {
 				log.Info("\nConsole exited by ctrl-q\n\n")
 				param.errc <- nil
+				return
 			}
 			_, err = sc.SerialConn.Write(b[0:n])
 			if err != nil {
@@ -83,7 +85,7 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 			} else {
 				param.errc <- err
 			}
-			break
+			return
 		default:
 			if err != nil && !err.(net.Error).Timeout() {
 				param.errc <- errors.Wrap(err, "\nFailed to read the connection buffer from socket ")
