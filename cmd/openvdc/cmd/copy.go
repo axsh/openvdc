@@ -110,7 +110,7 @@ var copyCmd = &cobra.Command{
 			fmt.Fprintln(w, "\x00")
         	}()
 
-		session.Run("/usr/bin/scp -t ./")
+		session.Run("/usr/bin/scp -t " + instanceDir)
 
 		return nil
 	},
