@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"strings"
 	"os"
+	"path"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
@@ -38,18 +42,15 @@ var copyCmd = &cobra.Command{
 			log.Fatalf("Source file not found")
 		}
 
-
-		path := strings.Split(dest, ":")
-        	if len(path) < 2 { 
+		p := strings.Split(dest, ":")
+        	if len(p) < 2 { 
 			log.Fatalf("Invalid destination path. Please use this format: [Instance ID]:[file dest path]")
 		}
 
-        	instanceID, instanceDir := path[0], path[1]
-
+        	instanceID, instanceDir := p[0], p[1]
         	if instanceID == "" {
                		log.Fatalf("Invalid Instance ID")
         	}
-
         	if instanceDir == "" {
                 	log.Fatalf("Invalid destination path")
         	}
@@ -92,15 +93,24 @@ var copyCmd = &cobra.Command{
 		}
 		defer session.Close()
 
+		file, _ := os.Open(src)
+		defer file.Close()
+
+		b, _ := ioutil.ReadAll(file)
+		br := bytes.NewReader(b)	
+
+		srcFilename := path.Base(src)
+		//srcDir := path.Dir(src)
+
 		go func() {
-                	//Todo: copy file
+                	w, _ := session.StdinPipe()
+			defer w.Close()
+			fmt.Fprintln(w, "C0655", int64(len(b)), srcFilename)
+			io.Copy(w, br)
+			fmt.Fprintln(w, "\x00")
         	}()
 
-
-		err = session.Run("/usr/bin/scp -tr ./")
-		if err != nil {
-			log.WithError(err).Fatal("session.Run failed")
-		}
+		session.Run("/usr/bin/scp -t ./")
 
 		return nil
 	},
