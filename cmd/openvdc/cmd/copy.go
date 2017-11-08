@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
@@ -29,8 +30,14 @@ var copyCmd = &cobra.Command{
 			log.Fatalf("Please provide a destination path.")
 		}
 
-		//src := args[0]
+		src := args[0]
 		dest := args[1]
+
+		_, err := os.Stat(src)
+		if os.IsNotExist(err) {
+			log.Fatalf("Source file not found")
+		}
+
 
 		path := strings.Split(dest, ":")
         	fmt.Sprintf("value: %s", path[0])
@@ -51,7 +58,7 @@ var copyCmd = &cobra.Command{
 
 		var res *api.CopyReply
 
-		err := util.RemoteCall(func(conn *grpc.ClientConn) error {
+		err = util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 			var err error
 			res, err = c.Copy(context.Background(), req)
