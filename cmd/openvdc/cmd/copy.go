@@ -16,7 +16,7 @@ import (
 )
 
 var copyCmd = &cobra.Command{
-	Use:   "copy [File src path] [Instance ID]:/[file dest path]",
+	Use:   "copy [File src path] [Instance ID]:[file dest path]",
 	Short: "Copy files to and between instances",
 	Long:  "Copy files to and between instances",
 	Example: `
@@ -40,7 +40,9 @@ var copyCmd = &cobra.Command{
 
 
 		path := strings.Split(dest, ":")
-        	fmt.Sprintf("value: %s", path[0])
+        	if len(path) < 2 { 
+			log.Fatalf("Invalid destination path. Please use this format: [Instance ID]:[file dest path]")
+		}
 
         	instanceID, instanceDir := path[0], path[1]
 
