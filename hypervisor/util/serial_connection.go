@@ -53,6 +53,7 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-ch
 				log.Info("Release serial console, received escape code (ctrl-q)")
 				return
 			}
+
 			_, err = sc.SerialConn.Write(b[0:n])
 			if err != nil {
 				log.WithError(err).Error("Failed to write to the connection from the buffer")
@@ -66,8 +67,10 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 	var err error
 	param.waitClosed.Add(1)
 	defer func() {
-		if err != nil {
-			if _, err = param.remoteConsole.Stdout.Write([]byte{0x0A}); err != nil {
+		if _, err = param.remoteConsole.Stdout.Write([]byte{0x0A}); err != nil {
+			if err == io.EOF {
+				err = nil
+			} else {
 				log.WithError(err).Error("Failed to write the linefeed character on exit")
 			}
 		}
@@ -86,6 +89,16 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 		case <-finished:
 			return
 		default:
+			if err == io.EOF {
+				_, err = param.remoteConsole.Stdout.Write([]byte("\nConnection lost\n"))
+				if err != nil && err != io.EOF {
+					log.WithError(err).Error("Failed to write the linefeed character on exit")
+					return
+				}
+
+				log.Info("Connection released, received EOF")
+				return
+			}
 			if err != nil && !err.(net.Error).Timeout() {
 				log.WithError(err).Error("Failed to read the connection buffer from socket")
 				return
@@ -94,7 +107,6 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 			if bytes.Contains(b[0:n], []byte{0x11}) {
 				return
 			}
-
 			if synchable, ok := param.remoteConsole.Stdout.(*os.File); ok {
 				if err := synchable.Sync(); err != nil {
 					log.Warn("Failed %v to flush %s", param.remoteConsole.Stdout, err)
@@ -110,6 +122,10 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 }
 
 func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, errc chan error) error {
+	if sc.SerialConn == nil {
+		return errors.Errorf("Failed to attach console, connection not available")
+	}
+
 	finished := make(chan struct{})
 	serialConsoleParam := serialConsoleParam{
 		remoteConsole: param,
@@ -124,5 +140,6 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 		<-serialConsoleParam.closeChan
 		close(finished)
 	}()
+
 	return nil
 }
