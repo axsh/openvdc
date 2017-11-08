@@ -17,68 +17,74 @@ type SerialConnection struct {
 	SerialConn net.Conn
 }
 
-func (sc *SerialConnection) stdinToConn(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, errc chan error) {
-	waitClosed.Add(1)
-	defer waitClosed.Done()
+type serialConsoleParam struct {
+	remoteConsole *hypervisor.ConsoleParam
+	waitClosed    *sync.WaitGroup
+	errc          chan error
+}
+
+func (sc *SerialConnection) stdinToConn(param *serialConsoleParam) {
+	param.waitClosed.Add(1)
+	defer param.waitClosed.Done()
 	b := make([]byte, 8192) // 8 kB is the default page size for most modern file systems
 	for {
 		select {
-		case err := <-errc:
-			errc <- err
+		case err := <-param.errc:
+			param.errc <- err
 			break
 		default:
-			n, err := param.Stdin.Read(b)
+			n, err := param.remoteConsole.Stdin.Read(b)
 			if err != nil {
 				if err == io.EOF {
 					log.Info("\nConsole exited by EOF\n\n")
-					errc <- nil
+					param.errc <- nil
 				} else {
-					errc <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
+					param.errc <- errors.Wrap(err, "\nFailed to read from the from the console input buffer\n\n")
 				}
 			}
 
 			if bytes.Contains(b[0:n], []byte{0x11}) {
 				log.Info("\nConsole exited by ctrl-q\n\n")
-				errc <- nil
+				param.errc <- nil
 			}
 			_, err = sc.SerialConn.Write(b[0:n])
 			if err != nil {
-				errc <- errors.Wrap(err, "\nFailed to write to the connection from the buffer\n\n")
+				param.errc <- errors.Wrap(err, "\nFailed to write to the connection from the buffer\n\n")
 			}
 		}
 	}
 }
 
-func (sc *SerialConnection) connToStdout(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, errc chan error) {
-	waitClosed.Add(1)
-	defer waitClosed.Done()
+func (sc *SerialConnection) connToStdout(param *serialConsoleParam) {
+	param.waitClosed.Add(1)
+	defer param.waitClosed.Done()
 	b := make([]byte, 8192)
 	for {
 		sc.SerialConn.SetDeadline(time.Now().Add(time.Second))
 		n, err := sc.SerialConn.Read(b)
 		select {
-		case err := <-errc:
-			if _, e := param.Stdout.Write([]byte{0x0A}); e != nil {
-				errc <- errors.Wrap(e, "\nFailed to write the linefeed character on exit\n\n")
+		case err := <-param.errc:
+			if _, e := param.remoteConsole.Stdout.Write([]byte{0x0A}); e != nil {
+				param.errc <- errors.Wrap(e, "\nFailed to write the linefeed character on exit\n\n")
 			} else {
-				errc <- err
+				param.errc <- err
 			}
 			break
 		default:
 			if err != nil && !err.(net.Error).Timeout() {
-				errc <- errors.Wrap(err, "\nFailed to read the connection buffer from socket ")
+				param.errc <- errors.Wrap(err, "\nFailed to read the connection buffer from socket ")
 			}
 			// exit on ctrl + q
 			if bytes.Contains(b[0:n], []byte{0x11}) {
-				errc <- nil
+				param.errc <- nil
 			}
 
-			if synchable, ok := param.Stdout.(*os.File); ok {
+			if synchable, ok := param.remoteConsole.Stdout.(*os.File); ok {
 				if err := synchable.Sync(); err != nil {
-					log.Warn("Failed %v to flush %s", param.Stdout, err)
+					log.Warn("Failed %v to flush %s", param.remoteConsole.Stdout, err)
 				}
 			}
-			_, err = param.Stdout.Write(b[0:n])
+			_, err = param.remoteConsole.Stdout.Write(b[0:n])
 			if err != nil {
 				errc <- errors.Wrap(err, "\nFailed to write to the console stdout buffer\n\n")
 			}
@@ -87,9 +93,13 @@ func (sc *SerialConnection) connToStdout(param *hypervisor.ConsoleParam, waitClo
 }
 
 func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, waitClosed *sync.WaitGroup, errc chan error) error {
-
-	go sc.stdinToConn(param, waitClosed, errc)
-	go sc.connToStdout(param, waitClosed, errc)
+	serialConsoleParam := serialConsoleParam{
+		remoteConsole: param,
+		waitClosed:    waitClosed,
+		errc:          errc,
+	}
+	go sc.stdinToConn(&serialConsoleParam)
+	go sc.connToStdout(&serialConsoleParam)
 
 	return nil
 }
