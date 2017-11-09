@@ -26,6 +26,22 @@ type serialConsoleParam struct {
 	closeChan     chan bool
 }
 
+func (p *serialConsoleParam) flushConsole() {
+	if synchable, ok := p.remoteConsole.Stdout.(*os.File); ok {
+		if err := synchable.Sync(); err != nil {
+			log.Warn("Failed %v to flush %s", p.remoteConsole.Stdout, err)
+		}
+	}
+}
+
+func (p *serialConsoleParam) resetConsole() {
+	p.flushConsole()
+	_, err := p.remoteConsole.Stdout.Write([]byte{0x0A, 0x0D})
+	if err != nil && err != io.EOF {
+		log.WithError(err).Warn("Failed to write the linefeed/character return")
+	}
+}
+
 func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-chan struct{}) {
 	param.waitClosed.Add(1)
 	defer func() {
@@ -44,6 +60,7 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-ch
 			if err != nil {
 				if err == io.EOF {
 					log.Info("Release serial console, received EOF")
+					param.resetConsole()
 				} else {
 					log.WithError(err).Error("Failed to read from the from the console input buffer")
 				}
@@ -53,6 +70,7 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-ch
 
 			if bytes.Contains(b[0:n], []byte{0x11}) {
 				log.Info("Release serial console, received escape code (ctrl-q)")
+				param.resetConsole()
 				return
 			}
 
@@ -79,6 +97,7 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 		n, err := sc.SerialConn.Read(b)
 		if err == io.EOF {
 			sc.err = errors.New("connection lost")
+			param.resetConsole()
 			return
 		}
 
@@ -91,16 +110,8 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 				sc.err = err
 				return
 			}
-			// exit on ctrl + q
-			if bytes.Contains(b[0:n], []byte{0x11}) {
-				return
-			}
 
-			if synchable, ok := param.remoteConsole.Stdout.(*os.File); ok {
-				if err := synchable.Sync(); err != nil {
-					log.Warn("Failed %v to flush %s", param.remoteConsole.Stdout, err)
-				}
-			}
+			param.flushConsole()
 			_, err = param.remoteConsole.Stdout.Write(b[0:n])
 			if err != nil{
 				log.WithError(err).Error("Failed to write to the console stdout buffer")
@@ -140,11 +151,6 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 	go func() {
 		<-serialConsoleParam.closeChan
 		close(finished)
-
-		_, err := serialConsoleParam.remoteConsole.Stdout.Write([]byte{0x0A})
-		if err != nil && err != io.EOF {
-			log.WithError(err).Warn("Failed to write the linefeed character on exit")
-		}
 	}()
 
 	return nil
