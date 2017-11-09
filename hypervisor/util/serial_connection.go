@@ -46,7 +46,11 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-ch
 	param.waitClosed.Add(1)
 	defer func() {
 		param.closeChan <-true
-		param.errc <-sc
+		if sc.err != nil {
+			param.errc <-sc
+		} else {
+			param.errc <-nil
+		}
 		param.waitClosed.Done()
 	}()
 
@@ -87,7 +91,11 @@ func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-c
 	param.waitClosed.Add(1)
 	defer func() {
 		param.closeChan <-true
-		param.errc <-sc
+		if sc.err != nil {
+			param.errc <-sc
+		} else {
+			param.errc <-nil
+		}
 		param.waitClosed.Done()
 	}()
 
@@ -127,7 +135,7 @@ func (sc *SerialConnection) Error() string {
 }
 
 func (sc *SerialConnection) ExitCode() int {
-	if sc.err != nil && != sc.err != io.EOF {
+	if sc.err != nil && sc.err != io.EOF {
 		return 1
 	}
 	return 0
