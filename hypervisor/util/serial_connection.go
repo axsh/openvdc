@@ -19,14 +19,14 @@ type SerialConnection struct {
 	err        error
 }
 
-type serialConsoleParam struct {
+type connParams struct {
 	remoteConsole *hypervisor.ConsoleParam
 	waitClosed    *sync.WaitGroup
 	errc          chan error
 	closeChan     chan bool
 }
 
-func (p *serialConsoleParam) flushConsole() {
+func (p *connParams) flushConsole() {
 	if synchable, ok := p.remoteConsole.Stdout.(*os.File); ok {
 		if err := synchable.Sync(); err != nil {
 			log.Warn("Failed %v to flush %s", p.remoteConsole.Stdout, err)
@@ -34,7 +34,7 @@ func (p *serialConsoleParam) flushConsole() {
 	}
 }
 
-func (p *serialConsoleParam) resetConsole() {
+func (p *connParams) resetConsole() {
 	p.flushConsole()
 	_, err := p.remoteConsole.Stdout.Write([]byte{0x0A, 0x0D})
 	if err != nil && err != io.EOF {
@@ -42,7 +42,7 @@ func (p *serialConsoleParam) resetConsole() {
 	}
 }
 
-func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-chan struct{}) {
+func (sc *SerialConnection) remoteConsoleHandle(param *connParams, finished <-chan struct{}) {
 	param.waitClosed.Add(1)
 	defer func() {
 		param.closeChan <-true
@@ -87,7 +87,7 @@ func (sc *SerialConnection) stdinToConn(param *serialConsoleParam, finished <-ch
 	}
 }
 
-func (sc *SerialConnection) connToStdout(param *serialConsoleParam, finished <-chan struct{}) {
+func (sc *SerialConnection) serialConsoleHandle(param *connParams, finished <-chan struct{}) {
 	param.waitClosed.Add(1)
 	defer func() {
 		param.closeChan <-true
@@ -147,17 +147,17 @@ func (sc *SerialConnection) AttachSerialConsole(param *hypervisor.ConsoleParam, 
 	}
 
 	finished := make(chan struct{})
-	serialConsoleParam := serialConsoleParam{
+	connParams := connParams{
 		remoteConsole: param,
 		waitClosed:    waitClosed,
 		errc:          errc,
 		closeChan:     make(chan bool),
 	}
 
-	go sc.stdinToConn(&serialConsoleParam, finished)
-	go sc.connToStdout(&serialConsoleParam, finished)
+	go sc.remoteConsoleHandle(&connParams, finished)
+	go sc.serialConsoleHandle(&connParams, finished)
 	go func() {
-		<-serialConsoleParam.closeChan
+		<-connParams.closeChan
 		close(finished)
 	}()
 
