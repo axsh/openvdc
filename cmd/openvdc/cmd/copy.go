@@ -5,7 +5,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/api"
-	"github.com/axsh/openvdc/cmd/openvdc/cmd/copy"
+	filecopy "github.com/axsh/openvdc/cmd/openvdc/cmd/copy"
 	"github.com/axsh/openvdc/cmd/openvdc/internal/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -60,7 +60,7 @@ var copyCmd = &cobra.Command{
 			log.WithError(err).Fatal("Disconnected abnormally")
 		}
 
-		client, err := copy.NewClient(res)
+		client, err := filecopy.NewClient(res)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to create client")
 		}
