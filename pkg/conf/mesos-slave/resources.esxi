@@ -12,12 +12,5 @@
     "scalar": {
       "value": 20480
     }
-  },
-  {
-    "name": "disk",
-    "type": "SCALAR",
-    "scalar": {
-      "value": 409600
-    }
   }
 ]

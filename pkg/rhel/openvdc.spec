@@ -100,7 +100,8 @@ OpenVDC executor common package.
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
 /opt/axsh/openvdc/share/mesos-slave/attributes.qemu
 /opt/axsh/openvdc/share/mesos-slave/attributes.esxi
-/opt/axsh/openvdc/share/mesos-slave/resources
+/opt/axsh/openvdc/share/mesos-slave/resources.qemu
+/opt/axsh/openvdc/share/mesos-slave/resources.esxi
 /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
 /opt/axsh/openvdc/share/qemu-ifup
 /opt/axsh/openvdc/share/qemu-ifdown
@@ -112,13 +113,6 @@ OpenVDC executor common package.
 test ! -f /etc/openvdc/ssh/host_rsa_key && /usr/bin/ssh-keygen -q -t rsa -f /etc/openvdc/ssh/host_rsa_key -b 4096 -C '' -N '' >&/dev/null;
 test ! -f /etc/openvdc/ssh/host_ecdsa_key && /usr/bin/ssh-keygen -q -t ecdsa -f /etc/openvdc/ssh/host_ecdsa_key -C '' -N '' >&/dev/null;
 test ! -f /etc/openvdc/ssh/host_ed25519_key && /usr/bin/ssh-keygen -q -t ed25519 -f /etc/openvdc/ssh/host_ed25519_key -C '' -N '' >&/dev/null;
-if [ -d /etc/mesos-slave ]; then
-  if [ ! -f /etc/mesos-slave/resources ]; then
-    cp -p /opt/axsh/openvdc/share/mesos-slave/resources /etc/mesos-slave/resources
-  fi
-fi
-
-
 
 %package executor-null
 Summary: OpenVDC executor (null driver)
@@ -183,7 +177,14 @@ if [ -d /etc/mesos-slave ]; then
   if [ ! -f /etc/mesos-slave/attributes ]; then
     cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.qemu /etc/mesos-slave/attributes
   fi
+
+  if [ ! -f /etc/mesos-slave/resources ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/resources.qemu /etc/mesos-slave/resources
+  fi
 fi
+
+
+
 
 cp /opt/axsh/openvdc/share/qemu-ifup /etc/
 cp /opt/axsh/openvdc/share/qemu-ifdown /etc/
@@ -203,6 +204,10 @@ Esxi driver configuration package for OpenVDC executor
 if [ -d /etc/mesos-slave ]; then
   if [ ! -f /etc/mesos-slave/attributes ]; then
     cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.esxi /etc/mesos-slave/attributes
+  fi
+
+  if [ ! -f /etc/mesos-slave/resources ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/resources.esxi /etc/mesos-slave/resources
   fi
 fi
 
