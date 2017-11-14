@@ -183,9 +183,6 @@ if [ -d /etc/mesos-slave ]; then
   fi
 fi
 
-
-
-
 cp /opt/axsh/openvdc/share/qemu-ifup /etc/
 cp /opt/axsh/openvdc/share/qemu-ifdown /etc/
 
