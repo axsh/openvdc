@@ -70,7 +70,7 @@ mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/lxc-templates
 cp lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
 cp qemu-ifup "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
 cp qemu-ifdown "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
-install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu pkg/conf/mesos-slave/attributes.esxi
+install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu pkg/conf/mesos-slave/attributes.esxi pkg/conf/mesos-slave/attributes.qemu pkg/conf/mesos-slave/resources.qemu pkg/conf/mesos-slave/resources.esxi
 
 %package cli
 Summary: OpenVDC cli
