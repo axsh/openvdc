@@ -73,15 +73,32 @@ func (c *Client) CopyFile(filePath string, instanceDir string) error {
 	}
 	defer session.Close()
 
+	errCh := make(chan error, 1)
+
 	go func() {
-		w, _ := session.StdinPipe()
+		w, err := session.StdinPipe()
+		if err != nil {
+			errCh <- errors.Wrap(err, "Error returning pipe")
+		}
+
 		defer w.Close()
 		fmt.Fprintln(w, "C0655", int64(fileinfo.Size()), srcFilename)
-		io.Copy(w, file) //Todo: handle error
+		_, err = io.Copy(w, file)
 		fmt.Fprintln(w, "\x00")
+
+		if err != nil {
+			errCh <- errors.Wrap(err, "Failed to copy file")
+		}
+
+		close(errCh)
 	}()
 
 	session.Run("/usr/bin/scp -t " + instanceDir)
+
+	err = <-errCh
+	if err != nil {
+		return errors.Wrap(err, "Error copying file")
+	}
 
 	return nil
 }
