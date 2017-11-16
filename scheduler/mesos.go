@@ -346,6 +346,10 @@ func (sched *VDCScheduler) NewExecutor(hypervisorName string) *mesos.ExecutorInf
 			Value: proto.String(fmt.Sprintf("%s --hypervisor=%s --zk=%s",
 				ExecutorPath, hypervisorName, sched.zkAddr.String())),
 		},
+		Resources: []*mesos.Resource{
+			util.NewScalarResource("cpus", 0.01),
+			util.NewScalarResource("mem", 32),
+		},
 	}
 	return executor
 }
