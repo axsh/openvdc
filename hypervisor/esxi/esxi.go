@@ -43,6 +43,7 @@ var settings struct {
 	EsxiIp          string
 	EsxiDatacenter  string
 	EsxiInsecure    bool
+	EsxiEasyClone   bool
 	EsxiHostSshkey  string
 	EsxiVmUser      string
 	EsxiVmPass      string
@@ -156,6 +157,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
 	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
+	settings.EsxiEasyClone = sub.GetBool("hypervisor.esxi-easy-clone")
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
 

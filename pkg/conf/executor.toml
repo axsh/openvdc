@@ -13,6 +13,7 @@
 # esxi-datacenter = "ha-datacenter"
 # esxi-insecure = true
 # esxi-host-sshkey = ""
+# esxi-easy-clone = false
 # esxi-vm-user = ""
 # esxi-vm-pass = ""
 # esxi-vm-datastore = ""
