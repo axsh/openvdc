@@ -21,6 +21,9 @@ import (
 
 var ExecutorPath string
 
+// list of slave resource informations
+var storedSlaveOffers map[string]*mesos.Offer
+
 type SchedulerSettings struct {
 	Name            string
 	ID              string
@@ -105,6 +108,37 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	}
 
 	return nil
+}
+
+func (sched *VDCScheduler) IsThereSatisfidCreateReq(i *model.Instance) bool {
+	instanceResource := i.ResourceTemplate().(model.InstanceResource)
+	cpus := instanceResource.GetVcpu()
+	mem := instanceResource.GetMemoryGb()
+
+	for _, offer := range storedSlaveOffers {
+		offeredCpus := sched.getOfferScalar(offer, "vcpu")
+		if int32(offeredCpus) > cpus {
+			offeredMem := sched.getOfferScalar(offer, "mem")
+			if int32(offeredMem) > mem {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// copy and paste from https://github.com/mesosphere/mesos-framework-tutorial/blob/master/scheduler/utils.go
+func (sched *VDCScheduler) getOfferScalar(offer *mesos.Offer, name string) float64 {
+	resources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
+		return res.GetName() == name
+	})
+
+	value := 0.0
+	for _, res := range resources {
+		value += res.GetScalar().GetValue()
+	}
+
+	return value
 }
 
 func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx context.Context) error {
@@ -192,6 +226,8 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 	disconnectedInstances := []*model.Instance{}
 
 	for _, offer := range offers {
+
+		storedSlaveOffers[offer.SlaveId.GetValue()] = offer
 
 		agentID := getAgentID(offer)
 		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentID(agentID)
@@ -578,6 +614,9 @@ func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr s
 		Principal: proto.String(""),
 		Secret:    proto.String(""),
 	}
+
+	// initalize slave information list.
+	storedSlaveOffers = make(map[string]*mesos.Offer)
 
 	cred = nil
 	bindingAddrs, err := net.LookupIP(listenAddr)
