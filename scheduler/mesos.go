@@ -110,15 +110,15 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	return nil
 }
 
-func (sched *VDCScheduler) IsThereSatisfidCreateReq(i *model.Instance) bool {
+func IsThereSatisfidCreateReq(i *model.Instance) bool {
 	instanceResource := i.ResourceTemplate().(model.InstanceResource)
 	cpus := instanceResource.GetVcpu()
 	mem := instanceResource.GetMemoryGb()
 
 	for _, offer := range storedSlaveOffers {
-		offeredCpus := sched.getOfferScalar(offer, "vcpu")
+		offeredCpus := getOfferScalar(offer, "vcpu")
 		if int32(offeredCpus) > cpus {
-			offeredMem := sched.getOfferScalar(offer, "mem")
+			offeredMem := getOfferScalar(offer, "mem")
 			if int32(offeredMem) > mem {
 				return true
 			}
@@ -128,7 +128,7 @@ func (sched *VDCScheduler) IsThereSatisfidCreateReq(i *model.Instance) bool {
 }
 
 // copy and paste from https://github.com/mesosphere/mesos-framework-tutorial/blob/master/scheduler/utils.go
-func (sched *VDCScheduler) getOfferScalar(offer *mesos.Offer, name string) float64 {
+func getOfferScalar(offer *mesos.Offer, name string) float64 {
 	resources := util.FilterResources(offer.Resources, func(res *mesos.Resource) bool {
 		return res.GetName() == name
 	})
