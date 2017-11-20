@@ -143,7 +143,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiDatacenter = sub.GetString("hypervisor.esxi-datacenter")
 
-	if sub.GetString("hypervisor.esxi-host-sshkey") == "" {
+	if sub.GetString("hypervisor.esxi-host-sshkey") == "" && sub.GetBool("hypervisor.esxi-easy-clone") == false {
 		return errors.Errorf("Missing configuration hypervisor.esxi-host-sshkey")
 	}
 	settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
@@ -262,7 +262,7 @@ func (d *EsxiHypervisorDriver) MetadataDrivePath() string {
 	return "/tmp/metadrive.img"
 }
 
-func (d * EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
+func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 	metadataMap := make(map[string]interface{})
 	metadataMap["hostname"] = d.vmName
 	for idx, nic := range d.machine.Nics {
@@ -327,47 +327,12 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	if err := os.Remove(d.MetadataDrivePath()); err != nil {
-                return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
-        }
-
-	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
-	if err != nil {
-		return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
-	}
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		return errors.Errorf("Unable to parse the specified ssh private key: %s", settings.EsxiHostSshkey)
+		return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
 	}
 
-	conn, err := ssh.Dial("tcp", strings.Join([]string{settings.EsxiIp, "22"}, ":"), &ssh.ClientConfig{
-		User: settings.EsxiUser,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-	})
-
+	err = d.CloneBaseImage()
 	if err != nil {
-		return errors.Errorf("Unable establish ssh connection to %s", settings.EsxiIp)
-	}
-	defer conn.Close()
-
-	session, err := conn.NewSession()
-	if err != nil {
-		return errors.Errorf("Unable to open a session on connection %d", conn)
-	}
-	defer session.Close()
-
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	session.Stdout = &out
-	session.Stderr = &stderr
-
-	// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
-	basePath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, "CentOS7", "CentOS7.vmdk")
-	newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, "CentOS7.vmdk")
-
-	if err := session.Run(join(' ', "vmkfstools -i", basePath, newPath, "-d thin")); err != nil {
-		return errors.Errorf(stderr.String(), "Error cloning vmdk")
+		return err
 	}
 
 	// TODO: don't hardcode the base image
@@ -386,6 +351,61 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return err
 	}
 
+	return nil
+}
+
+func (d *EsxiHypervisorDriver) CloneBaseImage() error {
+	if settings.EsxiEasyClone == true {
+		datastore := join('=', "-ds", settings.EsxiVmDatastore)
+		err := esxiRunCmd(
+			[]string{"vm.clone", datastore, "-vm=CentOS7", d.vmName},
+		)
+		if err != nil {
+			return err
+		}
+		return nil
+
+	} else {
+		key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
+		if err != nil {
+			return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
+		}
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			return errors.Errorf("Unable to parse the specified ssh private key: %s", settings.EsxiHostSshkey)
+		}
+
+		conn, err := ssh.Dial("tcp", strings.Join([]string{settings.EsxiIp, "22"}, ":"), &ssh.ClientConfig{
+			User: settings.EsxiUser,
+			Auth: []ssh.AuthMethod{
+				ssh.PublicKeys(signer),
+			},
+		})
+
+		if err != nil {
+			return errors.Errorf("Unable establish ssh connection to %s", settings.EsxiIp)
+		}
+		defer conn.Close()
+
+		session, err := conn.NewSession()
+		if err != nil {
+			return errors.Errorf("Unable to open a session on connection %d", conn)
+		}
+		defer session.Close()
+
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		session.Stdout = &out
+		session.Stderr = &stderr
+
+		// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
+		basePath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, "CentOS7", "CentOS7.vmdk")
+		newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, "CentOS7.vmdk")
+
+		if err := session.Run(join(' ', "vmkfstools -i", basePath, newPath, "-d thin")); err != nil {
+			return errors.Errorf(stderr.String(), "Error cloning vmdk")
+		}
+	}
 	return nil
 }
 
@@ -420,6 +440,6 @@ func (d EsxiHypervisorDriver) RebootInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) Recover(instanceState model.InstanceState) error {
-        //Todo: handle recovery
-        return nil
+	//Todo: handle recovery
+	return nil
 }
