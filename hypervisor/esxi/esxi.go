@@ -42,6 +42,7 @@ var settings struct {
 	EsxiPass        string
 	EsxiIp          string
 	EsxiDatacenter  string
+	EsxiHostName    string
 	EsxiInsecure    bool
 	EsxiEasyClone   bool
 	EsxiHostSshkey  string
@@ -142,6 +143,11 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		return errors.Errorf("Missing configuration hypervisor.exsi-datacenter")
 	}
 	settings.EsxiDatacenter = sub.GetString("hypervisor.esxi-datacenter")
+
+	if sub.GetString("hypervisor.esxi-host-name") == "" {
+		return errors.Errorf("Missing configuration hypervisor.esxi-host-name")
+	}
+	settings.EsxiHostName = sub.GetString("hypervisor.esxi-host-name")
 
 	if sub.GetString("hypervisor.esxi-host-sshkey") == "" && sub.GetBool("hypervisor.esxi-easy-clone") == false {
 		return errors.Errorf("Missing configuration hypervisor.esxi-host-sshkey")
