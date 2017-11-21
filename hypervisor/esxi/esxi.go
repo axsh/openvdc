@@ -48,6 +48,8 @@ var settings struct {
 	EsxiHostSshkey  string
 	EsxiVmUser      string
 	EsxiVmPass      string
+	EsxiImgDs       string
+	EsxiImgName     string
 	EsxiVmDatastore string
 	EsxiUrl         string
 	BridgeName      string
@@ -291,6 +293,13 @@ func (m *EsxiMachine) AddNICs(nics []Nic) {
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
 
+	location := strings.Split(d.template.EsxiImage.GetLocation(), "/")
+	if location[0] != "" || location[1] != "" {
+		errors.New("Invalid image location")
+	}
+	settings.EsxiImgDs = location[0]
+	settings.EsxiImgName = location[1]
+
 	var nics []Nic
 	for idx, iface := range d.template.GetInterfaces() {
 		nics = append(nics, Nic{
@@ -341,12 +350,11 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return err
 	}
 
-	// TODO: don't hardcode the base image
 	// NOTE: serial port devices starts from 9000 on the current driver.
 
 	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 	err = esxiRunCmd(
-		[]string{"datastore.cp", datastore, storageImg("CentOS7"), storageImg(d.vmName)},
+		[]string{"datastore.cp", datastore, storageImg(settings.EsxiImgName), storageImg(d.vmName)},
 		[]string{"vm.register", datastore, storageImg(d.vmName)},
 		[]string{"vm.change", join('=', "-name", d.vmName), d.vmPath()},
 		[]string{"device.floppy.insert", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
@@ -405,8 +413,8 @@ func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 		session.Stderr = &stderr
 
 		// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
-		basePath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, "CentOS7", "CentOS7.vmdk")
-		newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, "CentOS7.vmdk")
+		basePath := join('/', "/vmfs", "volumes", settings.EsxiImgDs, settings.EsxiImgName, strings.Join([]string{settings.EsxiImgName, ".vmdk"}, ""))
+		newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, strings.Join([]string{settings.EsxiImgName, ".vmdk"}, ""))
 
 		if err := session.Run(join(' ', "vmkfstools -i", basePath, newPath, "-d thin")); err != nil {
 			return errors.Errorf(stderr.String(), "Error cloning vmdk")

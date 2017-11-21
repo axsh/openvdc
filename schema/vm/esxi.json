@@ -67,5 +67,20 @@
         }
       }
     }
+    "esxi_image": {
+      "type": "object",
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string",
+          "format": "uri"
+        },
+      },
+      "required": [
+        "location"
+      ]
+    }
   }
 }

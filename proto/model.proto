@@ -171,7 +171,7 @@ message EsxiTemplate {
   int32 min_vcpu = 3 [json_name="min_vcpu"];
   int32 min_memory_gb = 4 [json_name="min_memory_gb"];
   message Image {
-    string download_url = 1 [json_name="download_url"];
+    string location = 1 [json_name="location"];
     string chksum_type = 2 [json_name="chksum_type"];
     string chksum = 3;
   }

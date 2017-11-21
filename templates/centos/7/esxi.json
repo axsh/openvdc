@@ -5,5 +5,8 @@
     "vcpu": 1,
     "memory_gb": 1,
     "diskspace": "10GB"
+    "esxi_image": {
+      "location": "datastore2/CentOS7"
+    }
   }
 }

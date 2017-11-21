@@ -17,6 +17,7 @@
 # esxi-host-name = ""
 # esxi-vm-user = ""
 # esxi-vm-pass = ""
+# esxi-basevm-datastore = ""
 # esxi-vm-datastore = ""
 
 [zookeeper]
