@@ -10,16 +10,17 @@ import (
 var storedOffers map[string]*mesos.Offer = make(map[string]*mesos.Offer)
 
 func IsThereSatisfidCreateReq(i *Instance) bool {
-	instanceResource := i.ResourceTemplate().(InstanceResource)
-	cpus := instanceResource.GetVcpu()
-	mem := instanceResource.GetMemoryGb()
+	if instanceResource, ok := i.ResourceTemplate().(InstanceResource); ok {
+		cpus := instanceResource.GetVcpu()
+		mem := instanceResource.GetMemoryGb()
 
-	for _, offer := range storedOffers {
-		offeredCpus := getOfferScalar(offer, "vcpu")
-		if int32(offeredCpus) > cpus {
-			offeredMem := getOfferScalar(offer, "mem")
-			if int32(offeredMem) > mem {
-				return true
+		for _, offer := range storedOffers {
+			offeredCpus := getOfferScalar(offer, "vcpu")
+			if int32(offeredCpus) > cpus {
+				offeredMem := getOfferScalar(offer, "mem")
+				if int32(offeredMem) > mem {
+					return true
+				}
 			}
 		}
 	}
