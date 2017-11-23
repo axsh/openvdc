@@ -101,7 +101,8 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	n.ConnectionStatus = initConnectionStatus
 
 	// Checking there is the machine that can satisfy the requested resource.
-	if !IsThereSatisfidCreateReq(n) {
+	ok, err := IsThereSatisfidCreateReq(n)
+	if !ok {
 		return nil, fmt.Errorf("There is no machine can satisfy resource requirement")
 	}
 
