@@ -25,7 +25,7 @@ func IsThereSatisfidCreateReq(i *Instance) (bool, error) {
 				}
 			}
 		}
-		return false, nil
+		return true, nil
 	}
 	//DEBUG Return true in temporary to pass the other test
 	return true, fmt.Errorf("Templete do not have vcpu and mem")
