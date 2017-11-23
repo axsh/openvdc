@@ -11,7 +11,7 @@ import (
 // list of slave resource informations
 var storedOffers map[string]*mesos.Offer = make(map[string]*mesos.Offer)
 
-func IsThereSatisfidCreateReq(i *Instance) (bool, erorr) {
+func IsThereSatisfidCreateReq(i *Instance) (bool, error) {
 	if instanceResource, ok := i.ResourceTemplate().(InstanceResource); ok {
 		cpus := instanceResource.GetVcpu()
 		mem := instanceResource.GetMemoryGb()
