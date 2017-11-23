@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/axsh/openvdc/model/backend"
-	"github.com/axsh/openvdc/scheduler"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -102,7 +101,7 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	n.ConnectionStatus = initConnectionStatus
 
 	// Checking there is the machine that can satisfy the requested resource.
-	if !scheduler.IsThereSatisfidCreateReq(n) {
+	if !IsThereSatisfidCreateReq(n) {
 		return nil, fmt.Errorf("There is no machine can satisfy resource requirement")
 	}
 
