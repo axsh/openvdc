@@ -39,9 +39,11 @@ func IsThereSatisfidCreateReq(i *Instance) (bool, error) {
 			instanceResource.GetVcpu(),
 			instanceResource.GetMemoryGb(),
 		}
+
 	case *Template_Esxi:
 		// TODO What is a parameter
 		return true, nil
+
 	default:
 		log.Warnf("Unknown template type: %T", t)
 		return false, fmt.Errorf("Unknown template type: %T", t)
