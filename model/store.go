@@ -31,6 +31,7 @@ func IsThereSatisfidCreateReq(i *Instance) (bool, error) {
 			instanceResource.GetMemoryGb(),
 		}
 	case *Template_Null:
+		return true, nil
 
 	case *Template_Qemu:
 		offerParams = []string{"vcpu", "mem"}
@@ -39,10 +40,11 @@ func IsThereSatisfidCreateReq(i *Instance) (bool, error) {
 			instanceResource.GetMemoryGb(),
 		}
 	case *Template_Esxi:
-
+		// TODO What is a parameter
+		return true, nil
 	default:
 		log.Warnf("Unknown template type: %T", t)
-		return true, fmt.Errorf("Unknown template type: %T", t)
+		return false, fmt.Errorf("Unknown template type: %T", t)
 	}
 
 	for _, offer := range storedOffers {
