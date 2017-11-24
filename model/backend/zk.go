@@ -169,7 +169,7 @@ func (z *Zk) CreateWithID(key string, value []byte) (string, error) {
 	// Dirty hack to work around zookeeper's connection closed error.
 	retryCount := 0
 	for err != nil && retryCount < 5 {
-		sleep(2)
+		time.Sleep(time.Second * 2)
 		retryCount++
 		nkey, err = z.connection().Create(absKey, value, zk.FlagSequence, defaultACL)
 	}
