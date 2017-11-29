@@ -47,6 +47,7 @@ var settings struct {
 	EsxiVmPass      string
 	EsxiVmDatastore string
 	EsxiUrl         string
+	vCenterEndpoint bool
 	BridgeName      string
 	BridgeType      BridgeType
 }
@@ -81,6 +82,7 @@ func (p *EsxiHypervisorProvider) Name() string {
 func init() {
 	hypervisor.RegisterProvider("esxi", &EsxiHypervisorProvider{})
 	viper.SetDefault("hypervisor.esxi-insecure", true)
+	viper.SetDefault("hypervisor.vCenter", false)
 }
 
 func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
@@ -126,11 +128,6 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiDatacenter = sub.GetString("hypervisor.esxi-datacenter")
 
-	if sub.GetString("hypervisor.esxi-host-name") == "" {
-		return errors.Errorf("Missing configuration hypervisor.esxi-host-name")
-	}
-	settings.EsxiHostName = sub.GetString("hypervisor.esxi-host-name")
-
 	if sub.GetString("hypervisor.esxi-host-sshkey") == "" && sub.GetBool("hypervisor.esxi-easy-clone") == false {
 		return errors.Errorf("Missing configuration hypervisor.esxi-host-sshkey")
 	}
@@ -141,13 +138,17 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
+	settings.vCenterEndpoint = sub.GetBool("hypervisor.vCenter") 
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
 	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
+	if settings.vCenterEndpoint && sub.GetString("hypervisor.esxi-host-name") == "" {
+		return errors.Errorf("Missing configuration hypervisor.esxi-host-name")
+	}
+	settings.EsxiHostName = sub.GetString("hypervisor.esxi-host-name")
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
-
 	u, err := url.Parse("https://" + esxiInfo + "/sdk")
 	if err != nil {
 		return errors.Wrap(err, "Failed to parse url for ESXi server")
@@ -327,7 +328,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) CloneBaseImage() error {
-	if d.template.GetUseVcenter() {
+	if settings.vCenterEndpoint {
 		datastore := join('=', "-ds", settings.EsxiVmDatastore)
 		imageTemplate := join('=', "-vm", d.machine.baseImage.name)
 		err := esxiRunCmd(

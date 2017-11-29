@@ -188,7 +188,6 @@ message EsxiTemplate {
   }
   repeated Interface interfaces = 6;
   repeated string node_groups = 7 [json_name="node_groups"];
-  bool use_vcenter = 8 [json_name="use_vcenter"];
 }
 
 message NullTemplate {
