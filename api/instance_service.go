@@ -33,6 +33,11 @@ func (s *InstanceAPI) Copy(ctx context.Context, in *CopyRequest) (*CopyReply, er
 		return nil, err
 	}
 
+	hypervisorName := strings.TrimPrefix(inst.ResourceTemplate().ResourceName(), "vm/")
+	if hypervisorName != "lxc" {
+		return nil, fmt.Errorf("Unsupported hypervisor")
+	}
+
 	node := &model.ExecutorNode{}
 	if err := model.Cluster(ctx).Find(inst.GetSlaveId(), node); err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
