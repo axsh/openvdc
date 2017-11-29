@@ -1,5 +1,3 @@
-// +build linux
-
 package esxi
 
 import (
@@ -44,12 +42,9 @@ var settings struct {
 	EsxiDatacenter  string
 	EsxiHostName    string
 	EsxiInsecure    bool
-	EsxiEasyClone   bool
 	EsxiHostSshkey  string
 	EsxiVmUser      string
 	EsxiVmPass      string
-	EsxiImgDs       string
-	EsxiImgName     string
 	EsxiVmDatastore string
 	EsxiUrl         string
 	BridgeName      string
@@ -65,21 +60,6 @@ func (t BridgeType) String() string {
 	default:
 		return "none"
 	}
-}
-
-type EsxiMachine struct {
-	SerialConsolePort int
-	Nics              []Nic
-}
-
-type Nic struct {
-	IfName       string
-	Index        string
-	Ipv4Addr     string
-	MacAddr      string
-	Bridge       string
-	BridgeHelper string
-	Type         string
 }
 
 type EsxiHypervisorProvider struct {
@@ -165,7 +145,6 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
 	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
-	settings.EsxiEasyClone = sub.GetBool("hypervisor.esxi-easy-clone")
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
 
@@ -179,7 +158,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 }
 
 func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template model.ResourceTemplate) (hypervisor.HypervisorDriver, error) {
-	EsxiTmpl, ok := template.(*model.EsxiTemplate)
+	esxiTmpl, ok := template.(*model.EsxiTemplate)
 	if !ok {
 		return nil, errors.Errorf("template type is not *model.WmwareTemplate: %T, template")
 	}
@@ -189,8 +168,8 @@ func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template
 			Log:      log.WithFields(log.Fields{"Hypervisor": "esxi", "instance_id": instance.GetId()}),
 			Instance: instance,
 		},
-		template: EsxiTmpl,
-		machine:  &EsxiMachine{SerialConsolePort: (15000 + instanceIdx)},
+		template: esxiTmpl,
+		machine:  newEsxiMachine(15000 + instanceIdx, esxiTmpl.EsxiImage.Template),
 		vmName:   instance.GetId(),
 	}
 
@@ -259,13 +238,6 @@ func (d *EsxiHypervisorDriver) vmPath() string {
 	return join(0, "-vm.path=[", settings.EsxiVmDatastore, "]", storageImg(d.vmName))
 }
 
-type Image struct {
-	Path      string
-	Format    string
-	Size      int
-	baseImage string
-}
-
 func (d *EsxiHypervisorDriver) MetadataDrivePath() string {
 	return "/tmp/metadrive.img"
 }
@@ -285,21 +257,7 @@ func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 	return metadataMap
 }
 
-func (m *EsxiMachine) AddNICs(nics []Nic) {
-	for _, nic := range nics {
-		m.Nics = append(m.Nics, nic)
-	}
-}
-
 func (d *EsxiHypervisorDriver) CreateInstance() error {
-
-	location := strings.Split(d.template.EsxiImage.GetLocation(), "/")
-	if location[0] != "" || location[1] != "" {
-		errors.New("Invalid image location")
-	}
-	settings.EsxiImgDs = location[0]
-	settings.EsxiImgName = location[1]
-
 	var nics []Nic
 	for idx, iface := range d.template.GetInterfaces() {
 		nics = append(nics, Nic{
@@ -354,7 +312,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 
 	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 	err = esxiRunCmd(
-		[]string{"datastore.cp", datastore, storageImg(settings.EsxiImgName), storageImg(d.vmName)},
+		[]string{"datastore.cp", datastore, storageImg(d.machine.baseImage.name), storageImg(d.vmName)},
 		[]string{"vm.register", datastore, storageImg(d.vmName)},
 		[]string{"vm.change", join('=', "-name", d.vmName), d.vmPath()},
 		[]string{"device.floppy.insert", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
@@ -369,17 +327,20 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) CloneBaseImage() error {
-	if settings.EsxiEasyClone == true {
+	if d.template.GetUseVcenter() {
 		datastore := join('=', "-ds", settings.EsxiVmDatastore)
+		imageTemplate := join('=', "-vm", d.machine.baseImage.name)
 		err := esxiRunCmd(
-			[]string{"vm.clone", datastore, "-vm=CentOS7", d.vmName},
+			[]string{"vm.clone", datastore, imageTemplate, d.vmName},
 		)
 		if err != nil {
 			return err
 		}
 		return nil
-
 	} else {
+		if d.machine.baseImage.datastore == "" {
+			return errors.Errorf("Empty path to datastore for vm: %s", d.machine.baseImage.name)
+		}
 		key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
 		if err != nil {
 			return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
@@ -413,8 +374,8 @@ func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 		session.Stderr = &stderr
 
 		// Ssh into esxiHost and use "vmkfstools" to clone vmdk"
-		basePath := join('/', "/vmfs", "volumes", settings.EsxiImgDs, settings.EsxiImgName, strings.Join([]string{settings.EsxiImgName, ".vmdk"}, ""))
-		newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, strings.Join([]string{settings.EsxiImgName, ".vmdk"}, ""))
+		basePath := join('/', "/vmfs", "volumes", d.machine.baseImage.datastore, d.machine.baseImage.name, strings.Join([]string{d.machine.baseImage.name, ".vmdk"}, ""))
+		newPath := join('/', "/vmfs", "volumes", settings.EsxiVmDatastore, d.vmName, strings.Join([]string{d.machine.baseImage.name, ".vmdk"}, ""))
 
 		if err := session.Run(join(' ', "vmkfstools -i", basePath, newPath, "-d thin")); err != nil {
 			return errors.Errorf(stderr.String(), "Error cloning vmdk")
