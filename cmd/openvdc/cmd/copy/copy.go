@@ -35,15 +35,6 @@ func NewClient(cr *api.CopyReply) (*Client, error) {
 	}, nil
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	} else {
-		return true
-	}
-}
-
 func (c *Client) CopyFile(filePath string, instanceDir string) error {
 	file, err := os.Open(filePath)
 	if err != nil {
