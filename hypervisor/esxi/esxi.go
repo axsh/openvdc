@@ -47,6 +47,7 @@ var settings struct {
 	EsxiVmPass      string
 	EsxiVmDatastore string
 	EsxiUrl         string
+	EsxiInventoryFolder string
 	vCenterEndpoint bool
 	BridgeName      string
 	BridgeType      BridgeType
