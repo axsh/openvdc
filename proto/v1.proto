@@ -57,6 +57,7 @@ message StopReply {
 
 message DestroyRequest{
   string instance_id = 1 [json_name="instance_id"];
+  bool force = 2;
 }
 message DestroyReply {
   string instance_id = 1 [json_name="instance_id"];

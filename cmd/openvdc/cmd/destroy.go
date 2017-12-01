@@ -25,31 +25,25 @@ var destroyCmd = &cobra.Command{
 
 		instanceID := args[0]
 
-		req := &api.DestroyRequest{
-			InstanceId: instanceID,
-		}
-
 		force, err := cmd.Flags().GetBool("force")
 		if err != nil {
 			log.WithError(err).Fatal("Failed getting flag")
 		}
 
+		req := &api.DestroyRequest{
+			InstanceId: instanceID,
+			Force:      force,
+		}
+
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
 			c := api.NewInstanceClient(conn)
 
-			if force {
-				_, err := c.ForceDestroy(context.Background(), req)
-				if err != nil {
-					log.WithError(err).Fatal("Disconnected abnormally")
-					return err
-				}
-			} else {
-				_, err := c.Destroy(context.Background(), req)
-				if err != nil {
-					log.WithError(err).Fatal("Disconnected abnormally")
-					return err
-				}
+			_, err := c.Destroy(context.Background(), req)
+			if err != nil {
+				log.WithError(err).Fatal("Disconnected abnormally")
+				return err
 			}
+
 			return err
 		})
 	},
