@@ -18,17 +18,18 @@ type baseImage struct {
 }
 
 type EsxiMachine struct {
-	baseImage         baseImage
+	baseImage         *baseImage
 	SerialConsolePort int
 	Nics              []Nic
 }
 
-func newEsxiMachine(serialPort int, template *model.EsxiTemplate_Image_Template) *EsxiMachine {
+func newEsxiMachine(serialPort int, template *model.EsxiTemplate) *EsxiMachine {
+	base := template.EsxiImage.Template
 	return &EsxiMachine{
 		SerialConsolePort: serialPort,
-		baseImage: baseImage{
-			name: template.GetName(),
-			datastore: template.GetDatastore(),
+		baseImage: &baseImage{
+			name: base.GetName(),
+			datastore: base.GetDatastore(),
 		},
 	}
 }

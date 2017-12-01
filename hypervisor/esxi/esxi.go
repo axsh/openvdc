@@ -107,6 +107,10 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		settings.BridgeName = sub.GetString("bridges.ovs.name")
 		settings.BridgeType = OVS
 	}
+	if sub.GetString("hypervisor.esxi-datacenter") == "" {
+		return errors.Errorf("Missing configuration hypervisor.exsi-datacenter")
+	}
+	settings.EsxiDatacenter = sub.GetString("hypervisor.esxi-datacenter")
 
 	if sub.GetString("hypervisor.esxi-user") == "" {
 		return errors.Errorf("Missing configuration hypervisor.exsi-user")
@@ -123,16 +127,6 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiIp = sub.GetString("hypervisor.esxi-ip")
 
-	if sub.GetString("hypervisor.esxi-datacenter") == "" {
-		return errors.Errorf("Missing configuration hypervisor.exsi-datacenter")
-	}
-	settings.EsxiDatacenter = sub.GetString("hypervisor.esxi-datacenter")
-
-	if sub.GetString("hypervisor.esxi-host-sshkey") == "" && sub.GetBool("hypervisor.esxi-easy-clone") == false {
-		return errors.Errorf("Missing configuration hypervisor.esxi-host-sshkey")
-	}
-	settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
-
 	if sub.GetString("hypervisor.esxi-vm-datastore") == "" {
 		return errors.Errorf("Missing configuration hypervisor.exsi-vm-datastore")
 	}
@@ -143,10 +137,19 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
 	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
-	if settings.vCenterEndpoint && sub.GetString("hypervisor.esxi-host-name") == "" {
-		return errors.Errorf("Missing configuration hypervisor.esxi-host-name")
+	settings.EsxiInventoryFolder = sub.GetString("hypervisor.esxi-inventory-folder")
+	if settings.vCenterEndpoint {
+		if sub.GetString("hypervisor.esxi-host-name") == "" {
+			return errors.Errorf("Missing configuration hypervisor.esxi-host-name")
+		}
+		settings.EsxiHostName = sub.GetString("hypervisor.esxi-host-name")
+	} else {
+		if sub.GetString("hypervisor.esxi-host-sshkey") == "" {
+			return errors.Errorf("Missing configuration hypervisor.esxi-host-sshkey")
+		}
+		settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
+
 	}
-	settings.EsxiHostName = sub.GetString("hypervisor.esxi-host-name")
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
 	u, err := url.Parse("https://" + esxiInfo + "/sdk")
@@ -170,10 +173,9 @@ func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template
 			Instance: instance,
 		},
 		template: esxiTmpl,
-		machine:  newEsxiMachine(15000 + instanceIdx, esxiTmpl.EsxiImage.Template),
 		vmName:   instance.GetId(),
 	}
-
+	driver.machine = newEsxiMachine(15000 + instanceIdx, driver.template)
 	return driver, nil
 }
 
@@ -271,7 +273,6 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	d.machine.AddNICs(nics)
-
 	if err := util.CreateMetadataDisk(d); err != nil {
 		return err
 	}
