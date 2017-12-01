@@ -261,6 +261,7 @@ func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 }
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
+	var err error
 	var nics []Nic
 	for idx, iface := range d.template.GetInterfaces() {
 		nics = append(nics, Nic{
@@ -285,38 +286,25 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	if err := util.UmountMetadataDisk(d); err != nil {
 		return err
 	}
-
-	// Create new folder
-	err := esxiRunCmd(
-		[]string{"datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName},
-	)
-	if err != nil {
+	if err = d.CloneBaseImage(); err != nil {
 		return err
 	}
-
 	err = esxiRunCmd(
 		[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 	)
 	if err != nil {
 		return err
 	}
-
 	if err := os.Remove(d.MetadataDrivePath()); err != nil {
 		return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
 	}
 
-	err = d.CloneBaseImage()
-	if err != nil {
-		return err
-	}
+
 
 	// NOTE: serial port devices starts from 9000 on the current driver.
 
-	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 	err = esxiRunCmd(
-		[]string{"datastore.cp", datastore, storageImg(d.machine.baseImage.name), storageImg(d.vmName)},
-		[]string{"vm.register", datastore, storageImg(d.vmName)},
-		[]string{"vm.change", join('=', "-name", d.vmName), d.vmPath()},
+		[]string{"device.floppy.add", d.vmPath()},
 		[]string{"device.floppy.insert", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"device.serial.add", d.vmPath()},
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
@@ -329,12 +317,19 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) CloneBaseImage() error {
+	datastore := join('=', "-ds", settings.EsxiVmDatastore)
+
 	if settings.vCenterEndpoint {
-		datastore := join('=', "-ds", settings.EsxiVmDatastore)
-		imageTemplate := join('=', "-vm", d.machine.baseImage.name)
-		err := esxiRunCmd(
-			[]string{"vm.clone", datastore, imageTemplate, d.vmName},
-		)
+		cmd := []string{"vm.clone", datastore,
+			join('=', "-on", "false"),
+			join('=', "-host", settings.EsxiHostName),
+			join('=', "-vm", d.machine.baseImage.name),
+		}
+		if len(settings.EsxiInventoryFolder) > 0 {
+			cmd = append(cmd, join('=', "-folder", settings.EsxiInventoryFolder))
+		}
+		cmd = append(cmd, d.vmName)
+		err := esxiRunCmd(cmd)
 		if err != nil {
 			return err
 		}
@@ -343,6 +338,13 @@ func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 		if d.machine.baseImage.datastore == "" {
 			return errors.Errorf("Empty path to datastore for vm: %s", d.machine.baseImage.name)
 		}
+		err := esxiRunCmd(
+			[]string{"datastore.mkdir", join('=', "-ds", settings.EsxiVmDatastore), d.vmName},
+		)
+		if err != nil {
+			return err
+		}
+
 		key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
 		if err != nil {
 			return errors.Errorf("Unable to read the specified ssh private key: %s", settings.EsxiHostSshkey)
@@ -381,6 +383,14 @@ func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 
 		if err := session.Run(join(' ', "vmkfstools -i", basePath, newPath, "-d thin")); err != nil {
 			return errors.Errorf(stderr.String(), "Error cloning vmdk")
+		}
+		err = esxiRunCmd(
+			[]string{"datastore.cp", datastore, storageImg(d.machine.baseImage.name), storageImg(d.vmName)},
+			[]string{"vm.register", datastore, storageImg(d.vmName)},
+			[]string{"vm.change", join('=', "-name", d.vmName), d.vmPath()},
+		)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
