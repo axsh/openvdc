@@ -23,8 +23,12 @@ type EsxiHandler struct {
 func (h *EsxiHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
 	tmpl := &model.EsxiTemplate{EsxiImage: &model.EsxiTemplate_Image{}}
 
+	type Template struct {
+		Name      string `json:"name,omitempty"`
+		Datastore string `json:"datastore,omitempty"`
+	}
 	type EsxiImage struct {
-		DownloadUrl string `json:"download_url,omitempty"`
+		Template Template `json:"template,omitempty"`
 	}
 
 	var json_template struct {
