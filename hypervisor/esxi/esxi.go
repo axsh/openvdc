@@ -220,6 +220,7 @@ func esxiRunCmd(cmdList ...[]string) error {
 		for _, arg := range args[1:] {
 			a = append(a, arg)
 		}
+		log.Info("Calling:", a)
 		if rc := cli.Run(a); rc != 0 {
 			return errors.Errorf("Failed api request: %s", args[0])
 		}
@@ -275,30 +276,30 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	d.machine.AddNICs(nics)
-	if err := util.CreateMetadataDisk(d); err != nil {
-		return err
-	}
-	if err := util.MountMetadataDisk(d); err != nil {
-		return err
-	}
-	if err := util.WriteMetadata(d); err != nil {
-		return err
-	}
-	if err := util.UmountMetadataDisk(d); err != nil {
-		return err
-	}
+	// if err := util.CreateMetadataDisk(d); err != nil {
+	// 	return err
+	// }
+	// if err := util.MountMetadataDisk(d); err != nil {
+	// 	return err
+	// }
+	// if err := util.WriteMetadata(d); err != nil {
+	// 	return err
+	// }
+	// if err := util.UmountMetadataDisk(d); err != nil {
+	// 	return err
+	// }
 	if err = d.CloneBaseImage(); err != nil {
 		return err
 	}
-	err = esxiRunCmd(
-		[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
-	)
-	if err != nil {
-		return err
-	}
-	if err := os.Remove(d.MetadataDrivePath()); err != nil {
-		return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
-	}
+	// err = esxiRunCmd(
+	// 	[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+	// if err := os.Remove(d.MetadataDrivePath()); err != nil {
+	// 	return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
+	// }
 
 
 
