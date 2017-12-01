@@ -28,6 +28,7 @@ message ConsoleOut {
 
 
 service Instance {
+  rpc Copy (CopyRequest) returns (CopyReply){}
   rpc Create (CreateRequest) returns (CreateReply){}
   rpc Start (StartRequest) returns (StartReply){}
   rpc Run (CreateRequest) returns (RunReply){}
@@ -61,6 +62,15 @@ message DestroyRequest{
 }
 message DestroyReply {
   string instance_id = 1 [json_name="instance_id"];
+}
+
+message CopyRequest{
+  string  instance_id = 1 [json_name="instance_id"];
+}
+
+message CopyReply{
+  string instance_id = 1 [json_name="instance_id"];
+  string address = 2;
 }
 
 message ConsoleRequest{
