@@ -104,13 +104,6 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// Checking there is the machine that can satisfy the requested resource.
-	ok, err := IsThereSatisfidCreateReq(n)
-	if !ok {
-		return nil, fmt.Errorf("There is no machine can satisfy resource requirement")
-	}
-
 	nkey, err := bk.CreateWithID(fmt.Sprintf("/%s/i-", instancesBaseKey), n)
 	if err != nil {
 		return nil, err
