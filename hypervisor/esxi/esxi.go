@@ -264,11 +264,12 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	var err error
 	for idx, iface := range d.template.GetInterfaces() {
 		d.machine.Nics = append(d.machine.Nics, Nic{
-			IfName:   fmt.Sprintf("%s_%02d", d.vmName, idx),
-			Type:     iface.Type,
-			Ipv4Addr: iface.Ipv4Addr,
-			MacAddr:  iface.Macaddr,
-			Bridge:   settings.BridgeName,
+			NetworkID: iface.ID,
+			IfName:    fmt.Sprintf("%s_%02d", d.vmName, idx),
+			Type:      iface.Type,
+			Ipv4Addr:  iface.Ipv4Addr,
+			MacAddr:   iface.Macaddr,
+			Bridge:    settings.BridgeName,
 		})
 	}
 
@@ -308,6 +309,10 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
 	)
 	if err != nil {
+		return err
+	}
+
+	if err = d.AddNetworkDevices(); err != nil {
 		return err
 	}
 
@@ -388,6 +393,23 @@ func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 			[]string{"vm.change", join('=', "-name", d.vmName), d.vmPath()},
 		)
 		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
+	for nic := range d.machine.Nics {
+		adapterType := join('=', "-net.adapter", nic.Type)
+		cmd := []string{"vm.network.add", d.vmPath(), adapterType}
+		if len(nic.NetworkID) > 0 {
+			cmd = append(cmd, join('=', "-net", nic.NetworkID))
+		}
+		if len(nic.MacAddr) > 0 {
+			cmd = append(cmd, join('=', "-net.address", nic.MacAddr))
+		}
+		if err := esxiRunCmd(cmd); err != nil {
 			return err
 		}
 	}
