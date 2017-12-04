@@ -251,6 +251,7 @@ func (d *QEMUHypervisorDriver) MetadataDriveDatamap() map[string]interface{}{
 			iface := make(map[string]interface{})
 			iface["ifname"] = nic.IfName
 			iface["ipv4"] = nic.Ipv4Addr
+			iface["gateway"] = nic.Gateway
 			iface["mac"] = nic.MacAddr
 			metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 		}

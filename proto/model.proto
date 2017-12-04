@@ -89,6 +89,7 @@ message LxcTemplate {
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
+    string gateway = 5;
     //string bridge = 4; // Obsolete
   }
   repeated Interface interfaces = 6;
@@ -158,6 +159,7 @@ message QemuTemplate {
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
+    string gateway = 5;
     //string bridge = 4; // Obsolete
   }
   bool use_kvm = 6 [json_name="use_kvm"];
@@ -185,6 +187,7 @@ message EsxiTemplate {
     string type = 2;
     string macaddr = 3;
     string ipv4addr = 4;
+    string gateway = 5;
   }
   repeated Interface interfaces = 6;
   repeated string node_groups = 7 [json_name="node_groups"];

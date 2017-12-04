@@ -3,13 +3,14 @@ package esxi
 import "github.com/axsh/openvdc/model"
 
 type Nic struct {
-	NetworkId    string
-	IfName       string
-	Index        string
-	Ipv4Addr     string
-	MacAddr      string
-	Bridge       string
-	Type         string
+	NetworkId string
+	IfName    string
+	Index     string
+	Ipv4Addr  string
+	MacAddr   string
+	Bridge    string
+	Gateway   string
+	Type      string
 }
 
 type baseImage struct {
