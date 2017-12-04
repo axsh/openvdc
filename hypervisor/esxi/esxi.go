@@ -264,9 +264,8 @@ func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 
 func (d *EsxiHypervisorDriver) CreateInstance() error {
 	var err error
-	var nics []Nic
 	for idx, iface := range d.template.GetInterfaces() {
-		nics = append(nics, Nic{
+		d.machine.Nics = append(d.machine.Nics, Nic{
 			IfName:   fmt.Sprintf("%s_%02d", d.vmName, idx),
 			Type:     iface.Type,
 			Ipv4Addr: iface.Ipv4Addr,
@@ -275,7 +274,6 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		})
 	}
 
-	d.machine.AddNICs(nics)
 	// if err := util.CreateMetadataDisk(d); err != nil {
 	// 	return err
 	// }

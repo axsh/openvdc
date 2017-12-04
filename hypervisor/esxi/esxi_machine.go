@@ -33,9 +33,3 @@ func newEsxiMachine(serialPort int, template *model.EsxiTemplate) *EsxiMachine {
 		},
 	}
 }
-
-func (m *EsxiMachine) AddNICs(nics []Nic) {
-	for _, nic := range nics {
-		m.Nics = append(m.Nics, nic)
-	}
-}
