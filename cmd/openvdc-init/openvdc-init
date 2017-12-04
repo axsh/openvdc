@@ -98,6 +98,7 @@ set_network_interfaces() {
         i=0
 	for nic in ${nics[*]} ; do
             ip_addr="$(get_metadata ${nic}/ipv4)"
+            gateway="$(get_metadata ${nic}/gateway)"
             [[ $? -eq 0 ]] || continue
 
             cat <<EOF > "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
@@ -109,6 +110,9 @@ TYPE=Ethernet
 IPADDR=${ip_addr}
 NETMASK=255.255.255.0
 EOF
+            if [[ -n "${gateway}" ]]; then
+              echo "GATEWAY=${gateway}" >> "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
+            fi
             echo "Creating ifcfg-eth${i}"
             i=$((i+1))
         done
