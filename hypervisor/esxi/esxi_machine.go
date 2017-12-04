@@ -24,7 +24,7 @@ type EsxiMachine struct {
 }
 
 func newEsxiMachine(serialPort int, template *model.EsxiTemplate) *EsxiMachine {
-	base := template.EsxiImage.Template
+	base := template.GetEsxiImage().GetTemplate()
 	return &EsxiMachine{
 		SerialConsolePort: serialPort,
 		baseImage: &baseImage{
