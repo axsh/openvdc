@@ -94,13 +94,16 @@ set_network_interfaces() {
     local nics="$(ls ${METADRIVE_LOCATION} | grep nic-*)"
     [[ -n "${nics[@]}" ]] || return
 
+    local ip_addr
+    local gateway
     (
         i=0
-	for nic in ${nics[*]} ; do
+	      for nic in ${nics[*]} ; do
             ip_addr="$(get_metadata ${nic}/ipv4)"
-            gateway="$(get_metadata ${nic}/gateway)"
             [[ $? -eq 0 ]] || continue
+            gateway="$(get_metadata ${nic}/gateway)"
 
+            echo "Creating ifcfg-eth${i}"
             cat <<EOF > "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
 DEVICE=eth${i}
 BOOTPROT=static
@@ -113,7 +116,6 @@ EOF
             if [[ -n "${gateway}" ]]; then
               echo "GATEWAY=${gateway}" >> "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
             fi
-            echo "Creating ifcfg-eth${i}"
             i=$((i+1))
         done
     )
