@@ -251,13 +251,11 @@ func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 	metadataMap := make(map[string]interface{})
 	metadataMap["hostname"] = d.vmName
 	for idx, nic := range d.machine.Nics {
-		if nic.Type == "veth" {
-			iface := make(map[string]interface{})
-			iface["ifname"] = nic.IfName
-			iface["ipv4"] = nic.Ipv4Addr
-			iface["mac"] = nic.MacAddr
-			metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
-		}
+		iface := make(map[string]interface{})
+		iface["ifname"] = nic.IfName
+		iface["ipv4"] = nic.Ipv4Addr
+		iface["mac"] = nic.MacAddr
+		metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 	}
 	return metadataMap
 }
