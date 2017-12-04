@@ -264,7 +264,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	var err error
 	for idx, iface := range d.template.GetInterfaces() {
 		d.machine.Nics = append(d.machine.Nics, Nic{
-			NetworkID: iface.ID,
+			NetworkId: iface.Id,
 			IfName:    fmt.Sprintf("%s_%02d", d.vmName, idx),
 			Type:      iface.Type,
 			Ipv4Addr:  iface.Ipv4Addr,
@@ -398,11 +398,11 @@ func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 }
 
 func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
-	for nic := range d.machine.Nics {
+	for _, nic := range d.machine.Nics {
 		adapterType := join('=', "-net.adapter", nic.Type)
 		cmd := []string{"vm.network.add", d.vmPath(), adapterType}
-		if len(nic.NetworkID) > 0 {
-			cmd = append(cmd, join('=', "-net", nic.NetworkID))
+		if len(nic.NetworkId) > 0 {
+			cmd = append(cmd, join('=', "-net", nic.NetworkId))
 		}
 		if len(nic.MacAddr) > 0 {
 			cmd = append(cmd, join('=', "-net.address", nic.MacAddr))
