@@ -1,5 +1,5 @@
 {
-  "title": "CentOS7",
+  "title": "CentOS7 OVF Template",
   "template": {
     "type": "vm/esxi",
     "vcpu": 1,
@@ -7,8 +7,7 @@
     "diskspace": "10GB"
     "esxi_image": {
       "template": {
-        "datastore": "datastore2",
-        "name": "CentOS7"
+        "name": "centos7base"
       }
     }
   }
