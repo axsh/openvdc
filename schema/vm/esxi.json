@@ -51,12 +51,10 @@
           "type": {
             "type": "string",
             "enum": [
-              "veth",
+              "vmxnet3",
               "none",
               "empty",
-              "vlan",
-              "macvlan",
-              "phys"
+              "e1000e"
             ]
           },
           "macaddr": {
