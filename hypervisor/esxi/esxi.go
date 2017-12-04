@@ -264,7 +264,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	var err error
 	for idx, iface := range d.template.GetInterfaces() {
 		d.machine.Nics = append(d.machine.Nics, Nic{
-			NetworkId: iface.Id,
+			NetworkId: iface.NetworkId,
 			IfName:    fmt.Sprintf("%s_%02d", d.vmName, idx),
 			Type:      iface.Type,
 			Ipv4Addr:  iface.Ipv4Addr,
