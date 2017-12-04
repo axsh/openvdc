@@ -19,7 +19,9 @@ type InstanceOps interface {
 	AddFailureMessage(id string, failureMessage FailureMessage_ErrorType) error
 	//GetLatestFailureMessage(id string) (*FailureMessage, error)
 	UpdateState(id string, next InstanceState_State) error
+	UpdateConnectionStatus(id string, connStatus ConnectionStatus_Status) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
+	FilterByAgentMesosID(agentID string) ([]*Instance, error)
 	Update(*Instance) error
 	Filter(limit int, cb func(*Instance) int) error
 	WaitStateUpdate(id string) (*InstanceState, error)
@@ -93,6 +95,11 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	}
 	n.LastState = initState
 
+	initConnectionStatus := &ConnectionStatus{
+		Status: ConnectionStatus_NOT_CONNECTED,
+	}
+	n.ConnectionStatus = initConnectionStatus
+
 	bk, err := i.connection()
 	if err != nil {
 		return nil, err
@@ -112,7 +119,6 @@ func (i *instances) Create(n *Instance) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	if err = bk.Backend().Create(fmt.Sprintf("%s/failure-messages", nkey), []byte{}); err != nil {
 		return nil, err
 	}
@@ -187,6 +193,28 @@ func (i *instances) findLastState(id string) (*InstanceState, error) {
 	return n, nil
 }
 
+func (i *instances) UpdateConnectionStatus(id string, connStatus ConnectionStatus_Status) error {
+	instance, err := i.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	cStatus := &ConnectionStatus{
+		Status: connStatus,
+	}
+
+	instance.ConnectionStatus = cStatus
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	err = bk.Update(fmt.Sprintf("%s/%s", instancesBaseKey, id), instance)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (i *instances) UpdateState(id string, next InstanceState_State) error {
 	instance, err := i.FindByID(id)
 	if err != nil {
@@ -215,6 +243,20 @@ func (i *instances) FilterByState(state InstanceState_State) ([]*Instance, error
 	res := []*Instance{}
 	err := i.Filter(0, func(inst *Instance) int {
 		if inst.GetLastState().State == state {
+			res = append(res, inst)
+		}
+		return len(res)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (i *instances) FilterByAgentMesosID(agentMesosID string) ([]*Instance, error) {
+	res := []*Instance{}
+	err := i.Filter(0, func(inst *Instance) int {
+		if inst.GetSlaveId() == agentMesosID {
 			res = append(res, inst)
 		}
 		return len(res)

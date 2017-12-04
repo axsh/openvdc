@@ -64,11 +64,33 @@ func (exec *VDCExecutor) LaunchTask(driver exec.ExecutorDriver, taskInfo *mesos.
 		State:  mesos.TaskState_TASK_STARTING.Enum(),
 	})
 	if err != nil {
-		log.WithError(err).Errorln("Couldn't send status update")
+		log.WithError(err).Error("Couldn't send status update")
 		return
 	}
-	if err := exec.bootInstance(driver, taskInfo); err != nil {
+
+	instanceID := taskInfo.GetTaskId().GetValue()
+
+	ctx, err := model.Connect(context.Background(), &zkAddr)
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
 		return
+	}
+	instance, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).Errorf("Failed to fetch instance %s", instanceID)
+		return
+	}
+	instanceState := instance.GetLastState()
+
+	if instanceState.State == model.InstanceState_QUEUED {
+		if err := exec.bootInstance(driver, taskInfo); err != nil {
+			// bootInstance() handles driver.SendStatusUpdate by itself.
+			return
+		}
+	} else {
+		if err := exec.recoverInstance(instance); err != nil {
+			log.WithError(err).Error("Failed recoverInstance")
+		}
 	}
 
 	_, err = driver.SendStatusUpdate(&mesos.TaskStatus{
@@ -108,6 +130,18 @@ func recordFailedState(ctx context.Context, driver exec.ExecutorDriver, instance
 	return nil
 }
 
+func (exec *VDCExecutor) recoverInstance(instance *model.Instance) error {
+	hv, err := exec.hypervisorProvider.CreateDriver(instance, instance.ResourceTemplate())
+	if err != nil {
+		return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instance.GetId())
+	}
+	err = hv.Recover(*instance.LastState)
+	if err != nil {
+		return errors.Wrapf(err, "Hypervisor failed to recover instance. InstanceID: %s", instance.GetId())
+	}
+	return nil
+}
+
 func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *mesos.TaskInfo) error {
 	instanceID := taskInfo.GetTaskId().GetValue()
 	log := log.WithFields(log.Fields{
@@ -140,6 +174,9 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		if finState == model.InstanceState_FAILED {
+			if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+				log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+			}
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_BOOT, lastErr)
 		}
 		log.WithField("fin_state", finState).Info("Proceeded defer func() at bootInstance()")
@@ -177,6 +214,13 @@ func (exec *VDCExecutor) bootInstance(driver exec.ExecutorDriver, taskInfo *meso
 	log.Infof("Instance launched successfully")
 	// Here can bring the instance state to RUNNING finally.
 	finState = model.InstanceState_RUNNING
+
+	err = model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_CONNECTED)
+
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_CONNECTED)
+	}
+
 	return nil
 }
 
@@ -197,6 +241,9 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	var lastErr error
 	defer func() {
 		if finState == model.InstanceState_FAILED {
+			if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+				log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+			}
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_START, lastErr)
 		}
 		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
@@ -229,6 +276,13 @@ func (exec *VDCExecutor) startInstance(driver exec.ExecutorDriver, instanceID st
 	log.Infof("Instance started successfully")
 	// Here can bring the instance state to RUNNING finally.
 	finState = model.InstanceState_RUNNING
+
+	err = model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_CONNECTED)
+
+	if err != nil {
+		return errors.Wrapf(err, "Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_CONNECTED)
+	}
+
 	return nil
 }
 
@@ -249,9 +303,13 @@ func (exec *VDCExecutor) stopInstance(driver exec.ExecutorDriver, instanceID str
 	var lastErr error
 	defer func() {
 		if finState == model.InstanceState_FAILED {
+			if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+				log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+			}
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_STOP, lastErr)
 		}
 		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
+
 			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
 		}
 		model.Close(ctx)
@@ -354,6 +412,9 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 	finState := model.InstanceState_FAILED
 	var lastErr error
 	defer func() {
+		if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
+			log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
+		}
 		if finState == model.InstanceState_FAILED {
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_TERMINATE, lastErr)
 		}

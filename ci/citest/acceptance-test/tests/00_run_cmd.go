@@ -143,3 +143,19 @@ func WaitInstance(t *testing.T, d time.Duration, instanceID string, goalState st
 		return WaitContinue
 	})
 }
+
+func WaitConnectionStatus(t *testing.T, d time.Duration, instanceID string, goalStatus string) {
+	WaitUntil(t, d, func() error {
+		cmd := exec.Command("openvdc", "show", instanceID)
+		buf, err := cmd.CombinedOutput()
+		if err != nil {
+			return err
+		}
+		result := gjson.GetBytes(buf, "instance.connection_status.status")
+		if result.String() == goalStatus {
+			return nil
+		}
+		time.Sleep(5 * time.Second)
+		return WaitContinue
+	})
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "name": "cpus",
+    "type": "SCALAR",
+    "scalar": {
+      "value": 20
+    }
+  }
+]

@@ -7,13 +7,26 @@ package model;
 option go_package = "github.com/axsh/openvdc/model";
 
 message Instance {
+  reserved 3;
+
   string id = 1;
   string slave_id = 2 [json_name="slave_id"];
   //string resource_id = 3; // Obsolete
   InstanceState last_state = 4 [json_name="last_state"];
   google.protobuf.Timestamp created_at = 5 [json_name="created_at"];
   Template template = 6;
-  FailureMessage latest_failure = 7;
+  FailureMessage latest_failure = 7 [json_name="latest_failure"];
+  bool auto_recovery = 8 [json_name="auto_recovery"];
+  ConnectionStatus connection_status = 9 [json_name="connection_status"];
+}
+
+message ConnectionStatus {
+  enum Status {
+    NONE = 0;
+    CONNECTED = 1;
+    NOT_CONNECTED = 2;
+  }
+  Status status = 1;
 }
 
 message InstanceState {
@@ -41,8 +54,8 @@ message FailureMessage {
     FAILED_REBOOT = 3;
     FAILED_TERMINATE = 4;
   }
-  ErrorType error_type = 1;
-  google.protobuf.Timestamp failed_at = 2;
+  ErrorType error_type = 1 [json_name="error_type"];
+  google.protobuf.Timestamp failed_at = 2 [json_name="failed_at"];
 }
 
 message Template {
@@ -52,6 +65,7 @@ message Template {
     LxcTemplate lxc = 501;
     NullTemplate null = 502;
     QemuTemplate qemu = 503;
+    EsxiTemplate esxi = 504;
   }
   google.protobuf.Timestamp created_at = 2 [json_name="created_at"];
 }
@@ -70,6 +84,8 @@ message LxcTemplate {
   }
   Image lxc_image = 5 [json_name="lxc_image"];
   message Interface {
+    reserved 4;
+
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
@@ -137,6 +153,8 @@ message QemuTemplate {
   }
   Image qemu_image = 5 [json_name="qemu_image"];
   message Interface {
+    reserved 4;
+
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
@@ -145,6 +163,26 @@ message QemuTemplate {
   bool use_kvm = 6 [json_name="use_kvm"];
   repeated Interface interfaces = 7;
   repeated string node_groups = 8 [json_name="node_groups"];
+}
+
+message EsxiTemplate {
+  int32 vcpu = 1;
+  int32 memory_gb = 2 [json_name="memory_gb"];
+  int32 min_vcpu = 3 [json_name="min_vcpu"];
+  int32 min_memory_gb = 4 [json_name="min_memory_gb"];
+  message Image {
+    string download_url = 1 [json_name="download_url"];
+    string chksum_type = 2 [json_name="chksum_type"];
+    string chksum = 3;
+  }
+  Image esxi_image = 5 [json_name="esxi_image"];
+  message Interface {
+    string type = 1;
+    string macaddr = 2;
+    string ipv4addr = 3;
+  }
+  repeated Interface interfaces = 6;
+  repeated string node_groups = 7 [json_name="node_groups"];
 }
 
 message NullTemplate {

@@ -42,6 +42,8 @@ service Instance {
 }
 
 message RunReply {
+  reserved 2;
+
   string instance_id = 1 [json_name="instance_id"];
   //string resource_id = 2; // Obsolete
 }
@@ -70,8 +72,11 @@ message ConsoleReply {
 }
 
 message CreateRequest{
+  reserved 1;
+
   //string resource_id = 1; // Obsolete
   model.Template template = 2;
+  bool auto_recovery = 3;
 }
 message CreateReply{
   string instance_id = 1 [json_name="instance_id"];
