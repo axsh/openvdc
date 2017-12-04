@@ -273,32 +273,30 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		})
 	}
 
-	// if err := util.CreateMetadataDisk(d); err != nil {
-	// 	return err
-	// }
-	// if err := util.MountMetadataDisk(d); err != nil {
-	// 	return err
-	// }
-	// if err := util.WriteMetadata(d); err != nil {
-	// 	return err
-	// }
-	// if err := util.UmountMetadataDisk(d); err != nil {
-	// 	return err
-	// }
+	if err := util.CreateMetadataDisk(d); err != nil {
+		return err
+	}
+	if err := util.MountMetadataDisk(d); err != nil {
+		return err
+	}
+	if err := util.WriteMetadata(d); err != nil {
+		return err
+	}
+	if err := util.UmountMetadataDisk(d); err != nil {
+		return err
+	}
 	if err = d.CloneBaseImage(); err != nil {
 		return err
 	}
-	// err = esxiRunCmd(
-	// 	[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
-	// )
-	// if err != nil {
-	// 	return err
-	// }
-	// if err := os.Remove(d.MetadataDrivePath()); err != nil {
-	// 	return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
-	// }
-
-
+	err = esxiRunCmd(
+		[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
+	)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(d.MetadataDrivePath()); err != nil {
+		return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
+	}
 
 	// NOTE: serial port devices starts from 9000 on the current driver.
 
