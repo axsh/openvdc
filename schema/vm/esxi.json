@@ -45,6 +45,9 @@
           "type"
         ],
         "properties": {
+          "id": {
+            "type": "string"
+          },
           "type": {
             "type": "string",
             "enum": [

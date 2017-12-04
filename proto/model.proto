@@ -179,12 +179,12 @@ message EsxiTemplate {
     string chksum_type = 2 [json_name="chksum_type"];
     string chksum = 3;
   }
-
   Image esxi_image = 5 [json_name="esxi_image"];
   message Interface {
-    string type = 1;
-    string macaddr = 2;
-    string ipv4addr = 3;
+    string id = 1;
+    string type = 2;
+    string macaddr = 3;
+    string ipv4addr = 4;
   }
   repeated Interface interfaces = 6;
   repeated string node_groups = 7 [json_name="node_groups"];
