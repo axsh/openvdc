@@ -403,7 +403,7 @@ func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
 
 		if len(nic.NetworkId) > 0 {
 			networkId := join('=', "-net", nic.NetworkId)
-			err := esxiCmRun([]string{"device.info", d.vmPath(), networkId})
+			err := esxiRunCmd([]string{"device.info", d.vmPath(), networkId})
 			if err == nil {
 				log.Infof("Machine already has an adapter in network %s attached, skipping", nic.NetworkId)
 				continue
