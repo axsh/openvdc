@@ -4,7 +4,7 @@
     "type": "vm/esxi",
     "vcpu": 1,
     "memory_gb": 1,
-    "diskspace": "10GB"
+    "diskspace": "10GB",
     "esxi_image": {
       "template": {
         "datastore": "datastore2",
