@@ -183,7 +183,7 @@ message EsxiTemplate {
   }
   Image esxi_image = 5 [json_name="esxi_image"];
   message Interface {
-    string id = 1;
+    string network_id = 1;
     string type = 2;
     string macaddr = 3;
     string ipv4addr = 4;
