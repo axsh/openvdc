@@ -75,6 +75,19 @@ func checkSupportAPI(t *model.Template, ctx context.Context) error {
 	return nil
 }
 
+func (s *InstanceAPI) ForceState(ctx context.Context, in *ForceStateRequest) (*ForceStateReply, error) {
+	if in.GetInstanceId() == "" {
+                return nil, fmt.Errorf("Invalid Instance ID")
+        }
+        inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+        if err != nil {
+                log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+                return nil, err
+        }
+
+	return &ForceStateReply{InstanceId: in.GetInstanceId()}, nil
+}
+
 func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {
 	if in.GetInstanceId() == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")

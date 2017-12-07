@@ -30,7 +30,33 @@ var forceStateCmd = &cobra.Command{
 		}
 
 		instanceID := args[0]
+		
+		if instanceID == "" {
+                        log.Fatalf("Invalid Instance ID")
+                }
+
 		goalState, ok := model.InstanceState_State_value[strings.ToUpper(args[1])]
+		if !ok {
+                        log.Fatalf("Unknown instance state: %s", goalStateExpected)
+                }
+
+		req := &api.ForceStateRequest{
+                        	ID: instanceID,
+				State: goalState,
+                }		
+
+                var res *api.ForceStateReply
+
+                err := util.RemoteCall(func(conn *grpc.ClientConn) error {
+                        c := api.NewInstanceClient(conn)
+                        var err error
+                        res, err = c.ForceState(context.Background(), req)
+                        return err
+                })
+
+                if err != nil {
+                        log.WithError(err).Fatal("Disconnected abnormally")
+                }
 
 		return nil
 	},
