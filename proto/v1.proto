@@ -75,6 +75,7 @@ message CopyReply{
 
 message ForceStateRequest{
   string instance_id = 1 [json_name="instance_id"];
+  model.InstanceState state = 2;
 }
 
 message ForceStateReply{
