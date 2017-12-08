@@ -241,24 +241,24 @@ func (i *instances) UpdateState(id string, next InstanceState_State) error {
 }
 
 func (i *instances) ForceUpdateState(id string, next InstanceState_State) error {
-        instance, err := i.FindByID(id)
-        if err != nil {
-                return err
-        }
-        nstate := &InstanceState{
-                State: next,
-        }
-        instance.LastState = nstate
+	instance, err := i.FindByID(id)
+	if err != nil {
+		return err
+	}
+	nstate := &InstanceState{
+		State: next,
+	}
+	instance.LastState = nstate
 
-        bk, err := i.connection()
-        if err != nil {
-                return err
-        }
-        _, err = bk.CreateWithID(fmt.Sprintf("/%s/%s/state/state-", instancesBaseKey, id), nstate)
-        if err != nil {
-                return err
-        }
-        return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), instance)
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	_, err = bk.CreateWithID(fmt.Sprintf("/%s/%s/state/state-", instancesBaseKey, id), nstate)
+	if err != nil {
+		return err
+	}
+	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), instance)
 }
 
 func (i *instances) FilterByState(state InstanceState_State) ([]*Instance, error) {
