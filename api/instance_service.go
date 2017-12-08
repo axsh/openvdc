@@ -79,11 +79,13 @@ func (s *InstanceAPI) ForceState(ctx context.Context, in *ForceStateRequest) (*F
 	if in.GetInstanceId() == "" {
                 return nil, fmt.Errorf("Invalid Instance ID")
         }
-        inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+        _, err := model.Instances(ctx).FindByID(in.GetInstanceId())
         if err != nil {
                 log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
                 return nil, err
         }
+
+	log.Infoln(in.State)
 
 	return &ForceStateReply{InstanceId: in.GetInstanceId()}, nil
 }

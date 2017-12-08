@@ -35,14 +35,16 @@ var forceStateCmd = &cobra.Command{
                         log.Fatalf("Invalid Instance ID")
                 }
 
-		goalState, ok := model.InstanceState_State_value[strings.ToUpper(args[1])]
+		state := strings.ToUpper(args[1])
+
+		goalState, ok := model.InstanceState_State_value[state]
 		if !ok {
-                        log.Fatalf("Unknown instance state: %s", goalStateExpected)
+                        log.Fatalf("Unknown instance state: %s", goalState)
                 }
 
 		req := &api.ForceStateRequest{
-                        	ID: instanceID,
-				State: goalState,
+                        	InstanceId: instanceID,
+				State: model.InstanceState_State(goalState),
                 }		
 
                 var res *api.ForceStateReply
