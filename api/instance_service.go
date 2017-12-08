@@ -23,9 +23,6 @@ type InstanceAPI struct {
 
 func (s *InstanceAPI) Copy(ctx context.Context, in *CopyRequest) (*CopyReply, error) {
 	instanceID := in.InstanceId
-	if instanceID == "" {
-		return nil, fmt.Errorf("Invalid Instance ID")
-	}
 
 	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
 	if err != nil {
@@ -78,9 +75,6 @@ func checkSupportAPI(t *model.Template, ctx context.Context) error {
 func (s *InstanceAPI) ForceState(ctx context.Context, in *ForceStateRequest) (*ForceStateReply, error) {
 	instanceID := in.GetInstanceId()
 
-	if instanceID == "" {
-		return nil, fmt.Errorf("Invalid Instance ID")
-	}
 	_, err := model.Instances(ctx).FindByID(instanceID)
 	if err != nil {
 		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
