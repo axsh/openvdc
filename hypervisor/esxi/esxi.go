@@ -3,6 +3,7 @@ package esxi
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -199,6 +200,41 @@ func join(separator byte, args ...string) string {
 		}
 	}
 	return buf.String()
+}
+
+func captureStdout(fn func() error) ([]byte, error) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed os.Pipe()")
+	}
+	stdout := os.Stdout
+	os.Stdout = w
+
+	outputChan := make(chan func() ([]byte, error))
+	go func() {
+		var buf bytes.Buffer
+		if n, err := io.Copy(&buf, r); n > 0 {
+			if err == nil || err == io.EOF {
+				outputChan <- func() ([]byte, error) {
+					return buf.Bytes(), nil
+				}
+				return
+			} else {
+				outputChan <- func() ([]byte, error) {
+					return nil, errors.Wrap(err, "Failed io.Copy()")
+				}
+				return
+			}
+		}
+		outputChan <- func() ([]byte ,error) { return nil, nil }
+	}()
+
+	if err := fn(); err != nil {
+		return nil, err
+	}
+	w.Close()
+	os.Stdout = stdout
+	return (<-outputChan)()
 }
 
 func runCmd(cmd string, args []string) error {
