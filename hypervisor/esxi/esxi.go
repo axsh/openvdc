@@ -1,6 +1,7 @@
 package esxi
 
 import (
+	"encoding/json"
 	"bytes"
 	"fmt"
 	"io"
@@ -439,11 +440,24 @@ func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
 
 		if len(nic.NetworkId) > 0 {
 			networkId := join('=', "-net", nic.NetworkId)
-			err := esxiRunCmd([]string{"device.info", d.vmPath(), networkId})
-			if err == nil {
+			// get in json format, normal stdout is unreliable
+			output, err := captureStdout(func() error {
+				return esxiRunCmd([]string{"device.info", "-json", d.vmPath(), networkId})
+			})
+			if err != nil {
+				return errors.Errorf("failed captureStdout()", err)
+			}
+			var device struct {
+				Devices []interface{} `json="Devices,omitempty"`
+			}
+			if err := json.Unmarshal(output, &device); err != nil {
+				return errors.Errorf("Failed json.Unmarshal", err)
+			}
+			if device.Devices != nil {
 				log.Infof("Machine already has an adapter in network %s attached, skipping", nic.NetworkId)
 				continue
 			}
+
 			cmd = append(cmd, networkId)
 		}
 		if len(nic.MacAddr) > 0 {
