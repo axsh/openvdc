@@ -25,6 +25,7 @@ import (
 	_ "github.com/vmware/govmomi/govc/device/serial"
 	_ "github.com/vmware/govmomi/govc/vm"
 	_ "github.com/vmware/govmomi/govc/vm/guest"
+	_ "github.com/vmware/govmomi/govc/vm/network"
 	"golang.org/x/crypto/ssh"
 )
 
