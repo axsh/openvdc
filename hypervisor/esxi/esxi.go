@@ -266,6 +266,28 @@ func esxiRunCmd(cmdList ...[]string) error {
 	return nil
 }
 
+func deviceExists(vm string, device string) (bool, error) {
+	exists := false
+
+	// get in json format, normal stdout is unreliable
+	output, err := captureStdout(func() error {
+		return esxiRunCmd([]string{"device.info", "-json", vm, device})
+	})
+	if err != nil {
+		return exists, errors.Errorf("failed captureStdout()", err)
+	}
+	var dev struct {
+		Devices []interface{} `json="Devices,omitempty"`
+	}
+	if err := json.Unmarshal(output, &dev); err != nil {
+		return exists, errors.Errorf("Failed json.Unmarshal", err)
+	}
+	if dev.Devices != nil {
+		exists = true
+	}
+	return exists, nil
+}
+
 // wrappers for esxi api syntax
 func storageImg(imgName string) string {
 	path := join('/', imgName, imgName)
@@ -441,20 +463,11 @@ func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
 
 		if len(nic.NetworkId) > 0 {
 			networkId := join('=', "-net", nic.NetworkId)
-			// get in json format, normal stdout is unreliable
-			output, err := captureStdout(func() error {
-				return esxiRunCmd([]string{"device.info", "-json", d.vmPath(), networkId})
-			})
+			exists, err := deviceExists(d.vmPath(), networkId) 
 			if err != nil {
-				return errors.Errorf("failed captureStdout()", err)
+				return err
 			}
-			var device struct {
-				Devices []interface{} `json="Devices,omitempty"`
-			}
-			if err := json.Unmarshal(output, &device); err != nil {
-				return errors.Errorf("Failed json.Unmarshal", err)
-			}
-			if device.Devices != nil {
+			if exists {
 				log.Infof("Machine already has an adapter in network %s attached, skipping", nic.NetworkId)
 				continue
 			}
