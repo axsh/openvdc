@@ -23,10 +23,8 @@ func TestTypes(t *testing.T) {
 const jsonEsxiImage = `{
         "type": "vm/esxi",
         "esxi_image": {
-                "template": {
-                        "name": "sample",
-                        "datastore": "datastore"
-                }
+                "name": "sample",
+                "datastore": "datastore"
         }
 }`
 
