@@ -358,11 +358,14 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
 	}
 
-	// NOTE: serial port devices starts from 9000 on the current driver.
-
+	// NOTE:
+	// serial port devices starts from 9000
+	// floppy devices starts from 8000
+	if err = d.AddFloppyDevice(); err != nil {
+		return err
+	}
 	err = esxiRunCmd(
-		[]string{"device.floppy.add", d.vmPath()},
-		[]string{"device.floppy.insert", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
+		[]string{"device.floppy.insert", "-device=floppy-8000", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"device.serial.add", d.vmPath()},
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
 	)
@@ -463,7 +466,7 @@ func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
 
 		if len(nic.NetworkId) > 0 {
 			networkId := join('=', "-net", nic.NetworkId)
-			exists, err := deviceExists(d.vmPath(), networkId) 
+			exists, err := deviceExists(d.vmPath(), networkId)
 			if err != nil {
 				return err
 			}
@@ -482,6 +485,18 @@ func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
 		}
 	}
 	return nil
+}
+
+func (d *EsxiHypervisorDriver) AddFloppyDevice() error {
+	exists, err := deviceExists(d.vmPath(), "floppy-*")
+	if err != nil {
+		return err
+	}
+	if exists {
+		log.Infof("Machine already has floppy device, skipping")
+		return nil
+	}
+	return esxiRunCmd([]string{"device.floppy.add", d.vmPath()})
 }
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {
