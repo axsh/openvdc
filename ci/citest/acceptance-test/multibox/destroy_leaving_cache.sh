@@ -16,3 +16,4 @@ done
 destroy_bridge "vdc_mngnt"
 destroy_bridge "vdc_insts"
 stop_masquerade "${NETWORK}/${PREFIX}"
+stop_masquerade "${NETWORK_INSTS}/${PREFIX}"

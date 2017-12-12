@@ -53,7 +53,7 @@ for box in ${BOXES} ; do
 done
 
 create_bridge "vdc_mngnt" "${GATEWAY}/${PREFIX}"
-create_bridge "vdc_insts"
+create_bridge "vdc_insts" "${GW_INSTS}/${PREFIX_INSTS}"
 
 if [[ "$REBUILD" == "true" ]]; then
     (
@@ -98,6 +98,7 @@ else
 fi
 
 masquerade "${NETWORK}/${PREFIX}"
+masquerade "${NETWORK_INSTS}/${PREFIX}"
 
 for node in ${scheduled_nodes[@]} ; do
     (
