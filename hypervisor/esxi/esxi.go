@@ -2,7 +2,9 @@ package esxi
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -23,6 +25,7 @@ import (
 	_ "github.com/vmware/govmomi/govc/device/serial"
 	_ "github.com/vmware/govmomi/govc/vm"
 	_ "github.com/vmware/govmomi/govc/vm/guest"
+	_ "github.com/vmware/govmomi/govc/vm/network"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -35,22 +38,22 @@ const (
 )
 
 var settings struct {
-	ScriptPath      string
-	EsxiUser        string
-	EsxiPass        string
-	EsxiIp          string
-	EsxiDatacenter  string
-	EsxiHostName    string
-	EsxiInsecure    bool
-	EsxiHostSshkey  string
-	EsxiVmUser      string
-	EsxiVmPass      string
-	EsxiVmDatastore string
-	EsxiUrl         string
+	ScriptPath          string
+	EsxiUser            string
+	EsxiPass            string
+	EsxiIp              string
+	EsxiDatacenter      string
+	EsxiHostName        string
+	EsxiInsecure        bool
+	EsxiHostSshkey      string
+	EsxiVmUser          string
+	EsxiVmPass          string
+	EsxiVmDatastore     string
+	EsxiUrl             string
 	EsxiInventoryFolder string
-	vCenterEndpoint bool
-	BridgeName      string
-	BridgeType      BridgeType
+	vCenterEndpoint     bool
+	BridgeName          string
+	BridgeType          BridgeType
 }
 
 func (t BridgeType) String() string {
@@ -133,7 +136,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
-	settings.vCenterEndpoint = sub.GetBool("hypervisor.vCenter") 
+	settings.vCenterEndpoint = sub.GetBool("hypervisor.vCenter")
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
@@ -176,7 +179,7 @@ func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template
 		template: esxiTmpl,
 		vmName:   instance.GetId(),
 	}
-	driver.machine = newEsxiMachine(15000 + instanceIdx, driver.template)
+	driver.machine = newEsxiMachine(15000+instanceIdx, driver.template)
 	return driver, nil
 }
 
@@ -199,6 +202,41 @@ func join(separator byte, args ...string) string {
 		}
 	}
 	return buf.String()
+}
+
+func captureStdout(fn func() error) ([]byte, error) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed os.Pipe()")
+	}
+	stdout := os.Stdout
+	os.Stdout = w
+
+	outputChan := make(chan func() ([]byte, error))
+	go func() {
+		var buf bytes.Buffer
+		if n, err := io.Copy(&buf, r); n > 0 {
+			if err == nil || err == io.EOF {
+				outputChan <- func() ([]byte, error) {
+					return buf.Bytes(), nil
+				}
+				return
+			} else {
+				outputChan <- func() ([]byte, error) {
+					return nil, errors.Wrap(err, "Failed io.Copy()")
+				}
+				return
+			}
+		}
+		outputChan <- func() ([]byte, error) { return nil, nil }
+	}()
+
+	if err := fn(); err != nil {
+		return nil, err
+	}
+	w.Close()
+	os.Stdout = stdout
+	return (<-outputChan)()
 }
 
 func runCmd(cmd string, args []string) error {
@@ -226,6 +264,28 @@ func esxiRunCmd(cmdList ...[]string) error {
 		}
 	}
 	return nil
+}
+
+func deviceExists(vm string, device string) (bool, error) {
+	exists := false
+
+	// get in json format, normal stdout is unreliable
+	output, err := captureStdout(func() error {
+		return esxiRunCmd([]string{"device.info", "-json", vm, device})
+	})
+	if err != nil {
+		return exists, errors.Errorf("failed captureStdout()", err)
+	}
+	var dev struct {
+		Devices []interface{} `json="Devices,omitempty"`
+	}
+	if err := json.Unmarshal(output, &dev); err != nil {
+		return exists, errors.Errorf("Failed json.Unmarshal", err)
+	}
+	if dev.Devices != nil {
+		exists = true
+	}
+	return exists, nil
 }
 
 // wrappers for esxi api syntax
@@ -300,22 +360,23 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
 	}
 
-	// NOTE: serial port devices starts from 9000 on the current driver.
-
+	// NOTE:
+	// serial port devices starts from 9000
+	// floppy devices starts from 8000
+	if err = d.AddFloppyDevice(); err != nil {
+		return err
+	}
+	if err = d.AddNetworkDevices(); err != nil {
+		return err
+	}
 	err = esxiRunCmd(
-		[]string{"device.floppy.add", d.vmPath()},
-		[]string{"device.floppy.insert", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
+		[]string{"device.floppy.insert", "-device=floppy-8000", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"device.serial.add", d.vmPath()},
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
 	)
 	if err != nil {
 		return err
 	}
-
-	if err = d.AddNetworkDevices(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -405,11 +466,15 @@ func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
 
 		if len(nic.NetworkId) > 0 {
 			networkId := join('=', "-net", nic.NetworkId)
-			err := esxiRunCmd([]string{"device.info", d.vmPath(), networkId})
-			if err == nil {
+			exists, err := deviceExists(d.vmPath(), networkId)
+			if err != nil {
+				return err
+			}
+			if exists {
 				log.Infof("Machine already has an adapter in network %s attached, skipping", nic.NetworkId)
 				continue
 			}
+
 			cmd = append(cmd, networkId)
 		}
 		if len(nic.MacAddr) > 0 {
@@ -420,6 +485,18 @@ func (d *EsxiHypervisorDriver) AddNetworkDevices() error {
 		}
 	}
 	return nil
+}
+
+func (d *EsxiHypervisorDriver) AddFloppyDevice() error {
+	exists, err := deviceExists(d.vmPath(), "floppy-*")
+	if err != nil {
+		return err
+	}
+	if exists {
+		log.Infof("Machine already has floppy device, skipping")
+		return nil
+	}
+	return esxiRunCmd([]string{"device.floppy.add", d.vmPath()})
 }
 
 func (d *EsxiHypervisorDriver) DestroyInstance() error {

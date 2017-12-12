@@ -563,6 +563,12 @@
 			"revisionTime": "2017-11-27T00:49:25Z"
 		},
 		{
+			"checksumSHA1": "EQppqh/+F6sNddSvwDWn2wD2reo=",
+			"path": "github.com/vmware/govmomi/govc/vm/network",
+			"revision": "1d6aed22042035b0306bd3d5911e990d865c2096",
+			"revisionTime": "2017-12-11T03:51:23Z"
+		},
+		{
 			"checksumSHA1": "qgvLedjeebmpMvK0JYCLeGr2FkA=",
 			"path": "github.com/vmware/govmomi/guest",
 			"revision": "adf4530b240711895896b14c337f9b77a3143e96",
