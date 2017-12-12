@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"os/exec"
+        "strings"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -15,6 +16,18 @@ func Provider() terraform.ResourceProvider {
 			"openvdc_instance": OpenVdcInstance(),
 		},
 	}
+
+}
+
+func CheckInstanceTerminated(cmdStdOut *bytes.Buffer) (value bool) {
+     for _, s := range (strings.Split(cmdStdOut.String(), "\n"))  {
+        if has:=strings.Contains(s, "\"state\""); has {
+             vals := strings.Split(s, ":")
+             _, state := vals[0], vals[1]
+             return strings.Contains(state, "TERMINATED")
+         }
+    }
+    return false
 
 }
 

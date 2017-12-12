@@ -91,7 +91,19 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
-	stdout, stderr, err := RunCmd("openvdc", "destroy", d.Id())
+	stdout, stderr, err := RunCmd("openvdc", "show", d.Id())
+        if err != nil {
+		return fmt.Errorf("The following command returned error:%v\nopenvdc show %s\nSTDOUT: %s\nSTDERR: %s", err, d.Id(), stdout, stderr)
+         }
+        instanceAlreadyTerminated := CheckInstanceTerminated(stdout)
+
+        if instanceAlreadyTerminated {
+            fmt.Println("Instance already terminated! Ignoring destroy request.")
+            return nil
+         } 
+
+
+	stdout, stderr, err = RunCmd("openvdc", "destroy", d.Id())
 
 	if err != nil {
 		return fmt.Errorf("The following command returned error:%v\nopenvdc destroy %s\nSTDOUT: %s\nSTDERR: %s", err, d.Id(), stdout, stderr)
