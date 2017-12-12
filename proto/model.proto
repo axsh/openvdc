@@ -89,8 +89,8 @@ message LxcTemplate {
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
-    string gateway = 5;
     //string bridge = 4; // Obsolete
+    string gateway = 5;
   }
   repeated Interface interfaces = 6;
   message Template {
@@ -159,8 +159,8 @@ message QemuTemplate {
     string type = 1;
     string macaddr = 2;
     string ipv4addr = 3;
-    string gateway = 5;
     //string bridge = 4; // Obsolete
+    string gateway = 5;
   }
   bool use_kvm = 6 [json_name="use_kvm"];
   repeated Interface interfaces = 7;

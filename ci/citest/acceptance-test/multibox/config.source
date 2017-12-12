@@ -18,6 +18,12 @@ PREFIX="24"
 BOXES=(
     "minimal-7.3.1611-x86_64.kvm.tar.gz"
 )
+
+GW_INSTS="172.16.10.1"
+PREFIX_INSTS="24"
+NETWORK_INSTS="172.16.10.0"
+
+
 ZK_NODES=(
     "10.0.100.10"
     "10.0.100.11"

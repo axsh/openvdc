@@ -682,7 +682,8 @@ type LxcTemplate_Interface struct {
 	Type     string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
 	Macaddr  string `protobuf:"bytes,2,opt,name=macaddr" json:"macaddr,omitempty"`
 	Ipv4Addr string `protobuf:"bytes,3,opt,name=ipv4addr" json:"ipv4addr,omitempty"`
-	Gateway  string `protobuf:"bytes,5,opt,name=gateway" json:"gateway,omitempty"`
+	// string bridge = 4; // Obsolete
+	Gateway string `protobuf:"bytes,5,opt,name=gateway" json:"gateway,omitempty"`
 }
 
 func (m *LxcTemplate_Interface) Reset()                    { *m = LxcTemplate_Interface{} }
@@ -959,7 +960,8 @@ type QemuTemplate_Interface struct {
 	Type     string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
 	Macaddr  string `protobuf:"bytes,2,opt,name=macaddr" json:"macaddr,omitempty"`
 	Ipv4Addr string `protobuf:"bytes,3,opt,name=ipv4addr" json:"ipv4addr,omitempty"`
-	Gateway  string `protobuf:"bytes,5,opt,name=gateway" json:"gateway,omitempty"`
+	// string bridge = 4; // Obsolete
+	Gateway string `protobuf:"bytes,5,opt,name=gateway" json:"gateway,omitempty"`
 }
 
 func (m *QemuTemplate_Interface) Reset()                    { *m = QemuTemplate_Interface{} }
