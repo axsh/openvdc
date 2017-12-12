@@ -1,8 +1,8 @@
 package esxi
 
 import (
-	"encoding/json"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -38,22 +38,22 @@ const (
 )
 
 var settings struct {
-	ScriptPath      string
-	EsxiUser        string
-	EsxiPass        string
-	EsxiIp          string
-	EsxiDatacenter  string
-	EsxiHostName    string
-	EsxiInsecure    bool
-	EsxiHostSshkey  string
-	EsxiVmUser      string
-	EsxiVmPass      string
-	EsxiVmDatastore string
-	EsxiUrl         string
+	ScriptPath          string
+	EsxiUser            string
+	EsxiPass            string
+	EsxiIp              string
+	EsxiDatacenter      string
+	EsxiHostName        string
+	EsxiInsecure        bool
+	EsxiHostSshkey      string
+	EsxiVmUser          string
+	EsxiVmPass          string
+	EsxiVmDatastore     string
+	EsxiUrl             string
 	EsxiInventoryFolder string
-	vCenterEndpoint bool
-	BridgeName      string
-	BridgeType      BridgeType
+	vCenterEndpoint     bool
+	BridgeName          string
+	BridgeType          BridgeType
 }
 
 func (t BridgeType) String() string {
@@ -136,7 +136,7 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
-	settings.vCenterEndpoint = sub.GetBool("hypervisor.vCenter") 
+	settings.vCenterEndpoint = sub.GetBool("hypervisor.vCenter")
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
@@ -179,7 +179,7 @@ func (p *EsxiHypervisorProvider) CreateDriver(instance *model.Instance, template
 		template: esxiTmpl,
 		vmName:   instance.GetId(),
 	}
-	driver.machine = newEsxiMachine(15000 + instanceIdx, driver.template)
+	driver.machine = newEsxiMachine(15000+instanceIdx, driver.template)
 	return driver, nil
 }
 
@@ -228,7 +228,7 @@ func captureStdout(fn func() error) ([]byte, error) {
 				return
 			}
 		}
-		outputChan <- func() ([]byte ,error) { return nil, nil }
+		outputChan <- func() ([]byte, error) { return nil, nil }
 	}()
 
 	if err := fn(); err != nil {
@@ -364,6 +364,9 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	if err = d.AddFloppyDevice(); err != nil {
 		return err
 	}
+	if err = d.AddNetworkDevices(); err != nil {
+		return err
+	}
 	err = esxiRunCmd(
 		[]string{"device.floppy.insert", "-device=floppy-8000", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"device.serial.add", d.vmPath()},
@@ -372,11 +375,6 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	if err != nil {
 		return err
 	}
-
-	if err = d.AddNetworkDevices(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
