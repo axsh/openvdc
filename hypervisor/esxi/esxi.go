@@ -247,6 +247,7 @@ func runCmd(cmd string, args []string) error {
 	return nil
 }
 
+var ErrApiRequest = errors.New("Failed api requiest")
 func esxiRunCmd(cmdList ...[]string) error {
 	for _, args := range cmdList {
 		a := []string{
@@ -260,7 +261,8 @@ func esxiRunCmd(cmdList ...[]string) error {
 		}
 		log.Info("Calling:", a)
 		if rc := cli.Run(a); rc != 0 {
-			return errors.Errorf("Failed api request: %s", args[0])
+			log.Errorf("failed request: %s", args[0])
+			return ErrApiRequest
 		}
 	}
 	return nil
@@ -274,8 +276,14 @@ func deviceExists(vm string, device string) (bool, error) {
 		return esxiRunCmd([]string{"device.info", "-json", vm, device})
 	})
 	if err != nil {
-		return exists, errors.Errorf("failed captureStdout()", err)
+		// device.info can also fail when it cannot find any matching device
+		if err == ErrApiRequest {
+			return exists, nil
+		} else {
+			return exists, errors.Errorf("failed captureStdout()", err)
+		}
 	}
+
 	var dev struct {
 		Devices []interface{} `json="Devices,omitempty"`
 	}
