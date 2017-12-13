@@ -4,11 +4,9 @@
     "type": "vm/esxi",
     "vcpu": 1,
     "memory_gb": 1,
-    "diskspace": "10GB"
+    "diskspace": "10GB",
     "esxi_image": {
-      "template": {
-        "name": "centos7base"
-      }
+      "name": "centos7base"
     }
   }
 }

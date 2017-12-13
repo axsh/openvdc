@@ -101,7 +101,6 @@ func (h *EsxiHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) 
 		return errors.WithStack(err)
 	}
 
-	minput.EsxiImage = nil
 	proto.Merge(mdst, minput)
 	return nil
 }
