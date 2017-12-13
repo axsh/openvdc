@@ -6,10 +6,8 @@
     "memory_gb": 1,
     "diskspace": "10GB",
     "esxi_image": {
-      "template": {
-        "datastore": "datastore2",
-        "name": "CentOS7"
-      }
+      "datastore": "datastore2",
+      "name": "CentOS7"
     }
   }
 }
