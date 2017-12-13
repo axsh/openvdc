@@ -12,8 +12,8 @@ import (
 var tmpl = `{
   "interfaces": [
     {
-      "type":"beth",
-      "ipv4add": "172.16.10.10",
+      "type":"veth",
+      "ipv4addr": "172.16.10.100",
       "gateway": "172.16.10.1"
     }
   ],
