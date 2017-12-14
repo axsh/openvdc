@@ -98,7 +98,6 @@ func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
         instanceAlreadyTerminated := CheckInstanceTerminated(stdout)
 
         if instanceAlreadyTerminated {
-            fmt.Println("Instance already terminated! Ignoring destroy request.")
             return nil
          } 
 
