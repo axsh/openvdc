@@ -147,6 +147,7 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 			Type:         iface.Type,
 			Ipv4Addr:     iface.Ipv4Addr,
 			MacAddr:      iface.Macaddr,
+			Gateway:      iface.Gateway,
 			Bridge:       settings.BridgeName,
 			BridgeHelper: settings.QemuBridgeHelper,
 		})
