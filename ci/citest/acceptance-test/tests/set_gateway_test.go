@@ -27,7 +27,7 @@ func TestDefaultGatewayLXC(t *testing.T) {
 
 	// todo: find a way that does not rely on the console command for this (ssh?)
 	stdout, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "sh", "-c",
-		fmt.Sprintf("openvdc console %s '%s'", instance_id, "ping -c 1 -W 3 8.8.8.8"))
+		fmt.Sprintf("openvdc console %s '%s'", instance_id, "ping -c 1 -W 3 172.16.90.199"))
 	t.Log("\n", stdout.String())
 
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
@@ -41,7 +41,7 @@ func TestDefaultGatewayQEMU(t *testing.T) {
 
 	// todo: find a way that does not rely on the console command for this (ssh?)
 	stdout, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "sh", "-c",
-		fmt.Sprintf("openvdc console %s '%s'", instance_id, "ping -c 1 -W 3 8.8.8.8"))
+	fmt.Sprintf("openvdc console %s '%s'", instance_id, "ping -c 1 -W 3 172.16.90.199"))
 	t.Log("\n", stdout.String())
 
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
