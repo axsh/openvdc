@@ -64,8 +64,6 @@ create_bridge "vdc_insts" "${GW_INSTS}/${PREFIX_INSTS}"
   sudo ip link set "${GLOBAL_TAP}" up
 ) ; prev_cmd_failed
 
-exit
-
 if [[ "$REBUILD" == "true" ]]; then
     (
         $starting_group "Cleanup old environment"
