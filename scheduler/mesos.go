@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/axsh/openvdc/handlers/vm"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -36,6 +37,35 @@ type VDCScheduler struct {
 	listenAddr    string
 	zkAddr        backend.ZkEndpoint
 	ctx           context.Context
+}
+
+// define openvdc's offer
+type VDCOffer struct {
+	SlaveID   *string
+	Resources []*Resource
+}
+
+type Resource struct {
+	Name   *string
+	Type   ValueType
+	Scalar float64
+	Ranges []ValueRange
+	Set    []string
+	// Disk
+}
+
+type ValueType int32
+
+const (
+	ValueScalar ValueType = 0
+	ValueRanges ValueType = 1
+	ValueSet    ValueType = 2
+	ValueText   ValueType = 3
+)
+
+type ValueRange struct {
+	Begin uint64
+	End   uint64
 }
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
@@ -193,7 +223,7 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 
 	for _, offer := range offers {
 
-		model.StoreOffer(offer)
+		vm.StoreOffer(offer)
 
 		agentID := getAgentID(offer)
 		disconnectedAgent, err := model.CrashedNodes(ctx).FindByAgentID(agentID)
