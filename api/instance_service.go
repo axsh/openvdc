@@ -9,6 +9,7 @@ import (
 	mlog "github.com/ContainX/go-mesoslog/mesoslog"
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/handlers"
+	"github.com/axsh/openvdc/handlers/vm"
 	"github.com/axsh/openvdc/model"
 	"github.com/golang/protobuf/ptypes"
 	util "github.com/mesos/mesos-go/mesosutil"
@@ -63,6 +64,7 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 		"instance_id": in.GetInstanceId(),
 		"state":       lastState.String(),
 	})
+
 	switch lastState.GetState() {
 	case model.InstanceState_REGISTERED:
 		if err := lastState.ValidateGoalState(model.InstanceState_QUEUED); err != nil {
@@ -70,6 +72,16 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 			// TODO: Investigate gRPC error response
 			return nil, err
 		}
+
+		ok, err := vm.IsThereSatisfidCreateReq(inst)
+		if err != nil {
+			flog.Error(err)
+		}
+		if !ok {
+			flog.WithError(err).Error("There is no machine can satisfy resource requirement")
+			return nil, fmt.Errorf("There is no machine can satisfy resource requirement")
+		}
+
 		if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_QUEUED); err != nil {
 			flog.Error(err)
 			return nil, err

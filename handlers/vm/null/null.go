@@ -20,6 +20,10 @@ type NullHandler struct {
 	vm.Base
 }
 
+func (h *NullHandler) GetInstanceSchedulerHandler() handlers.InstanceScheduleHandler {
+	return NewScheduler()
+}
+
 func (h *NullHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
 	tmpl := &model.NullTemplate{}
 

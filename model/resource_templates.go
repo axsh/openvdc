@@ -3,19 +3,12 @@ package model
 import (
 	"reflect"
 	"strings"
-
-	mesos "github.com/mesos/mesos-go/mesosproto"
 )
 
 // ResourceTemplate is a marker interface for all resource template structs.
 type ResourceTemplate interface {
 	isResourceTemplateKind()
 	ResourceName() string
-	GetScheduledResource() ScheduleHandler
-}
-
-type ScheduleHandler interface {
-	Schedule(InstanceResource, map[string]*mesos.Offer) (bool, error) // compare with offer and resrouce request.
 }
 
 func (*NoneTemplate) isResourceTemplateKind() {}
@@ -28,88 +21,6 @@ func (*EsxiTemplate) isResourceTemplateKind() {}
 func (*EsxiTemplate) ResourceName() string    { return "vm/esxi" }
 func (*NullTemplate) isResourceTemplateKind() {}
 func (*NullTemplate) ResourceName() string    { return "vm/null" }
-
-type NoneSchudler struct {
-}
-
-func (n *NoneTemplate) GetScheduledResource() ScheduleHandler {
-	return new(NoneSchudler)
-}
-
-func (*NoneSchudler) Schedule(ir InstanceResource, offer map[string]*mesos.Offer) (bool, error) {
-	return true, nil
-}
-
-type NullSchudler struct {
-}
-
-func (n *NullTemplate) GetScheduledResource() ScheduleHandler {
-	return new(NullSchudler)
-}
-
-func (*NullSchudler) Schedule(ir InstanceResource, offer map[string]*mesos.Offer) (bool, error) {
-	return true, nil
-}
-
-type LxcSchudler struct {
-}
-
-func (n *LxcTemplate) GetScheduledResource() ScheduleHandler {
-	return new(LxcSchudler)
-}
-
-type QemuSchudler struct {
-}
-
-func (n *QemuTemplate) GetScheduledResource() ScheduleHandler {
-	return new(QemuSchudler)
-}
-
-type EsxiSchudler struct {
-}
-
-func (n *EsxiTemplate) GetScheduledResource() ScheduleHandler {
-	return new(EsxiSchudler)
-}
-
-func schedule(ir InstanceResource, offer map[string]*mesos.Offer) (bool, error) {
-	offerParams := []string{"vcpu", "mem"}
-	reqValues := []int32{
-		ir.GetVcpu(),
-		ir.GetMemoryGb(),
-	}
-
-	for _, offer := range storedOffers {
-		var index int
-		for i, param := range offerParams {
-			index = i
-			offerValue := int32(getOfferScalar(offer, param))
-			if offerValue < reqValues[i] {
-				break
-			}
-		}
-		if index == len(offerParams)-1 {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-func (*LxcSchudler) Schedule(ir InstanceResource, offer map[string]*mesos.Offer) (bool, error) {
-	ok, err := schedule(ir, offer)
-	return ok, err
-}
-
-func (*QemuSchudler) Schedule(ir InstanceResource, offer map[string]*mesos.Offer) (bool, error) {
-	ok, err := schedule(ir, offer)
-	return ok, err
-}
-
-func (*EsxiSchudler) Schedule(ir InstanceResource, offer map[string]*mesos.Offer) (bool, error) {
-	ok, err := schedule(ir, offer)
-	return ok, err
-}
 
 // InstanceResource is a marker interface for instance template structs.
 type InstanceResource interface {

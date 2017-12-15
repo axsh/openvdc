@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 
-	"reflect"
-
 	"github.com/axsh/openvdc/model"
+	mesos "github.com/mesos/mesos-go/mesosproto"
 )
 
 var (
@@ -39,6 +39,11 @@ type ResourceHandler interface {
 	IsSupportAPI(m string) bool
 }
 
+type InstanceResourceHandler interface {
+	ResourceHandler
+	GetInstanceSchedulerHandler() InstanceScheduleHandler
+}
+
 type CLIHandler interface {
 	MergeArgs(src model.ResourceTemplate, args []string) error
 	MergeJSON(dst model.ResourceTemplate, in json.RawMessage) error
@@ -63,4 +68,8 @@ func ResourceName(h ResourceHandler) string {
 func FindByType(name string) (p ResourceHandler, ok bool) {
 	p, ok = resourceHandlers[name]
 	return
+}
+
+type InstanceScheduleHandler interface {
+	ScheduleInstance(model.InstanceResource, map[string]*mesos.Offer) (bool, error) // compare with offer and resrouce request.
 }
