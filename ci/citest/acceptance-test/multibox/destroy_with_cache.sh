@@ -20,6 +20,7 @@ done
   [ "$?" != "0" ]
   $skip_step_if_already_done ; set -xe
   sudo ip link set "${GLOBAL_TAP}" down
+  sudo ip link delete dev "${GLOBAL_TAP}"
 ) ; prev_cmd_failed
 
 destroy_bridge "vdc_mngnt"
