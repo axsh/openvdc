@@ -260,7 +260,7 @@ func (d *EsxiHypervisorDriver) MetadataDrivePath() string {
 	return "/tmp/metadrive.img"
 }
 
-func (d * EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
+func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 	metadataMap := make(map[string]interface{})
 	metadataMap["hostname"] = d.vmName
 	for idx, nic := range d.machine.Nics {
@@ -325,8 +325,8 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	}
 
 	if err := os.Remove(d.MetadataDrivePath()); err != nil {
-                return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
-        }
+		return errors.Errorf("Unable to remove metadrive: %s", d.MetadataDrivePath())
+	}
 
 	key, err := ioutil.ReadFile(settings.EsxiHostSshkey)
 	if err != nil {
@@ -418,6 +418,6 @@ func (d EsxiHypervisorDriver) RebootInstance() error {
 }
 
 func (d *EsxiHypervisorDriver) Recover(instanceState model.InstanceState) error {
-        //Todo: handle recovery
-        return nil
+	//Todo: handle recovery
+	return nil
 }

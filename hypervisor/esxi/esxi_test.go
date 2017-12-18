@@ -1,6 +1,6 @@
 package esxi
 
-import(
+import (
 	"testing"
 
 	"github.com/axsh/openvdc/hypervisor"
@@ -26,5 +26,3 @@ func TestEsxiHypervisorProvider_CreateDriver(t *testing.T) {
 	_, err = p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, nil)
 	assert.Error(err, "ESXIHypvisorProvider.CreateDriver should fail if not with *model.EsxiTemplate")
 }
-
-
