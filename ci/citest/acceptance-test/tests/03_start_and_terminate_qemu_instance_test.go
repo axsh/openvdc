@@ -3,8 +3,8 @@
 package tests
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
