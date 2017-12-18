@@ -92,15 +92,18 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 
 func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
 	stdout, stderr, err := RunCmd("openvdc", "show", d.Id())
-        if err != nil {
+	if err != nil {
 		return fmt.Errorf("The following command returned error:%v\nopenvdc show %s\nSTDOUT: %s\nSTDERR: %s", err, d.Id(), stdout, stderr)
-         }
-        instanceAlreadyTerminated := CheckInstanceTerminated(stdout)
+	}
+	instanceAlreadyTerminated, err := CheckInstanceTerminated(stdout)
 
-        if instanceAlreadyTerminated {
-            return nil
-         } 
+	if err != nil {
+		return fmt.Errorf("Error parsing json output for openvdc show command for id %s. Error: %s", d.Id(), err)
+	}
 
+	if instanceAlreadyTerminated {
+		return nil
+	}
 
 	stdout, stderr, err = RunCmd("openvdc", "destroy", d.Id())
 

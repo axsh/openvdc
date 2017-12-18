@@ -2,10 +2,12 @@ package openvdc
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"os/exec"
-        "strings"
+	"strings"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -16,18 +18,6 @@ func Provider() terraform.ResourceProvider {
 			"openvdc_instance": OpenVdcInstance(),
 		},
 	}
-
-}
-
-func CheckInstanceTerminated(cmdStdOut *bytes.Buffer) (value bool) {
-     for _, s := range (strings.Split(cmdStdOut.String(), "\n"))  {
-        if has:=strings.Contains(s, "\"state\""); has {
-             vals := strings.Split(s, ":")
-             _, state := vals[0], vals[1]
-             return strings.Contains(state, "TERMINATED")
-         }
-    }
-    return false
 
 }
 
@@ -42,4 +32,40 @@ func RunCmd(name string, arg ...string) (*bytes.Buffer, *bytes.Buffer, error) {
 	err := cmd.Run()
 
 	return &stdout, &stderr, err
+}
+
+func ParseJson(cmdStdOut *bytes.Buffer) (string, error) {
+	var parsed map[string]interface{}
+
+	err := json.Unmarshal(cmdStdOut.Bytes(), &parsed)
+	if err != nil {
+		fmt.Println("Uh-oh! You had an error!")
+		return "", err
+	}
+	var x map[string]interface{}
+	x = parsed["instance"].(map[string]interface{})
+
+	x = x["last_state"].(map[string]interface{})
+
+	return x["state"].(string), nil
+
+}
+
+func CheckInstanceTerminated(cmdStdOut *bytes.Buffer) (bool, error) {
+	status, err := ParseJson(cmdStdOut)
+
+	if err != nil {
+		return false, err
+	}
+
+	if strings.Compare(status, "FAILED") == 0 {
+		return false, fmt.Errorf("Instance is in FAILED state!")
+	}
+
+	if strings.Compare(status, "TERMINATED") == 0 {
+		return true, nil
+	}
+
+	return false, nil
+
 }
