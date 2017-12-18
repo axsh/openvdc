@@ -3,7 +3,6 @@ package openvdc
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"os/exec"
