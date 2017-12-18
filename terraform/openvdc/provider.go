@@ -39,7 +39,6 @@ func ParseJson(cmdStdOut *bytes.Buffer) (string, error) {
 
 	err := json.Unmarshal(cmdStdOut.Bytes(), &parsed)
 	if err != nil {
-		fmt.Println("Uh-oh! You had an error!")
 		return "", err
 	}
 	var x map[string]interface{}
@@ -56,10 +55,6 @@ func CheckInstanceTerminated(cmdStdOut *bytes.Buffer) (bool, error) {
 
 	if err != nil {
 		return false, err
-	}
-
-	if strings.Compare(status, "FAILED") == 0 {
-		return false, fmt.Errorf("Instance is in FAILED state!")
 	}
 
 	if strings.Compare(status, "TERMINATED") == 0 {
