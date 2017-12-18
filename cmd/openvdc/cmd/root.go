@@ -28,6 +28,7 @@ func Execute() {
 	RootCmd.AddCommand(copyCmd)
 	RootCmd.AddCommand(createCmd)
 	RootCmd.AddCommand(destroyCmd)
+	RootCmd.AddCommand(forceStateCmd)
 	RootCmd.AddCommand(runCmd)
 	RootCmd.AddCommand(stopCmd)
 	RootCmd.AddCommand(consoleCmd)
