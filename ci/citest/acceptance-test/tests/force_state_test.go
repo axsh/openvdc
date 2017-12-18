@@ -14,13 +14,13 @@ func TestForceState(t *testing.T) {
 
         WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
-	RunCmdAndReportFail(t, "openvdc", "forcestate", instance_id, "stopped")
+	RunCmdAndReportFail(t, "openvdc", "force-state", instance_id, "stopped")
 	WaitInstance(t, 1*time.Minute, instance_id, "STOPPED", nil)
 
-	RunCmdAndReportFail(t, "openvdc", "forcestate", instance_id, "terminated")
+	RunCmdAndReportFail(t, "openvdc", "force-state", instance_id, "terminated")
         WaitInstance(t, 1*time.Minute, instance_id, "TERMINATED", nil)
 
-	RunCmdAndReportFail(t, "openvdc", "forcestate", instance_id, "running")
+	RunCmdAndReportFail(t, "openvdc", "force-state", instance_id, "running")
         WaitInstance(t, 1*time.Minute, instance_id, "RUNNING", nil)
 
         _, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
