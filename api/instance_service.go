@@ -23,9 +23,6 @@ type InstanceAPI struct {
 
 func (s *InstanceAPI) Copy(ctx context.Context, in *CopyRequest) (*CopyReply, error) {
 	instanceID := in.InstanceId
-	if instanceID == "" {
-		return nil, fmt.Errorf("Invalid Instance ID")
-	}
 
 	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
 	if err != nil {
@@ -73,6 +70,22 @@ func checkSupportAPI(t *model.Template, ctx context.Context) error {
 		return errors.Errorf("%s is not supported: %T", md["fullmethod"][0], t.Item)
 	}
 	return nil
+}
+
+func (s *InstanceAPI) ForceState(ctx context.Context, in *ForceStateRequest) (*ForceStateReply, error) {
+	instanceID := in.GetInstanceId()
+
+	_, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	if err := model.Instances(ctx).ForceUpdateState(instanceID, in.State); err != nil {
+		log.WithField("state", in.State).Error("Failed Instances.UpdateState")
+	}
+
+	return &ForceStateReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {

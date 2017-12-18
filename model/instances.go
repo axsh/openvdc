@@ -18,6 +18,7 @@ type InstanceOps interface {
 	FindByID(string) (*Instance, error)
 	AddFailureMessage(id string, failureMessage FailureMessage_ErrorType) error
 	//GetLatestFailureMessage(id string) (*FailureMessage, error)
+	ForceUpdateState(id string, next InstanceState_State) error
 	UpdateState(id string, next InstanceState_State) error
 	UpdateConnectionStatus(id string, connStatus ConnectionStatus_Status) error
 	FilterByState(state InstanceState_State) ([]*Instance, error)
@@ -221,6 +222,27 @@ func (i *instances) UpdateState(id string, next InstanceState_State) error {
 		return err
 	}
 	if err := instance.LastState.ValidateNextState(next); err != nil {
+		return err
+	}
+	nstate := &InstanceState{
+		State: next,
+	}
+	instance.LastState = nstate
+
+	bk, err := i.connection()
+	if err != nil {
+		return err
+	}
+	_, err = bk.CreateWithID(fmt.Sprintf("/%s/%s/state/state-", instancesBaseKey, id), nstate)
+	if err != nil {
+		return err
+	}
+	return bk.Update(fmt.Sprintf("/%s/%s", instancesBaseKey, id), instance)
+}
+
+func (i *instances) ForceUpdateState(id string, next InstanceState_State) error {
+	instance, err := i.FindByID(id)
+	if err != nil {
 		return err
 	}
 	nstate := &InstanceState{
