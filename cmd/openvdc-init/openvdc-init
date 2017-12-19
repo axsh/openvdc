@@ -103,6 +103,10 @@ set_network_interfaces() {
             [[ $? -eq 0 ]] || continue
             gateway="$(get_metadata ${nic}/gateway)"
 
+            # disable interface if enabled
+            if ip a -s | grep eth${i} ; then
+              ifdown eth${i}
+            fi
             echo "Creating ifcfg-eth${i}"
             cat <<EOF > "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
 DEVICE=eth${i}
@@ -116,7 +120,8 @@ EOF
             if [[ -n "${gateway}" ]]; then
               echo "GATEWAY=${gateway}" >> "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
             fi
-            ip link set dev eth${i} up
+            # re-enable
+            ifup eth${i}
             i=$((i+1))
         done
     )
