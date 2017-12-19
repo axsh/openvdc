@@ -51,6 +51,7 @@ var settings struct {
 	EsxiVmDatastore     string
 	EsxiUrl             string
 	EsxiInventoryFolder string
+	EsxiMetadataStorage string
 	vCenterEndpoint     bool
 	BridgeName          string
 	BridgeType          BridgeType
@@ -134,8 +135,8 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	if sub.GetString("hypervisor.esxi-vm-datastore") == "" {
 		return errors.Errorf("Missing configuration hypervisor.exsi-vm-datastore")
 	}
-	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
+	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 	settings.vCenterEndpoint = sub.GetBool("hypervisor.vCenter")
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
@@ -153,6 +154,11 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 		}
 		settings.EsxiHostSshkey = sub.GetString("hypervisor.esxi-host-sshkey")
 
+	}
+	if metdataStore := sub.GetString("hypervisor.esxi-metadata-storage"); metdataStore == "" {
+		settings.EsxiMetadataStorage = settings.EsxiVmDatastore
+	} else {
+		settings.EsxiMetadataStorage = metdataStore
 	}
 
 	esxiInfo := fmt.Sprintf("%s:%s@%s", settings.EsxiUser, settings.EsxiPass, settings.EsxiIp)
@@ -359,7 +365,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return err
 	}
 	err = esxiRunCmd(
-		[]string{"datastore.upload", join('=', "-ds", settings.EsxiVmDatastore), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
+		[]string{"datastore.upload", join('=', "-ds", settings.EsxiMetadataStorage), d.MetadataDrivePath(), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 	)
 	if err != nil {
 		return err
@@ -378,7 +384,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 		return err
 	}
 	err = esxiRunCmd(
-		[]string{"device.floppy.insert", "-device=floppy-8000", fmt.Sprintf("-vm=%s", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
+		[]string{"device.floppy.insert", "-device=floppy-8000", join('=', "-ds", settings.EsxiMetadataStorage), join('=', "-vm", d.vmName), fmt.Sprintf("%s/metadrive.img", d.vmName)},
 		[]string{"device.serial.add", d.vmPath()},
 		[]string{"device.serial.connect", d.vmPath(), "-device=serialport-9000", join(':', "telnet://", strconv.Itoa(d.machine.SerialConsolePort))},
 	)
