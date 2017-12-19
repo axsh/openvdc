@@ -93,7 +93,7 @@ func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 	}
 
 	waitClosed.Add(1)
-	go func () {
+	go func() {
 		rOut, wOut, err := os.Pipe()
 		if err != nil {
 			log.Warn(err, "failed os.Pipe for stdout")
@@ -122,7 +122,7 @@ func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 		}()
 
 		waitClosed.Add(1)
-		go func () {
+		go func() {
 			defer waitClosed.Done()
 			_, err := io.Copy(param.Stdout, rOut)
 			if err != nil {
@@ -131,7 +131,7 @@ func (con *esxiConsole) execCommand(param *hypervisor.ConsoleParam, waitClosed *
 			}
 		}()
 		waitClosed.Add(1)
-		go func () {
+		go func() {
 			defer waitClosed.Done()
 			_, err := io.Copy(param.Stderr, rErr)
 			if err != nil {
@@ -170,7 +170,7 @@ func (con *esxiConsole) ForceClose() error {
 }
 
 type consoleWaitError struct {
-	err      error
+	err error
 }
 
 func (e *consoleWaitError) Error() string {

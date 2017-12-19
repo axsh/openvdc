@@ -244,7 +244,7 @@ func (d *QEMUHypervisorDriver) MetadataDrivePath() string {
 	return d.machine.Drives["meta"].Image.Path
 }
 
-func (d *QEMUHypervisorDriver) MetadataDriveDatamap() map[string]interface{}{
+func (d *QEMUHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 	metadataMap := make(map[string]interface{})
 	metadataMap["hostname"] = d.machine.Name
 	for idx, nic := range d.machine.Nics {
@@ -361,4 +361,3 @@ func (d QEMUHypervisorDriver) RebootInstance() error {
 		return d.machine.WaitForPrompt()
 	})
 }
-

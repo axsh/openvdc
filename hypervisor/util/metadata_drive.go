@@ -1,9 +1,9 @@
 package util
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"io/ioutil"
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
@@ -11,7 +11,7 @@ import (
 )
 
 type MetadataDrive interface {
-	MetadataDrivePath()    string
+	MetadataDrivePath() string
 	MetadataDriveDatamap() map[string]interface{}
 }
 
@@ -91,4 +91,3 @@ func CreateMetadataDisk(md MetadataDrive) error {
 	}
 	return nil
 }
-

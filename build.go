@@ -19,6 +19,7 @@ import (
 )
 
 const ProtocVersion = "libprotoc 3.2.0"
+
 var verbose = true
 
 // Similar to "$()" or "``" in sh
@@ -107,10 +108,10 @@ func determineGHRef() string {
 func main() {
 	// Apppend $GOBIN and $GOPATH/bin to $PATH
 	if dir, ok := os.LookupEnv("GOBIN"); ok {
-		os.Setenv("PATH", os.Getenv("PATH") + string(filepath.ListSeparator) + dir)
+		os.Setenv("PATH", os.Getenv("PATH")+string(filepath.ListSeparator)+dir)
 	}
 	for _, dir := range filepath.SplitList(os.Getenv("GOPATH")) {
-		os.Setenv("PATH", os.Getenv("PATH") + string(filepath.ListSeparator) + filepath.Join(dir, "bin"))
+		os.Setenv("PATH", os.Getenv("PATH")+string(filepath.ListSeparator)+filepath.Join(dir, "bin"))
 	}
 	var with_gogen bool
 	flag.Usage = func() {
@@ -187,9 +188,9 @@ Environment Variables:
 	cmd("go", "build", "-i", "./vendor/...")
 	cmd("go", "build", "-ldflags", LDFLAGS, "-v", "./cmd/openvdc")
 	cmd("go", "build", "-ldflags", LDFLAGS+
-		" -X 'main.HostRsaKeyPath=/etc/openvdc/ssh/host_rsa_key'" +
-		" -X 'main.HostEcdsaKeyPath=/etc/openvdc/ssh/host_ecdsa_key'" +
-		" -X 'main.HostEd25519KeyPath=/etc/openvdc/ssh/host_ed25519_key'" +
+		" -X 'main.HostRsaKeyPath=/etc/openvdc/ssh/host_rsa_key'"+
+		" -X 'main.HostEcdsaKeyPath=/etc/openvdc/ssh/host_ecdsa_key'"+
+		" -X 'main.HostEd25519KeyPath=/etc/openvdc/ssh/host_ed25519_key'"+
 		" -X 'main.DefaultConfPath=/etc/openvdc/executor.toml'", "-v", "./cmd/openvdc-executor")
 	cmd("go", "build", "-ldflags", LDFLAGS+"-X 'main.DefaultConfPath=/etc/openvdc/scheduler.toml'", "-v", "./cmd/openvdc-scheduler")
 
@@ -207,8 +208,8 @@ Environment Variables:
 	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test")
 
 	// Build Acceptance Test Esxi binary
-        os.Chdir("../../acceptance-test-esxi/tests")
-        cmd("govendor", "sync")
-        cmd("go", "generate", "-v", "-tags=acceptance", ".")
-        cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test-esxi")
+	os.Chdir("../../acceptance-test-esxi/tests")
+	cmd("govendor", "sync")
+	cmd("go", "generate", "-v", "-tags=acceptance", ".")
+	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test-esxi")
 }
