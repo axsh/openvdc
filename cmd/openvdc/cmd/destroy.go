@@ -15,7 +15,7 @@ func init() {
 }
 
 var destroyCmd = &cobra.Command{
-	Use:   "destroy [Instance ID] [options] [--] [commands]",
+	Use:   "destroy [Instance ID] [flags]",
 	Short: "Destroy an instance",
 	Long:  "Destroy an already existing instance.",
 	RunE: func(cmd *cobra.Command, args []string) error {
