@@ -13,6 +13,6 @@ IFNAME=$5
 # When mesos-slave is stopped and restarted, all instances are momentarily stopped
 # without running the down.sh script causing defunct ports to remain on ovs.
 # Until a fix for that is found, we need to remove those on startup.
-ovs-vsctl del-port --if-exists {{.BridgeName}} "${IFNAME}"
+ovs-vsctl --if-exists del-port {{.BridgeName}} "${IFNAME}"
 
 ovs-vsctl add-port {{.BridgeName}} "${IFNAME}"
