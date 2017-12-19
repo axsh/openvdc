@@ -116,6 +116,7 @@ EOF
             if [[ -n "${gateway}" ]]; then
               echo "GATEWAY=${gateway}" >> "/etc/sysconfig/network-scripts/ifcfg-eth${i}"
             fi
+            ip link set dev eth${i} up
             i=$((i+1))
         done
     )
