@@ -2,11 +2,11 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net"
 	"os"
 	"sync"
-	"fmt"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -45,11 +45,11 @@ func (p *connParams) resetConsole() {
 func (sc *SerialConnection) remoteConsoleHandle(param *connParams, finished <-chan struct{}) {
 	param.waitClosed.Add(1)
 	defer func() {
-		param.closeChan <-true
+		param.closeChan <- true
 		if sc.err != nil {
-			param.errc <-sc
+			param.errc <- sc
 		} else {
-			param.errc <-nil
+			param.errc <- nil
 		}
 		param.waitClosed.Done()
 	}()
@@ -90,11 +90,11 @@ func (sc *SerialConnection) remoteConsoleHandle(param *connParams, finished <-ch
 func (sc *SerialConnection) serialConsoleHandle(param *connParams, finished <-chan struct{}) {
 	param.waitClosed.Add(1)
 	defer func() {
-		param.closeChan <-true
+		param.closeChan <- true
 		if sc.err != nil {
-			param.errc <-sc
+			param.errc <- sc
 		} else {
-			param.errc <-nil
+			param.errc <- nil
 		}
 		param.waitClosed.Done()
 	}()
@@ -121,7 +121,7 @@ func (sc *SerialConnection) serialConsoleHandle(param *connParams, finished <-ch
 
 			param.flushConsole()
 			_, err = param.remoteConsole.Stdout.Write(b[0:n])
-			if err != nil{
+			if err != nil {
 				log.WithError(err).Error("Failed to write to the console stdout buffer")
 				sc.err = err
 				return
