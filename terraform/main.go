@@ -1,3 +1,5 @@
+// +build terraform
+
 package main
 
 import (
