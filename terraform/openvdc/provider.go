@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"os/exec"
-	"strings"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -51,14 +50,14 @@ func ParseJson(cmdStdOut *bytes.Buffer) (string, error) {
 
 }
 
-func CheckInstanceTerminated(cmdStdOut *bytes.Buffer) (bool, error) {
+func CheckInstanceTerminatedOrFailed(cmdStdOut *bytes.Buffer) (bool, error) {
 	status, err := ParseJson(cmdStdOut)
 
 	if err != nil {
 		return false, err
 	}
 
-	if strings.Compare(status, "TERMINATED") == 0 {
+	if status == "TERMINATED" || status == "FAILED" {
 		return true, nil
 	}
 

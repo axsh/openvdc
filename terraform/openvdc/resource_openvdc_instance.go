@@ -97,7 +97,7 @@ func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return fmt.Errorf("The following command returned error:%v\nopenvdc show %s\nSTDOUT: %s\nSTDERR: %s", err, d.Id(), stdout, stderr)
 	}
-	instanceAlreadyTerminated, err := CheckInstanceTerminated(stdout)
+	instanceAlreadyTerminated, err := CheckInstanceTerminatedOrFailed(stdout)
 
 	if err != nil {
 		return fmt.Errorf("Error parsing json output for openvdc show command for id %s. Error: %s", d.Id(), err)
