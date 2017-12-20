@@ -13,12 +13,12 @@
 # esxi-datacenter = "ha-datacenter"
 # esxi-insecure = true
 # esxi-host-sshkey = ""
-# esxi-easy-clone = false
 # esxi-host-name = ""
 # esxi-vm-user = ""
 # esxi-vm-pass = ""
-# esxi-basevm-datastore = ""
 # esxi-vm-datastore = ""
+# esxi-inventory-folder = ""
+# vCenter = false
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"
