@@ -74,27 +74,37 @@ func OpenVdcInstance() *schema.Resource {
 	}
 }
 
-func renderResourceParam(resources interface{}) (bytes.Buffer, error) {
+type resourceCallback func() interface{}
+type renderCallback func(getResource resourceCallback) ([]byte, error)
+type option func () (renderCallback, resourceCallback)
+
+func renderResourceOpt(getResource resourceCallback) ([]byte, error) {
 	var buf bytes.Buffer
-	if resources != nil {
-		bytes, err := json.Marshal(resources.(map[string]interface{}))
+	i := getResource()
+	if i != nil {
+		x := i.(map[string]interface{})
+		bytes, err := json.Marshal(x)
 		if err != nil {
-			return buf, err
+			return nil, err
 		}
 		buf.Write(bytes)
 	}
 
-	return buf, nil
+	var b []byte
+	b = bytes.Trim(buf.Bytes(), "{")
+	b = bytes.Trim(b, "}")
+	return b, nil
 }
 
-func renderInterfaceParam(nics interface{}) (bytes.Buffer, error) {
+func renderInterfaceOpt(getResource resourceCallback) ([]byte, error) {
 	// We use a byte buffer because if we'd use a string here, go would create
 	// a new string for every concatenation. Not very efficient. :p
 	var buf bytes.Buffer
-	buf.WriteString("{\"interfaces\":[")
 
+	i := getResource()
 	newElement := false
-	if x := nics; x != nil {
+	if x := i; x != nil {
+		buf.WriteString("\"interfaces\":[")
 		for _, y := range x.([]interface{}) {
 			if newElement {
 				buf.WriteString(",")
@@ -103,29 +113,68 @@ func renderInterfaceParam(nics interface{}) (bytes.Buffer, error) {
 			z := y.(map[string]interface{})
 			bytes, err := json.Marshal(z)
 			if err != nil {
-				return buf, err
+				return nil, err
 			}
 
 			buf.Write(bytes)
 			newElement = true
 		}
 	}
+	buf.WriteString("]")
+	return buf.Bytes(), nil
+}
+
+func renderCmdOpt(options []option) (bytes.Buffer, error) {
+	var buf bytes.Buffer
+	addOpt := func(fn renderCallback, getResource resourceCallback) error {
+		output, err := fn(getResource)
+		if err != nil {
+			return err
+		}
+		if len(output) > 0 {
+			buf.Write(output)
+		}
+		return nil
+	}
+
+	buf.WriteString("{")
+	for idx, opt := range options {
+		if idx > 0 {
+			buf.WriteString(",")
+		}
+		renderCb, resourceCb := opt()
+		if err := addOpt(renderCb, resourceCb); err != nil {
+			return buf, err
+		}
+	}
+	buf.WriteString("}")
 	return buf, nil
 }
 
 func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
-	nics, err := renderInterfaceParam(d.Get("interfaces"))
-	if err != nil {
-		return err
+	opts := []option{
+		func() (renderCallback, resourceCallback) {
+			getResources := func() interface{} {
+				return d.Get("resources")
+			}
+			return renderResourceOpt, getResources
+		},
+		func() (renderCallback, resourceCallback) {
+			getResources := func() interface{} {
+				return d.Get("interfaces")
+			}
+			return renderInterfaceOpt, getResources
+		},
 	}
-	resources, err := renderResourceParam(d.Get("resources"))
+
+	cmdOpts, err := renderCmdOpt(opts)
 	if err != nil {
 		return err
 	}
 
-	stdout, stderr, err := RunCmd("openvdc", "run", d.Get("template").(string), nics.String())
+	stdout, stderr, err := RunCmd("openvdc", "run", d.Get("template").(string), cmdOpts.String())
 	if err != nil {
-		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s\nSTDOUT: %s\nSTDERR: %s", err, d.Get("template").(string), nics.String(), stdout, stderr)
+		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s\nSTDOUT: %s\nSTDERR: %s", err, d.Get("template").(string), cmdOpts.String(), stdout, stderr)
 	}
 
 	d.SetId(strings.TrimSpace(stdout.String()))
