@@ -67,6 +67,11 @@ func OpenVdcInstance() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+
+						"gateway": &schema.Schema{
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
