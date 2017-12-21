@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log/syslog"
 	"github.com/Sirupsen/logrus"
 	logrus_syslog "github.com/Sirupsen/logrus/hooks/syslog"
+	"log/syslog"
 )
 
 func init() {

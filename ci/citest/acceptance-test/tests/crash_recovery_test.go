@@ -33,6 +33,6 @@ func TestCrashRecovery(t *testing.T) {
 
 	_, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 
-	t.Log("Waiting for instance "+instance_id+" to become TERMINATED...")
+	t.Log("Waiting for instance " + instance_id + " to become TERMINATED...")
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }

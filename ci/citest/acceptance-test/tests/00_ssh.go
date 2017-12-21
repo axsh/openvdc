@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 )
+
 const zookeeper_ip = "10.0.100.10"
 const mesos_master_ip = "10.0.100.11"
 const scheduler_ip = "10.0.100.12"
