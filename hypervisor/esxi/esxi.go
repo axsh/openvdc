@@ -250,7 +250,7 @@ func runCmd(cmd string, args []string) error {
 	return nil
 }
 
-var ErrApiRequest = errors.New("Failed api requiest")
+var ErrApiRequest = errors.New("Failed api request")
 func esxiRunCmd(cmdList ...[]string) error {
 	for _, args := range cmdList {
 		a := []string{
