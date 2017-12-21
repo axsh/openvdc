@@ -10,8 +10,12 @@ import (
 	"google.golang.org/grpc"
 )
 
+func init() {
+	destroyCmd.Flags().Bool("force", false, "Force destroy instance, ignoring states")
+}
+
 var destroyCmd = &cobra.Command{
-	Use:   "destroy [Instance ID]",
+	Use:   "destroy [Instance ID] [flags]",
 	Short: "Destroy an instance",
 	Long:  "Destroy an already existing instance.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -21,8 +25,14 @@ var destroyCmd = &cobra.Command{
 
 		instanceID := args[0]
 
+		force, err := cmd.Flags().GetBool("force")
+		if err != nil {
+			log.WithError(err).Fatal("Failed getting flag")
+		}
+
 		req := &api.DestroyRequest{
 			InstanceId: instanceID,
+			Force:      force,
 		}
 
 		return util.RemoteCall(func(conn *grpc.ClientConn) error {
@@ -33,6 +43,7 @@ var destroyCmd = &cobra.Command{
 				log.WithError(err).Fatal("Disconnected abnormally")
 				return err
 			}
+
 			return err
 		})
 	},

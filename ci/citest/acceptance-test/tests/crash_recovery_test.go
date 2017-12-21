@@ -20,9 +20,6 @@ func TestCrashRecovery(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl stop mesos-slave", 10, 5)
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-stop -n "+instance_id+" -k", 10, 5)
 
-	t.Log("Waiting for scheduler to register crash...")
-	WaitConnectionStatus(t, 5*time.Minute, instance_id, "NOT_CONNECTED")
-
 	t.Log("Re-start mesos-slave...")
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl start mesos-slave", 10, 5)
 	WaitConnectionStatus(t, 5*time.Minute, instance_id, "CONNECTED")
