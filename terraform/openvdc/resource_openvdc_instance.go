@@ -57,34 +57,41 @@ func OpenVdcInstance() *schema.Resource {
 	}
 }
 
-func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
+func renderInterfaceParam(nics interface{}) (bytes.Buffer, error) {
 	// We use a byte buffer because if we'd use a string here, go would create
 	// a new string for every concatenation. Not very efficient. :p
-	var cmdOpts bytes.Buffer
+	var buf bytes.Buffer
+	buf.WriteString("{\"interfaces\":[")
 
-	cmdOpts.WriteString("{\"interfaces\":[")
 	newElement := false
-	if x := d.Get("interfaces"); x != nil {
+	if x := nics; x != nil {
 		for _, y := range x.([]interface{}) {
 			if newElement {
-				cmdOpts.WriteString(",")
+				buf.WriteString(",")
 			}
 
 			z := y.(map[string]interface{})
 			bytes, err := json.Marshal(z)
 			if err != nil {
-				return err
+				return buf, err
 			}
 
-			cmdOpts.Write(bytes)
+			buf.Write(bytes)
 			newElement = true
 		}
 	}
-	cmdOpts.WriteString("]}")
+	return buf, nil
+}
 
-	stdout, stderr, err := RunCmd("openvdc", "run", d.Get("template").(string), cmdOpts.String())
+func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
+	nics, err := renderInterfaceParam(d.Get("interfaces"))
 	if err != nil {
-		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s\nSTDOUT: %s\nSTDERR: %s", err, d.Get("template").(string), cmdOpts.String(), stdout, stderr)
+		return err
+	}
+
+	stdout, stderr, err := RunCmd("openvdc", "run", d.Get("template").(string), nics.String())
+	if err != nil {
+		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s\nSTDOUT: %s\nSTDERR: %s", err, d.Get("template").(string), nics.String(), stdout, stderr)
 	}
 
 	d.SetId(strings.TrimSpace(stdout.String()))
