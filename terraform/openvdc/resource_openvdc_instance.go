@@ -24,6 +24,23 @@ func OpenVdcInstance() *schema.Resource {
 				Required: true,
 			},
 
+			"resources": &schema.Schema{
+				Type: schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vcpu": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"memory_gb": &schema.Schema{
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
+
 			"interfaces": &schema.Schema{
 				Type:     schema.TypeList,
 				ForceNew: true,
@@ -57,6 +74,19 @@ func OpenVdcInstance() *schema.Resource {
 	}
 }
 
+func renderResourceParam(resources interface{}) (bytes.Buffer, error) {
+	var buf bytes.Buffer
+	if resources != nil {
+		bytes, err := json.Marshal(resources.(map[string]interface{}))
+		if err != nil {
+			return buf, err
+		}
+		buf.Write(bytes)
+	}
+
+	return buf, nil
+}
+
 func renderInterfaceParam(nics interface{}) (bytes.Buffer, error) {
 	// We use a byte buffer because if we'd use a string here, go would create
 	// a new string for every concatenation. Not very efficient. :p
@@ -85,6 +115,10 @@ func renderInterfaceParam(nics interface{}) (bytes.Buffer, error) {
 
 func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 	nics, err := renderInterfaceParam(d.Get("interfaces"))
+	if err != nil {
+		return err
+	}
+	resources, err := renderResourceParam(d.Get("resources"))
 	if err != nil {
 		return err
 	}
