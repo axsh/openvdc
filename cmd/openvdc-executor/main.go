@@ -396,7 +396,7 @@ func (exec *VDCExecutor) rebootInstance(driver exec.ExecutorDriver, instanceID s
 	return nil
 }
 
-func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceID string) error {
+func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceID string, force bool) error {
 	log := log.WithFields(log.Fields{
 		"instance_id": instanceID,
 		"hypervisor":  exec.hypervisorProvider.Name(),
@@ -415,11 +415,18 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		if err := model.Instances(ctx).UpdateConnectionStatus(instanceID, model.ConnectionStatus_NOT_CONNECTED); err != nil {
 			log.WithError(err).Errorf("Couldn't update instance connectionStatus. instanceID: %s connectionStatus: %s", instanceID, model.ConnectionStatus_NOT_CONNECTED)
 		}
+
 		if finState == model.InstanceState_FAILED {
 			recordFailedState(ctx, driver, instanceID, model.FailureMessage_FAILED_TERMINATE, lastErr)
 		}
-		if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
-			log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
+		if force == false {
+			if err := model.Instances(ctx).UpdateState(instanceID, finState); err != nil {
+				log.WithError(err).WithField("state", finState).Error("Failed Instances.UpdateState")
+			}
+		} else {
+			if err := model.Instances(ctx).ForceUpdateState(instanceID, finState); err != nil {
+				log.WithError(err).WithField("state", finState).Error("Failed Instances.ForceUpdateState")
+			}
 		}
 		model.Close(ctx)
 	}()
@@ -436,9 +443,15 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 		return errors.Wrap(lastErr, "Failed hypervisorProvider.CreateDriver")
 	}
 
-	if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_SHUTTINGDOWN); lastErr != nil {
-		log.WithError(lastErr).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.UpdateState")
-		return lastErr
+	if force == false {
+		if lastErr = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_SHUTTINGDOWN); lastErr != nil {
+			log.WithError(lastErr).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.UpdateState")
+			return lastErr
+		}
+	} else {
+		if lastErr = model.Instances(ctx).ForceUpdateState(instanceID, model.InstanceState_SHUTTINGDOWN); lastErr != nil {
+			log.WithError(lastErr).WithField("state", model.InstanceState_SHUTTINGDOWN).Error("Failed Instances.ForceUpdateState")
+		}
 	}
 
 	// Trying to stop an already stopped container results in an error
@@ -447,13 +460,17 @@ func (exec *VDCExecutor) terminateInstance(driver exec.ExecutorDriver, instanceI
 	if originalState != model.InstanceState_STOPPED {
 		log.Infof("Shuttingdown instance")
 		if lastErr = hv.StopInstance(); lastErr != nil {
-			log.WithError(lastErr).Error("Failed StopInstance")
-			return lastErr
+			if force == false {
+				log.WithError(lastErr).Error("Failed StopInstance")
+				return lastErr
+			} else {
+				log.Warn(fmt.Sprintf("Failed StopInstance: %s", err))
+			}
 		}
 	}
 
-	if lastErr = hv.DestroyInstance(); lastErr != nil {
-		log.WithError(lastErr).Error("Failed DestroyInstance")
+	if destroyErr := hv.DestroyInstance(); destroyErr != nil {
+		log.WithError(destroyErr).Error("Failed DestroyInstance")
 		return lastErr
 	}
 	log.Infof("Instance terminated successfully")
@@ -491,7 +508,7 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 			log.WithError(err).Error("Failed to reboot instance")
 		}
 	case "destroy":
-		if err := exec.terminateInstance(driver, taskId.GetValue()); err != nil {
+		if err := exec.terminateInstance(driver, taskId.GetValue(), false); err != nil {
 			log.WithError(err).Error("Failed to terminate instance")
 			// driver.SendStatusUpdate() with TASK_FAILED message is sent in terminateInstance()
 			break
@@ -504,6 +521,20 @@ func (exec *VDCExecutor) FrameworkMessage(driver exec.ExecutorDriver, msg string
 		if err != nil {
 			log.WithError(errors.WithStack(err)).Error("Couldn't send status update")
 		}
+	case "forcedestroy":
+		if err := exec.terminateInstance(driver, taskId.GetValue(), true); err != nil {
+			log.WithError(err).Error("Failed to terminate instance")
+			break
+		}
+		_, err := driver.SendStatusUpdate(&mesos.TaskStatus{
+			TaskId: taskId,
+			State:  mesos.TaskState_TASK_FINISHED.Enum(),
+			Source: mesos.TaskStatus_SOURCE_EXECUTOR.Enum(),
+		})
+		if err != nil {
+			log.WithError(errors.WithStack(err)).Error("Couldn't send status update")
+		}
+
 	default:
 		log.WithField("msg", msg).Errorln("FrameworkMessage unrecognized.")
 	}
