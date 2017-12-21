@@ -51,9 +51,11 @@ var settings struct {
 	EsxiVmDatastore     string
 	EsxiUrl             string
 	EsxiInventoryFolder string
-	vCenterEndpoint     bool
 	BridgeName          string
 	BridgeType          BridgeType
+	Modules            struct {
+		vcenter   bool
+	}
 }
 
 func (t BridgeType) String() string {
@@ -86,7 +88,7 @@ func (p *EsxiHypervisorProvider) Name() string {
 func init() {
 	hypervisor.RegisterProvider("esxi", &EsxiHypervisorProvider{})
 	viper.SetDefault("hypervisor.esxi-insecure", true)
-	viper.SetDefault("hypervisor.vCenter", false)
+	viper.SetDefault("hypervisor.modules.vcenter", false)
 }
 
 func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
@@ -136,13 +138,13 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
-	settings.vCenterEndpoint = sub.GetBool("hypervisor.vCenter")
+	settings.Modules.vcenter = sub.GetBool("hypervisor.modules.vcenter")
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
 	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
 	settings.EsxiInventoryFolder = sub.GetString("hypervisor.esxi-inventory-folder")
-	if settings.vCenterEndpoint {
+	if settings.Modules.vcenter {
 		if sub.GetString("hypervisor.esxi-host-name") == "" {
 			return errors.Errorf("Missing configuration hypervisor.esxi-host-name")
 		}
@@ -234,9 +236,13 @@ func captureStdout(fn func() error) ([]byte, error) {
 	if err := fn(); err != nil {
 		return nil, err
 	}
+
 	w.Close()
+	output, err := (<-outputChan)()
 	os.Stdout = stdout
-	return (<-outputChan)()
+	r.Close()
+
+	return output, err
 }
 
 func runCmd(cmd string, args []string) error {
@@ -247,7 +253,7 @@ func runCmd(cmd string, args []string) error {
 	return nil
 }
 
-var ErrApiRequest = errors.New("Failed api requiest")
+var ErrApiRequest = errors.New("Failed api request")
 func esxiRunCmd(cmdList ...[]string) error {
 	for _, args := range cmdList {
 		a := []string{
@@ -391,7 +397,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 
-	if settings.vCenterEndpoint {
+	if settings.Modules.vcenter {
 		cmd := []string{"vm.clone", datastore,
 			join('=', "-on", "false"),
 			join('=', "-host", settings.EsxiHostName),

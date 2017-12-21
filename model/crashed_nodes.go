@@ -24,6 +24,7 @@ type CrashedAgentNode interface {
 
 type CrashedNodesOps interface {
 	Add(node *CrashedNode) error
+	FindByAgentMesosIDNotReconnected(agentMesosID string) (*CrashedNode, error)
 	FindByAgentMesosID(agentMesosID string) (*CrashedNode, error)
 	FindByAgentID(agentID string) (*CrashedNode, error)
 	FindByUUID(nodeUUID string) (*CrashedNode, error)
@@ -91,6 +92,24 @@ func (i *crashedNodes) FindByAgentMesosID(agentMesosID string) (*CrashedNode, er
 	res := []*CrashedNode{}
 	err := i.Filter(1, func(node *CrashedNode) int {
 		if node.GetAgentMesosId() == agentMesosID {
+			res = append(res, node)
+		}
+		return len(res)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(res) > 0 {
+		return res[0], nil
+	} else {
+		return nil, nil
+	}
+}
+
+func (i *crashedNodes) FindByAgentMesosIDNotReconnected(agentMesosID string) (*CrashedNode, error) {
+	res := []*CrashedNode{}
+	err := i.Filter(1, func(node *CrashedNode) int {
+		if node.GetAgentMesosId() == agentMesosID && node.GetReconnected() == false {
 			res = append(res, node)
 		}
 		return len(res)

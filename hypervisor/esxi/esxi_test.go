@@ -1,6 +1,8 @@
 package esxi
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/axsh/openvdc/hypervisor"
@@ -25,4 +27,15 @@ func TestEsxiHypervisorProvider_CreateDriver(t *testing.T) {
 	assert.Implements((*hypervisor.HypervisorDriver)(nil), d)
 	_, err = p.CreateDriver(&model.Instance{Id: "i-xxxxx"}, nil)
 	assert.Error(err, "ESXIHypvisorProvider.CreateDriver should fail if not with *model.EsxiTemplate")
+}
+
+func TestCaptureStdout(t *testing.T) {
+	assert := assert.New(t)
+	stdout, err := captureStdout(func() error {
+		fmt.Fprint(os.Stdout, "sample output")
+		return nil
+	})
+	fmt.Println(stdout)
+	assert.NoError(err)
+	assert.Equal("sample output", string(stdout))
 }

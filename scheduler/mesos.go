@@ -503,6 +503,11 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 		driver.ReviveOffers()
 	}
 
+	if status.GetState() == mesos.TaskState_TASK_LOST &&
+		status.GetReason() == mesos.TaskStatus_REASON_SLAVE_DISCONNECTED {
+		sched.SlaveLost(nil, status.GetSlaveId())
+	}
+
 	if status.GetState() == mesos.TaskState_TASK_LOST ||
 		status.GetState() == mesos.TaskState_TASK_ERROR ||
 		status.GetState() == mesos.TaskState_TASK_FAILED ||
@@ -523,11 +528,20 @@ func (sched *VDCScheduler) FrameworkMessage(_ sched.SchedulerDriver, eid *mesos.
 func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID) {
 	log.Errorln("slave lost: %v", sid)
 
-	agentMesosID := *sid.Value
-
 	ctx, err := model.Connect(context.Background(), sched.zkAddr)
 	if err != nil {
 		log.WithError(err).Error("Failed model.Connect")
+	}
+
+	agentMesosID := *sid.Value
+
+	crashed_node, err := model.CrashedNodes(ctx).FindByAgentMesosIDNotReconnected(agentMesosID)
+	if err != nil {
+		log.WithError(err).Error("Failed to fetch crashed nodes")
+	}
+	if crashed_node != nil {
+		// Node already added to crashed nodes. Nothing to do.
+		return
 	}
 
 	instances, err := model.Instances(ctx).FilterByAgentMesosID(agentMesosID)
@@ -545,14 +559,14 @@ func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID
 		}
 	}
 
-	res, err := model.Nodes(ctx).FindByAgentMesosID(agentMesosID)
+	node, err := model.Nodes(ctx).FindByAgentMesosID(agentMesosID)
 	if err != nil {
 		log.WithError(err).Error("Failed to fetch agent nodes")
 	}
 
-	if res != nil {
+	if node != nil {
 
-		agentID := res.AgentId
+		agentID := node.AgentId
 
 		err = model.CrashedNodes(ctx).Add(&model.CrashedNode{
 			AgentId:      agentID,

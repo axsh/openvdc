@@ -225,6 +225,7 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
 	instanceID := in.InstanceId
+	force := in.GetForce()
 
 	if instanceID == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
@@ -236,25 +237,33 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 		return nil, err
 	}
 
-	lastState := inst.GetLastState()
-	if err := lastState.ValidateGoalState(model.InstanceState_TERMINATED); err != nil {
-		log.WithFields(log.Fields{
-			"instance_id": in.GetInstanceId(),
-			"state":       lastState.String(),
-		}).Error(err)
-		return nil, err
-	}
+	if !force {
 
-	currentState := inst.GetLastState().GetState()
+		lastState := inst.GetLastState()
+		if err := lastState.ValidateGoalState(model.InstanceState_TERMINATED); err != nil {
+			log.WithFields(log.Fields{
+				"instance_id": in.GetInstanceId(),
+				"state":       lastState.String(),
+			}).Error(err)
+			return nil, err
+		}
 
-	if currentState == model.InstanceState_REGISTERED {
-		err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_TERMINATED)
-		if err != nil {
-			log.WithError(err).Error("Failed to update instance state.")
+		currentState := inst.GetLastState().GetState()
+
+		if currentState == model.InstanceState_REGISTERED {
+			err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_TERMINATED)
+			if err != nil {
+				log.WithError(err).Error("Failed to update instance state.")
+			}
+		} else {
+			if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
+				log.WithError(err).Error("Failed sendCommand(destroy)")
+				return nil, err
+			}
 		}
 	} else {
-		if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
-			log.WithError(err).Error("Failed sendCommand(destroy)")
+		if err := s.sendCommand(ctx, "forcedestroy", instanceID); err != nil {
+			log.WithError(err).Error("Failed sendCommand(forcedestroy)")
 			return nil, err
 		}
 	}
