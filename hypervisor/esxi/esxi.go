@@ -211,11 +211,6 @@ func captureStdout(fn func() error) ([]byte, error) {
 	}
 	stdout := os.Stdout
 	os.Stdout = w
-	defer func() {
-		w.Close()
-		r.Close()
-		os.Stdout = stdout
-	}()
 
 	outputChan := make(chan func() ([]byte, error))
 	go func() {
@@ -239,7 +234,13 @@ func captureStdout(fn func() error) ([]byte, error) {
 	if err := fn(); err != nil {
 		return nil, err
 	}
-	return (<-outputChan)()
+
+	w.Close()
+	output, err := (<-outputChan)()
+	os.Stdout = stdout
+	r.Close()
+
+	return output, err
 }
 
 func runCmd(cmd string, args []string) error {
