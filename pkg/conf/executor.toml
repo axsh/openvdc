@@ -18,7 +18,8 @@
 # esxi-vm-pass = ""
 # esxi-vm-datastore = ""
 # esxi-inventory-folder = ""
-# vCenter = false
+	[hypervisor.modules]
+	# vcenter = true
 
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"
