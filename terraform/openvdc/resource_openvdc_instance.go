@@ -25,7 +25,7 @@ func OpenVdcInstance() *schema.Resource {
 			},
 
 			"resources": &schema.Schema{
-				Type: schema.TypeMap,
+				Type:     schema.TypeMap,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -81,7 +81,7 @@ func OpenVdcInstance() *schema.Resource {
 
 type resourceCallback func() interface{}
 type renderCallback func(getResource resourceCallback) ([]byte, error)
-type option func () (renderCallback, resourceCallback)
+type option func() (renderCallback, resourceCallback)
 
 func renderResourceOpt(getResource resourceCallback) ([]byte, error) {
 	var buf bytes.Buffer
