@@ -3,8 +3,6 @@
 package openvdc
 
 import (
-	"bytes"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,6 +21,7 @@ var getInterfaces = func() interface{} {
 		},
 	}
 }
+
 var getResources = func() interface{} {
 	return map[string]interface{}{
 		"vcpu":      1,
@@ -30,10 +29,10 @@ var getResources = func() interface{} {
 	}
 }
 
-func TestRenderInterfaceOpt(t *testing.T) {
+func TestRenderListOpt(t *testing.T) {
 	assert := assert.New(t)
 
-	parsedInterfaces, err := renderInterfaceOpt(getInterfaces)
+	parsedInterfaces, err := renderListOpt("interfaces", getInterfaces())
 	assert.NoError(err)
 	assert.Equal(string(parsedInterfaces), `"interfaces":[{"gateway":"0.0.0.1","ipv4addr":"0.0.0.0","type":"veth"},{"ipv4addr":"1.0.0.0","type":"veth"}]`)
 }
@@ -41,7 +40,7 @@ func TestRenderInterfaceOpt(t *testing.T) {
 func TestRenderResourceOpt(t *testing.T) {
 	assert := assert.New(t)
 
-	parsedResources, err := renderResourceOpt(getResources)
+	parsedResources, err := renderMapOpt(getResources())
 	assert.NoError(err)
 	assert.Equal(string(parsedResources), `"memory_gb":1024,"vcpu":1`)
 }
@@ -50,8 +49,8 @@ func TestRenderCmdOpt(t *testing.T) {
 	assert := assert.New(t)
 
 	p := []option{
-		func() (renderCallback, resourceCallback) { return renderResourceOpt, getResources },
-		func() (renderCallback, resourceCallback) { return renderInterfaceOpt, getInterfaces },
+		func() ([]byte, error) { return renderMapOpt(getResources()) },
+		func() ([]byte, error) { return renderListOpt("interfaces", getInterfaces()) },
 	}
 	cmdOpts, err := renderCmdOpt(p)
 	assert.NoError(err)

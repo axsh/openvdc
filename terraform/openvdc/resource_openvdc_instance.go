@@ -79,13 +79,10 @@ func OpenVdcInstance() *schema.Resource {
 	}
 }
 
-type resourceCallback func() interface{}
-type renderCallback func(getResource resourceCallback) ([]byte, error)
-type option func() (renderCallback, resourceCallback)
+type option func() ([]byte, error)
 
-func renderResourceOpt(getResource resourceCallback) ([]byte, error) {
+func renderMapOpt(i interface{}) ([]byte, error) {
 	var buf bytes.Buffer
-	i := getResource()
 	if i != nil {
 		x := i.(map[string]interface{})
 		bytes, err := json.Marshal(x)
@@ -101,22 +98,19 @@ func renderResourceOpt(getResource resourceCallback) ([]byte, error) {
 	return b, nil
 }
 
-func renderInterfaceOpt(getResource resourceCallback) ([]byte, error) {
+func renderListOpt(param string, i interface{}) ([]byte, error) {
 	// We use a byte buffer because if we'd use a string here, go would create
 	// a new string for every concatenation. Not very efficient. :p
 	var buf bytes.Buffer
-
-	i := getResource()
 	newElement := false
+
 	if x := i; x != nil {
-		buf.WriteString("\"interfaces\":[")
+		buf.WriteString(strings.Join([]string{"\"", param, "\":[{"}, ""))
 		for _, y := range x.([]interface{}) {
 			if newElement {
-				buf.WriteString(",")
+				buf.WriteString("},{")
 			}
-
-			z := y.(map[string]interface{})
-			bytes, err := json.Marshal(z)
+			bytes, err := renderMapOpt(y)
 			if err != nil {
 				return nil, err
 			}
@@ -125,31 +119,24 @@ func renderInterfaceOpt(getResource resourceCallback) ([]byte, error) {
 			newElement = true
 		}
 	}
-	buf.WriteString("]")
+	buf.WriteString("}]")
 	return buf.Bytes(), nil
 }
 
 func renderCmdOpt(options []option) (bytes.Buffer, error) {
 	var buf bytes.Buffer
-	addOpt := func(fn renderCallback, getResource resourceCallback) error {
-		output, err := fn(getResource)
-		if err != nil {
-			return err
-		}
-		if len(output) > 0 {
-			buf.Write(output)
-		}
-		return nil
-	}
 
 	buf.WriteString("{")
-	for idx, opt := range options {
+	for idx, optCb := range options {
 		if idx > 0 {
 			buf.WriteString(",")
 		}
-		renderCb, resourceCb := opt()
-		if err := addOpt(renderCb, resourceCb); err != nil {
+		output, err := optCb()
+		if err != nil {
 			return buf, err
+		}
+		if len(output) > 0 {
+			buf.Write(output)
 		}
 	}
 	buf.WriteString("}")
@@ -158,18 +145,8 @@ func renderCmdOpt(options []option) (bytes.Buffer, error) {
 
 func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 	opts := []option{
-		func() (renderCallback, resourceCallback) {
-			getResources := func() interface{} {
-				return d.Get("resources")
-			}
-			return renderResourceOpt, getResources
-		},
-		func() (renderCallback, resourceCallback) {
-			getResources := func() interface{} {
-				return d.Get("interfaces")
-			}
-			return renderInterfaceOpt, getResources
-		},
+		func() ([]byte, error) { return renderMapOpt(d.Get("resources")) },
+		func() ([]byte, error) { return renderListOpt("interfaces", d.Get("interfaces"))},
 	}
 
 	cmdOpts, err := renderCmdOpt(opts)
