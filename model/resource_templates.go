@@ -73,3 +73,32 @@ func IsMatchingNodeGroups(res InstanceResource, offered []string) bool {
 	}
 	return true
 }
+
+// define openvdc's offer
+type VDCOffer struct {
+	SlaveID   string
+	Resources []Resource
+}
+
+type Resource struct {
+	Name   string
+	Type   valueType
+	Scalar float64
+	Ranges []valueRange
+	Set    []string
+	// Disk
+}
+
+type valueType int32
+
+const (
+	ValueScalar valueType = 0
+	ValueRanges valueType = 1
+	ValueSet    valueType = 2
+	ValueText   valueType = 3
+)
+
+type valueRange struct {
+	Begin uint64
+	End   uint64
+}

@@ -3,7 +3,6 @@ package lxc
 import (
 	"github.com/axsh/openvdc/handlers/vm"
 	"github.com/axsh/openvdc/model"
-	mesos "github.com/mesos/mesos-go/mesosproto"
 )
 
 type LxcScheduler struct {
@@ -13,7 +12,7 @@ func NewScheduler() *LxcScheduler {
 	return new(LxcScheduler)
 }
 
-func (*LxcScheduler) ScheduleInstance(ir model.InstanceResource, offers map[string]*mesos.Offer) (bool, error) {
+func (*LxcScheduler) ScheduleInstance(ir model.InstanceResource, offers map[string]*model.VDCOffer) (bool, error) {
 	cpus := ir.GetVcpu()
 	mem := ir.GetMemoryGb()
 

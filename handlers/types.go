@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/axsh/openvdc/model"
-	mesos "github.com/mesos/mesos-go/mesosproto"
 )
 
 var (
@@ -71,5 +70,5 @@ func FindByType(name string) (p ResourceHandler, ok bool) {
 }
 
 type InstanceScheduleHandler interface {
-	ScheduleInstance(model.InstanceResource, map[string]*mesos.Offer) (bool, error) // compare with offer and resrouce request.
+	ScheduleInstance(model.InstanceResource, model.VDCOffer) (model.VDCOffer, error) // compare with offer and resrouce request.
 }
