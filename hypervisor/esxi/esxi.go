@@ -53,9 +53,7 @@ var settings struct {
 	EsxiInventoryFolder string
 	BridgeName          string
 	BridgeType          BridgeType
-	Modules            struct {
-		vcenter   bool
-	}
+	EsxiVcenter         bool
 }
 
 func (t BridgeType) String() string {
@@ -88,7 +86,7 @@ func (p *EsxiHypervisorProvider) Name() string {
 func init() {
 	hypervisor.RegisterProvider("esxi", &EsxiHypervisorProvider{})
 	viper.SetDefault("hypervisor.esxi-insecure", true)
-	viper.SetDefault("hypervisor.modules.vcenter", false)
+	viper.SetDefault("hypervisor.esxi-vcenter", false)
 }
 
 func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
@@ -138,13 +136,13 @@ func (p *EsxiHypervisorProvider) LoadConfig(sub *viper.Viper) error {
 	}
 	settings.EsxiVmDatastore = sub.GetString("hypervisor.esxi-vm-datastore")
 
-	settings.Modules.vcenter = sub.GetBool("hypervisor.modules.vcenter")
+	settings.EsxiVcenter = sub.GetBool("hypervisor.esxi-vcenter")
 	settings.ScriptPath = sub.GetString("hypervisor.script-path")
 	settings.EsxiInsecure = sub.GetBool("hypervisor.esxi-insecure")
 	settings.EsxiVmUser = sub.GetString("hypervisor.esxi-vm-user")
 	settings.EsxiVmPass = sub.GetString("hypervisor.esxi-vm-pass")
 	settings.EsxiInventoryFolder = sub.GetString("hypervisor.esxi-inventory-folder")
-	if settings.Modules.vcenter {
+	if settings.EsxiVcenter {
 		if sub.GetString("hypervisor.esxi-host-name") == "" {
 			return errors.Errorf("Missing configuration hypervisor.esxi-host-name")
 		}
@@ -329,7 +327,7 @@ func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 		iface["ifname"] = nic.IfName
 		iface["ipv4"] = nic.Ipv4Addr
 		iface["mac"] = nic.MacAddr
-		iface["gateway"] = nic.Gateway
+		iface["ipv4gateway"] = nic.Ipv4Gateway
 		metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 	}
 	return metadataMap
@@ -339,13 +337,13 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	var err error
 	for idx, iface := range d.template.GetInterfaces() {
 		d.machine.Nics = append(d.machine.Nics, Nic{
-			NetworkId: iface.NetworkId,
-			IfName:    fmt.Sprintf("%s_%02d", d.vmName, idx),
-			Type:      iface.Type,
-			Ipv4Addr:  iface.Ipv4Addr,
-			MacAddr:   iface.Macaddr,
-			Gateway:   iface.Gateway,
-			Bridge:    settings.BridgeName,
+			NetworkId:   iface.NetworkId,
+			IfName:      fmt.Sprintf("%s_%02d", d.vmName, idx),
+			Type:        iface.Type,
+			Ipv4Addr:    iface.Ipv4Addr,
+			MacAddr:     iface.Macaddr,
+			Ipv4Gateway: iface.Ipv4Gateway,
+			Bridge:      settings.BridgeName,
 		})
 	}
 
@@ -397,7 +395,7 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 	datastore := join('=', "-ds", settings.EsxiVmDatastore)
 
-	if settings.Modules.vcenter {
+	if settings.EsxiVcenter {
 		cmd := []string{"vm.clone", datastore,
 			join('=', "-on", "false"),
 			join('=', "-host", settings.EsxiHostName),

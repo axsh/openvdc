@@ -65,7 +65,7 @@
             "type": "string",
             "format": "ipv4"
           },
-          "gateway": {
+          "ipv4gateway": {
             "type": "string",
             "format": "ipv4"
           }

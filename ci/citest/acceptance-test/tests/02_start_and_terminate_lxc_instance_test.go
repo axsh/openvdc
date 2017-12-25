@@ -89,7 +89,7 @@ func TestLXCInstance_OvsNICx2(t *testing.T) {
 
 func TestLXCInstance_DefaultGateway(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc",
-		`{"interfaces":[{"type":"veth","ipv4addr": "172.16.10.100","gateway": "172.16.10.1"}], "node_groups":["linuxbr"]}`)
+		`{"interfaces":[{"type":"veth","ipv4addr": "172.16.10.100","ipv4gateway": "172.16.10.1"}], "node_groups":["linuxbr"]}`)
 	instance_id := strings.TrimSpace(stdout.String())
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
