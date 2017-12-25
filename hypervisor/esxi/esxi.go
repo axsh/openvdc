@@ -327,7 +327,7 @@ func (d *EsxiHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 		iface["ifname"] = nic.IfName
 		iface["ipv4"] = nic.Ipv4Addr
 		iface["mac"] = nic.MacAddr
-		iface["gateway"] = nic.Gateway
+		iface["ipv4gateway"] = nic.Ipv4Gateway
 		metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 	}
 	return metadataMap
@@ -337,13 +337,13 @@ func (d *EsxiHypervisorDriver) CreateInstance() error {
 	var err error
 	for idx, iface := range d.template.GetInterfaces() {
 		d.machine.Nics = append(d.machine.Nics, Nic{
-			NetworkId: iface.NetworkId,
-			IfName:    fmt.Sprintf("%s_%02d", d.vmName, idx),
-			Type:      iface.Type,
-			Ipv4Addr:  iface.Ipv4Addr,
-			MacAddr:   iface.Macaddr,
-			Gateway:   iface.Gateway,
-			Bridge:    settings.BridgeName,
+			NetworkId:   iface.NetworkId,
+			IfName:      fmt.Sprintf("%s_%02d", d.vmName, idx),
+			Type:        iface.Type,
+			Ipv4Addr:    iface.Ipv4Addr,
+			MacAddr:     iface.Macaddr,
+			Ipv4Gateway: iface.Ipv4Gateway,
+			Bridge:      settings.BridgeName,
 		})
 	}
 

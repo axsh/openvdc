@@ -147,7 +147,7 @@ func (d *QEMUHypervisorDriver) createMachineTemplate() {
 			Type:         iface.Type,
 			Ipv4Addr:     iface.Ipv4Addr,
 			MacAddr:      iface.Macaddr,
-			Gateway:      iface.Gateway,
+			Ipv4Gateway:  iface.Ipv4Gateway,
 			Bridge:       settings.BridgeName,
 			BridgeHelper: settings.QemuBridgeHelper,
 		})
@@ -252,7 +252,7 @@ func (d *QEMUHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
 			iface := make(map[string]interface{})
 			iface["ifname"] = nic.IfName
 			iface["ipv4"] = nic.Ipv4Addr
-			iface["gateway"] = nic.Gateway
+			iface["ipv4gateway"] = nic.Ipv4Gateway
 			iface["mac"] = nic.MacAddr
 			metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
 		}

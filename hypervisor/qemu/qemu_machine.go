@@ -72,7 +72,7 @@ type Nic struct {
 	Bridge       string
 	BridgeHelper string
 	Type         string
-	Gateway      string
+	Ipv4Gateway  string
 }
 
 func (m *Machine) promptPattern() string {
