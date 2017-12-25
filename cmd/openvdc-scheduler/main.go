@@ -158,7 +158,10 @@ func execute(cmd *cobra.Command, args []string) {
 		log.Fatalln("Faild to bind address for gRPC API: ", viper.GetString("api.endpoint"))
 	}
 	log.Info("Listening gRPC API on: ", viper.GetString("api.endpoint"))
-	grpcServer := api.NewAPIServer(zkAddr, mesosDriver, ctx)
+
+	instanceScheduler := scheduler.Schedule{}
+
+	grpcServer := api.NewAPIServer(zkAddr, mesosDriver, instanceScheduler, ctx)
 
 	if err := detector.Detect(grpcServer); err != nil {
 		log.WithError(err).Fatal("Failed to start mesos detector")
