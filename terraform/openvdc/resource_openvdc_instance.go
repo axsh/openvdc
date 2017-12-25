@@ -68,7 +68,7 @@ func OpenVdcInstance() *schema.Resource {
 							Optional: true,
 						},
 
-						"gateway": &schema.Schema{
+						"ipv4gateway": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
 						},

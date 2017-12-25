@@ -13,7 +13,7 @@ var getInterfaces = func() interface{} {
 		map[string]interface{}{
 			"type":     "veth",
 			"ipv4addr": "0.0.0.0",
-			"gateway":  "0.0.0.1",
+			"ipv4gateway":  "0.0.0.1",
 		},
 		map[string]interface{}{
 			"type":     "veth",
@@ -34,7 +34,7 @@ func TestRenderListOpt(t *testing.T) {
 
 	parsedInterfaces, err := renderListOpt("interfaces", getInterfaces())
 	assert.NoError(err)
-	assert.Equal(string(parsedInterfaces), `"interfaces":[{"gateway":"0.0.0.1","ipv4addr":"0.0.0.0","type":"veth"},{"ipv4addr":"1.0.0.0","type":"veth"}]`)
+	assert.Equal(string(parsedInterfaces), `"interfaces":[{"ipv4gateway":"0.0.0.1","ipv4addr":"0.0.0.0","type":"veth"},{"ipv4addr":"1.0.0.0","type":"veth"}]`)
 }
 
 func TestRenderResourceOpt(t *testing.T) {
@@ -54,5 +54,5 @@ func TestRenderCmdOpt(t *testing.T) {
 	}
 	cmdOpts, err := renderCmdOpt(p)
 	assert.NoError(err)
-	assert.Equal(cmdOpts.String(), `{"memory_gb":1024,"vcpu":1,"interfaces":[{"gateway":"0.0.0.1","ipv4addr":"0.0.0.0","type":"veth"},{"ipv4addr":"1.0.0.0","type":"veth"}]}`)
+	assert.Equal(cmdOpts.String(), `{"memory_gb":1024,"vcpu":1,"interfaces":[{"ipv4gateway":"0.0.0.1","ipv4addr":"0.0.0.0","type":"veth"},{"ipv4addr":"1.0.0.0","type":"veth"}]}`)
 }
