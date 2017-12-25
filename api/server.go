@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
+	"github.com/axsh/openvdc/scheduler"
 	"github.com/gogo/protobuf/proto"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	sched "github.com/mesos/mesos-go/scheduler"

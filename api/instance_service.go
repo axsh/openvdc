@@ -72,7 +72,7 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 			return nil, err
 		}
 
-		err := s.instanceScheduler.Assign()
+		err := s.api.instanceScheduler.Assign(inst)
 		if err != nil {
 			flog.Error(err)
 			return nil, err

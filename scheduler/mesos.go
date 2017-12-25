@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/axsh/openvdc/handlers/vm"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
 	"github.com/gogo/protobuf/proto"
@@ -40,20 +39,21 @@ type VDCScheduler struct {
 }
 
 // convert to openVDC offer
-func convertToOpenVDCOffer(mOffer mesos.Offer) vOffer model.VDCOffer {
-	vOffer.SlaveID = mOffer.GetSlaveID()
-	vResources := []resource{}
+func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer model.VDCOffer) {
+	vOffer.SlaveID = mOffer.GetSlaveId().GetValue()
+	vResources := []model.Resource{}
 	for _, res := range mOffer.GetResources() {
-		vRes := new(resources)
+		vRes := model.Resource{}
 		vRes.Name = res.GetName()
-		vRes.Type = res.GetType()
-		vRes.Scalar = res.GetScalar()
-		vRes.Ranges = res.GetRanges()
-		vRes.Set = res.GetSet()
+		// vRes.Type = res.GetType()
+		vRes.Scalar = res.GetScalar().GetValue()
+		// vRes.Ranges = res.GetRanges()
+		vRes.Set = res.GetSet().GetItem()
 
-		vResources = append(vResources, res)
+		vResources = append(vResources, vRes)
 	}
-	vOffer.resources = vResources
+	vOffer.Resources = vResources
+	return
 }
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
@@ -114,7 +114,6 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		sched.CheckForCrashedNodes(offers, ctx)
 	}
 
-	//
 	storeOffers(offers)
 
 	disconnected := getDisconnectedInstances(offers, ctx, driver)
@@ -208,11 +207,11 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 	return nil
 }
 
-func storeOffers(offers []*mesos.Offer){
-	vmSched := new(vm.Scheduler)
+func storeOffers(offers []*mesos.Offer) {
+	sched := new(Schedule)
 	for _, offer := range offers {
 		vdcOffer := convertToOpenVDCOffer(offer)
-		vmSched.StoreOffer(vdcOffer)
+		sched.StoreOffer(vdcOffer)
 	}
 }
 
