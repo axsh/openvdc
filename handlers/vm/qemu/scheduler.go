@@ -21,12 +21,10 @@ func (q *QemuScheduler) ScheduleInstance(ir model.InstanceResource, offer model.
 	cpus := ir.GetVcpu()
 	mem := ir.GetMemoryGb()
 
-	offeredCpus := vm.GetOfferScalar(offer, "vcpu")
-	if int32(offeredCpus) > cpus {
-		offeredMem := vm.GetOfferScalar(offer, "mem")
-		if int32(offeredMem) > mem {
-			return true, nil
-		}
+	offerCpus := int32(vm.GetOfferScalar(offer, "vcpu"))
+	offerMem := int32(vm.GetOfferScalar(offer, "mem"))
+	if offerCpus < cpus || offerMem < mem {
+		return false, nil
 	}
-	return false, nil
+	return true, nil
 }
