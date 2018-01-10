@@ -82,23 +82,23 @@ type VDCOffer struct {
 
 type Resource struct {
 	Name   string
-	Type   valueType
+	Type   ValueType
 	Scalar float64
-	Ranges []valueRange
+	Ranges []ValueRange
 	Set    []string
 	// Disk
 }
 
-type valueType int32
+type ValueType int32
 
 const (
-	ValueScalar valueType = 0
-	ValueRanges valueType = 1
-	ValueSet    valueType = 2
-	ValueText   valueType = 3
+	ValueScalar ValueType = 0
+	ValueRanges ValueType = 1
+	ValueSet    ValueType = 2
+	ValueText   ValueType = 3
 )
 
-type valueRange struct {
+type ValueRange struct {
 	Begin uint64
 	End   uint64
 }

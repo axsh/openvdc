@@ -45,11 +45,20 @@ func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer model.VDCOffer) {
 	for _, res := range mOffer.GetResources() {
 		vRes := model.Resource{}
 		vRes.Name = res.GetName()
-		//vRes.Type = mesos.Value_Type_value[res.GetType().String()]
+		vRes.Type = model.ValueType(mesos.Value_Type_value[res.GetType().String()])
 		vRes.Scalar = res.GetScalar().GetValue()
-		// vRes.Ranges = res.GetRanges()
-		vRes.Set = res.GetSet().GetItem()
 
+		var tmpVR []model.ValueRange
+		for _, r := range res.GetRanges().GetRange() {
+			tmp := model.ValueRange{
+				Begin: *r.Begin,
+				End:   *r.End,
+			}
+			tmpVR = append(tmpVR, tmp)
+		}
+		vRes.Ranges = tmpVR
+
+		vRes.Set = res.GetSet().GetItem()
 		vResources = append(vResources, vRes)
 	}
 	vOffer.Resources = vResources

@@ -145,14 +145,24 @@ func TestConvertToOpenVDCOffer(t *testing.T) {
 				Scalar: 2.0,
 			},
 			model.Resource{
-				Name: "mem",
-				// Type:   model.ValueScalar,
+				Name:   "mem",
+				Type:   model.ValueScalar,
 				Scalar: 1000.0,
 			},
 			model.Resource{
-				Name: "disk",
-				///Type:   model.ValueScalar,
+				Name:   "disk",
+				Type:   model.ValueScalar,
 				Scalar: 34068.0,
+			},
+			model.Resource{
+				Name: "ports",
+				Type: model.ValueRanges,
+				Ranges: []model.ValueRange{
+					model.ValueRange{
+						Begin: 31000,
+						End:   32000,
+					},
+				},
 			},
 		},
 	}
