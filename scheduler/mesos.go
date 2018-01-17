@@ -25,6 +25,7 @@ type SchedulerSettings struct {
 	Name            string
 	ID              string
 	FailoverTimeout float64
+	Checkpoint      bool
 	ExecutorPath    string
 }
 
@@ -609,6 +610,7 @@ func NewMesosScheduler(ctx context.Context, listenAddr string, mesosMasterAddr s
 		User:            proto.String(""),
 		Name:            proto.String(settings.Name),
 		FailoverTimeout: proto.Float64(settings.FailoverTimeout),
+		Checkpoint:      proto.Bool(settings.Checkpoint),
 		Id:              util.NewFrameworkID(settings.ID),
 	}
 

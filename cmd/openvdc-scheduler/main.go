@@ -48,6 +48,7 @@ func init() {
 	viper.SetDefault("scheduler.name", "scheduler_1")
 	viper.SetDefault("scheduler.id", "openvdc")
 	viper.SetDefault("scheduler.failover-timeout", 604800) // 1 week
+	viper.SetDefault("scheduler.checkpoint", true)
 	viper.SetDefault("scheduler.executor-path", "openvdc-executor")
 
 	cobra.OnInitialize(initConfig)
@@ -71,6 +72,9 @@ func init() {
 
 	pfs.Float64("failover-timeout", viper.GetFloat64("scheduler.failover-timeout"), "Failover timeout")
 	viper.BindPFlag("scheduler.failover-timeout", pfs.Lookup("failover-timeout"))
+
+	pfs.Bool("checkpoint", viper.GetBool("scheduler.checkpoint"), "Checkpoint")
+        viper.BindPFlag("scheduler.checkpoint", pfs.Lookup("checkpoint"))
 
 	pfs.String("executor-path", viper.GetString("scheduler.executor-path"), "Executor path")
 	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
@@ -123,6 +127,7 @@ func execute(cmd *cobra.Command, args []string) {
 		Name:            viper.GetString("scheduler.id"),
 		ID:              viper.GetString("scheduler.name"),
 		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
+		Checkpoint:	 viper.GetBool("scheduler.checkpoint"),
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
 	}
 
