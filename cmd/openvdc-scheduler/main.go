@@ -74,7 +74,7 @@ func init() {
 	viper.BindPFlag("scheduler.failover-timeout", pfs.Lookup("failover-timeout"))
 
 	pfs.Bool("checkpoint", viper.GetBool("scheduler.checkpoint"), "Checkpoint")
-        viper.BindPFlag("scheduler.checkpoint", pfs.Lookup("checkpoint"))
+	viper.BindPFlag("scheduler.checkpoint", pfs.Lookup("checkpoint"))
 
 	pfs.String("executor-path", viper.GetString("scheduler.executor-path"), "Executor path")
 	viper.BindPFlag("scheduler.executor-path", pfs.Lookup("executor-path"))
@@ -127,7 +127,7 @@ func execute(cmd *cobra.Command, args []string) {
 		Name:            viper.GetString("scheduler.id"),
 		ID:              viper.GetString("scheduler.name"),
 		FailoverTimeout: viper.GetFloat64("scheduler.failover-timeout"),
-		Checkpoint:	 viper.GetBool("scheduler.checkpoint"),
+		Checkpoint:      viper.GetBool("scheduler.checkpoint"),
 		ExecutorPath:    viper.GetString("scheduler.executor-path"),
 	}
 
