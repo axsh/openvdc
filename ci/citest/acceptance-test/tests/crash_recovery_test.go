@@ -18,6 +18,7 @@ func TestCrashRecovery(t *testing.T) {
 	//Simulate crash
 	t.Log("Simulate crash by stopping mesos-slave...")
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl stop mesos-slave", 10, 5)
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "ps -ef | grep openvdc-executor | grep -v grep | awk '{print $2}' | xargs -r kill -9", 10, 5)
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-stop -n "+instance_id+" -k", 10, 5)
 
 	t.Log("Re-start mesos-slave...")
