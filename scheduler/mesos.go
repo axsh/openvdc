@@ -504,8 +504,8 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 		driver.ReviveOffers()
 	}
 
-	if status.GetState() == mesos.TaskState_TASK_LOST &&
-		status.GetReason() == mesos.TaskStatus_REASON_SLAVE_DISCONNECTED {
+	if status.GetState() == mesos.TaskState_TASK_FAILED &&
+		status.GetReason() == mesos.TaskStatus_REASON_EXECUTOR_TERMINATED {
 		sched.SlaveLost(nil, status.GetSlaveId())
 	}
 
