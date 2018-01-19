@@ -220,15 +220,12 @@
 			"revisionTime": "2013-11-06T22:25:44Z"
 		},
 		{
-<<<<<<< HEAD
-=======
 			"checksumSHA1": "eOXF2PEvYLMeD8DSzLZJWbjYzco=",
 			"path": "github.com/kr/pretty",
 			"revision": "cfb55aafdaf3ec08f0db22699ab822c50091b1c4",
 			"revisionTime": "2016-08-23T17:07:15Z"
 		},
 		{
->>>>>>> master
 			"checksumSHA1": "Cdsm9pkjn7WC0TP2KKPDSApiQKQ=",
 			"path": "github.com/kr/pty",
 			"revision": "ce7fa45920dc37a92de8377972e52bc55ffa8d57",
@@ -548,11 +545,7 @@
 			"revisionTime": "2017-11-27T00:49:25Z"
 		},
 		{
-<<<<<<< HEAD
-			"checksumSHA1": "zs7y8Mk31r+oW3/C3A0JSs+AWSw=",
-=======
 			"checksumSHA1": "lfyUKWBy9qN3kaZv+geGRD8WD8U=",
->>>>>>> master
 			"path": "github.com/vmware/govmomi/govc/flags",
 			"revision": "adf4530b240711895896b14c337f9b77a3143e96",
 			"revisionTime": "2017-11-27T00:49:25Z"
