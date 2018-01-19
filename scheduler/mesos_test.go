@@ -138,27 +138,27 @@ func TestConvertToOpenVDCOffer(t *testing.T) {
 
 	vOffer := &model.VDCOffer{
 		SlaveID: "d39c0128-4822-49a0-9fab-640fba518d53-S0",
-		Resources: []model.Resource{
-			model.Resource{
+		Resources: []model.VDCOfferResource{
+			model.VDCOfferResource{
 				Name:   "cpus",
-				Type:   model.ValueScalar,
+				Type:   model.VDCOfferValueScalar,
 				Scalar: 2.0,
 			},
-			model.Resource{
+			model.VDCOfferResource{
 				Name:   "mem",
-				Type:   model.ValueScalar,
+				Type:   model.VDCOfferValueScalar,
 				Scalar: 1000.0,
 			},
-			model.Resource{
+			model.VDCOfferResource{
 				Name:   "disk",
-				Type:   model.ValueScalar,
+				Type:   model.VDCOfferValueScalar,
 				Scalar: 34068.0,
 			},
-			model.Resource{
+			model.VDCOfferResource{
 				Name: "ports",
-				Type: model.ValueRanges,
-				Ranges: []model.ValueRange{
-					model.ValueRange{
+				Type: model.VDCOfferValueRanges,
+				Ranges: []model.VDCOfferValueRange{
+					model.VDCOfferValueRange{
 						Begin: 31000,
 						End:   32000,
 					},

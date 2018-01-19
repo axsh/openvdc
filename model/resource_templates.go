@@ -92,10 +92,10 @@ type VDCOfferResource struct {
 type VDCOfferValueType int32
 
 const (
-	ValueScalar VDCOfferValueType = 0
-	ValueRanges VDCOfferValueType = 1
-	ValueSet    VDCOfferValueType = 2
-	ValueText   VDCOfferValueType = 3
+	VDCOfferValueScalar VDCOfferValueType = 0
+	VDCOfferValueRanges VDCOfferValueType = 1
+	VDCOfferValueSet    VDCOfferValueType = 2
+	VDCOfferValueText   VDCOfferValueType = 3
 )
 
 type VDCOfferValueRange struct {
