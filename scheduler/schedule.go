@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/model"
 )
@@ -33,9 +34,9 @@ func (s *Schedule) StoreOffer(offer model.VDCOffer) {
 }
 
 func (s *Schedule) Assign(inst *model.Instance) error {
-	// flog := log.WithFields(log.Fields{
-	// 	"instance_id": inst.GetInstanceId(),
-	// })
+	flog := log.WithFields(log.Fields{
+		"instance_id": inst.GetId(), // ASK GetInstanceId() -> GetId()
+	})
 
 	name := inst.ResourceTemplate().ResourceName()
 	instSchedHandler := instanceSchedulerHandlers[name]
@@ -50,7 +51,7 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 			return err
 		}
 		if ok {
-			// flog.Infof("Assined")
+			flog.Infof("Assined")
 			return nil
 		}
 	}
