@@ -3,17 +3,18 @@ package esxi
 import "github.com/axsh/openvdc/model"
 
 type Nic struct {
-	NetworkId    string
-	IfName       string
-	Index        string
-	Ipv4Addr     string
-	MacAddr      string
-	Bridge       string
-	Type         string
+	NetworkId   string
+	IfName      string
+	Index       string
+	Ipv4Addr    string
+	MacAddr     string
+	Bridge      string
+	Ipv4Gateway string
+	Type        string
 }
 
 type baseImage struct {
-	name string
+	name      string
 	datastore string
 }
 
@@ -28,7 +29,7 @@ func newEsxiMachine(serialPort int, template *model.EsxiTemplate) *EsxiMachine {
 	return &EsxiMachine{
 		SerialConsolePort: serialPort,
 		baseImage: &baseImage{
-			name: base.GetName(),
+			name:      base.GetName(),
 			datastore: base.GetDatastore(),
 		},
 	}
