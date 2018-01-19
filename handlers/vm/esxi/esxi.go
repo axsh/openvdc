@@ -24,7 +24,8 @@ func (h *EsxiHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 	tmpl := &model.EsxiTemplate{EsxiImage: &model.EsxiTemplate_Image{}}
 
 	type EsxiImage struct {
-		DownloadUrl string `json:"download_url,omitempty"`
+		Name      string `json:"name,omitempty"`
+		Datastore string `json:"datastore,omitempty"`
 	}
 
 	var json_template struct {
@@ -100,7 +101,6 @@ func (h *EsxiHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) 
 		return errors.WithStack(err)
 	}
 
-	minput.EsxiImage = nil
 	proto.Merge(mdst, minput)
 	return nil
 }

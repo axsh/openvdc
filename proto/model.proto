@@ -171,15 +171,17 @@ message EsxiTemplate {
   int32 min_vcpu = 3 [json_name="min_vcpu"];
   int32 min_memory_gb = 4 [json_name="min_memory_gb"];
   message Image {
-    string download_url = 1 [json_name="download_url"];
-    string chksum_type = 2 [json_name="chksum_type"];
-    string chksum = 3;
+    string name = 1 [json_name="name"];
+    string datastore = 2 [json_name="datastore"];
+    string chksum_type = 3 [json_name="chksum_type"];
+    string chksum = 4;
   }
   Image esxi_image = 5 [json_name="esxi_image"];
   message Interface {
-    string type = 1;
-    string macaddr = 2;
-    string ipv4addr = 3;
+    string network_id = 1;
+    string type = 2;
+    string macaddr = 3;
+    string ipv4addr = 4;
   }
   repeated Interface interfaces = 6;
   repeated string node_groups = 7 [json_name="node_groups"];
