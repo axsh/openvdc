@@ -45,15 +45,16 @@
           "type"
         ],
         "properties": {
+          "network_id": {
+            "type": "string"
+          },
           "type": {
             "type": "string",
             "enum": [
-              "veth",
+              "vmxnet3",
               "none",
               "empty",
-              "vlan",
-              "macvlan",
-              "phys"
+              "e1000e"
             ]
           },
           "macaddr": {
@@ -63,9 +64,28 @@
           "ipv4addr": {
             "type": "string",
             "format": "ipv4"
+          },
+          "ipv4gateway": {
+            "type": "string",
+            "format": "ipv4"
           }
         }
       }
+    }
+    "esxi_image": {
+      "type": "object",
+      "properties": {
+        "_comment": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string",
+          "format": "uri"
+        },
+      },
+      "required": [
+        "location"
+      ]
     }
   }
 }

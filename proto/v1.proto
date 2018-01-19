@@ -28,7 +28,9 @@ message ConsoleOut {
 
 
 service Instance {
+  rpc Copy (CopyRequest) returns (CopyReply){}
   rpc Create (CreateRequest) returns (CreateReply){}
+  rpc ForceState(ForceStateRequest) returns (ForceStateReply){}
   rpc Start (StartRequest) returns (StartReply){}
   rpc Run (CreateRequest) returns (RunReply){}
   rpc Stop (StopRequest) returns (StopReply){}
@@ -42,6 +44,8 @@ service Instance {
 }
 
 message RunReply {
+  reserved 2;
+
   string instance_id = 1 [json_name="instance_id"];
   //string resource_id = 2; // Obsolete
 }
@@ -55,8 +59,27 @@ message StopReply {
 
 message DestroyRequest{
   string instance_id = 1 [json_name="instance_id"];
+  bool force = 2;
 }
 message DestroyReply {
+  string instance_id = 1 [json_name="instance_id"];
+}
+
+message CopyRequest{
+  string  instance_id = 1 [json_name="instance_id"];
+}
+
+message CopyReply{
+  string instance_id = 1 [json_name="instance_id"];
+  string address = 2;
+}
+
+message ForceStateRequest{
+  string instance_id = 1 [json_name="instance_id"];
+  model.InstanceState.State state = 2;
+}
+
+message ForceStateReply{
   string instance_id = 1 [json_name="instance_id"];
 }
 
@@ -70,6 +93,8 @@ message ConsoleReply {
 }
 
 message CreateRequest{
+  reserved 1;
+
   //string resource_id = 1; // Obsolete
   model.Template template = 2;
   bool auto_recovery = 3;

@@ -164,6 +164,9 @@ lxc.network.ipv4={{$.IFace.Ipv4Addr}}
 {{- with .IFace.Macaddr}}
 lxc.network.hwaddr={{$.IFace.Macaddr}}
 {{- end}}
+{{- with .IFace.Ipv4Gateway}}
+lxc.network.ipv4.gateway={{$.IFace.Ipv4Gateway}}
+{{- end}}
 `
 
 func (d *LXCHypervisorDriver) modifyConf() error {

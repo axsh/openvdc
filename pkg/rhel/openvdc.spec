@@ -70,7 +70,7 @@ mkdir -p "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/lxc-templates
 cp lxc-openvdc "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/lxc-templates/lxc-openvdc"
 cp qemu-ifup "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
 cp qemu-ifdown "${RPM_BUILD_ROOT}/opt/axsh/openvdc/share/"
-install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu pkg/conf/mesos-slave/attributes.esxi
+install -p -t "$RPM_BUILD_ROOT"/opt/axsh/openvdc/share/mesos-slave pkg/conf/mesos-slave/attributes.null pkg/conf/mesos-slave/attributes.lxc pkg/conf/mesos-slave/attributes.qemu pkg/conf/mesos-slave/attributes.esxi pkg/conf/mesos-slave/resources.qemu pkg/conf/mesos-slave/resources.esxi
 
 %package cli
 Summary: OpenVDC cli
@@ -100,6 +100,8 @@ OpenVDC executor common package.
 /opt/axsh/openvdc/share/mesos-slave/attributes.lxc
 /opt/axsh/openvdc/share/mesos-slave/attributes.qemu
 /opt/axsh/openvdc/share/mesos-slave/attributes.esxi
+/opt/axsh/openvdc/share/mesos-slave/resources.qemu
+/opt/axsh/openvdc/share/mesos-slave/resources.esxi
 /opt/axsh/openvdc/share/lxc-templates/lxc-openvdc
 /opt/axsh/openvdc/share/qemu-ifup
 /opt/axsh/openvdc/share/qemu-ifdown
@@ -175,6 +177,10 @@ if [ -d /etc/mesos-slave ]; then
   if [ ! -f /etc/mesos-slave/attributes ]; then
     cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.qemu /etc/mesos-slave/attributes
   fi
+
+  if [ ! -f /etc/mesos-slave/resources ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/resources.qemu /etc/mesos-slave/resources
+  fi
 fi
 
 cp /opt/axsh/openvdc/share/qemu-ifup /etc/
@@ -195,6 +201,10 @@ Esxi driver configuration package for OpenVDC executor
 if [ -d /etc/mesos-slave ]; then
   if [ ! -f /etc/mesos-slave/attributes ]; then
     cp -p /opt/axsh/openvdc/share/mesos-slave/attributes.esxi /etc/mesos-slave/attributes
+  fi
+
+  if [ ! -f /etc/mesos-slave/resources ]; then
+    cp -p /opt/axsh/openvdc/share/mesos-slave/resources.esxi /etc/mesos-slave/resources
   fi
 fi
 

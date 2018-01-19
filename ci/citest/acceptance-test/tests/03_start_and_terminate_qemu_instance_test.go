@@ -3,8 +3,8 @@
 package tests
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -90,6 +90,19 @@ func TestQEMUInstance_OVSBrNICx2(t *testing.T) {
 			t.Log("ovs-vsctl port-to-br "+instance_id+"_01", stdout.String())
 		}
 	}
+	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
+	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
+}
+
+func TestQEMUInstance_DefaultGateway(t *testing.T) {
+	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc",
+		`{"interfaces":[{"type":"veth","ipv4addr": "172.16.10.100","ipv4gateway": "172.16.10.1"}], "node_groups":["linuxbr"]}`)
+	instance_id := strings.TrimSpace(stdout.String())
+	WaitInstance(t, 10*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
+
+	stdout, _ = RunCmdWithTimeoutAndReportFail(t, 10, 5, "ping", "-c", "1", "-W", "3", "-I", globalIp, "172.16.10.100")
+	t.Log("\n", stdout.String())
+
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
 }
