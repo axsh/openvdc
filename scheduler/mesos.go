@@ -38,19 +38,18 @@ type VDCScheduler struct {
 	ctx           context.Context
 }
 
-// convert to openVDC offer
 func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer model.VDCOffer) {
 	vOffer.SlaveID = mOffer.GetSlaveId().GetValue()
-	vResources := []model.Resource{}
+	vResources := []model.VDCOfferResource{}
 	for _, res := range mOffer.GetResources() {
-		vRes := model.Resource{}
+		vRes := model.VDCOfferResource{}
 		vRes.Name = res.GetName()
-		vRes.Type = model.ValueType(mesos.Value_Type_value[res.GetType().String()])
+		vRes.Type = model.VDCOfferValueType(mesos.Value_Type_value[res.GetType().String()])
 		vRes.Scalar = res.GetScalar().GetValue()
 
-		var tmpVR []model.ValueRange
+		var tmpVR []model.VDCOfferValueRange
 		for _, r := range res.GetRanges().GetRange() {
-			tmp := model.ValueRange{
+			tmp := model.VDCOfferValueRange{
 				Begin: *r.Begin,
 				End:   *r.End,
 			}

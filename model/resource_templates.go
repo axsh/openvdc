@@ -77,28 +77,28 @@ func IsMatchingNodeGroups(res InstanceResource, offered []string) bool {
 // define openvdc's offer
 type VDCOffer struct {
 	SlaveID   string
-	Resources []Resource
+	Resources []VDCOfferResource
 }
 
-type Resource struct {
+type VDCOfferResource struct {
 	Name   string
-	Type   ValueType
+	Type   VDCOfferValueType
 	Scalar float64
-	Ranges []ValueRange
+	Ranges []VDCOfferValueRange
 	Set    []string
 	// Disk
 }
 
-type ValueType int32
+type VDCOfferValueType int32
 
 const (
-	ValueScalar ValueType = 0
-	ValueRanges ValueType = 1
-	ValueSet    ValueType = 2
-	ValueText   ValueType = 3
+	ValueScalar VDCOfferValueType = 0
+	ValueRanges VDCOfferValueType = 1
+	ValueSet    VDCOfferValueType = 2
+	ValueText   VDCOfferValueType = 3
 )
 
-type ValueRange struct {
+type VDCOfferValueRange struct {
 	Begin uint64
 	End   uint64
 }
