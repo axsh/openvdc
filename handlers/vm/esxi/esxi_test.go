@@ -23,7 +23,8 @@ func TestTypes(t *testing.T) {
 const jsonEsxiImage = `{
         "type": "vm/esxi",
         "esxi_image": {
-                "download_url": "http://example.com/"
+                "name": "sample",
+                "datastore": "datastore"
         }
 }`
 
@@ -36,5 +37,6 @@ func TestEsxiHandler_ParseTemplate(t *testing.T) {
 	modelesxi := m.(*model.EsxiTemplate)
 	assert.NotNil(modelesxi.GetEsxiImage())
 
-	assert.Equal(modelesxi.GetEsxiImage().GetDownloadUrl(), "http://example.com/")
+	assert.Equal(modelesxi.GetEsxiImage().GetName(), "sample")
+	assert.Equal(modelesxi.GetEsxiImage().GetDatastore(), "datastore")
 }

@@ -53,7 +53,16 @@ for box in ${BOXES} ; do
 done
 
 create_bridge "vdc_mngnt" "${GATEWAY}/${PREFIX}"
-create_bridge "vdc_insts"
+create_bridge "vdc_insts" "${GW_INSTS}/${PREFIX_INSTS}"
+
+(
+  $starting_step "Create simulated global interface"
+  ip link | grep -q "${GLOBAL_TAP}"
+  $skip_step_if_already_done; set -ex
+  sudo ip link add link vdc_insts dev "${GLOBAL_TAP}" address "${GLOBAL_MAC}" type macvlan
+  sudo ip addr add "${GLOBAL_IP}" dev "${GLOBAL_TAP}"
+  sudo ip link set "${GLOBAL_TAP}" up
+) ; prev_cmd_failed
 
 if [[ "$REBUILD" == "true" ]]; then
     (
