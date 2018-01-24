@@ -77,9 +77,9 @@ function build () {
 
     local stages=(
         $(
-            $(sudo kill -0 $(sudo cat ${NODE_DIR}/${vm_name}.pid 2> /dev/null) 2> /dev/null) && { echo "postconfigure provide" ; return ; }
-            $(sudo [ -f "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2" ]) && { echo "boot postconfigure provide" ; return ; }
-            echo "init rsync install preboot boot postboot provide"
+            $(sudo kill -0 $(sudo cat ${NODE_DIR}/${vm_name}.pid 2> /dev/null) 2> /dev/null) && { echo "post_boot" ; return ; }
+            $(sudo [ -f "${CACHE_DIR}/${BRANCH}/${vm_name}.qcow2" ]) && { echo "boot post_boot" ; return ; }
+            echo "pre_rsync rsync pre_boot boot post_boot"
         )
     )
 

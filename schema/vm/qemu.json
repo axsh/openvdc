@@ -63,6 +63,10 @@
           "ipv4addr": {
             "type": "string",
             "format": "ipv4"
+          },
+          "ipv4gateway": {
+            "type": "string",
+            "format": "ipv4"
           }
         }
       }

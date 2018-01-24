@@ -21,6 +21,32 @@ type InstanceAPI struct {
 	api *APIServer
 }
 
+func (s *InstanceAPI) Copy(ctx context.Context, in *CopyRequest) (*CopyReply, error) {
+	instanceID := in.InstanceId
+
+	inst, err := model.Instances(ctx).FindByID(in.GetInstanceId())
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	hypervisorName := strings.TrimPrefix(inst.ResourceTemplate().ResourceName(), "vm/")
+	if hypervisorName != "lxc" {
+		return nil, fmt.Errorf("Unsupported hypervisor")
+	}
+
+	node := &model.ExecutorNode{}
+	if err := model.Cluster(ctx).Find(inst.GetSlaveId(), node); err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	return &CopyReply{
+		InstanceId: instanceID,
+		Address:    node.Console.BindAddr,
+	}, nil
+}
+
 func (s *InstanceAPI) Create(ctx context.Context, in *CreateRequest) (*CreateReply, error) {
 	inst, err := model.Instances(ctx).Create(&model.Instance{
 		Template:     in.GetTemplate(),
@@ -44,6 +70,22 @@ func checkSupportAPI(t *model.Template, ctx context.Context) error {
 		return errors.Errorf("%s is not supported: %T", md["fullmethod"][0], t.Item)
 	}
 	return nil
+}
+
+func (s *InstanceAPI) ForceState(ctx context.Context, in *ForceStateRequest) (*ForceStateReply, error) {
+	instanceID := in.GetInstanceId()
+
+	_, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).WithField("instance_id", in.GetInstanceId()).Error("Failed to find the instance")
+		return nil, err
+	}
+
+	if err := model.Instances(ctx).ForceUpdateState(instanceID, in.State); err != nil {
+		log.WithField("state", in.State).Error("Failed Instances.UpdateState")
+	}
+
+	return &ForceStateReply{InstanceId: instanceID}, nil
 }
 
 func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply, error) {
@@ -183,6 +225,7 @@ func (s *InstanceAPI) Reboot(ctx context.Context, in *RebootRequest) (*RebootRep
 func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*DestroyReply, error) {
 
 	instanceID := in.InstanceId
+	force := in.GetForce()
 
 	if instanceID == "" {
 		return nil, fmt.Errorf("Invalid Instance ID")
@@ -194,25 +237,33 @@ func (s *InstanceAPI) Destroy(ctx context.Context, in *DestroyRequest) (*Destroy
 		return nil, err
 	}
 
-	lastState := inst.GetLastState()
-	if err := lastState.ValidateGoalState(model.InstanceState_TERMINATED); err != nil {
-		log.WithFields(log.Fields{
-			"instance_id": in.GetInstanceId(),
-			"state":       lastState.String(),
-		}).Error(err)
-		return nil, err
-	}
+	if !force {
 
-	currentState := inst.GetLastState().GetState()
+		lastState := inst.GetLastState()
+		if err := lastState.ValidateGoalState(model.InstanceState_TERMINATED); err != nil {
+			log.WithFields(log.Fields{
+				"instance_id": in.GetInstanceId(),
+				"state":       lastState.String(),
+			}).Error(err)
+			return nil, err
+		}
 
-	if currentState == model.InstanceState_REGISTERED {
-		err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_TERMINATED)
-		if err != nil {
-			log.WithError(err).Error("Failed to update instance state.")
+		currentState := inst.GetLastState().GetState()
+
+		if currentState == model.InstanceState_REGISTERED {
+			err = model.Instances(ctx).UpdateState(instanceID, model.InstanceState_TERMINATED)
+			if err != nil {
+				log.WithError(err).Error("Failed to update instance state.")
+			}
+		} else {
+			if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
+				log.WithError(err).Error("Failed sendCommand(destroy)")
+				return nil, err
+			}
 		}
 	} else {
-		if err := s.sendCommand(ctx, "destroy", instanceID); err != nil {
-			log.WithError(err).Error("Failed sendCommand(destroy)")
+		if err := s.sendCommand(ctx, "forcedestroy", instanceID); err != nil {
+			log.WithError(err).Error("Failed sendCommand(forcedestroy)")
 			return nil, err
 		}
 	}

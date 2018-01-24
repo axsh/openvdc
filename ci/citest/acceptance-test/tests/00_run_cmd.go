@@ -12,6 +12,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+const globalIp = "10.16.90.199"
+
 func RunCmd(name string, arg ...string) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
