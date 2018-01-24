@@ -213,8 +213,9 @@ func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver
 					for _, instance := range instances {
 						connStatus := instance.GetConnectionStatus()
 						autoRecovery := instance.GetAutoRecovery()
+						instanceState := instance.GetLastState()
 
-						if connStatus.Status == model.ConnectionStatus_NOT_CONNECTED && autoRecovery == true {
+						if connStatus.Status == model.ConnectionStatus_NOT_CONNECTED && autoRecovery == true && instanceState.State != model.InstanceState_TERMINATED {
 							instance.SlaveId = offer.SlaveId.GetValue()
 							model.Instances(ctx).Update(instance)
 
