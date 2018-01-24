@@ -16,13 +16,12 @@ func TestCrashRecovery(t *testing.T) {
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo lxc-info -n "+instance_id, 10, 5)
 
 	//Simulate crash
-	t.Log("Simulate crash by stopping mesos-slave...")
-	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl stop mesos-slave", 10, 5)
 	t.Log("Killing openvdc-executor...")
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "ps -ef | grep openvdc-executor | grep -v grep | awk '{print $2}' | xargs -r sudo kill -9", 10, 5)
-
 	WaitConnectionStatus(t, 5*time.Minute, instance_id, "NOT_CONNECTED")
 
+	t.Log("Stopping mesos-slave...")
+	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl stop mesos-slave", 10, 5)
 	t.Log("Re-start mesos-slave...")
 	RunSshWithTimeoutAndReportFail(t, executor_lxc_ip, "sudo systemctl start mesos-slave", 10, 5)
 
