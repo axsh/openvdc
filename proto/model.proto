@@ -197,6 +197,7 @@ message EsxiTemplate {
   }
   repeated Interface interfaces = 6;
   repeated string node_groups = 7 [json_name="node_groups"];
+  AuthenticationType authentication_type = 8 [json_name="authentication_type"];
 }
 
 message NullTemplate {
