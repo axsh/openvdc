@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"fmt"
-	"sync"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/handlers"
@@ -22,14 +21,14 @@ func RegisterInstanceScheduleHandler(name string, i handlers.InstanceScheduleHan
 }
 
 type Schedule struct {
-	sync.Mutex
+	// sync.Mutex
 	storedOffers map[string]model.VDCOffer
 }
 
 // openvdc offer (interface | struct) の定義をここに書く
 func (s *Schedule) StoreOffer(offer model.VDCOffer) {
-	s.Lock()
-	defer s.Unlock()
+	// s.Lock()
+	// defer s.Unlock()
 	s.storedOffers[offer.SlaveID] = offer
 }
 
