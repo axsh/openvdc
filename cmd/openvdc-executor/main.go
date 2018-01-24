@@ -131,14 +131,25 @@ func recordFailedState(ctx context.Context, driver exec.ExecutorDriver, instance
 }
 
 func (exec *VDCExecutor) recoverInstance(instance *model.Instance) error {
+	ctx, err := model.Connect(context.Background(), &zkAddr)
+	if err != nil {
+		log.WithError(err).Error("Failed model.Connect")
+		return err
+	}
+
 	hv, err := exec.hypervisorProvider.CreateDriver(instance, instance.ResourceTemplate())
 	if err != nil {
+		model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
 		return errors.Wrapf(err, "Hypervisorprovider failed to create driver. InstanceID:  %s", instance.GetId())
 	}
 	err = hv.Recover(*instance.LastState)
 	if err != nil {
+		model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_NOT_CONNECTED)
 		return errors.Wrapf(err, "Hypervisor failed to recover instance. InstanceID: %s", instance.GetId())
 	}
+
+	model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_CONNECTED)
+
 	return nil
 }
 
