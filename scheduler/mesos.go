@@ -262,7 +262,7 @@ func (sched *VDCScheduler) InstancesRelaunching(driver sched.SchedulerDriver, of
 
 			if alreadyAdded != true {
 				hypervisorName := getHypervisorName(offer)
-				model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_CONNECTED)
+				model.Instances(ctx).UpdateConnectionStatus(instance.GetId(), model.ConnectionStatus_CONNECTING)
 				task := sched.NewTask(instance, util.NewSlaveID(instance.SlaveId), ctx, sched.NewExecutor(hypervisorName))
 				tasks = append(tasks, task)
 				acceptIDs = append(acceptIDs, offer.Id)

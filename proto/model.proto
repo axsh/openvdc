@@ -25,6 +25,7 @@ message ConnectionStatus {
     NONE = 0;
     CONNECTED = 1;
     NOT_CONNECTED = 2;
+    CONNECTING = 3;
   }
   Status status = 1;
 }
