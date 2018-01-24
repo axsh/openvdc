@@ -22,14 +22,6 @@ func runConsoleCmd(instance_id string, t *testing.T) {
 	RunCmdAndExpectFail(t, "sh", "-c", fmt.Sprintf("openvdc console %s -- false", instance_id))
 }
 
-func runConsoleCmdWithPrivatekey(instance_id string, private_key_path string, t *testing.T, expect_fail bool) {
-	if expect_fail {
-		RunCmdAndExpectFail(t, "openvdc", "console", instance_id, "-i", private_key_path)
-	} else {
-		RunCmdAndReportFail(t, "openvdc", "console", instance_id, "-i", private_key_path)
-	}
-}
-
 func TestCmdConsole_ShowOptionAuthenticationNone(t *testing.T) {
 	stdout, _ := RunCmdAndReportFail(t, "openvdc", "run", "centos/7/lxc", `{"authentication_type":"none"}`)
 	instance_id := strings.TrimSpace(stdout.String())
@@ -53,12 +45,12 @@ func TestLXCCmdConsole_ShowOption(t *testing.T) {
 func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	// Make key pair by ssh-keygen
 	private_key_path := "./testRsa"
-	private_key_path2 := "./testRsa2"
+	private_key_path_worng := "./testRsaWorng"
 	_, _, err := RunCmd("ssh-keygen", "-t", "rsa", "-f", private_key_path, "-C", "", "-N", "")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
-	_, _, err = RunCmd("ssh-keygen", "-t", "rsa", "-f", private_key_path2, "-C", "", "-N", "")
+	_, _, err = RunCmd("ssh-keygen", "-t", "rsa", "-f", private_key_path_worng, "-C", "", "-N", "")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
@@ -74,8 +66,13 @@ func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	// runConsole()
 	instance_id := strings.TrimSpace(stdout.String())
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
-	runConsoleCmdWithPrivatekey(instance_id, private_key_path, t, false)
-	runConsoleCmdWithPrivatekey(instance_id, private_key_path2, t, true) // This can not be authenticated.
+
+	_, stderr := RunCmdAndReportFail(t, "openvdc", "console", instance_id, "-i", private_key_path)
+	if stderr != nil {
+		t.Fatalf("err: %s", err)
+	}
+	RunCmdAndExpectFail(t, "openvdc", "console", instance_id, "-i", private_key_path_worng)
+
 	//vrunConsoleCmdPiped(instance_id, t)
 	RunCmdWithTimeoutAndReportFail(t, 10, 5, "openvdc", "destroy", instance_id)
 	WaitInstance(t, 5*time.Minute, instance_id, "TERMINATED", nil)
