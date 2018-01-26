@@ -25,7 +25,8 @@ func NewClient(cr *api.CopyReply) (*Client, error) {
 	}
 
 	config := &ssh.ClientConfig{
-		User: cr.GetInstanceId(),
+		User:            cr.GetInstanceId(),
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	return &Client{

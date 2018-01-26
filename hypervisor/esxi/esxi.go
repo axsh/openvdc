@@ -252,6 +252,7 @@ func runCmd(cmd string, args []string) error {
 }
 
 var ErrApiRequest = errors.New("Failed api request")
+
 func esxiRunCmd(cmdList ...[]string) error {
 	for _, args := range cmdList {
 		a := []string{
@@ -435,6 +436,7 @@ func (d *EsxiHypervisorDriver) CloneBaseImage() error {
 			Auth: []ssh.AuthMethod{
 				ssh.PublicKeys(signer),
 			},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		})
 
 		if err != nil {
