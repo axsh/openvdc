@@ -507,7 +507,8 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 
 	if status.GetState() == mesos.TaskState_TASK_FAILED &&
 		status.GetReason() == mesos.TaskStatus_REASON_EXECUTOR_TERMINATED {
-		ExecutorTerminated(sched.zkAddr, status.GetSlaveId())
+
+		RegisterCrash(sched.zkAddr, status.GetSlaveId(), "Executor terminated on slave")
 	}
 
 	if status.GetState() == mesos.TaskState_TASK_LOST ||
@@ -528,11 +529,13 @@ func (sched *VDCScheduler) FrameworkMessage(_ sched.SchedulerDriver, eid *mesos.
 }
 
 func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID) {
-	log.Errorln("slave lost: %v", sid)
+
+	RegisterCrash(sched.zkAddr, sid, "Slave lost")
 }
 
-func ExecutorTerminated(zkAddr backend.ZkEndpoint, sid *mesos.SlaveID) {
-	log.Errorln("Executor terminated on slave: %v", sid)
+func RegisterCrash(zkAddr backend.ZkEndpoint, sid *mesos.SlaveID, reason string) {
+
+	log.Errorln(strings.Join([]string{reason, fmt.Sprintf(": %s", sid)}, ""))
 
 	ctx, err := model.Connect(context.Background(), zkAddr)
 	if err != nil {
