@@ -7,3 +7,6 @@ endpoint = "10.0.100.12:5000"
 
 [zookeeper]
 endpoint = "zk://10.0.100.10:2181,10.0.100.11:2181,10.0.100.12:2181/openvdc"
+
+[scheduler]
+failover-timeout = 60
