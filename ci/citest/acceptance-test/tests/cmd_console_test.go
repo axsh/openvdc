@@ -67,10 +67,7 @@ func TestLXCCmdConsole_AuthenticationPubkey(t *testing.T) {
 	instance_id := strings.TrimSpace(stdout.String())
 	WaitInstance(t, 5*time.Minute, instance_id, "RUNNING", []string{"QUEUED", "STARTING"})
 
-	_, stderr := RunCmdAndReportFail(t, "openvdc", "console", instance_id, "-i", private_key_path)
-	if stderr != nil {
-		t.Fatalf("err: %s", err)
-	}
+	RunCmdAndReportFail(t, "openvdc", "console", instance_id, "-i", private_key_path)
 	RunCmdAndExpectFail(t, "openvdc", "console", instance_id, "-i", private_key_path_worng)
 
 	//vrunConsoleCmdPiped(instance_id, t)
