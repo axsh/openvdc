@@ -507,8 +507,12 @@ func (sched *VDCScheduler) StatusUpdate(driver sched.SchedulerDriver, status *me
 
 	if status.GetState() == mesos.TaskState_TASK_FAILED &&
 		status.GetReason() == mesos.TaskStatus_REASON_EXECUTOR_TERMINATED {
-
 		RegisterCrash(sched.zkAddr, status.GetSlaveId(), "Executor terminated on slave")
+	}
+
+	if status.GetState() == mesos.TaskState_TASK_LOST &&
+		status.GetReason() == mesos.TaskStatus_REASON_SLAVE_DISCONNECTED {
+		sched.SlaveLost(nil, status.GetSlaveId())
 	}
 
 	if status.GetState() == mesos.TaskState_TASK_LOST ||
@@ -529,7 +533,6 @@ func (sched *VDCScheduler) FrameworkMessage(_ sched.SchedulerDriver, eid *mesos.
 }
 
 func (sched *VDCScheduler) SlaveLost(_ sched.SchedulerDriver, sid *mesos.SlaveID) {
-
 	RegisterCrash(sched.zkAddr, sid, "Slave lost")
 }
 
