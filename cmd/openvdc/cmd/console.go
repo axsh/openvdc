@@ -79,7 +79,10 @@ var consoleCmd = &cobra.Command{
 			}
 
 			var config = &ssh.ClientConfig{
-				Timeout:         5 * time.Second,
+				Timeout: 5 * time.Second,
+				Auth: []ssh.AuthMethod{
+					ssh.Password(""),
+				},
 				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 			}
 

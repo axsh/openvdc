@@ -22,7 +22,10 @@ type SshConsole struct {
 func NewSshConsole(instanceID string, config *ssh.ClientConfig) *SshConsole {
 	if config == nil {
 		config = &ssh.ClientConfig{
-			Timeout:         5 * time.Second,
+			Timeout: 5 * time.Second,
+			Auth: []ssh.AuthMethod{
+				ssh.Password(""),
+			},
 			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		}
 	}
