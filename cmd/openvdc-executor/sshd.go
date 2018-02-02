@@ -43,10 +43,15 @@ func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *
 			if err != nil {
 				return nil, err
 			}
-			if authAttrs.GetSshPublicKey() != "" {
-				return nil, fmt.Errorf("%s is setted public key", conn.User())
+			switch authAttrs.GetAuthenticationType() {
+			case model.AuthenticationType_NONE:
+				return nil, nil
+			case model.AuthenticationType_PUB_KEY:
+				if authAttrs.GetSshPublicKey() != "" {
+					return nil, fmt.Errorf("%s auth type is public key but client configured to password auth", conn.User())
+				}
 			}
-			return nil, nil
+			return nil, fmt.Errorf("%s is using undefind AuthenticationType", conn.User())
 		},
 		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 			authAttrs, err := getAuthAttrsFromInstance(ctx, conn.User())
