@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/handlers"
@@ -10,6 +11,9 @@ import (
 )
 
 var (
+	// Time to wait for the offer to arrive
+	waitOfferSec int
+
 	instanceSchedulerHandlers = make(map[string]handlers.InstanceScheduleHandler)
 	schedule                  *Schedule
 )
@@ -61,6 +65,20 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 	if !ok {
 		return fmt.Errorf("Templete do not have vcpu and mem", instResource)
 	}
+
+	// wait for the offer from slave until waitOfferSec
+	// TODO test this function
+	for i := 0; i < waitOfferSec+1; i++ {
+		if i == waitOfferSec {
+			return fmt.Errorf("Exceeded the waiting time for the offer from the slave")
+		}
+		if len(schedule.storedOffers) == 0 {
+			time.Sleep(1)
+		} else {
+			break
+		}
+	}
+
 	for _, offer := range schedule.storedOffers {
 		ok, err := instSchedHandler.ScheduleInstance(instResource, offer)
 		if err != nil {
