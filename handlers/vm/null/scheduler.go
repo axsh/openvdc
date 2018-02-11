@@ -2,7 +2,12 @@ package null
 
 import (
 	"github.com/axsh/openvdc/model"
+	"github.com/axsh/openvdc/scheduler"
 )
+
+func init() {
+	scheduler.RegisterInstanceScheduleHandler("vm/null", &NullScheduler{})
+}
 
 type NullScheduler struct {
 }
