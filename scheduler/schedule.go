@@ -11,7 +11,12 @@ import (
 
 var (
 	instanceSchedulerHandlers = make(map[string]handlers.InstanceScheduleHandler)
+	schedule                  *Schedule
 )
+
+func init() {
+	schedule = newSchedule()
+}
 
 func RegisterInstanceScheduleHandler(name string, i handlers.InstanceScheduleHandler) error {
 	if _, exists := instanceSchedulerHandlers[name]; exists {
@@ -35,9 +40,9 @@ func newSchedule() *Schedule {
 
 // openvdc offer (interface | struct) の定義をここに書く
 func (s *Schedule) StoreOffer(offer model.VDCOffer) {
-	s.Lock()
-	defer s.Unlock()
-	s.storedOffers[offer.SlaveID] = offer
+	schedule.Lock()
+	defer schedule.Unlock()
+	schedule.storedOffers[offer.SlaveID] = offer
 }
 
 func (s *Schedule) Assign(inst *model.Instance) error {
@@ -52,7 +57,7 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 	if !ok {
 		return fmt.Errorf("Templete do not have vcpu and mem", instResource)
 	}
-	for _, offer := range s.storedOffers {
+	for _, offer := range schedule.storedOffers {
 		ok, err := instSchedHandler.ScheduleInstance(instResource, offer)
 		if err != nil {
 			return err
