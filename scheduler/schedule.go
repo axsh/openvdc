@@ -51,9 +51,13 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 	})
 
 	name := inst.ResourceTemplate().ResourceName()
-	instSchedHandler := instanceSchedulerHandlers[name]
+	var instSchedHandler handlers.InstanceScheduleHandler
+	var ok bool
+	if instSchedHandler, ok = instanceSchedulerHandlers[name]; !ok {
+		return fmt.Errorf("%s instanceSchedulerHandlers is not registered", name)
+	}
 	var instResource model.InstanceResource
-	instResource, ok := inst.ResourceTemplate().(model.InstanceResource)
+	instResource, ok = inst.ResourceTemplate().(model.InstanceResource)
 	if !ok {
 		return fmt.Errorf("Templete do not have vcpu and mem", instResource)
 	}
@@ -67,5 +71,6 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 			return nil
 		}
 	}
+	flog.Infof("storedOffers: %#v\n", schedule.storedOffers)
 	return fmt.Errorf("There is no machine can satisfy resource requirement")
 }
