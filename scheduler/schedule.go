@@ -71,6 +71,5 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 			return nil
 		}
 	}
-	flog.Infof("storedOffers: %#v\n", schedule.storedOffers)
 	return fmt.Errorf("There is no machine can satisfy resource requirement")
 }
