@@ -12,7 +12,7 @@ import (
 
 var (
 	// Time to wait for the offer to arrive
-	waitOfferSec int
+	waitOfferSec = 5
 
 	instanceSchedulerHandlers = make(map[string]handlers.InstanceScheduleHandler)
 	schedule                  *Schedule
