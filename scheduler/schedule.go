@@ -22,8 +22,15 @@ func RegisterInstanceScheduleHandler(name string, i handlers.InstanceScheduleHan
 }
 
 type Schedule struct {
-	sync.Mutex
+	*sync.Mutex
 	storedOffers map[string]model.VDCOffer
+}
+
+func newSchedule() *Schedule {
+	return &Schedule{
+		Mutex:        new(sync.Mutex),
+		storedOffers: make(map[string]model.VDCOffer),
+	}
 }
 
 // openvdc offer (interface | struct) の定義をここに書く

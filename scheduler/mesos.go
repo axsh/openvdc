@@ -36,6 +36,7 @@ type VDCScheduler struct {
 	listenAddr    string
 	zkAddr        backend.ZkEndpoint
 	ctx           context.Context
+	schedule      *Schedule
 }
 
 func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer model.VDCOffer) {
@@ -69,6 +70,7 @@ func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEn
 		listenAddr: listenAddr,
 		zkAddr:     zkAddr,
 		ctx:        ctx,
+		schedule:   newSchedule(),
 	}
 }
 
@@ -122,7 +124,7 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 		sched.CheckForCrashedNodes(offers, ctx)
 	}
 
-	storeOffers(offers)
+	sched.storeOffers(offers)
 
 	disconnected := getDisconnectedInstances(offers, ctx, driver)
 
@@ -215,11 +217,10 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 	return nil
 }
 
-func storeOffers(offers []*mesos.Offer) {
-	sched := new(Schedule)
+func (sched *VDCScheduler) storeOffers(offers []*mesos.Offer) {
 	for _, offer := range offers {
 		vdcOffer := convertToOpenVDCOffer(offer)
-		sched.StoreOffer(vdcOffer)
+		sched.schedule.StoreOffer(vdcOffer)
 	}
 }
 
