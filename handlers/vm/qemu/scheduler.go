@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	scheduler.RegisterInstanceScheduleHandler("qemu", &QemuScheduler{})
+	scheduler.RegisterInstanceScheduleHandler("vm/qemu", &QemuScheduler{})
 }
 
 type QemuScheduler struct {
