@@ -89,7 +89,7 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 			return nil
 		}
 	}
-	flog.Infof("Failed Instance: %#v\n", inst)
+	flog.Infof("Failed Instance: %#v\n", inst.ResourceTemplate())
 	flog.Infof("Stored Offers: %#v\n", schedule.storedOffers)
 	return fmt.Errorf("There is no machine can satisfy resource requirement")
 }
