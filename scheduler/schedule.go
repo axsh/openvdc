@@ -42,7 +42,7 @@ func newSchedule() *Schedule {
 	}
 }
 
-// openvdc offer (interface | struct) の定義をここに書く
+// TODO write definition of openvdc offer (interface | struct)
 func (s *Schedule) StoreOffer(offer model.VDCOffer) {
 	schedule.Lock()
 	defer schedule.Unlock()
@@ -51,7 +51,7 @@ func (s *Schedule) StoreOffer(offer model.VDCOffer) {
 
 func (s *Schedule) Assign(inst *model.Instance) error {
 	flog := log.WithFields(log.Fields{
-		"instance_id": inst.GetId(), // ASK GetInstanceId() -> GetId()
+		"instance_id": inst.GetId(),
 	})
 
 	name := inst.ResourceTemplate().ResourceName()
@@ -89,5 +89,7 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 			return nil
 		}
 	}
+	flog.Infof("Failed Instance: %#v\n", inst)
+	flog.Infof("Stored Offers: %#v\n", schedule.storedOffers)
 	return fmt.Errorf("There is no machine can satisfy resource requirement")
 }
