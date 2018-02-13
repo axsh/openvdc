@@ -18,6 +18,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
+	"github.com/axsh/openvdc/hypervisor/util"
 	"github.com/axsh/openvdc/model"
 	"github.com/kr/pty"
 	"github.com/pkg/errors"
@@ -74,6 +75,26 @@ type LXCHypervisorProvider struct {
 
 func (p *LXCHypervisorProvider) Name() string {
 	return "lxc"
+}
+
+func (d *LXCHypervisorDriver) MetadataDrivePath() string {
+	return filepath.Join(d.containerDir(), "/rootfs/tmp/meta-data/")
+}
+
+func (d *LXCHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
+	metadataMap := make(map[string]interface{})
+	metadataMap["hostname"] = d.vmName
+
+	for idx, nic := range d.template.GetInterfaces() {
+		iface := make(map[string]interface{})
+		iface["ifname"] = fmt.Sprintf("%s_%02d", d.vmName, idx)
+		iface["ipv4"] = nic.Ipv4Addr
+		iface["mac"] = nic.Macaddr
+		iface["ipv4gateway"] = nic.Ipv4Gateway
+		metadataMap[fmt.Sprintf("nic-%02d", idx)] = iface
+	}
+
+	return metadataMap
 }
 
 func (p *LXCHypervisorProvider) LoadConfig(sub *viper.Viper) error {
@@ -135,6 +156,7 @@ func (p *LXCHypervisorProvider) CreateDriver(instance *model.Instance, template 
 			Instance: instance,
 		},
 		template:  lxcTmpl,
+		vmName:    instance.GetId(),
 		container: c,
 	}
 	return driver, nil
@@ -145,6 +167,7 @@ type LXCHypervisorDriver struct {
 	template  *model.LxcTemplate
 	imageName string
 	hostName  string
+	vmName    string
 	container *lxc.Container
 }
 
@@ -367,6 +390,15 @@ func (d *LXCHypervisorDriver) CreateInstance() error {
 	default:
 		log.Fatalf("BUGON: Unknown bridge type: %s", settings.BridgeType)
 	}
+
+	if err := os.MkdirAll(filepath.Join(d.containerDir(), "/rootfs/tmp/meta-data/"), os.ModePerm); err != nil {
+		return errors.Wrapf(err, "failed to create folder: %s", "meta-data")
+	}
+
+	if err := util.WriteMetadata(d); err != nil {
+		return err
+	}
+
 	return nil
 
 }
