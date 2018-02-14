@@ -317,11 +317,17 @@ func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
 	return nil
 }
 
-func PrepareOpenvdcInit(path string) error {
+func PrepareOpenvdcInit(containerPath string) error {
 
 	url := "https://raw.githubusercontent.com/axsh/openvdc/master/cmd/openvdc-init/openvdc-init"
 
-	f, err := os.Create(path)
+	folderPath := filepath.Join(containerPath, "/rootfs/opt/axsh/openvdc/bin/")
+
+	if err := os.MkdirAll(folderPath, os.ModePerm); err != nil {
+		return errors.Wrapf(err, "Failed to create folder: %", folderPath)
+	}
+
+	f, err := os.Create(filepath.Join(folderPath, "openvdc-init"))
 	if err != nil {
 		return err
 	}
@@ -416,7 +422,7 @@ func (d *LXCHypervisorDriver) CreateInstance() error {
 		log.Fatalf("BUGON: Unknown bridge type: %s", settings.BridgeType)
 	}
 
-	if err := PrepareOpenvdcInit(filepath.Join(d.containerDir(), "/rootfs/opt/axsh/openvdc/bin/openvdc-init")); err != nil {
+	if err := PrepareOpenvdcInit(d.containerDir()); err != nil {
 		return errors.Wrapf(err, "Failed to add openvdc-init.")
 	}
 
