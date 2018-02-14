@@ -177,7 +177,7 @@ func (d *LXCHypervisorDriver) modifyConf() error {
 	defer lxcconf.Close()
 
 	// Log boot process to a file for debugging purposes
-	fmt.Fprintf(lxcconf, "\nlxc.console.logfile = %s\n\n", filepath.Join(d.containerDir(), "console.log"))
+	fmt.Fprintf(lxcconf, "\nlxc.console.logfile = %s\n", filepath.Join(d.containerDir(), "console.log"))
 
 	// Append comment header
 	fmt.Fprintf(lxcconf, "\n# OpenVDC Network Configuration\n")
