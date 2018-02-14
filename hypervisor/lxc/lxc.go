@@ -322,12 +322,13 @@ func PrepareOpenvdcInit(containerPath string) error {
 	url := "https://raw.githubusercontent.com/axsh/openvdc/master/cmd/openvdc-init/openvdc-init"
 
 	folderPath := filepath.Join(containerPath, "/rootfs/opt/axsh/openvdc/bin/")
+	fp := filepath.Join(folderPath, "openvdc-init")
 
 	if err := os.MkdirAll(folderPath, os.ModePerm); err != nil {
 		return errors.Wrapf(err, "Failed to create folder: %", folderPath)
 	}
 
-	f, err := os.Create(filepath.Join(folderPath, "openvdc-init"))
+	f, err := os.Create(fp)
 	if err != nil {
 		return err
 	}
@@ -342,6 +343,10 @@ func PrepareOpenvdcInit(containerPath string) error {
 	_, err = io.Copy(f, res.Body)
 	if err != nil {
 		return err
+	}
+
+	if err := os.Chmod(fp, 755); err != nil {
+		return errors.Wrapf(err, "Failed Chmod for file: %s", fp)
 	}
 
 	return nil
