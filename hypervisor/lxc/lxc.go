@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -316,6 +317,30 @@ func (d *LXCHypervisorDriver) Recover(instanceState model.InstanceState) error {
 	return nil
 }
 
+func PrepareOpenvdcInit(path string) error {
+
+	url := "https://raw.githubusercontent.com/axsh/openvdc/master/cmd/openvdc-init/openvdc-init"
+
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	_, err = io.Copy(f, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *LXCHypervisorDriver) CreateInstance() error {
 	d.log().Infoln("Creating lxc-container...")
 	lxcTmpl := d.template.GetLxcTemplate()
@@ -391,8 +416,12 @@ func (d *LXCHypervisorDriver) CreateInstance() error {
 		log.Fatalf("BUGON: Unknown bridge type: %s", settings.BridgeType)
 	}
 
+	if err := PrepareOpenvdcInit(filepath.Join(d.containerDir(), "/rootfs/opt/axsh/openvdc/bin/openvdc-init")); err != nil {
+		return errors.Wrapf(err, "Failed to add openvdc-init.")
+	}
+
 	if err := os.MkdirAll(filepath.Join(d.containerDir(), "/rootfs/tmp/meta-data/"), os.ModePerm); err != nil {
-		return errors.Wrapf(err, "failed to create folder: %s", "meta-data")
+		return errors.Wrapf(err, "Failed to create folder: %s", "meta-data")
 	}
 
 	if err := util.WriteMetadata(d); err != nil {
