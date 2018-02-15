@@ -70,5 +70,5 @@ func FindByType(name string) (p ResourceHandler, ok bool) {
 }
 
 type InstanceScheduleHandler interface {
-	ScheduleInstance(model.InstanceResource, model.VDCOffer) (bool, error) // compare with offer and resrouce request.
+	ScheduleInstance(model.InstanceResource, *model.VDCOffer) (bool, error) // compare with offer and resrouce request.
 }

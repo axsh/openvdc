@@ -17,7 +17,7 @@ func NewScheduler() *QemuScheduler {
 	return new(QemuScheduler)
 }
 
-func (q *QemuScheduler) ScheduleInstance(ir model.InstanceResource, offer model.VDCOffer) (bool, error) {
+func (*QemuScheduler) ScheduleInstance(ir model.InstanceResource, offer *model.VDCOffer) (bool, error) {
 	cpus := ir.GetVcpu()
 	mem := ir.GetMemoryGb()
 

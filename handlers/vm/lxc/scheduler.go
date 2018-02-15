@@ -17,7 +17,7 @@ func NewScheduler() *LxcScheduler {
 	return new(LxcScheduler)
 }
 
-func (l *LxcScheduler) ScheduleInstance(ir model.InstanceResource, offer model.VDCOffer) (bool, error) {
+func (*LxcScheduler) ScheduleInstance(ir model.InstanceResource, offer *model.VDCOffer) (bool, error) {
 	cpus := ir.GetVcpu()
 	mem := ir.GetMemoryGb()
 

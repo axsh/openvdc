@@ -16,6 +16,6 @@ func NewScheduler() *NullScheduler {
 	return new(NullScheduler)
 }
 
-func (*NullScheduler) ScheduleInstance(ir model.InstanceResource, offer model.VDCOffer) (bool, error) {
+func (*NullScheduler) ScheduleInstance(ir model.InstanceResource, offer *model.VDCOffer) (bool, error) {
 	return true, nil
 }

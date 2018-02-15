@@ -32,18 +32,17 @@ func RegisterInstanceScheduleHandler(name string, i handlers.InstanceScheduleHan
 
 type Schedule struct {
 	*sync.Mutex
-	storedOffers map[string]model.VDCOffer
+	storedOffers map[string]*model.VDCOffer
 }
 
 func newSchedule() *Schedule {
 	return &Schedule{
-		Mutex:        new(sync.Mutex),
-		storedOffers: make(map[string]model.VDCOffer),
+		storedOffers: make(map[string]*model.VDCOffer),
 	}
 }
 
 // TODO write definition of openvdc offer (interface | struct)
-func (s *Schedule) StoreOffer(offer model.VDCOffer) {
+func (s *Schedule) StoreOffer(offer *model.VDCOffer) {
 	schedule.Lock()
 	defer schedule.Unlock()
 	schedule.storedOffers[offer.SlaveID] = offer

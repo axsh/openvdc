@@ -4,7 +4,7 @@ import "github.com/axsh/openvdc/model"
 
 // Generic scheduling util functions
 // TODO change to dont allow non-nullable function
-func GetOfferScalar(offer model.VDCOffer, name string) float64 {
+func GetOfferScalar(offer *model.VDCOffer, name string) float64 {
 	resources := filterResources(offer.Resources, func(res model.VDCOfferResource) bool {
 		return res.Name == name
 	})

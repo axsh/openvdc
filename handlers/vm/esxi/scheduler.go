@@ -17,7 +17,7 @@ func NewScheduler() *EsxiScheduler {
 	return new(EsxiScheduler)
 }
 
-func (l *EsxiScheduler) ScheduleInstance(ir model.InstanceResource, offer model.VDCOffer) (bool, error) {
+func (*EsxiScheduler) ScheduleInstance(ir model.InstanceResource, offer *model.VDCOffer) (bool, error) {
 	cpus := ir.GetVcpu()
 	mem := ir.GetMemoryGb()
 

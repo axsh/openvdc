@@ -38,7 +38,7 @@ type VDCScheduler struct {
 	ctx           context.Context
 }
 
-func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer model.VDCOffer) {
+func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer *model.VDCOffer) {
 	vOffer.SlaveID = mOffer.GetSlaveId().GetValue()
 	vResources := []model.VDCOfferResource{}
 	for _, res := range mOffer.GetResources() {
