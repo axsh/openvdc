@@ -38,7 +38,8 @@ type VDCScheduler struct {
 	ctx           context.Context
 }
 
-func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer *model.VDCOffer) {
+func convertToOpenVDCOffer(mOffer *mesos.Offer) *model.VDCOffer {
+	vOffer := &model.VDCOffer{}
 	vOffer.SlaveID = mOffer.GetSlaveId().GetValue()
 	vResources := []model.VDCOfferResource{}
 	for _, res := range mOffer.GetResources() {
@@ -61,7 +62,7 @@ func convertToOpenVDCOffer(mOffer *mesos.Offer) (vOffer *model.VDCOffer) {
 		vResources = append(vResources, vRes)
 	}
 	vOffer.Resources = vResources
-	return
+	return vOffer
 }
 
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {

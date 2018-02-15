@@ -167,5 +167,5 @@ func TestConvertToOpenVDCOffer(t *testing.T) {
 		},
 	}
 	m2vOffer := convertToOpenVDCOffer(mesosOffer)
-	assert.Equal(m2vOffer, *vOffer)
+	assert.Equal(*m2vOffer, *vOffer)
 }
