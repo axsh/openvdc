@@ -37,6 +37,7 @@ type Schedule struct {
 
 func newSchedule() *Schedule {
 	return &Schedule{
+		Mutex:        new(sync.Mutex),
 		storedOffers: make(map[string]*model.VDCOffer),
 	}
 }
