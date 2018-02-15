@@ -249,6 +249,7 @@ func (d *LXCHypervisorDriver) modifyConf() error {
 				return errors.Wrapf(err, "Failed to render lxc.network template: %v", tval)
 			}
 		}
+		fmt.Fprintf(lxcconf, "\nlxc.hook.start=/opt/axsh/openvdc/bin/openvdc-init\n")
 		lxcconf.Sync()
 	}
 
