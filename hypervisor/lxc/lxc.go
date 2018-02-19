@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"syscall"
 	"text/template"
@@ -346,8 +347,24 @@ func PrepareOpenvdcInit(containerPath string) error {
 		return err
 	}
 
-	if err := os.Chmod(fp, 755); err != nil {
-		return errors.Wrapf(err, "Failed Chmod for file: %s", fp)
+	//Do this in a better way later
+	contents, err := ioutil.ReadFile(fp)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to read file: %s", fp)
+	}
+
+	lines := strings.Split(string(contents), "\n")
+
+	for i, l := range lines {
+		if strings.Contains(l, "MODE_LXC=false") {
+			lines[i] = "MODE_LXC=true"
+		}
+	}
+
+	result := strings.Join(lines, "\n")
+	err = ioutil.WriteFile(fp, []byte(result), 755)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to write file: %s", fp)
 	}
 
 	return nil
