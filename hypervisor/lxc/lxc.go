@@ -79,7 +79,7 @@ func (p *LXCHypervisorProvider) Name() string {
 }
 
 func (d *LXCHypervisorDriver) MetadataDrivePath() string {
-	return filepath.Join(d.containerDir(), "/rootfs/tmp/meta-data/")
+	return filepath.Join(d.containerDir(), "/rootfs/etc/openvdc/meta-data/")
 }
 
 func (d *LXCHypervisorDriver) MetadataDriveDatamap() map[string]interface{} {
@@ -432,7 +432,7 @@ func (d *LXCHypervisorDriver) CreateInstance() error {
 		return errors.Wrapf(err, "Failed to add openvdc-init.")
 	}
 
-	if err := os.MkdirAll(filepath.Join(d.containerDir(), "/rootfs/tmp/meta-data/"), os.ModePerm); err != nil {
+	if err := os.MkdirAll(filepath.Join(d.containerDir(), "rootfs/etc/openvdc/meta-data/"), os.ModePerm); err != nil {
 		return errors.Wrapf(err, "Failed to create folder: %s", "meta-data")
 	}
 
