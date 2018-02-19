@@ -5,6 +5,13 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin
 
 METADRIVE_LOCATION="/metadata"
 METADRIVE_PATH="/dev/fd0"
+
+MODE_LXC=false
+
+if [ "$MODE_LXC" = true ] ; then
+    METADRIVE_LOCATION="/etc/openvdc/metadata"
+fi
+
 LOGFILE="${LOGFILE:-/var/log/openvdc/openvdc.log}"
 
 VDC_USER="${VDC_USER:-openvdc}"
@@ -124,11 +131,19 @@ EOF
 [[ -f ${LOGFILE} ]] || mkdir -p ${LOGFILE%/*}
 
 {
-    metadata_ops mount
+
+    if [ "$MODE_LXC" = false ] ; then
+        metadata_ops mount
+    fi
+
     set_hostname
     set_vdc_user
     set_network_interfaces
-    metadata_ops umount
+
+    if [ "$MODE_LXC" = false ] ; then
+        metadata_ops umount
+    fi
+
 } > "${LOGFILE}" 2>&1
 
 sync
