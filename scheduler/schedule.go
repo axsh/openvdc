@@ -31,21 +31,21 @@ func RegisterInstanceScheduleHandler(name string, i handlers.InstanceScheduleHan
 }
 
 type Schedule struct {
-	*sync.Mutex
+	mutex        *sync.RWMutex
 	storedOffers map[string]*model.VDCOffer
 }
 
 func newSchedule() *Schedule {
 	return &Schedule{
-		Mutex:        new(sync.Mutex),
+		mutex:        new(sync.RWMutex),
 		storedOffers: make(map[string]*model.VDCOffer),
 	}
 }
 
 // TODO write definition of openvdc offer (interface | struct)
 func (s *Schedule) StoreOffer(offer *model.VDCOffer) {
-	schedule.Lock()
-	defer schedule.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	schedule.storedOffers[offer.SlaveID] = offer
 }
 
@@ -79,6 +79,8 @@ func (s *Schedule) Assign(inst *model.Instance) error {
 		}
 	}
 
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 	for _, offer := range schedule.storedOffers {
 		ok, err := instSchedHandler.ScheduleInstance(instResource, offer)
 		if err != nil {
