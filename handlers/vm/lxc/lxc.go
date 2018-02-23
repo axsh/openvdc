@@ -107,7 +107,10 @@ func (h *LxcHandler) MergeArgs(dst model.ResourceTemplate, args []string) error 
 	}
 	mdst.Vcpu = int32(vcpu)
 	mdst.MemoryGb = int32(mem)
-	format := model.AuthenticationType_value[strings.ToUpper(authType)]
+	format, ok := model.AuthenticationType_value[strings.ToUpper(authType)]
+	if !ok {
+		return fmt.Errorf("Unknown AuthenticationType: %s", authType)
+	}
 	mdst.AuthenticationType = model.AuthenticationType(format)
 	sshPubkey = strings.Replace(sshPubkey, "\"", "", -1)
 	mdst.SshPublicKey = sshPubkey
