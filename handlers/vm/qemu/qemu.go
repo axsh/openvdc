@@ -118,7 +118,8 @@ func (h *QemuHandler) MergeArgs(dst model.ResourceTemplate, args []string) error
 	}
 	mdst.Vcpu = int32(vcpu)
 	mdst.MemoryGb = int32(mem)
-	format, ok := model.AuthenticationType_value[strings.ToUpper(authType)]
+	authType = strings.ToUpper(strings.Replace(authType, "\"", "", -1))
+	format, ok := model.AuthenticationType_value[authType]
 	if !ok {
 		return fmt.Errorf("Unknown AuthenticationType: %s", authType)
 	}
