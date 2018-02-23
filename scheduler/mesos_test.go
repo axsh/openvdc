@@ -4,27 +4,10 @@ import (
 	"testing"
 
 	"github.com/axsh/openvdc/model"
+	"github.com/gogo/protobuf/proto"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	"github.com/stretchr/testify/assert"
 )
-
-// to pointer
-func sP(s string) *string {
-	return &s
-}
-
-func fP(s float64) *float64 {
-	return &s
-}
-
-func iP(s int) *int32 {
-	i32 := int32(s)
-	return &i32
-}
-
-func uP(s uint64) *uint64 {
-	return &s
-}
 
 var (
 	mesosOffer *mesos.Offer
@@ -33,80 +16,80 @@ var (
 func init() {
 	mesosOffer = &mesos.Offer{
 		Id: &mesos.OfferID{
-			Value:            sP("d39c0128-4822-49a0-9fab-640fba518d53-O590"),
+			Value:            proto.String("d39c0128-4822-49a0-9fab-640fba518d53-O590"),
 			XXX_unrecognized: []byte{},
 		},
 		FrameworkId: &mesos.FrameworkID{
-			Value:            sP("d39c0128-4822-49a0-9fab-640fba518d53-0004"),
+			Value:            proto.String("d39c0128-4822-49a0-9fab-640fba518d53-0004"),
 			XXX_unrecognized: []byte{},
 		},
 		SlaveId: &mesos.SlaveID{
-			Value:            sP("d39c0128-4822-49a0-9fab-640fba518d53-S0"),
+			Value:            proto.String("d39c0128-4822-49a0-9fab-640fba518d53-S0"),
 			XXX_unrecognized: []byte{},
 		},
-		Hostname: sP("10.141.141.10"),
+		Hostname: proto.String("10.141.141.10"),
 		Resources: []*mesos.Resource{
 			&mesos.Resource{
-				Name: sP("cpus"),
+				Name: proto.String("cpus"),
 				Type: mesos.Value_Type.Enum(mesos.Value_SCALAR),
 				Scalar: &mesos.Value_Scalar{
-					Value:            fP(2),
+					Value:            proto.Float64(2),
 					XXX_unrecognized: []byte{},
 				},
 				Ranges:           nil,
 				Set:              nil,
-				Role:             sP("*"),
+				Role:             proto.String("*"),
 				Disk:             nil,
 				Reservation:      nil,
 				Revocable:        nil,
 				XXX_unrecognized: []byte{},
 			},
 			&mesos.Resource{
-				Name: sP("mem"),
+				Name: proto.String("mem"),
 				Type: mesos.Value_Type.Enum(mesos.Value_SCALAR),
 				Scalar: &mesos.Value_Scalar{
-					Value:            fP(1000.0),
+					Value:            proto.Float64(1000.0),
 					XXX_unrecognized: []byte{},
 				},
 				Ranges:           nil,
 				Set:              nil,
-				Role:             sP("*"),
+				Role:             proto.String("*"),
 				Disk:             nil,
 				Reservation:      nil,
 				Revocable:        nil,
 				XXX_unrecognized: []byte{},
 			},
 			&mesos.Resource{
-				Name: sP("disk"),
+				Name: proto.String("disk"),
 				Type: mesos.Value_Type.Enum(mesos.Value_SCALAR),
 				Scalar: &mesos.Value_Scalar{
-					Value: fP(34068),
+					Value: proto.Float64(34068),
 				},
 				// XXX_unrecognized: []byte{},
 				Ranges:           nil,
 				Set:              nil,
-				Role:             sP("*"),
+				Role:             proto.String("*"),
 				Disk:             nil,
 				Reservation:      nil,
 				Revocable:        nil,
 				XXX_unrecognized: []byte{},
 			},
 			&mesos.Resource{
-				Name:   sP("ports"),
+				Name:   proto.String("ports"),
 				Type:   mesos.Value_Type.Enum(mesos.Value_RANGES),
 				Scalar: nil,
 				Ranges: &mesos.Value_Ranges{
 					Range: []*mesos.Value_Range{
 						&mesos.Value_Range{
-							Begin:            uP(31000),
-							End:              uP(32000),
+							Begin:            proto.Uint64(31000),
+							End:              proto.Uint64(32000),
 							XXX_unrecognized: []byte{},
 						},
 					},
 					XXX_unrecognized: []byte{},
 				},
 				Set:              nil,
-				Role:             sP("*"),
+				Role:             proto.String("*"),
 				Disk:             nil,
 				Reservation:      nil,
 				Revocable:        nil,
@@ -116,14 +99,14 @@ func init() {
 		ExecutorIds: []*mesos.ExecutorID{},
 		Attributes:  []*mesos.Attribute{},
 		Url: &mesos.URL{
-			Scheme: sP("http"),
+			Scheme: proto.String("http"),
 			Address: &mesos.Address{
-				Hostname:         sP("10.141.141.10"),
-				Ip:               sP("127.0.1.1"),
-				Port:             iP(5051),
+				Hostname:         proto.String("10.141.141.10"),
+				Ip:               proto.String("127.0.1.1"),
+				Port:             proto.Int32(5051),
 				XXX_unrecognized: []byte{},
 			},
-			Path:             sP("/slave(1)"),
+			Path:             proto.String("/slave(1)"),
 			Query:            []*mesos.Parameter{},
 			Fragment:         nil,
 			XXX_unrecognized: []byte{},
