@@ -6,20 +6,6 @@
 # image-server-uri = "http://127.0.0.1/images"
 # cache-path = "/var/cache/lxc/"
 
-# -----Vmware------
-# esxi-user = ""
-# esxi-pass = ""
-# esxi-ip = ""
-# esxi-datacenter = "ha-datacenter"
-# esxi-insecure = true
-# esxi-host-sshkey = ""
-# esxi-host-name = ""
-# esxi-vm-user = ""
-# esxi-vm-pass = ""
-# esxi-vm-datastore = ""
-# esxi-inventory-folder = ""
-# esxi-vcenter = false
-
 [zookeeper]
 # endpoint = "zk://localhost/openvdc"
 

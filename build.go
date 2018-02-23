@@ -206,10 +206,4 @@ Environment Variables:
 	cmd("govendor", "sync")
 	cmd("go", "generate", "-v", "-tags=acceptance", ".")
 	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test")
-
-	// Build Acceptance Test Esxi binary
-	os.Chdir("../../acceptance-test-esxi/tests")
-	cmd("govendor", "sync")
-	cmd("go", "generate", "-v", "-tags=acceptance", ".")
-	cmd("go", "test", "-tags=acceptance", "-c", "-o", "openvdc-acceptance-test-esxi")
 }

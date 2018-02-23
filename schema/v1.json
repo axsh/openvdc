@@ -26,9 +26,6 @@
         {
           "$ref": "./vm/lxc.json#"
         },
-	{
-	  "$ref": "./vm/esxi.json#"
-	},
         {
           "$ref": "./vm/null.json#"
         },
