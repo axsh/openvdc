@@ -16,7 +16,6 @@ func TestResourceName(t *testing.T) {
 
 func TestTypes(t *testing.T) {
 	assert := assert.New(t)
-	// assert.Implements((*handlers.InstanceResourceHandler)(nil), &LxcHandler{})
 	assert.Implements((*handlers.CLIHandler)(nil), &LxcHandler{})
 }
 

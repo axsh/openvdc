@@ -38,11 +38,6 @@ type ResourceHandler interface {
 	IsSupportAPI(m string) bool
 }
 
-type InstanceResourceHandler interface {
-	ResourceHandler
-	GetInstanceSchedulerHandler() InstanceScheduleHandler
-}
-
 type CLIHandler interface {
 	MergeArgs(src model.ResourceTemplate, args []string) error
 	MergeJSON(dst model.ResourceTemplate, in json.RawMessage) error
