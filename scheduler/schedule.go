@@ -31,13 +31,13 @@ func RegisterInstanceScheduleHandler(name string, i handlers.InstanceScheduleHan
 }
 
 type Schedule struct {
-	mutex        *sync.RWMutex
+	mutex        sync.RWMutex
 	storedOffers map[string]*model.VDCOffer
 }
 
 func newSchedule() *Schedule {
 	return &Schedule{
-		mutex:        new(sync.RWMutex),
+		mutex:        sync.RWMutex{},
 		storedOffers: make(map[string]*model.VDCOffer),
 	}
 }
