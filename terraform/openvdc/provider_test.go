@@ -3,8 +3,9 @@
 package openvdc
 
 import (
-	"github.com/hashicorp/terraform/helper/schema"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func TestProvider(t *testing.T) {
