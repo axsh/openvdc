@@ -126,5 +126,6 @@ for( label in build_nodes) {
   stage_unit_test(label)
   stage_rpmbuild(label)
   stage_acceptance(label)
-  stage_acceptance_esxi(label)
+  // Esxi is currently unmaintained and needs to be removed from the code.
+  //stage_acceptance_esxi(label)
 }
