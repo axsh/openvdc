@@ -6,8 +6,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
 	"strings"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func OpenVdcInstance() *schema.Resource {
@@ -154,6 +155,8 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+	config := m.(config)
+	cmdOpts.WriteString(fmt.Sprintf(" --server %s", config.getApiEndpoint()))
 	stdout, stderr, err := RunCmd("openvdc", "run", d.Get("template").(string), cmdOpts.String())
 	if err != nil {
 		return fmt.Errorf("The following command returned error:%v\nopenvdc run %s %s\nSTDOUT: %s\nSTDERR: %s", err, d.Get("template").(string), cmdOpts.String(), stdout, stderr)
@@ -165,9 +168,12 @@ func openVdcInstanceCreate(d *schema.ResourceData, m interface{}) error {
 }
 
 func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
-	stdout, stderr, err := RunCmd("openvdc", "show", d.Id())
+	config := m.(config)
+	cmdOpts := fmt.Sprintf("%v --server %s", d.Id(), config.getApiEndpoint())
+
+	stdout, stderr, err := RunCmd("openvdc", "show", cmdOpts)
 	if err != nil {
-		return fmt.Errorf("The following command returned error:%v\nopenvdc show %s\nSTDOUT: %s\nSTDERR: %s", err, d.Id(), stdout, stderr)
+		return fmt.Errorf("The following command returned error:%v\nopenvdc show %s\nSTDOUT: %s\nSTDERR: %s", err, cmdOpts, stdout, stderr)
 	}
 	instanceAlreadyTerminated, err := CheckInstanceTerminatedOrFailed(stdout)
 
@@ -179,10 +185,10 @@ func openVdcInstanceDelete(d *schema.ResourceData, m interface{}) error {
 		return nil
 	}
 
-	stdout, stderr, err = RunCmd("openvdc", "destroy", d.Id())
+	stdout, stderr, err = RunCmd("openvdc", "destroy", cmdOpts)
 
 	if err != nil {
-		return fmt.Errorf("The following command returned error:%v\nopenvdc destroy %s\nSTDOUT: %s\nSTDERR: %s", err, d.Id(), stdout, stderr)
+		return fmt.Errorf("The following command returned error:%v\nopenvdc destroy %s\nSTDOUT: %s\nSTDERR: %s", err, cmdOpts, stdout, stderr)
 	}
 
 	return nil
