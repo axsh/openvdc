@@ -10,5 +10,5 @@ func (c *config) getApiEndpoint() string {
 	if c.apiEndpoint != "" {
 		return c.apiEndpoint
 	}
-	return ""
+  return "0.0.0.0:5000"
 }
