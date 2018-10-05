@@ -51,21 +51,25 @@ func OpenVdcInstance() *schema.Resource {
 						"type": &schema.Schema{
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 							Default:  "veth",
 						},
 
 						"bridge": &schema.Schema{
 							Type:     schema.TypeString,
+							ForceNew: true,
 							Optional: true,
 						},
 
 						"ipv4addr": &schema.Schema{
 							Type:     schema.TypeString,
+							ForceNew: true,
 							Optional: true,
 						},
 
 						"macaddr": &schema.Schema{
 							Type:     schema.TypeString,
+							ForceNew: true,
 							Optional: true,
 						},
 
