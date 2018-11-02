@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
-
 	"reflect"
+	"strings"
 
 	"github.com/axsh/openvdc/model"
 )
@@ -63,4 +62,8 @@ func ResourceName(h ResourceHandler) string {
 func FindByType(name string) (p ResourceHandler, ok bool) {
 	p, ok = resourceHandlers[name]
 	return
+}
+
+type InstanceScheduleHandler interface {
+	ScheduleInstance(model.InstanceResource, *model.VDCOffer) (bool, error) // compare with offer and resrouce request.
 }

@@ -38,6 +38,33 @@ type VDCScheduler struct {
 	ctx           context.Context
 }
 
+func convertToOpenVDCOffer(mOffer *mesos.Offer) *model.VDCOffer {
+	vOffer := &model.VDCOffer{}
+	vOffer.SlaveID = mOffer.GetSlaveId().GetValue()
+	vResources := []model.VDCOfferResource{}
+	for _, res := range mOffer.GetResources() {
+		vRes := model.VDCOfferResource{}
+		vRes.Name = res.GetName()
+		vRes.Type = model.VDCOfferValueType(mesos.Value_Type_value[res.GetType().String()])
+		vRes.Scalar = res.GetScalar().GetValue()
+
+		var tmpVR []model.VDCOfferValueRange
+		for _, r := range res.GetRanges().GetRange() {
+			tmp := model.VDCOfferValueRange{
+				Begin: *r.Begin,
+				End:   *r.End,
+			}
+			tmpVR = append(tmpVR, tmp)
+		}
+		vRes.Ranges = tmpVR
+
+		vRes.Set = res.GetSet().GetItem()
+		vResources = append(vResources, vRes)
+	}
+	vOffer.Resources = vResources
+	return vOffer
+}
+
 func newVDCScheduler(ctx context.Context, listenAddr string, zkAddr backend.ZkEndpoint) *VDCScheduler {
 	return &VDCScheduler{
 		listenAddr: listenAddr,
@@ -95,6 +122,8 @@ func (sched *VDCScheduler) processOffers(driver sched.SchedulerDriver, offers []
 	if sched.tasksLaunched == 0 {
 		sched.CheckForCrashedNodes(offers, ctx)
 	}
+
+	sched.storeOffers(offers)
 
 	disconnected := getDisconnectedInstances(offers, ctx, driver)
 
@@ -187,10 +216,16 @@ func (sched *VDCScheduler) CheckForCrashedNodes(offers []*mesos.Offer, ctx conte
 	return nil
 }
 
+func (sched *VDCScheduler) storeOffers(offers []*mesos.Offer) {
+	for _, offer := range offers {
+		vdcOffer := convertToOpenVDCOffer(offer)
+		schedule.StoreOffer(vdcOffer)
+	}
+}
+
 func getDisconnectedInstances(offers []*mesos.Offer, ctx context.Context, driver sched.SchedulerDriver) []*model.Instance {
 
 	disconnectedInstances := []*model.Instance{}
-
 	for _, offer := range offers {
 
 		agentID := getAgentID(offer)

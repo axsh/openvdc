@@ -533,6 +533,12 @@
 			"revisionTime": "2017-11-27T00:49:25Z"
 		},
 		{
+			"checksumSHA1": "CDCNKlvOlAaguPUu8gbe7T4awZo=",
+			"path": "github.com/vmware/govmomi/govc/device/floppy",
+			"revision": "17b8c9ccb7f8c7b015d44c4ea39305c970a7bf31",
+			"revisionTime": "2017-09-05T23:36:42Z"
+		},
+		{
 			"checksumSHA1": "jr2UFXDaZ8Lc3Yx5bEwJ+lSH7AA=",
 			"path": "github.com/vmware/govmomi/govc/device/serial",
 			"revision": "adf4530b240711895896b14c337f9b77a3143e96",

@@ -24,6 +24,7 @@ func (*NullTemplate) ResourceName() string    { return "vm/null" }
 
 // InstanceResource is a marker interface for instance template structs.
 type InstanceResource interface {
+	ResourceTemplate
 	isInstanceResourceKind()
 	// protobuf message belongs to InstanceResource should have fields below:
 	//  int32 vcpu = xx;
@@ -71,4 +72,33 @@ func IsMatchingNodeGroups(res InstanceResource, offered []string) bool {
 		}
 	}
 	return true
+}
+
+// define openvdc's offer
+type VDCOffer struct {
+	SlaveID   string
+	Resources []VDCOfferResource
+}
+
+type VDCOfferResource struct {
+	Name   string
+	Type   VDCOfferValueType
+	Scalar float64
+	Ranges []VDCOfferValueRange
+	Set    []string
+	// Disk
+}
+
+type VDCOfferValueType int32
+
+const (
+	VDCOfferValueScalar VDCOfferValueType = 0
+	VDCOfferValueRanges VDCOfferValueType = 1
+	VDCOfferValueSet    VDCOfferValueType = 2
+	VDCOfferValueText   VDCOfferValueType = 3
+)
+
+type VDCOfferValueRange struct {
+	Begin uint64
+	End   uint64
 }

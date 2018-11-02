@@ -7,6 +7,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/model"
 	"github.com/axsh/openvdc/model/backend"
+	"github.com/axsh/openvdc/scheduler"
 	"github.com/gogo/protobuf/proto"
 	mesos "github.com/mesos/mesos-go/mesosproto"
 	sched "github.com/mesos/mesos-go/scheduler"
@@ -18,11 +19,12 @@ import (
 //go:generate protoc -I../proto -I${GOPATH}/src --go_out=plugins=grpc:${GOPATH}/src ../proto/v1.proto
 
 type APIServer struct {
-	server           *grpc.Server
-	modelStoreAddr   backend.ConnectionAddress
-	scheduler        sched.SchedulerDriver
-	mesosMasterAddr  *mesos.Address
-	mMesosMasterAddr sync.Mutex
+	server            *grpc.Server
+	modelStoreAddr    backend.ConnectionAddress
+	scheduler         sched.SchedulerDriver
+	mesosMasterAddr   *mesos.Address
+	mMesosMasterAddr  sync.Mutex
+	instanceScheduler scheduler.Schedule
 }
 
 type serverStreamWithContext struct {
@@ -34,7 +36,7 @@ func (ss *serverStreamWithContext) Context() context.Context {
 	return ss.ctx
 }
 
-func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDriver, ctx context.Context) *APIServer {
+func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDriver, instanceScheduler scheduler.Schedule, ctx context.Context) *APIServer {
 	// Assert the ctx has "cluster.backend" key
 	model.GetClusterBackendCtx(ctx)
 
@@ -66,9 +68,10 @@ func NewAPIServer(modelAddr backend.ConnectionAddress, driver sched.SchedulerDri
 		grpc.StreamInterceptor(insertFullMethodStream),
 	}
 	s := &APIServer{
-		server:         grpc.NewServer(sopts...),
-		modelStoreAddr: modelAddr,
-		scheduler:      driver,
+		server:            grpc.NewServer(sopts...),
+		modelStoreAddr:    modelAddr,
+		scheduler:         driver,
+		instanceScheduler: instanceScheduler,
 	}
 
 	RegisterInstanceServer(s.server, &InstanceAPI{api: s})

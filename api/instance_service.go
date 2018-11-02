@@ -105,6 +105,7 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 		"instance_id": in.GetInstanceId(),
 		"state":       lastState.String(),
 	})
+
 	switch lastState.GetState() {
 	case model.InstanceState_REGISTERED:
 		if err := lastState.ValidateGoalState(model.InstanceState_QUEUED); err != nil {
@@ -112,6 +113,13 @@ func (s *InstanceAPI) Start(ctx context.Context, in *StartRequest) (*StartReply,
 			// TODO: Investigate gRPC error response
 			return nil, err
 		}
+
+		err := s.api.instanceScheduler.Assign(inst)
+		if err != nil {
+			flog.Error(err)
+			return nil, err
+		}
+
 		if err := model.Instances(ctx).UpdateState(in.GetInstanceId(), model.InstanceState_QUEUED); err != nil {
 			flog.Error(err)
 			return nil, err
