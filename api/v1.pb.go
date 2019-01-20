@@ -341,6 +341,7 @@ type ConsoleReply struct {
 	InstanceId string                   `protobuf:"bytes,1,opt,name=instance_id" json:"instance_id,omitempty"`
 	Type       model1.Console_Transport `protobuf:"varint,2,opt,name=type,enum=model.Console_Transport" json:"type,omitempty"`
 	Address    string                   `protobuf:"bytes,3,opt,name=address" json:"address,omitempty"`
+	AuthType   model.AuthenticationType `protobuf:"varint,4,opt,name=authType,enum=model.AuthenticationType" json:"authType,omitempty"`
 }
 
 func (m *ConsoleReply) Reset()                    { *m = ConsoleReply{} }
@@ -367,6 +368,13 @@ func (m *ConsoleReply) GetAddress() string {
 		return m.Address
 	}
 	return ""
+}
+
+func (m *ConsoleReply) GetAuthType() model.AuthenticationType {
+	if m != nil {
+		return m.AuthType
+	}
+	return model.AuthenticationType_NONE
 }
 
 type CreateRequest struct {

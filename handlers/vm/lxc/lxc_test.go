@@ -37,6 +37,45 @@ const jsonLxcTemplate1 = `{
 	}
 }`
 
+const jsonLxcTemplate2 = `{
+	"type": "vm/lxc",
+	"lxc_template": {
+		"download": {
+			"distro": "ubuntu",
+			"release": "xenial"
+		}
+	},
+	"authentication_type":"none"
+}`
+
+const jsonLxcTemplate3 = `{
+	"type": "vm/lxc",
+	"lxc_template": {
+		"download": {
+			"distro": "ubuntu",
+			"release": "xenial"
+		}
+	},
+	"authentication_type":"pub_key",
+	"ssh_public_key":"ssh-rsa AAAA"
+}`
+
+const jsonLxcTemplate4 = `{
+	"type": "vm/lxc",
+	"lxc_template": {
+		"download": {
+			"distro": "ubuntu",
+			"release": "xenial"
+		}
+	},
+	"authentication_type":"pub_key",
+	"ssh_public_key":"./ssh/radf"
+}`
+
+const margeJson1 = `{"authentication_type":"none"}`
+const margeJson2 = `{"authentication_type":"pub_key","ssh_public_key":"ssh-rsa AAAA"}`
+const margeJson3 = `{"authentication_type":"pub_key","ssh_public_key":""}`
+
 func TestLxcHandler_ParseTemplate(t *testing.T) {
 	assert := assert.New(t)
 	h := &LxcHandler{}
@@ -45,6 +84,7 @@ func TestLxcHandler_ParseTemplate(t *testing.T) {
 	assert.IsType((*model.LxcTemplate)(nil), m)
 	modellxc := m.(*model.LxcTemplate)
 	assert.NotNil(modellxc.GetLxcImage())
+	assert.Equal(modellxc.GetLxcImage().DownloadUrl, "http://example.com/")
 	assert.Nil(modellxc.GetLxcTemplate())
 
 	m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate1).Bytes())
@@ -53,4 +93,87 @@ func TestLxcHandler_ParseTemplate(t *testing.T) {
 	modellxc = m.(*model.LxcTemplate)
 	assert.Nil(modellxc.GetLxcImage())
 	assert.NotNil(modellxc.GetLxcTemplate())
+	assert.Equal(modellxc.GetLxcTemplate().Template, "download")
+	assert.Equal(modellxc.GetLxcTemplate().Distro, "ubuntu")
+	assert.Equal(modellxc.GetLxcTemplate().Release, "xenial")
+	assert.Equal(model.AuthenticationType_NONE, modellxc.AuthenticationType, "none")
+
+	m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate2).Bytes())
+	assert.NoError(err)
+	assert.IsType((*model.LxcTemplate)(nil), m)
+	modellxc = m.(*model.LxcTemplate)
+	assert.Nil(modellxc.GetLxcImage())
+	assert.NotNil(modellxc.GetLxcTemplate())
+	assert.Equal(modellxc.GetLxcTemplate().Template, "download")
+	assert.Equal(modellxc.GetLxcTemplate().Distro, "ubuntu")
+	assert.Equal(modellxc.GetLxcTemplate().Release, "xenial")
+	assert.Equal(model.AuthenticationType_NONE, modellxc.AuthenticationType, "none")
+
+	m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate3).Bytes())
+	assert.NoError(err)
+	assert.IsType((*model.LxcTemplate)(nil), m)
+	modellxc = m.(*model.LxcTemplate)
+	assert.Nil(modellxc.GetLxcImage())
+	assert.NotNil(modellxc.GetLxcTemplate())
+	assert.Equal(modellxc.GetLxcTemplate().Template, "download")
+	assert.Equal(modellxc.GetLxcTemplate().Distro, "ubuntu")
+	assert.Equal(modellxc.GetLxcTemplate().Release, "xenial")
+	assert.Equal(model.AuthenticationType_PUB_KEY, modellxc.AuthenticationType, "pub_key")
+	assert.NotEmpty(modellxc.SshPublicKey)
+
+	m, err = h.ParseTemplate(bytes.NewBufferString(jsonLxcTemplate4).Bytes())
+	assert.Error(err)
+}
+
+func TestLxcHandler_MergeArgs(t *testing.T) {
+	assert := assert.New(t)
+	h := &LxcHandler{}
+	var dest model.ResourceTemplate = &model.LxcTemplate{}
+	args := []string{`--authentication_type="none"`}
+	err := h.MergeArgs(dest, args)
+	d := dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(model.AuthenticationType_NONE, d.AuthenticationType)
+
+	dest = &model.LxcTemplate{}
+	args = []string{"--vcpu=2"}
+	err = h.MergeArgs(dest, args)
+	d = dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(2, int(d.GetVcpu()))
+
+	dest = &model.LxcTemplate{}
+	args = []string{`--authentication_type=pub_key`, `--ssh_public_key="ssh-rsa AAAA"`}
+	err = h.MergeArgs(dest, args)
+	d = dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(model.AuthenticationType_PUB_KEY, d.AuthenticationType)
+	assert.Equal("ssh-rsa AAAA", d.SshPublicKey)
+}
+func TestLxcHandler_MargeJSON(t *testing.T) {
+	assert := assert.New(t)
+	h := &LxcHandler{}
+	var dest model.ResourceTemplate = &model.LxcTemplate{}
+
+	err := h.MergeJSON(dest, bytes.NewBufferString(margeJson1).Bytes())
+	d := dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(d.AuthenticationType, model.AuthenticationType_NONE)
+
+	dest = &model.LxcTemplate{}
+	err = h.MergeJSON(dest, bytes.NewBufferString(margeJson2).Bytes())
+	d = dest.(*model.LxcTemplate)
+	assert.Nil(err)
+	assert.IsType((*model.LxcTemplate)(nil), dest)
+	assert.Equal(d.AuthenticationType, model.AuthenticationType_PUB_KEY)
+	assert.Equal(d.SshPublicKey, "ssh-rsa AAAA")
+
+	dest = &model.LxcTemplate{}
+	err = h.MergeJSON(dest, bytes.NewBufferString(margeJson3).Bytes())
+	d = dest.(*model.LxcTemplate)
+	assert.EqualError(err, "Invalid template vm/lxc: ssh_public_key is not set")
 }

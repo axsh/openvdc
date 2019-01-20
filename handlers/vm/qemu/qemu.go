@@ -3,6 +3,7 @@ package qemu
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"strings"
 
@@ -57,6 +58,12 @@ func (h *QemuHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate,
 		}
 	}
 
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
+	if err != nil {
+		return nil, err
+	}
+	tmpl.AuthenticationType = authType
+
 	if err := json.Unmarshal(in, tmpl); err != nil {
 		return nil, errors.Wrap(err, "Failed json.Unmarshal for model.QemuTemplate")
 	}
@@ -100,13 +107,25 @@ func (h *QemuHandler) MergeArgs(dst model.ResourceTemplate, args []string) error
 
 	flags := flag.NewFlagSet("qemu template", flag.ContinueOnError)
 	var vcpu, mem int
+	var authType, sshPubkey string
 	flags.IntVar(&vcpu, "vcpu", int(mdst.MinVcpu), "")
 	flags.IntVar(&mem, "memory_gb", int(mdst.MinMemoryGb), "")
+	defAuth := model.AuthenticationType_name[int32(mdst.AuthenticationType)]
+	flags.StringVar(&authType, "authentication_type", defAuth, "")
+	flags.StringVar(&sshPubkey, "ssh_public_key", mdst.SshPublicKey, "")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	mdst.Vcpu = int32(vcpu)
 	mdst.MemoryGb = int32(mem)
+	authType = strings.ToUpper(strings.Replace(authType, "\"", "", -1))
+	format, ok := model.AuthenticationType_value[authType]
+	if !ok {
+		return fmt.Errorf("Unknown AuthenticationType: %s", authType)
+	}
+	mdst.AuthenticationType = model.AuthenticationType(format)
+	sshPubkey = strings.Replace(sshPubkey, "\"", "", -1)
+	mdst.SshPublicKey = sshPubkey
 	return nil
 }
 
@@ -119,10 +138,23 @@ func (h *QemuHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) 
 	if !ok {
 		return handlers.ErrMergeDstType(new(model.QemuTemplate), dst)
 	}
+
 	minput := &model.QemuTemplate{}
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	minput.AuthenticationType = authType
+
 	if err := json.Unmarshal(in, minput); err != nil {
 		return errors.WithStack(err)
 	}
+
+	err = h.Base.ValidatePublicKey(h, minput.AuthenticationType, minput.SshPublicKey)
+	if err != nil {
+		return err
+	}
+
 	// Prevent Image & Template attributes from overwriting.
 	minput.QemuImage = nil
 	proto.Merge(mdst, minput)

@@ -90,6 +90,7 @@ message ConsoleReply {
   string instance_id = 1 [json_name="instance_id"];
   model.Console.Transport type = 2;
   string address = 3;
+  model.AuthenticationType authType = 4 [json_name="auth_type"];
 }
 
 message CreateRequest{

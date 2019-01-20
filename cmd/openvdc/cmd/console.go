@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/cmd/openvdc/cmd/console"
@@ -21,6 +23,7 @@ import (
 
 func init() {
 	consoleCmd.Flags().Bool("show", false, "Show console information")
+	consoleCmd.Flags().StringP("identity-file", "i", "", "Selects a file from which the identity (private key) for public key authentication is read")
 }
 
 var consoleCmd = &cobra.Command{
@@ -46,6 +49,7 @@ var consoleCmd = &cobra.Command{
 		}
 
 		var res *api.ConsoleReply
+
 		err := util.RemoteCall(func(conn *grpc.ClientConn) error {
 			ic := api.NewInstanceClient(conn)
 			var err error
@@ -56,7 +60,7 @@ var consoleCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed request to Instance.Console API")
 		}
 
-		info, err := cmd.Flags().GetBool("show")
+		info, _ := cmd.Flags().GetBool("show")
 		switch res.Type {
 		case model.Console_SSH:
 			if info {
@@ -71,8 +75,38 @@ var consoleCmd = &cobra.Command{
 				fmt.Println("")
 				return nil
 			}
-			sshcon := console.NewSshConsole(instanceID, nil)
-			var err error
+
+			var config = &ssh.ClientConfig{
+				Timeout: 5 * time.Second,
+				Auth: []ssh.AuthMethod{
+					ssh.Password(""),
+				},
+				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			}
+
+			switch res.AuthType {
+			case model.AuthenticationType_NONE:
+				config.Auth = []ssh.AuthMethod{ssh.Password("")}
+			case model.AuthenticationType_PUB_KEY:
+				identityFile, _ := cmd.Flags().GetString("identity-file")
+				if identityFile == "" {
+					log.Fatalf("Required private key but not setted")
+				}
+
+				// Parse and set indetifyFifle
+				key, err := ioutil.ReadFile(identityFile)
+				if err != nil {
+					log.Fatalf("unable to read private key: %v", err)
+				}
+				// Create the Signer for this private key.
+				signer, err := ssh.ParsePrivateKey(key)
+				if err != nil {
+					log.Fatalf("unable to parse private key: %v", err)
+				}
+				config.Auth = []ssh.AuthMethod{ssh.PublicKeys(signer)}
+			}
+
+			sshcon := console.NewSshConsole(instanceID, config)
 			if len(execArgs) > 0 {
 				err = sshcon.Exec(res.GetAddress(), execArgs)
 			} else {

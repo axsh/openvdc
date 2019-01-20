@@ -103,6 +103,17 @@
     "use_kvm": {
       "type": "boolean",
       "default": false
+    },
+    "authentication_type": {
+      "type": "string",
+      "default": "none",
+      "enum": [
+        "none",
+        "pub_key"
+      ]
+    },
+    "ssh_public_key": {
+      "type": "string"
     }
   }
 }

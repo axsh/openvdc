@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/axsh/openvdc/hypervisor"
@@ -22,9 +23,61 @@ type SSHServer struct {
 	ctx      context.Context
 }
 
+func getAuthAttrsFromInstance(ctx context.Context, instanceID string) (model.ConsoleAuthAttributes, error) {
+	inst, err := model.Instances(ctx).FindByID(instanceID)
+	if err != nil {
+		log.WithError(err).Errorf("Unknown instance: %s", instanceID)
+		return nil, err
+	}
+	instResource, ok := inst.ResourceTemplate().(model.ConsoleAuthAttributes)
+	if !ok {
+		return nil, errors.Errorf("%T does not support model.ConsoleAuthAttributes", inst.ResourceTemplate())
+	}
+	return instResource, nil
+}
+
 func NewSSHServer(provider hypervisor.HypervisorProvider, ctx context.Context) *SSHServer {
 	config := &ssh.ServerConfig{
-		NoClientAuth: true,
+		PasswordCallback: func(conn ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
+			authAttrs, err := getAuthAttrsFromInstance(ctx, conn.User())
+			if err != nil {
+				return nil, err
+			}
+			switch authAttrs.GetAuthenticationType() {
+			case model.AuthenticationType_NONE:
+				return nil, nil
+			case model.AuthenticationType_PUB_KEY:
+				if authAttrs.GetSshPublicKey() != "" {
+					return nil, fmt.Errorf("%s auth type is public key but client configured to password auth", conn.User())
+				}
+			}
+			return nil, fmt.Errorf("%s is using undefind AuthenticationType", conn.User())
+		},
+		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			authAttrs, err := getAuthAttrsFromInstance(ctx, conn.User())
+			if err != nil {
+				return nil, err
+			}
+			switch authAttrs.GetAuthenticationType() {
+			case model.AuthenticationType_NONE:
+				return nil, nil
+			case model.AuthenticationType_PUB_KEY:
+				zkPubKey := strings.TrimSpace(authAttrs.GetSshPublicKey())
+				var clientPubkey string
+				if key != nil {
+					clientPubkey = strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
+				}
+
+				if zkPubKey == clientPubkey {
+					return nil, nil
+				} else {
+					log.Errorf("Private key mismatch with database public key")
+					return nil, fmt.Errorf("Private key mismatch with database public key")
+				}
+			default:
+				return nil, fmt.Errorf("Unknown AuthenticationType")
+			}
+		},
 	}
 
 	return &SSHServer{

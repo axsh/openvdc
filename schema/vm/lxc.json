@@ -162,6 +162,17 @@
       "required": [
         "download_url"
       ]
+    },
+    "authentication_type": {
+      "type": "string",
+      "default": "none",
+      "enum": [
+        "none",
+        "pub_key"
+      ]
+    },
+    "ssh_public_key": {
+      "type": "string"
     }
   }
 }

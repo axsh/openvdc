@@ -533,6 +533,12 @@
 			"revisionTime": "2017-11-27T00:49:25Z"
 		},
 		{
+			"checksumSHA1": "CDCNKlvOlAaguPUu8gbe7T4awZo=",
+			"path": "github.com/vmware/govmomi/govc/device/floppy",
+			"revision": "17b8c9ccb7f8c7b015d44c4ea39305c970a7bf31",
+			"revisionTime": "2017-09-05T23:36:42Z"
+		},
+		{
 			"checksumSHA1": "jr2UFXDaZ8Lc3Yx5bEwJ+lSH7AA=",
 			"path": "github.com/vmware/govmomi/govc/device/serial",
 			"revision": "adf4530b240711895896b14c337f9b77a3143e96",
@@ -719,16 +725,16 @@
 			"revisionTime": "2016-10-31T15:37:30Z"
 		},
 		{
-			"checksumSHA1": "LlElMHeTC34ng8eHzjvtUhAgrr8=",
+			"checksumSHA1": "U8Hfwou4jfW3wHPoIuz8Oi4KxTc=",
 			"path": "golang.org/x/crypto/ssh",
-			"revision": "9477e0b78b9ac3d0b03822fd95422e2fe07627cd",
-			"revisionTime": "2016-10-31T15:37:30Z"
+			"revision": "faadfbdc035307d901e69eea569f5dda451a3ee3",
+			"revisionTime": "2017-09-12T19:17:24Z"
 		},
 		{
-			"checksumSHA1": "HpfYVaB8VI/Q4dS6I78I1iWaIT4=",
+			"checksumSHA1": "nqWNlnMmVpt628zzvyo6Yv2CX5Q=",
 			"path": "golang.org/x/crypto/ssh/terminal",
-			"revision": "2b786ab9e9649dc660afa3bd580fd05a05e20d95",
-			"revisionTime": "2016-12-19T07:27:34Z"
+			"revision": "faadfbdc035307d901e69eea569f5dda451a3ee3",
+			"revisionTime": "2017-09-12T19:17:24Z"
 		},
 		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",

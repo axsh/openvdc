@@ -29,6 +29,11 @@ message ConnectionStatus {
   Status status = 1;
 }
 
+enum AuthenticationType {
+  NONE = 0;
+  PUB_KEY = 1;
+}
+
 message InstanceState {
   enum State {
     REGISTERED = 0;
@@ -135,6 +140,8 @@ message LxcTemplate {
   }
   Template lxc_template = 7 [json_name="lxc_template"];
   repeated string node_groups = 8 [json_name="node_groups"];
+  AuthenticationType authentication_type = 9 [json_name="authentication_type"];
+  string ssh_public_key = 10 [json_name="ssh_public_key"];
 }
 
 message QemuTemplate {
@@ -165,6 +172,8 @@ message QemuTemplate {
   bool use_kvm = 6 [json_name="use_kvm"];
   repeated Interface interfaces = 7;
   repeated string node_groups = 8 [json_name="node_groups"];
+  AuthenticationType authentication_type = 9 [json_name="authentication_type"];
+  string ssh_public_key = 10 [json_name="ssh_public_key"];
 }
 
 message EsxiTemplate {
@@ -188,6 +197,7 @@ message EsxiTemplate {
   }
   repeated Interface interfaces = 6;
   repeated string node_groups = 7 [json_name="node_groups"];
+  AuthenticationType authentication_type = 8 [json_name="authentication_type"];
 }
 
 message NullTemplate {
@@ -203,4 +213,6 @@ message NullTemplate {
   }
   CrashStage crash_stage = 3 [json_name="crash_stage"];
   repeated string node_groups = 4 [json_name="node_groups"];
+  AuthenticationType authentication_type = 5 [json_name="authentication_type"];
+  string ssh_public_key = 6 [json_name="ssh_public_key"];
 }

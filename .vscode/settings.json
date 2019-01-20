@@ -12,7 +12,8 @@
   "json.schemas": [
     {
       "fileMatch": [
-        "/templates/**/*.json"
+        "/templates/**/*.json",
+        "/ci/citest/acceptance-test/tests/fixtures/**/*.json"
       ],
       "url": "./schema/v1.json"
     }

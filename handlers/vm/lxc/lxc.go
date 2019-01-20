@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/axsh/openvdc/handlers"
 	"github.com/axsh/openvdc/handlers/vm"
@@ -22,24 +23,29 @@ type LxcHandler struct {
 }
 
 func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, error) {
+	var template struct {
+		Template map[string]json.RawMessage `json:"lxc_template,omitempty"`
+	}
 	tmpl := &model.LxcTemplate{}
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
+	if err != nil {
+		return nil, err
+	}
+	tmpl.AuthenticationType = authType
+
 	if err := json.Unmarshal(in, tmpl); err != nil {
 		return nil, err
 	}
 
-	// Parse "lxc_template" section if exists.
-	var json_template struct {
-		Template map[string]json.RawMessage `json:"lxc_template,omitempty"`
-	}
-	if err := json.Unmarshal(in, &json_template); err != nil {
+	if err := json.Unmarshal(in, &template); err != nil {
 		return nil, err
 	}
-	if json_template.Template != nil {
-		if len(json_template.Template) != 1 {
+	if template.Template != nil {
+		if len(template.Template) != 1 {
 			return nil, fmt.Errorf("lxc_template section must contain one JSON object")
 		}
 		// Take only head item
-		for k, raw := range json_template.Template {
+		for k, raw := range template.Template {
 			tmpl.LxcTemplate = &model.LxcTemplate_Template{
 				Template: k,
 			}
@@ -53,6 +59,11 @@ func (h *LxcHandler) ParseTemplate(in json.RawMessage) (model.ResourceTemplate, 
 	// Validation
 	if tmpl.GetLxcImage() == nil && tmpl.GetLxcTemplate() == nil {
 		return nil, handlers.ErrInvalidTemplate(h, "lxc_image or lxc_template must exist")
+	}
+
+	err = h.Base.ValidatePublicKey(h, tmpl.AuthenticationType, tmpl.SshPublicKey)
+	if err != nil {
+		return nil, err
 	}
 
 	return tmpl, nil
@@ -85,13 +96,25 @@ func (h *LxcHandler) MergeArgs(dst model.ResourceTemplate, args []string) error 
 
 	flags := flag.NewFlagSet("lxc template", flag.ContinueOnError)
 	var vcpu, mem int
+	var authType, sshPubkey string
 	flags.IntVar(&vcpu, "vcpu", int(mdst.MinVcpu), "")
 	flags.IntVar(&mem, "memory_gb", int(mdst.MinMemoryGb), "")
+	defAuth := model.AuthenticationType_name[int32(mdst.AuthenticationType)]
+	flags.StringVar(&authType, "authentication_type", defAuth, "")
+	flags.StringVar(&sshPubkey, "ssh_public_key", mdst.SshPublicKey, "")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
 	mdst.Vcpu = int32(vcpu)
 	mdst.MemoryGb = int32(mem)
+	authType = strings.ToUpper(strings.Replace(authType, "\"", "", -1))
+	format, ok := model.AuthenticationType_value[authType]
+	if !ok {
+		return fmt.Errorf("Unknown AuthenticationType: %s", authType)
+	}
+	mdst.AuthenticationType = model.AuthenticationType(format)
+	sshPubkey = strings.Replace(sshPubkey, "\"", "", -1)
+	mdst.SshPublicKey = sshPubkey
 	return nil
 }
 
@@ -105,9 +128,21 @@ func (h *LxcHandler) MergeJSON(dst model.ResourceTemplate, in json.RawMessage) e
 		return handlers.ErrMergeDstType(new(model.LxcTemplate), dst)
 	}
 	minput := &model.LxcTemplate{}
+	in, authType, err := h.Base.ValidateAuthenticationType(in)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	minput.AuthenticationType = authType
+
 	if err := json.Unmarshal(in, minput); err != nil {
 		return errors.WithStack(err)
 	}
+
+	err = h.Base.ValidatePublicKey(h, minput.AuthenticationType, minput.SshPublicKey)
+	if err != nil {
+		return err
+	}
+
 	// Prevent Image & Template attributes from overwriting.
 	minput.LxcImage = nil
 	minput.LxcTemplate = nil

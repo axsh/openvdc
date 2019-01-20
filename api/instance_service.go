@@ -300,11 +300,21 @@ func (s *InstanceAPI) Console(ctx context.Context, in *ConsoleRequest) (*Console
 		return nil, err
 	}
 
-	return &ConsoleReply{
+	res := &ConsoleReply{
 		InstanceId: instanceID,
 		Type:       node.Console.Type,
 		Address:    node.Console.BindAddr,
-	}, nil
+	}
+
+	authAttrs, ok := inst.ResourceTemplate().(model.ConsoleAuthAttributes)
+	if !ok {
+		// Fallback to NONE auth type
+		res.AuthType = model.AuthenticationType_NONE
+	} else {
+		res.AuthType = authAttrs.GetAuthenticationType()
+	}
+
+	return res, nil
 }
 
 func (s *InstanceAPI) sendCommand(ctx context.Context, cmd string, instanceID string) error {

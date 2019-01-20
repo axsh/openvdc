@@ -34,6 +34,11 @@ type InstanceResource interface {
 	GetNodeGroups() []string
 }
 
+type ConsoleAuthAttributes interface {
+	GetAuthenticationType() AuthenticationType
+	GetSshPublicKey() string
+}
+
 func (*LxcTemplate) isInstanceResourceKind()  {}
 func (*QemuTemplate) isInstanceResourceKind() {}
 func (*NullTemplate) isInstanceResourceKind() {}
